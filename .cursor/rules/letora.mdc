@@ -1,0 +1,90 @@
+---
+alwaysApply: true
+---
+
+# Letora — Property Operating System
+
+## Product Overview
+Letora is a UK-based agentic AI SaaS for solo landlords and small 
+letting agencies. It automates: tenant onboarding, rent tracking, 
+arrears chasing, maintenance triage, contract generation, lead 
+qualification, and listing creation using autonomous AI agents.
+
+## Primary User
+A solo landlord managing 10–30 UK properties without staff. 
+Needs agents to act, not just suggest. Approves decisions via 
+a simple dashboard. Uses WhatsApp and email daily.
+
+## Tech Stack (Never Deviate)
+- Framework: Next.js 16 App Router with TypeScript (strict mode)
+- Styling: Tailwind CSS + shadcn/ui components only
+- Database: Supabase (PostgreSQL) with Row Level Security on ALL tables
+- Auth: Supabase Auth
+- Icons: Lucide React
+- Forms: React Hook Form + Zod
+- LLMs: GPT-4o for general tasks, Claude 3.5 Sonnet for legal/contracts
+- Email: Resend
+- Frontend host: Vercel
+
+## Code Standards
+- TypeScript everywhere — zero `any` types
+- Server Actions for all Supabase data fetching (never client-side)
+- React Hook Form + Zod for every form and schema validation
+- kebab-case for all file and folder names
+- camelCase for all functions, variables, and props
+- Every Supabase table MUST have RLS policies before use
+- All agent outputs stored to Supabase before displaying to user
+- Use `cn()` from @/lib/utils for all conditional classNames
+- Always use Next.js App Router — never pages router
+- Always use server components by default, client components only when needed
+
+## Project Structure
+src/
+  app/
+    (auth)/          — login, signup pages
+    (dashboard)/     — all authenticated pages
+      dashboard/     — main overview
+      properties/    — property management
+      tenants/       — tenant profiles
+      rent/          — rent tracker
+      maintenance/   — maintenance requests
+      contracts/     — contract management
+      leads/         — lead pipeline
+  components/
+    ui/              — shadcn components (never modify these)
+    dashboard/       — dashboard-specific components
+    agents/          — agent output display components
+  lib/
+    supabase/        — client.ts and server.ts
+    utils.ts         — cn() and helpers
+  types/             — all TypeScript interfaces
+
+## Database Tables
+- properties
+- tenant_profiles
+- tenancies
+- rent_payments
+- maintenance_requests
+- leads
+- agent_activity_log
+
+## UK Compliance (Flag These Always)
+- Right to Rent checks required for all new tenant onboarding
+- All tenant documents stored for minimum 1 year post-tenancy
+- Renters Rights Act 2026 logic must be commented clearly
+- GDPR: No PII logged to console or external services
+
+## Naming Conventions
+- DB tables: snake_case plural
+- React components: PascalCase
+- API routes: /api/agents/[agent-name]
+- Agent names: ListingAgent, LeadAgent, ArrearsAgent, 
+  ContractAgent, MaintenanceAgent, OnboardingAgent
+
+## What NOT to Do
+- Never use pages/ router
+- Never use useEffect for data fetching
+- Never store API keys in client components
+- Never skip RLS policies
+- Never build two features in one prompt
+- Never use any as a TypeScript type
