@@ -60,12 +60,15 @@ export async function getTenancies(userId: string): Promise<TenancyRow[]> {
 
   if (error) return [];
 
-  return (data ?? []).map((row) => ({
+  return (data ?? []).map((row) => {
+    const property = Array.isArray(row.properties) ? row.properties[0] : row.properties;
+    const tenant = Array.isArray(row.tenant_profiles) ? row.tenant_profiles[0] : row.tenant_profiles;
+    return {
     id: row.id,
     propertyId: row.property_id ?? null,
-    propertyAddress: row.properties?.address ?? null,
+    propertyAddress: property?.address ?? null,
     tenantId: row.tenant_id ?? null,
-    tenantFullName: row.tenant_profiles?.full_name ?? null,
+    tenantFullName: tenant?.full_name ?? null,
     startDate: row.start_date ?? null,
     endDate: row.end_date ?? null,
     monthlyRent:
@@ -75,7 +78,8 @@ export async function getTenancies(userId: string): Promise<TenancyRow[]> {
           ? row.monthly_rent
           : Number(row.monthly_rent),
     status: row.status ?? null,
-  }));
+  };
+  });
 }
 
 export async function addTenancy(formData: unknown) {
@@ -104,7 +108,8 @@ export async function addTenancy(formData: unknown) {
 
   if (error) return { ok: false as const, error: error.message };
 
-  revalidatePath("/dashboard/rent");
+  revalidatePath("/dashboard/tenancies");
+  revalidatePath("/dashboard/rent-tracker");
   return { ok: true as const };
 }
 
@@ -124,11 +129,23 @@ export async function getThisMonthPayments(userId: string): Promise<RentPaymentR
 
   if (error) return [];
 
-  return (data ?? []).map((row) => ({
+  return (data ?? []).map((row) => {
+    const tenancy = Array.isArray(row.tenancies) ? row.tenancies[0] : row.tenancies;
+    const property = tenancy
+      ? Array.isArray(tenancy.properties)
+        ? tenancy.properties[0]
+        : tenancy.properties
+      : null;
+    const tenant = tenancy
+      ? Array.isArray(tenancy.tenant_profiles)
+        ? tenancy.tenant_profiles[0]
+        : tenancy.tenant_profiles
+      : null;
+    return {
     id: row.id,
     tenancyId: row.tenancy_id ?? null,
-    propertyAddress: row.tenancies?.properties?.address ?? null,
-    tenantFullName: row.tenancies?.tenant_profiles?.full_name ?? null,
+    propertyAddress: property?.address ?? null,
+    tenantFullName: tenant?.full_name ?? null,
     dueDate: row.due_date ?? null,
     amountDue:
       row.amount_due == null
@@ -143,7 +160,8 @@ export async function getThisMonthPayments(userId: string): Promise<RentPaymentR
           ? row.amount_paid
           : Number(row.amount_paid),
     status: row.status ?? null,
-  }));
+  };
+  });
 }
 
 export async function autoGeneratePendingPayments(userId: string) {
@@ -194,7 +212,8 @@ export async function autoGeneratePendingPayments(userId: string) {
   const { error } = await supabase.from("rent_payments").insert(toInsert);
   if (error) return { ok: false as const, error: error.message };
 
-  revalidatePath("/dashboard/rent");
+  revalidatePath("/dashboard/tenancies");
+  revalidatePath("/dashboard/rent-tracker");
   return { ok: true as const };
 }
 
@@ -240,7 +259,8 @@ export async function logPayment(formData: unknown) {
     if (error) return { ok: false as const, error: error.message };
   }
 
-  revalidatePath("/dashboard/rent");
+  revalidatePath("/dashboard/tenancies");
+  revalidatePath("/dashboard/rent-tracker");
   return { ok: true as const };
 }
 

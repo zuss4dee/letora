@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 const titleByPrefix: Array<{ prefix: string; title: string }> = [
   { prefix: "/dashboard/properties", title: "Properties" },
   { prefix: "/dashboard/tenants", title: "Tenants" },
-  { prefix: "/dashboard/rent", title: "Rent Tracker" },
+  { prefix: "/dashboard/tenancies", title: "Tenancies" },
+  { prefix: "/dashboard/rent-tracker", title: "Rent Tracker" },
   { prefix: "/dashboard/maintenance", title: "Maintenance" },
   { prefix: "/dashboard/contracts", title: "Contracts" },
   { prefix: "/dashboard/leads", title: "Leads" },
@@ -17,7 +18,9 @@ const titleByPrefix: Array<{ prefix: string; title: string }> = [
 ];
 
 function getTitle(pathname: string) {
-  return titleByPrefix.find((t) => pathname.startsWith(t.prefix))?.title ?? "Dashboard";
+  if (pathname === "/dashboard" || pathname === "/dashboard/") return "Dashboard";
+  const sorted = [...titleByPrefix].sort((a, b) => b.prefix.length - a.prefix.length);
+  return sorted.find((t) => pathname.startsWith(t.prefix))?.title ?? "Dashboard";
 }
 
 export function Header() {

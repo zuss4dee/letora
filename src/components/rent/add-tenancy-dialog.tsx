@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 
 import { addTenancy } from "@/lib/actions/tenancies";
 import { type AddTenancyInput, addTenancySchema } from "@/lib/validations/tenancy";
@@ -52,7 +52,7 @@ export function AddTenancyDialog({
   );
 
   const form = useForm<AddTenancyInput>({
-    resolver: zodResolver(addTenancySchema),
+    resolver: zodResolver(addTenancySchema) as Resolver<AddTenancyInput>,
     defaultValues,
     mode: "onSubmit",
   });
@@ -169,7 +169,13 @@ export function AddTenancyDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="monthlyRent">Monthly rent (£)</Label>
-              <Input id="monthlyRent" type="number" min={0} step="1" {...form.register("monthlyRent")} />
+              <Input
+                id="monthlyRent"
+                type="number"
+                min={0}
+                step="1"
+                {...form.register("monthlyRent", { valueAsNumber: true })}
+              />
               {form.formState.errors.monthlyRent?.message ? (
                 <p className="text-xs text-red-600 dark:text-red-400">
                   {form.formState.errors.monthlyRent.message}
@@ -178,7 +184,13 @@ export function AddTenancyDialog({
             </div>
             <div className="grid gap-2">
               <Label htmlFor="depositAmount">Deposit amount (£)</Label>
-              <Input id="depositAmount" type="number" min={0} step="1" {...form.register("depositAmount")} />
+              <Input
+                id="depositAmount"
+                type="number"
+                min={0}
+                step="1"
+                {...form.register("depositAmount", { valueAsNumber: true })}
+              />
               {form.formState.errors.depositAmount?.message ? (
                 <p className="text-xs text-red-600 dark:text-red-400">
                   {form.formState.errors.depositAmount.message}

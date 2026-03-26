@@ -34,18 +34,22 @@ export async function getMaintenanceRequests(userId: string): Promise<{
 
   if (error || !data) return { open: [], resolved: [] };
 
-  const rows: MaintenanceRequestRow[] = data.map((row) => ({
+  const rows: MaintenanceRequestRow[] = data.map((row) => {
+    const property = Array.isArray(row.properties) ? row.properties[0] : row.properties;
+    const tenant = Array.isArray(row.tenant_profiles) ? row.tenant_profiles[0] : row.tenant_profiles;
+    return {
     id: row.id,
     propertyId: row.property_id ?? null,
-    propertyAddress: row.properties?.address ?? null,
+    propertyAddress: property?.address ?? null,
     tenantId: row.tenant_id ?? null,
-    tenantFullName: row.tenant_profiles?.full_name ?? null,
+    tenantFullName: tenant?.full_name ?? null,
     title: row.title ?? null,
     description: row.description ?? null,
     priority: row.priority ?? null,
     status: row.status ?? null,
     createdAt: row.created_at ?? null,
-  }));
+  };
+  });
 
   const open = rows.filter((r) => (r.status ?? "open") !== "resolved");
   const resolved = rows.filter((r) => (r.status ?? "open") === "resolved");

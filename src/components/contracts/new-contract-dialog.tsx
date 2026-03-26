@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 
 import { createContract } from "@/lib/actions/contracts";
 import {
@@ -61,7 +61,7 @@ export function NewContractDialog({
   );
 
   const form = useForm<CreateContractInput>({
-    resolver: zodResolver(createContractSchema),
+    resolver: zodResolver(createContractSchema) as Resolver<CreateContractInput>,
     defaultValues,
   });
 
@@ -180,7 +180,13 @@ export function NewContractDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="monthlyRent">Monthly Rent (£)</Label>
-              <Input id="monthlyRent" type="number" min={0} step="1" {...form.register("monthlyRent")} />
+              <Input
+                id="monthlyRent"
+                type="number"
+                min={0}
+                step="1"
+                {...form.register("monthlyRent", { valueAsNumber: true })}
+              />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="depositAmount">Deposit Amount (£)</Label>
@@ -189,7 +195,7 @@ export function NewContractDialog({
                 type="number"
                 min={0}
                 step="1"
-                {...form.register("depositAmount")}
+                {...form.register("depositAmount", { valueAsNumber: true })}
               />
             </div>
           </div>

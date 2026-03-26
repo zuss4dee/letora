@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 
 import { addProperty } from "@/lib/actions/properties";
 import { type AddPropertyInput, propertySchema } from "@/lib/validations/property";
@@ -48,7 +48,7 @@ export function AddPropertyDialog() {
   );
 
   const form = useForm<AddPropertyInput>({
-    resolver: zodResolver(propertySchema),
+    resolver: zodResolver(propertySchema) as Resolver<AddPropertyInput>,
     defaultValues,
     mode: "onSubmit",
   });
@@ -173,7 +173,13 @@ export function AddPropertyDialog() {
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="grid gap-2">
               <Label htmlFor="bedrooms">Bedrooms</Label>
-              <Input id="bedrooms" type="number" min={1} max={10} {...form.register("bedrooms")} />
+              <Input
+                id="bedrooms"
+                type="number"
+                min={1}
+                max={10}
+                {...form.register("bedrooms", { valueAsNumber: true })}
+              />
               {form.formState.errors.bedrooms?.message ? (
                 <p className="text-xs text-red-600 dark:text-red-400">
                   {form.formState.errors.bedrooms.message}
@@ -183,7 +189,13 @@ export function AddPropertyDialog() {
 
             <div className="grid gap-2">
               <Label htmlFor="bathrooms">Bathrooms</Label>
-              <Input id="bathrooms" type="number" min={1} max={5} {...form.register("bathrooms")} />
+              <Input
+                id="bathrooms"
+                type="number"
+                min={1}
+                max={5}
+                {...form.register("bathrooms", { valueAsNumber: true })}
+              />
               {form.formState.errors.bathrooms?.message ? (
                 <p className="text-xs text-red-600 dark:text-red-400">
                   {form.formState.errors.bathrooms.message}
@@ -198,7 +210,7 @@ export function AddPropertyDialog() {
                 type="number"
                 min={0}
                 step="1"
-                {...form.register("monthlyRent")}
+                {...form.register("monthlyRent", { valueAsNumber: true })}
               />
               {form.formState.errors.monthlyRent?.message ? (
                 <p className="text-xs text-red-600 dark:text-red-400">

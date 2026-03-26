@@ -18,6 +18,7 @@ import {
   Building2,
   CircleDollarSign,
   CommandIcon,
+  Key,
   FileText,
   LayoutDashboard,
   LogOut,
@@ -28,6 +29,7 @@ import {
 } from "lucide-react"
 
 import { createClient } from "@/lib/supabase/client"
+import { useSubscriptionPlan } from "@/components/subscription-plan-provider"
 
 const data = {
   navMain: [
@@ -47,8 +49,13 @@ const data = {
       icon: <Users />,
     },
     {
+      title: "Tenancies",
+      url: "/dashboard/tenancies",
+      icon: <Key />,
+    },
+    {
       title: "Rent Tracker",
-      url: "/dashboard/rent",
+      url: "/dashboard/rent-tracker",
       icon: <CircleDollarSign />,
     },
     {
@@ -86,6 +93,21 @@ export function AppSidebar({
   userEmail?: string | null
 }) {
   const router = useRouter()
+  const plan = useSubscriptionPlan()
+
+  const planLabel =
+    plan === "landlord_pro"
+      ? "Landlord Pro"
+      : plan === "pro"
+        ? "Pro"
+        : plan === "starter"
+          ? "Starter"
+          : null
+
+  const planClass =
+    plan === "pro" || plan === "landlord_pro"
+      ? "border border-violet-500/40 bg-violet-500/15 text-violet-200"
+      : "border border-zinc-700 bg-zinc-800/70 text-zinc-200"
 
   async function onLogout() {
     const supabase = createClient()
@@ -106,6 +128,11 @@ export function AppSidebar({
               <a href="/dashboard">
                 <CommandIcon className="size-5!" />
                 <span className="text-base font-semibold">Letora</span>
+                {planLabel ? (
+                  <span className={`ml-2 rounded-full px-2 py-0.5 text-xs font-medium ${planClass}`}>
+                    {planLabel}
+                  </span>
+                ) : null}
               </a>
             </SidebarMenuButton>
           </SidebarMenuItem>

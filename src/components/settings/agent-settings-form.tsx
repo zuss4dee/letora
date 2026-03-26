@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
 import {
@@ -47,7 +47,7 @@ export function AgentSettingsForm({
 }) {
   const router = useRouter();
   const form = useForm<UserSettingsInput>({
-    resolver: zodResolver(userSettingsSchema),
+    resolver: zodResolver(userSettingsSchema) as Resolver<UserSettingsInput>,
     defaultValues: initialValues,
   });
   const [templates, setTemplates] = useState<ContractTemplateRow[]>([]);
@@ -236,7 +236,13 @@ export function AgentSettingsForm({
         <CardContent className="grid gap-4 pt-4">
           <div className="grid gap-2">
             <Label htmlFor="minLeadScore">Minimum acceptable lead score to auto-qualify</Label>
-            <Input id="minLeadScore" type="number" min={1} max={100} {...form.register("minLeadScore")} />
+            <Input
+              id="minLeadScore"
+              type="number"
+              min={1}
+              max={100}
+              {...form.register("minLeadScore", { valueAsNumber: true })}
+            />
           </div>
           <div className="grid gap-2">
             <Label>Preferred tenant sources</Label>

@@ -40,7 +40,9 @@ export async function getLeads(userId: string): Promise<LeadBuckets> {
     name: row.full_name ?? null,
     email: row.email ?? null,
     phone: row.phone ?? null,
-    propertyInterestedIn: row.properties?.address ?? null,
+    propertyInterestedIn: Array.isArray(row.properties)
+      ? (row.properties[0] as { address?: string } | undefined)?.address ?? null
+      : (row.properties as { address?: string } | null)?.address ?? null,
     moveInDate: row.move_in_date ?? null,
     source: row.source ?? null,
     status: row.status ?? null,

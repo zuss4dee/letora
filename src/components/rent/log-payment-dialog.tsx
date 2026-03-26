@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 
 import { logPayment } from "@/lib/actions/tenancies";
 import { type LogPaymentInput, logPaymentSchema } from "@/lib/validations/tenancy";
@@ -61,7 +61,7 @@ export function LogPaymentDialog({
   );
 
   const form = useForm<LogPaymentInput>({
-    resolver: zodResolver(logPaymentSchema),
+    resolver: zodResolver(logPaymentSchema) as Resolver<LogPaymentInput>,
     defaultValues,
     mode: "onSubmit",
   });
@@ -96,7 +96,13 @@ export function LogPaymentDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-2">
               <Label htmlFor="amountPaid">Amount paid (£)</Label>
-              <Input id="amountPaid" type="number" min={0} step="1" {...form.register("amountPaid")} />
+              <Input
+                id="amountPaid"
+                type="number"
+                min={0}
+                step="1"
+                {...form.register("amountPaid", { valueAsNumber: true })}
+              />
               {form.formState.errors.amountPaid?.message ? (
                 <p className="text-xs text-red-600 dark:text-red-400">
                   {form.formState.errors.amountPaid.message}

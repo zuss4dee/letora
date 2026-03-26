@@ -104,11 +104,13 @@ export default async function DashboardPage() {
 
   if (userId) {
     const today = new Date().toISOString().slice(0, 10);
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    const monthStartIso = startOfMonth.toISOString().slice(0, 10);
     const [
       propertiesCountRes,
       tenantsCountRes,
-      monthlyRentRes,
-      overdueRes,
+      paymentsRes,
       activityRes,
       propertiesRes,
     ] = await Promise.all([
@@ -118,14 +120,9 @@ export default async function DashboardPage() {
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId),
       supabase
-        .from("tenancies")
-        .select("monthly_rent,properties!inner(user_id)")
-        .eq("status", "active")
-        .eq("properties.user_id", userId),
-      supabase
         .from("rent_payments")
-        .select("id,status,due_date,tenancies!inner(properties!inner(user_id))")
-        .eq("tenancies.properties.user_id", userId),
+        .select("id,status,due_date,amount,paid_date")
+        .eq("user_id", userId),
       supabase
         .from("agent_actions")
         .select("id,agent_type,status,created_at")
@@ -141,12 +138,17 @@ export default async function DashboardPage() {
 
     totalProperties = propertiesCountRes.count ?? 0;
     activeTenants = tenantsCountRes.count ?? 0;
-    monthlyRent = (monthlyRentRes.data ?? []).reduce((sum, row) => {
-      const amount =
-        typeof row.monthly_rent === "number" ? row.monthly_rent : Number(row.monthly_rent ?? 0);
-      return sum + (Number.isFinite(amount) ? amount : 0);
-    }, 0);
-    overduePayments = (overdueRes.data ?? []).filter((row) => {
+    monthlyRent = (paymentsRes.data ?? [])
+      .filter((row) => {
+        const status = (row.status ?? "").toLowerCase();
+        return status === "paid" && !!row.paid_date && row.paid_date >= monthStartIso;
+      })
+      .reduce((sum, row) => {
+        const amount =
+          typeof row.amount === "number" ? row.amount : Number(row.amount ?? 0);
+        return sum + (Number.isFinite(amount) ? amount : 0);
+      }, 0);
+    overduePayments = (paymentsRes.data ?? []).filter((row) => {
       const status = (row.status ?? "").toLowerCase();
       return status === "overdue" || (status === "pending" && !!row.due_date && row.due_date < today);
     }).length;

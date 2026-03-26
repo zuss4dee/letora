@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import mammoth from "mammoth";
-import pdfParse from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -41,8 +41,13 @@ async function extractTemplateText(filename: string, bytes: Uint8Array): Promise
     return result.value.trim();
   }
   if (lower.endsWith(".pdf")) {
-    const result = await pdfParse(Buffer.from(bytes));
-    return result.text.trim();
+    const parser = new PDFParse({ data: Buffer.from(bytes) });
+    try {
+      const textResult = await parser.getText();
+      return textResult.text.trim();
+    } finally {
+      await parser.destroy();
+    }
   }
   return new TextDecoder().decode(bytes).trim();
 }

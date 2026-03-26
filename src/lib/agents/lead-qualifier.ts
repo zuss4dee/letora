@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,7 +22,8 @@ type LeadRow = {
   move_in_date: string | null;
   source: string | null;
   notes: string | null;
-  properties: { address: string | null; city: string | null } | null;
+  /** Supabase may type this as a one-element array for FK joins. */
+  properties: { address: string | null; city: string | null } | { address: string | null; city: string | null }[] | null;
 };
 
 function parseRecommendation(value: string | undefined): "qualify" | "reject" {
@@ -83,10 +85,11 @@ export async function runLeadQualifierAgent(userId: string): Promise<LeadQualifi
 
   const results: LeadQualifierResult[] = [];
   for (const lead of data as LeadRow[]) {
+    const prop = Array.isArray(lead.properties) ? lead.properties[0] : lead.properties;
     const fullName = lead.full_name ?? "Unknown";
     const email = lead.email ?? "";
-    const address = lead.properties?.address ?? "Unknown property";
-    const city = lead.properties?.city;
+    const address = prop?.address ?? "Unknown property";
+    const city = prop?.city;
     const propertyInterested = city ? `${address}, ${city}` : address;
     const source = lead.source ?? "Unknown";
 
@@ -115,6 +118,18 @@ export async function runLeadQualifierAgent(userId: string): Promise<LeadQualifi
 
     if (insertError || !action) continue;
 
+    // Move lead into the correct bucket on /dashboard/leads (qualified vs rejected).
+    const nextStatus: "qualified" | "rejected" =
+      analysis.recommendation === "qualify" ? "qualified" : "rejected";
+    await supabase
+      .from("leads")
+      .update({
+        status: nextStatus,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", lead.id)
+      .eq("user_id", userId);
+
     results.push({
       leadId: lead.id,
       fullName,
@@ -126,6 +141,10 @@ export async function runLeadQualifierAgent(userId: string): Promise<LeadQualifi
       reasoning: analysis.reasoning,
       actionId: action.id,
     });
+  }
+
+  if (results.length > 0) {
+    revalidatePath("/dashboard/leads");
   }
 
   return results;

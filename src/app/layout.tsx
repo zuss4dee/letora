@@ -27,7 +27,7 @@ export default function RootLayout({
       style={{ colorScheme: "dark" }}
       className={`${inter.className} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           {children}
           <Toaster richColors />
