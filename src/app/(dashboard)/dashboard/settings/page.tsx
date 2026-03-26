@@ -23,6 +23,10 @@
  * );
  * ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
  * CREATE POLICY "Users manage own settings" ON user_settings FOR ALL USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+ *
+ * -- Storage bucket setup:
+ * -- create bucket "contract-templates" (private)
+ * -- add storage.objects RLS policies so users can manage only files under "contract-templates/{auth.uid()}/..."
  */
 
 import { AgentSettingsForm } from "@/components/settings/agent-settings-form";
@@ -84,7 +88,7 @@ export default async function AgentSettingsPage() {
                   </p>
                 </div>
                 <div className="px-4 lg:px-6">
-                  <AgentSettingsForm initialValues={initialValues} />
+                  <AgentSettingsForm initialValues={initialValues} userId={user?.id ?? ""} />
                 </div>
               </div>
             </div>

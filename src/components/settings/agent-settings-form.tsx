@@ -2,9 +2,17 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 
+import {
+  deleteContractTemplate,
+  getContractTemplates,
+  setDefaultTemplate,
+  uploadContractTemplate,
+  type ContractTemplateRow,
+} from "@/lib/actions/contract-templates";
 import { saveSettings } from "@/lib/actions/user-settings";
 import { type UserSettingsInput, userSettingsSchema } from "@/lib/validations/user-settings";
 
@@ -30,14 +38,38 @@ const sourceOptions: Array<UserSettingsInput["preferredSources"][number]> = [
   "Direct",
 ];
 
-export function AgentSettingsForm({ initialValues }: { initialValues: UserSettingsInput }) {
+export function AgentSettingsForm({
+  initialValues,
+  userId,
+}: {
+  initialValues: UserSettingsInput;
+  userId: string;
+}) {
   const router = useRouter();
   const form = useForm<UserSettingsInput>({
     resolver: zodResolver(userSettingsSchema),
     defaultValues: initialValues,
   });
+  const [templates, setTemplates] = useState<ContractTemplateRow[]>([]);
+  const [templatesLoading, setTemplatesLoading] = useState(false);
+  const [templatesEnabled, setTemplatesEnabled] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
   const isSubmitting = form.formState.isSubmitting;
+
+  async function loadTemplates() {
+    if (!userId) return;
+    setTemplatesLoading(true);
+    const rows = await getContractTemplates(userId);
+    setTemplates(rows);
+    setTemplatesEnabled(rows.length > 0);
+    setTemplatesLoading(false);
+  }
+
+  useEffect(() => {
+    void loadTemplates();
+  }, [userId]);
 
   function toggleSource(source: UserSettingsInput["preferredSources"][number], checked: boolean) {
     const current = form.getValues("preferredSources");
@@ -53,6 +85,45 @@ export function AgentSettingsForm({ initialValues }: { initialValues: UserSettin
     }
     toast.success("Settings saved successfully.");
     router.refresh();
+  }
+
+  async function onUploadTemplate(file: File | null) {
+    if (!file || !userId) return;
+    const fd = new FormData();
+    fd.append("file", file);
+    setUploading(true);
+    const result = await uploadContractTemplate(fd, userId);
+    setUploading(false);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Template uploaded.");
+    await loadTemplates();
+  }
+
+  async function onSetDefault(templateId: string) {
+    setActionLoadingId(templateId);
+    const result = await setDefaultTemplate(templateId, userId);
+    setActionLoadingId(null);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Default template updated.");
+    await loadTemplates();
+  }
+
+  async function onDelete(templateId: string) {
+    setActionLoadingId(templateId);
+    const result = await deleteContractTemplate(templateId);
+    setActionLoadingId(null);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Template deleted.");
+    await loadTemplates();
   }
 
   return (
@@ -198,6 +269,91 @@ export function AgentSettingsForm({ initialValues }: { initialValues: UserSettin
           <div className="grid gap-2">
             <Label htmlFor="leadQualifierCriteria">Custom qualification criteria</Label>
             <Textarea id="leadQualifierCriteria" {...form.register("leadQualifierCriteria")} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle>Contract Templates</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Upload your own contract templates. The AI will use these as a base instead of
+            generating from scratch.
+          </p>
+        </CardHeader>
+        <CardContent className="grid gap-4 pt-4">
+          <label
+            htmlFor="contract-template-upload"
+            className="flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-zinc-300 bg-zinc-50/60 p-8 text-center transition hover:bg-zinc-100/60 dark:border-zinc-800 dark:bg-zinc-900/30 dark:hover:bg-zinc-900/50"
+          >
+            <span className="text-sm font-medium">Drop a file here or click to upload</span>
+            <span className="mt-1 text-xs text-muted-foreground">Accepted formats: .pdf, .docx</span>
+            <input
+              id="contract-template-upload"
+              type="file"
+              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              className="hidden"
+              onChange={(e) => void onUploadTemplate(e.target.files?.[0] ?? null)}
+              disabled={uploading}
+            />
+          </label>
+
+          <div className="flex items-center gap-3 rounded-md border border-border p-3">
+            <Checkbox
+              id="use-template-base"
+              checked={templatesEnabled}
+              onCheckedChange={(checked) => setTemplatesEnabled(checked === true)}
+            />
+            <Label htmlFor="use-template-base">Use my template as base for AI drafting</Label>
+          </div>
+
+          {uploading ? <p className="text-sm text-muted-foreground">Uploading template...</p> : null}
+          {templatesLoading ? <p className="text-sm text-muted-foreground">Loading templates...</p> : null}
+
+          <div className="grid gap-2">
+            {templates.length === 0 ? (
+              <div className="rounded-md border border-border p-4 text-sm text-muted-foreground">
+                No templates uploaded yet.
+              </div>
+            ) : (
+              templates.map((template) => (
+                <div
+                  key={template.id}
+                  className="flex flex-col gap-3 rounded-md border border-border p-3 md:flex-row md:items-center md:justify-between"
+                >
+                  <div>
+                    <div className="text-sm font-medium">{template.filename}</div>
+                    <div className="text-xs text-muted-foreground">
+                      Uploaded{" "}
+                      {template.createdAt
+                        ? new Date(template.createdAt).toLocaleDateString("en-GB")
+                        : "—"}
+                      {template.isDefault ? " • Default" : ""}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={template.isDefault || actionLoadingId === template.id}
+                      onClick={() => void onSetDefault(template.id)}
+                    >
+                      Set as Default
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={actionLoadingId === template.id}
+                      onClick={() => void onDelete(template.id)}
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
