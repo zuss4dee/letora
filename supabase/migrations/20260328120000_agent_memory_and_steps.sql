@@ -12,19 +12,11 @@ create table if not exists public.user_agent_memory (
 
 alter table public.user_agent_memory enable row level security;
 
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'user_agent_memory' and policyname = 'Users manage own agent memory'
-  ) then
-    create policy "Users manage own agent memory"
-      on public.user_agent_memory
-      for all
-      using (auth.uid() = user_id);
-  end if;
-end
-$$;
+drop policy if exists "Users manage own agent memory" on public.user_agent_memory;
+create policy "Users manage own agent memory"
+  on public.user_agent_memory
+  for all
+  using (auth.uid() = user_id);
 
 -- OTA / pipeline step audit
 create table if not exists public.agent_run_steps (
@@ -43,19 +35,11 @@ create index if not exists agent_run_steps_user_created_idx
 
 alter table public.agent_run_steps enable row level security;
 
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'agent_run_steps' and policyname = 'Users manage own agent run steps'
-  ) then
-    create policy "Users manage own agent run steps"
-      on public.agent_run_steps
-      for all
-      using (auth.uid() = user_id);
-  end if;
-end
-$$;
+drop policy if exists "Users manage own agent run steps" on public.agent_run_steps;
+create policy "Users manage own agent run steps"
+  on public.agent_run_steps
+  for all
+  using (auth.uid() = user_id);
 
 -- Opt-in transactional auto-send for rent chaser
 alter table public.user_settings

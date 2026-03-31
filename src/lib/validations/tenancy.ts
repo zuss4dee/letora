@@ -6,11 +6,18 @@ const moneyField = z.preprocess((val) => {
   return Number.isNaN(n) ? 0 : n;
 }, z.number().min(0));
 
+const optionalDate = z.preprocess((val) => {
+  if (val === "" || val === null || val === undefined) return undefined;
+  return typeof val === "string" ? val : String(val);
+}, z.string().optional());
+
 export const addTenancySchema = z.object({
   propertyId: z.string().uuid("Select a property"),
   tenantId: z.string().uuid("Select a tenant"),
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().min(1, "End date is required"),
+  /** If empty, onboarding uses `start_date` */
+  moveInDate: optionalDate,
   monthlyRent: moneyField,
   depositAmount: moneyField,
 });
@@ -27,4 +34,15 @@ export const logPaymentSchema = z.object({
 });
 
 export type LogPaymentInput = z.output<typeof logPaymentSchema>;
+
+export const updateTenancySchema = z.object({
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().min(1, "End date is required"),
+  moveInDate: optionalDate,
+  monthlyRent: moneyField,
+  depositAmount: moneyField,
+  status: z.enum(["active", "ended", "pending"]),
+});
+
+export type UpdateTenancyInput = z.output<typeof updateTenancySchema>;
 

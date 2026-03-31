@@ -45,6 +45,7 @@ export function AddTenancyDialog({
       tenantId: tenants[0]?.id ?? "00000000-0000-0000-0000-000000000000",
       startDate: "",
       endDate: "",
+      moveInDate: "",
       monthlyRent: 0,
       depositAmount: 0,
     }),
@@ -164,6 +165,14 @@ export function AddTenancyDialog({
                 </p>
               ) : null}
             </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="moveInDate">Move-in date (optional)</Label>
+            <Input id="moveInDate" type="date" {...form.register("moveInDate")} />
+            <p className="text-xs text-muted-foreground">
+              If left blank, onboarding and reminders use the tenancy start date.
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

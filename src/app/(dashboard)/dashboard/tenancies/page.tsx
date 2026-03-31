@@ -1,3 +1,6 @@
+import Link from "next/link";
+
+import { EditTenancyDialog } from "@/components/tenancies/edit-tenancy-dialog";
 import { AddTenancyDialog } from "@/components/rent/add-tenancy-dialog";
 import { LogPaymentDialog } from "@/components/rent/log-payment-dialog";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -166,13 +169,14 @@ export default async function TenanciesPage() {
                             <TableHead>End Date</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
+                            <TableHead className="w-[100px] text-right">Details</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {tenancies.length === 0 ? (
                             <TableRow>
                               <TableCell
-                                colSpan={7}
+                                colSpan={8}
                                 className="py-10 text-center text-sm text-muted-foreground"
                               >
                                 No tenancies yet. Add your first tenancy to start tracking rent.
@@ -199,6 +203,30 @@ export default async function TenanciesPage() {
                                       defaultAmountPaid={amount}
                                       triggerLabel="Log Payment"
                                     />
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <div className="flex flex-wrap items-center justify-end gap-2">
+                                      {userId ? (
+                                        <EditTenancyDialog
+                                          tenancyId={tenancyId}
+                                          userId={userId}
+                                          initial={{
+                                            startDate: t.startDate,
+                                            endDate: t.endDate,
+                                            moveInDate: t.moveInDate,
+                                            monthlyRent: t.monthlyRent,
+                                            depositAmount: t.depositAmount,
+                                            status: t.status,
+                                          }}
+                                        />
+                                      ) : null}
+                                      <Link
+                                        href={`/dashboard/tenancies/${t.id}`}
+                                        className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+                                      >
+                                        View
+                                      </Link>
+                                    </div>
                                   </TableCell>
                                 </TableRow>
                               );

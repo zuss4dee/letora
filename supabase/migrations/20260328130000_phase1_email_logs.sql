@@ -55,16 +55,8 @@ create index if not exists email_logs_user_status_idx
 
 alter table public.email_logs enable row level security;
 
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'email_logs' and policyname = 'Users manage own email logs'
-  ) then
-    create policy "Users manage own email logs"
-      on public.email_logs
-      for all
-      using (auth.uid() = user_id);
-  end if;
-end
-$$;
+drop policy if exists "Users manage own email logs" on public.email_logs;
+create policy "Users manage own email logs"
+  on public.email_logs
+  for all
+  using (auth.uid() = user_id);

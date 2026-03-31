@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
-import { addTenancySchema, logPaymentSchema } from "@/lib/validations/tenancy";
+import {
+  addTenancySchema,
+  logPaymentSchema,
+  updateTenancySchema,
+} from "@/lib/validations/tenancy";
 
 export type TenancyRow = {
   id: string;
@@ -13,7 +17,9 @@ export type TenancyRow = {
   tenantFullName: string | null;
   startDate: string | null;
   endDate: string | null;
+  moveInDate: string | null;
   monthlyRent: number | null;
+  depositAmount: number | null;
   status: string | null;
 };
 
@@ -53,7 +59,7 @@ export async function getTenancies(userId: string): Promise<TenancyRow[]> {
   const { data, error } = await supabase
     .from("tenancies")
     .select(
-      "id,property_id,tenant_id,start_date,end_date,monthly_rent,status,properties!inner(address,user_id),tenant_profiles(full_name)",
+      "id,property_id,tenant_id,start_date,end_date,move_in_date,monthly_rent,deposit_amount,status,properties!inner(address,user_id),tenant_profiles(full_name)",
     )
     .eq("properties.user_id", userId)
     .order("created_at", { ascending: false });
@@ -71,15 +77,81 @@ export async function getTenancies(userId: string): Promise<TenancyRow[]> {
     tenantFullName: tenant?.full_name ?? null,
     startDate: row.start_date ?? null,
     endDate: row.end_date ?? null,
+    moveInDate: row.move_in_date ?? null,
     monthlyRent:
       row.monthly_rent == null
         ? null
         : typeof row.monthly_rent === "number"
           ? row.monthly_rent
           : Number(row.monthly_rent),
+    depositAmount:
+      row.deposit_amount == null
+        ? null
+        : typeof row.deposit_amount === "number"
+          ? row.deposit_amount
+          : Number(row.deposit_amount),
     status: row.status ?? null,
   };
   });
+}
+
+export async function updateTenancy(
+  tenancyId: string,
+  data: unknown,
+  userId: string,
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user || user.id !== userId) {
+    return { success: false, error: "Not authenticated" };
+  }
+
+  const parsed = updateTenancySchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: "Invalid form data" };
+  }
+
+  const values = parsed.data;
+
+  const { data: row, error: fetchError } = await supabase
+    .from("tenancies")
+    .select("id, properties!inner ( user_id )")
+    .eq("id", tenancyId)
+    .maybeSingle();
+
+  if (fetchError || !row) {
+    return { success: false, error: "Tenancy not found" };
+  }
+
+  const property = Array.isArray(row.properties) ? row.properties[0] : row.properties;
+  const ownerId = property?.user_id as string | undefined;
+  if (!ownerId || ownerId !== user.id) {
+    return { success: false, error: "Not found" };
+  }
+
+  const { error: updateError } = await supabase
+    .from("tenancies")
+    .update({
+      start_date: values.startDate,
+      end_date: values.endDate,
+      move_in_date: values.moveInDate?.trim() ? values.moveInDate : null,
+      monthly_rent: values.monthlyRent,
+      deposit_amount: values.depositAmount,
+      status: values.status,
+    })
+    .eq("id", tenancyId);
+
+  if (updateError) {
+    return { success: false, error: updateError.message };
+  }
+
+  revalidatePath("/dashboard/tenancies");
+  revalidatePath(`/dashboard/tenancies/${tenancyId}`);
+  revalidatePath("/dashboard/rent-tracker");
+  return { success: true };
 }
 
 export async function addTenancy(formData: unknown) {
@@ -101,6 +173,7 @@ export async function addTenancy(formData: unknown) {
     tenant_id: values.tenantId,
     start_date: values.startDate,
     end_date: values.endDate,
+    move_in_date: values.moveInDate?.trim() || null,
     monthly_rent: values.monthlyRent,
     deposit_amount: values.depositAmount,
     status: "active",

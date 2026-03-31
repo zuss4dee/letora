@@ -9,20 +9,8 @@ create table if not exists public.agent_runs (
 
 alter table public.agent_runs enable row level security;
 
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_policies
-    where schemaname = 'public'
-      and tablename = 'agent_runs'
-      and policyname = 'Users can manage own agent runs'
-  ) then
-    create policy "Users can manage own agent runs"
-      on public.agent_runs
-      for all
-      using (auth.uid() = user_id);
-  end if;
-end
-$$;
-
+drop policy if exists "Users can manage own agent runs" on public.agent_runs;
+create policy "Users can manage own agent runs"
+  on public.agent_runs
+  for all
+  using (auth.uid() = user_id);

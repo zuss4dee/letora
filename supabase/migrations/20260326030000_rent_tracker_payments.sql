@@ -25,56 +25,23 @@ alter table public.rent_payments add column if not exists created_at timestamptz
 
 alter table public.rent_payments enable row level security;
 
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'rent_payments' and policyname = 'rent_payments_select_own'
-  ) then
-    create policy "rent_payments_select_own"
-    on public.rent_payments for select
-    using (user_id = auth.uid());
-  end if;
-end
-$$;
+drop policy if exists "rent_payments_select_own" on public.rent_payments;
+create policy "rent_payments_select_own"
+on public.rent_payments for select
+using (user_id = auth.uid());
 
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'rent_payments' and policyname = 'rent_payments_insert_own'
-  ) then
-    create policy "rent_payments_insert_own"
-    on public.rent_payments for insert
-    with check (user_id = auth.uid());
-  end if;
-end
-$$;
+drop policy if exists "rent_payments_insert_own" on public.rent_payments;
+create policy "rent_payments_insert_own"
+on public.rent_payments for insert
+with check (user_id = auth.uid());
 
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'rent_payments' and policyname = 'rent_payments_update_own'
-  ) then
-    create policy "rent_payments_update_own"
-    on public.rent_payments for update
-    using (user_id = auth.uid())
-    with check (user_id = auth.uid());
-  end if;
-end
-$$;
+drop policy if exists "rent_payments_update_own" on public.rent_payments;
+create policy "rent_payments_update_own"
+on public.rent_payments for update
+using (user_id = auth.uid())
+with check (user_id = auth.uid());
 
-do $$
-begin
-  if not exists (
-    select 1 from pg_policies
-    where schemaname = 'public' and tablename = 'rent_payments' and policyname = 'rent_payments_delete_own'
-  ) then
-    create policy "rent_payments_delete_own"
-    on public.rent_payments for delete
-    using (user_id = auth.uid());
-  end if;
-end
-$$;
-
+drop policy if exists "rent_payments_delete_own" on public.rent_payments;
+create policy "rent_payments_delete_own"
+on public.rent_payments for delete
+using (user_id = auth.uid());

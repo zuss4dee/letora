@@ -9,6 +9,7 @@ create table if not exists public.contract_templates (
 
 alter table public.contract_templates enable row level security;
 
+drop policy if exists "Users manage own templates" on public.contract_templates;
 create policy "Users manage own templates"
 on public.contract_templates
 for all

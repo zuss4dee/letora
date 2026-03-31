@@ -105,78 +105,95 @@ alter table public.leads enable row level security;
 alter table public.agent_activity_log enable row level security;
 
 -- properties (direct ownership via user_id)
+drop policy if exists "properties_select_own" on public.properties;
 create policy "properties_select_own"
 on public.properties for select
 using (user_id = auth.uid());
 
+drop policy if exists "properties_insert_own" on public.properties;
 create policy "properties_insert_own"
 on public.properties for insert
 with check (user_id = auth.uid());
 
+drop policy if exists "properties_update_own" on public.properties;
 create policy "properties_update_own"
 on public.properties for update
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
 
+drop policy if exists "properties_delete_own" on public.properties;
 create policy "properties_delete_own"
 on public.properties for delete
 using (user_id = auth.uid());
 
 -- tenant_profiles (direct ownership via user_id)
+drop policy if exists "tenant_profiles_select_own" on public.tenant_profiles;
 create policy "tenant_profiles_select_own"
 on public.tenant_profiles for select
 using (user_id = auth.uid());
 
+drop policy if exists "tenant_profiles_insert_own" on public.tenant_profiles;
 create policy "tenant_profiles_insert_own"
 on public.tenant_profiles for insert
 with check (user_id = auth.uid());
 
+drop policy if exists "tenant_profiles_update_own" on public.tenant_profiles;
 create policy "tenant_profiles_update_own"
 on public.tenant_profiles for update
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
 
+drop policy if exists "tenant_profiles_delete_own" on public.tenant_profiles;
 create policy "tenant_profiles_delete_own"
 on public.tenant_profiles for delete
 using (user_id = auth.uid());
 
 -- leads (direct ownership via user_id)
+drop policy if exists "leads_select_own" on public.leads;
 create policy "leads_select_own"
 on public.leads for select
 using (user_id = auth.uid());
 
+drop policy if exists "leads_insert_own" on public.leads;
 create policy "leads_insert_own"
 on public.leads for insert
 with check (user_id = auth.uid());
 
+drop policy if exists "leads_update_own" on public.leads;
 create policy "leads_update_own"
 on public.leads for update
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
 
+drop policy if exists "leads_delete_own" on public.leads;
 create policy "leads_delete_own"
 on public.leads for delete
 using (user_id = auth.uid());
 
 -- agent_activity_log (direct ownership via user_id)
+drop policy if exists "agent_activity_log_select_own" on public.agent_activity_log;
 create policy "agent_activity_log_select_own"
 on public.agent_activity_log for select
 using (user_id = auth.uid());
 
+drop policy if exists "agent_activity_log_insert_own" on public.agent_activity_log;
 create policy "agent_activity_log_insert_own"
 on public.agent_activity_log for insert
 with check (user_id = auth.uid());
 
+drop policy if exists "agent_activity_log_update_own" on public.agent_activity_log;
 create policy "agent_activity_log_update_own"
 on public.agent_activity_log for update
 using (user_id = auth.uid())
 with check (user_id = auth.uid());
 
+drop policy if exists "agent_activity_log_delete_own" on public.agent_activity_log;
 create policy "agent_activity_log_delete_own"
 on public.agent_activity_log for delete
 using (user_id = auth.uid());
 
 -- tenancies (ownership via property -> properties.user_id)
+drop policy if exists "tenancies_select_own" on public.tenancies;
 create policy "tenancies_select_own"
 on public.tenancies for select
 using (
@@ -188,6 +205,7 @@ using (
   )
 );
 
+drop policy if exists "tenancies_insert_own" on public.tenancies;
 create policy "tenancies_insert_own"
 on public.tenancies for insert
 with check (
@@ -205,6 +223,7 @@ with check (
   )
 );
 
+drop policy if exists "tenancies_update_own" on public.tenancies;
 create policy "tenancies_update_own"
 on public.tenancies for update
 using (
@@ -230,6 +249,7 @@ with check (
   )
 );
 
+drop policy if exists "tenancies_delete_own" on public.tenancies;
 create policy "tenancies_delete_own"
 on public.tenancies for delete
 using (
@@ -241,7 +261,13 @@ using (
   )
 );
 
+-- If `rent_payments` already existed from another migration (e.g. rent-tracker) without
+-- `tenancy_id`, add it so the tenancy-scoped policies below are valid.
+alter table public.rent_payments
+  add column if not exists tenancy_id uuid references public.tenancies (id);
+
 -- rent_payments (ownership via tenancy -> property -> properties.user_id)
+drop policy if exists "rent_payments_select_own" on public.rent_payments;
 create policy "rent_payments_select_own"
 on public.rent_payments for select
 using (
@@ -254,6 +280,7 @@ using (
   )
 );
 
+drop policy if exists "rent_payments_insert_own" on public.rent_payments;
 create policy "rent_payments_insert_own"
 on public.rent_payments for insert
 with check (
@@ -266,6 +293,7 @@ with check (
   )
 );
 
+drop policy if exists "rent_payments_update_own" on public.rent_payments;
 create policy "rent_payments_update_own"
 on public.rent_payments for update
 using (
@@ -287,6 +315,7 @@ with check (
   )
 );
 
+drop policy if exists "rent_payments_delete_own" on public.rent_payments;
 create policy "rent_payments_delete_own"
 on public.rent_payments for delete
 using (
@@ -299,7 +328,11 @@ using (
   )
 );
 
+alter table public.maintenance_requests
+  add column if not exists tenancy_id uuid references public.tenancies (id);
+
 -- maintenance_requests (ownership via tenancy -> property -> properties.user_id)
+drop policy if exists "maintenance_requests_select_own" on public.maintenance_requests;
 create policy "maintenance_requests_select_own"
 on public.maintenance_requests for select
 using (
@@ -312,6 +345,7 @@ using (
   )
 );
 
+drop policy if exists "maintenance_requests_insert_own" on public.maintenance_requests;
 create policy "maintenance_requests_insert_own"
 on public.maintenance_requests for insert
 with check (
@@ -324,6 +358,7 @@ with check (
   )
 );
 
+drop policy if exists "maintenance_requests_update_own" on public.maintenance_requests;
 create policy "maintenance_requests_update_own"
 on public.maintenance_requests for update
 using (
@@ -345,6 +380,7 @@ with check (
   )
 );
 
+drop policy if exists "maintenance_requests_delete_own" on public.maintenance_requests;
 create policy "maintenance_requests_delete_own"
 on public.maintenance_requests for delete
 using (

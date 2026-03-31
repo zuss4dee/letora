@@ -9,6 +9,7 @@ create table if not exists public.agent_actions (
 
 alter table public.agent_actions enable row level security;
 
+drop policy if exists "Users can manage their own agent actions" on public.agent_actions;
 create policy "Users can manage their own agent actions"
 on public.agent_actions
 for all
