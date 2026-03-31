@@ -23,9 +23,14 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
 
   if (error || !data) return null;
 
-  const rawTone = data.rent_chaser_tone ?? "professional_firm";
+  const rawTone = (data.rent_chaser_tone ?? "professional_firm") as string;
+  /** Map legacy `friendly_reminder` to `friendly_polite` so the tone Select matches options. */
+  const mapped =
+    rawTone === "friendly_reminder" ? "friendly_polite" : (rawTone as UserSettingsInput["rentChaserTone"]);
   const rentChaserTone: UserSettingsInput["rentChaserTone"] =
-    rawTone === "friendly_polite" ? "friendly_reminder" : (rawTone as UserSettingsInput["rentChaserTone"]);
+    mapped === "professional_firm" || mapped === "friendly_polite" || mapped === "formal_legal"
+      ? mapped
+      : "professional_firm";
 
   return {
     id: data.id,
@@ -35,12 +40,7 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
     contactPhone: data.contact_phone ?? "",
     contactEmail: data.contact_email ?? "",
     businessAddress: data.business_address ?? "",
-    rentChaserTone:
-      rentChaserTone === "professional_firm" ||
-      rentChaserTone === "friendly_reminder" ||
-      rentChaserTone === "formal_legal"
-        ? rentChaserTone
-        : "professional_firm",
+    rentChaserTone,
     firstChaseDays: data.first_chase_days ?? 3,
     emailSignoff: data.email_signoff ?? "",
     includePaymentPlan: data.include_payment_plan ?? true,
@@ -66,7 +66,16 @@ export async function saveSettings(formData: unknown) {
   if (!user) return { ok: false as const, error: "Not authenticated" };
 
   const parsed = userSettingsSchema.safeParse(formData);
-  if (!parsed.success) return { ok: false as const, error: "Invalid settings data" };
+  if (!parsed.success) {
+    const first = parsed.error.flatten().fieldErrors;
+    const msg =
+      Object.values(first)
+        .flat()
+        .filter(Boolean)[0] ??
+      parsed.error.issues[0]?.message ??
+      "Invalid settings data";
+    return { ok: false as const, error: msg };
+  }
 
   const values = parsed.data;
 
@@ -101,10 +110,5 @@ export async function saveSettings(formData: unknown) {
 
   revalidatePath("/dashboard/settings");
   return { ok: true as const };
-}
-
-/** Alias for `saveSettings` — same behaviour (upsert user_settings). */
-export async function saveUserSettings(formData: unknown) {
-  return saveSettings(formData);
 }
 

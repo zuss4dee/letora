@@ -16,10 +16,16 @@ export const userSettingsSchema = z.object({
   contactPhone: z.string().optional(),
   contactEmail: z.string().email("Enter a valid email").or(z.literal("")),
   businessAddress: z.string().optional(),
-  rentChaserTone: z.enum(["professional_firm", "friendly_reminder", "formal_legal"]),
-  firstChaseDays: preprocessInt(3, 1, 30),
+  /** Legacy DB value `friendly_reminder` is accepted; UI may use `friendly_polite`. */
+  rentChaserTone: z.enum([
+    "professional_firm",
+    "friendly_polite",
+    "friendly_reminder",
+    "formal_legal",
+  ]),
+  firstChaseDays: preprocessInt(3, 1),
   emailSignoff: z.string().optional(),
-  includePaymentPlan: z.boolean(),
+  includePaymentPlan: z.boolean().default(true),
   /** Display name for Resend From header (platform address from env). */
   emailFromName: z.string().optional(),
   autoSendRentChaser: z.boolean().default(false),
@@ -27,9 +33,10 @@ export const userSettingsSchema = z.object({
   autoSendOnboardingEmails: z.boolean().default(false),
   autoSendLeadUpdates: z.boolean().default(false),
   rentChaserInstructions: z.string().optional(),
-  minLeadScore: preprocessInt(70, 0, 100),
-  preferredSources: z.array(sourceEnum),
-  disqualifyNoMovein: z.boolean(),
+  minLeadScore: preprocessInt(70, 1, 100),
+  /** Server actions may omit empty arrays; default keeps parse resilient. */
+  preferredSources: z.array(sourceEnum).default([]),
+  disqualifyNoMovein: z.boolean().default(false),
   leadQualifierCriteria: z.string().optional(),
 });
 

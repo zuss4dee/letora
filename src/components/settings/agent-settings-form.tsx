@@ -13,14 +13,15 @@ import {
   uploadContractTemplate,
   type ContractTemplateRow,
 } from "@/lib/actions/contract-templates";
-import { saveUserSettings } from "@/lib/actions/user-settings";
+import { saveSettings } from "@/lib/actions/user-settings";
 import { type UserSettingsInput, userSettingsSchema } from "@/lib/validations/user-settings";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -30,6 +31,14 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+
+const sourceOptions: Array<UserSettingsInput["preferredSources"][number]> = [
+  "Rightmove",
+  "Zoopla",
+  "OnTheMarket",
+  "Referral",
+  "Direct",
+];
 
 export function AgentSettingsForm({
   initialValues,
@@ -64,13 +73,19 @@ export function AgentSettingsForm({
     void loadTemplates();
   }, [userId]);
 
+  function toggleSource(source: UserSettingsInput["preferredSources"][number], checked: boolean) {
+    const current = form.getValues("preferredSources");
+    const next = checked ? Array.from(new Set([...current, source])) : current.filter((s) => s !== source);
+    form.setValue("preferredSources", next, { shouldDirty: true, shouldValidate: true });
+  }
+
   async function onSubmit(values: UserSettingsInput) {
-    const result = await saveUserSettings(values);
+    const result = await saveSettings(values);
     if (!result.ok) {
-      toast.error("Failed to save settings");
+      toast.error(result.error);
       return;
     }
-    toast.success("Settings saved");
+    toast.success("Settings saved successfully.");
     router.refresh();
   }
 
@@ -114,279 +129,180 @@ export function AgentSettingsForm({
   }
 
   return (
-    <form className="flex flex-col gap-6" onSubmit={form.handleSubmit(onSubmit)}>
+    <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+      <Tabs defaultValue="agents" className="w-full gap-4">
+        <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto">
+          <TabsTrigger value="agents">Agents</TabsTrigger>
+          <TabsTrigger value="email">Email &amp; Automation</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="agents" className="mt-0 flex flex-col gap-4 outline-none">
       <Card>
         <CardHeader className="border-b">
-          <CardTitle>Business profile</CardTitle>
-          <CardDescription>How your business appears to tenants and in correspondence.</CardDescription>
+          <CardTitle>Business Profile</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 pt-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="businessName">Business name</Label>
-              <Input
-                id="businessName"
-                placeholder="e.g. Manchester Lettings Ltd"
-                {...form.register("businessName")}
-              />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid min-w-0 gap-2">
+              <Label htmlFor="businessName">Business Name</Label>
+              <Input id="businessName" {...form.register("businessName")} />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="landlordName">Landlord / contact name</Label>
-              <Input
-                id="landlordName"
-                placeholder="e.g. Damilare Adeosun"
-                {...form.register("landlordName")}
-              />
+            <div className="grid min-w-0 gap-2">
+              <Label htmlFor="landlordName">Landlord Full Name</Label>
+              <Input id="landlordName" {...form.register("landlordName")} />
             </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="contactEmail">Contact email</Label>
-              <Input
-                id="contactEmail"
-                type="email"
-                placeholder="e.g. you@business.com"
-                {...form.register("contactEmail")}
-              />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid min-w-0 gap-2">
+              <Label htmlFor="contactEmail">Contact Email</Label>
+              <Input id="contactEmail" type="email" {...form.register("contactEmail")} />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="contactPhone">Contact phone</Label>
-              <Input
-                id="contactPhone"
-                placeholder="e.g. 07700 900123"
-                {...form.register("contactPhone")}
-              />
+            <div className="grid min-w-0 gap-2">
+              <Label htmlFor="contactPhone">Contact Phone</Label>
+              <Input id="contactPhone" {...form.register("contactPhone")} />
             </div>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="businessAddress">Business address</Label>
-            <Textarea
-              id="businessAddress"
-              placeholder="e.g. 12 King Street, Manchester"
-              rows={3}
-              {...form.register("businessAddress")}
+            <Label htmlFor="businessAddress">Business Address</Label>
+            <Textarea id="businessAddress" {...form.register("businessAddress")} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle>Rent Chaser Agent Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 pt-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid min-w-0 gap-2">
+              <Label>Communication Tone</Label>
+              <Select
+                value={form.watch("rentChaserTone")}
+                onValueChange={(v) =>
+                  form.setValue("rentChaserTone", v as UserSettingsInput["rentChaserTone"], {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select tone" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="professional_firm">Professional & Firm</SelectItem>
+                  <SelectItem value="friendly_polite">Friendly & Polite</SelectItem>
+                  <SelectItem value="formal_legal">Formal & Legal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid min-w-0 gap-2">
+              <Label>First Chase After</Label>
+              <Select
+                value={String(form.watch("firstChaseDays"))}
+                onValueChange={(v) =>
+                  form.setValue("firstChaseDays", Number(v), { shouldValidate: true, shouldDirty: true })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select interval" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1 day overdue</SelectItem>
+                  <SelectItem value="3">3 days overdue</SelectItem>
+                  <SelectItem value="7">7 days overdue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="emailSignoff">Email Sign-off</Label>
+            <Input id="emailSignoff" {...form.register("emailSignoff")} />
+          </div>
+          <div className="flex items-center justify-between py-3 border-b last:border-0">
+            <div className="min-w-0 flex flex-col gap-0.5">
+              <span className="text-sm font-medium">Include payment plan option</span>
+              <span className="text-sm text-muted-foreground">
+                Offer a structured payment plan when chasing overdue rent.
+              </span>
+            </div>
+            <Switch
+              id="includePaymentPlan"
+              checked={form.watch("includePaymentPlan")}
+              onCheckedChange={(checked) =>
+                form.setValue("includePaymentPlan", checked, { shouldDirty: true })
+              }
             />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="emailFromName">Email from name</Label>
+            <Label htmlFor="rentChaserInstructions">Custom Instructions</Label>
+            <Textarea id="rentChaserInstructions" {...form.register("rentChaserInstructions")} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="border-b">
+          <CardTitle>Lead Qualifier Agent Settings</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 pt-4">
+          <div className="grid gap-2">
+            <Label htmlFor="minLeadScore">Minimum acceptable lead score to auto-qualify</Label>
             <Input
-              id="emailFromName"
-              placeholder="e.g. Damilare at Manchester Lettings"
-              {...form.register("emailFromName")}
+              id="minLeadScore"
+              type="number"
+              min={1}
+              max={100}
+              {...form.register("minLeadScore", { valueAsNumber: true })}
             />
-            <p className="text-xs text-muted-foreground">
-              The name shown in outgoing emails (sender display name).
-            </p>
+          </div>
+          <div className="grid gap-2">
+            <Label>Preferred tenant sources</Label>
+            <div className="grid gap-2 md:grid-cols-2">
+              {sourceOptions.map((source) => {
+                const checked = form.watch("preferredSources").includes(source);
+                return (
+                  <div key={source} className="flex items-center gap-2 rounded-md border border-border p-2">
+                    <Checkbox
+                      id={`source-${source}`}
+                      checked={checked}
+                      onCheckedChange={(value) => toggleSource(source, value === true)}
+                    />
+                    <Label htmlFor={`source-${source}`}>{source}</Label>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div className="flex items-center justify-between py-3 border-b last:border-0">
+            <div className="min-w-0 flex flex-col gap-0.5">
+              <span className="text-sm font-medium">Disqualify leads with no move-in date</span>
+              <span className="text-sm text-muted-foreground">
+                Automatically disqualify when no move-in date is provided.
+              </span>
+            </div>
+            <Switch
+              id="disqualifyNoMovein"
+              checked={form.watch("disqualifyNoMovein")}
+              onCheckedChange={(checked) =>
+                form.setValue("disqualifyNoMovein", checked, { shouldDirty: true })
+              }
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="leadQualifierCriteria">Custom qualification criteria</Label>
+            <Textarea id="leadQualifierCriteria" {...form.register("leadQualifierCriteria")} />
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="border-b">
-          <CardTitle>Auto-send controls</CardTitle>
-          <CardDescription>
-            Choose which agent emails can send automatically without manual review.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 pt-4">
-          <div className="flex flex-row items-center justify-between gap-4 rounded-lg border border-border p-4">
-            <div className="min-w-0 flex-1 space-y-1">
-              <Label htmlFor="autoSendRentChaser" className="text-sm font-medium leading-none">
-                Auto-send rent chaser emails
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Automatically send overdue rent emails without review
-              </p>
-            </div>
-            <Switch
-              id="autoSendRentChaser"
-              checked={form.watch("autoSendRentChaser")}
-              onCheckedChange={(checked) =>
-                form.setValue("autoSendRentChaser", checked, { shouldDirty: true })
-              }
-            />
-          </div>
-          <div className="flex flex-row items-center justify-between gap-4 rounded-lg border border-border p-4">
-            <div className="min-w-0 flex-1 space-y-1">
-              <Label htmlFor="autoSendMaintenanceUpdates" className="text-sm font-medium leading-none">
-                Auto-send maintenance update emails
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Send AI-drafted maintenance updates to tenants and landlord
-              </p>
-            </div>
-            <Switch
-              id="autoSendMaintenanceUpdates"
-              checked={form.watch("autoSendMaintenanceUpdates")}
-              onCheckedChange={(checked) =>
-                form.setValue("autoSendMaintenanceUpdates", checked, { shouldDirty: true })
-              }
-            />
-          </div>
-          <div className="flex flex-row items-center justify-between gap-4 rounded-lg border border-border p-4">
-            <div className="min-w-0 flex-1 space-y-1">
-              <Label htmlFor="autoSendOnboardingEmails" className="text-sm font-medium leading-none">
-                Auto-send tenant onboarding emails
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Automatically send welcome emails to new tenants
-              </p>
-            </div>
-            <Switch
-              id="autoSendOnboardingEmails"
-              checked={form.watch("autoSendOnboardingEmails")}
-              onCheckedChange={(checked) =>
-                form.setValue("autoSendOnboardingEmails", checked, { shouldDirty: true })
-              }
-            />
-          </div>
-          <div className="flex flex-row items-center justify-between gap-4 rounded-lg border border-border p-4">
-            <div className="min-w-0 flex-1 space-y-1">
-              <Label htmlFor="autoSendLeadUpdates" className="text-sm font-medium leading-none">
-                Auto-send lead update emails
-              </Label>
-              <p className="text-sm text-muted-foreground">
-                Send qualification results to new leads automatically
-              </p>
-            </div>
-            <Switch
-              id="autoSendLeadUpdates"
-              checked={form.watch("autoSendLeadUpdates")}
-              onCheckedChange={(checked) =>
-                form.setValue("autoSendLeadUpdates", checked, { shouldDirty: true })
-              }
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>Agent preferences</CardTitle>
-          <CardDescription>Rent chaser and lead qualifier defaults.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-8 pt-4">
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold tracking-tight">Rent chaser</h3>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="grid gap-2">
-                <Label>Tone</Label>
-                <Select
-                  value={form.watch("rentChaserTone")}
-                  onValueChange={(v) =>
-                    form.setValue("rentChaserTone", v as UserSettingsInput["rentChaserTone"], {
-                      shouldValidate: true,
-                      shouldDirty: true,
-                    })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select tone" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="professional_firm">Professional & Firm</SelectItem>
-                    <SelectItem value="friendly_reminder">Friendly Reminder</SelectItem>
-                    <SelectItem value="formal_legal">Formal / Legal Tone</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="firstChaseDays">First chase after (days)</Label>
-                <Input
-                  id="firstChaseDays"
-                  type="number"
-                  min={1}
-                  max={30}
-                  {...form.register("firstChaseDays", { valueAsNumber: true })}
-                />
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="emailSignoff">Email sign-off</Label>
-              <Input
-                id="emailSignoff"
-                placeholder="e.g. Kind regards, Damilare"
-                {...form.register("emailSignoff")}
-              />
-            </div>
-            <div className="flex flex-row items-center justify-between gap-4 rounded-lg border border-border p-4">
-              <div className="min-w-0 flex-1 space-y-1">
-                <Label htmlFor="includePaymentPlan" className="text-sm font-medium leading-none">
-                  Include payment plan option
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Offer a structured payment plan when chasing overdue rent.
-                </p>
-              </div>
-              <Switch
-                id="includePaymentPlan"
-                checked={form.watch("includePaymentPlan")}
-                onCheckedChange={(checked) =>
-                  form.setValue("includePaymentPlan", checked, { shouldDirty: true })
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="rentChaserInstructions">Custom instructions</Label>
-              <Textarea
-                id="rentChaserInstructions"
-                placeholder="e.g. Always mention the bank details in the first email"
-                rows={3}
-                {...form.register("rentChaserInstructions")}
-              />
-              <p className="text-xs text-muted-foreground">Optional. Applied when drafting rent chaser emails.</p>
-            </div>
-          </div>
-
-          <div className="space-y-4 border-t pt-6">
-            <h3 className="text-sm font-semibold tracking-tight">Lead qualifier</h3>
-            <div className="grid gap-2 md:max-w-xs">
-              <Label htmlFor="minLeadScore">Minimum lead score to qualify</Label>
-              <Input
-                id="minLeadScore"
-                type="number"
-                min={0}
-                max={100}
-                {...form.register("minLeadScore", { valueAsNumber: true })}
-              />
-            </div>
-            <div className="flex flex-row items-center justify-between gap-4 rounded-lg border border-border p-4">
-              <div className="min-w-0 flex-1 space-y-1">
-                <Label htmlFor="disqualifyNoMovein" className="text-sm font-medium leading-none">
-                  Disqualify leads with no move-in date
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                  Automatically disqualify when no move-in date is provided.
-                </p>
-              </div>
-              <Switch
-                id="disqualifyNoMovein"
-                checked={form.watch("disqualifyNoMovein")}
-                onCheckedChange={(checked) =>
-                  form.setValue("disqualifyNoMovein", checked, { shouldDirty: true })
-                }
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="leadQualifierCriteria">Custom qualification criteria</Label>
-              <Textarea
-                id="leadQualifierCriteria"
-                placeholder="e.g. Only qualify leads with income over £30,000"
-                rows={3}
-                {...form.register("leadQualifierCriteria")}
-              />
-              <p className="text-xs text-muted-foreground">Optional. Extra rules for the lead qualifier agent.</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>Contract templates</CardTitle>
-          <CardDescription>
-            Upload your own contract templates. The AI can use these as a base instead of generating from scratch.
-          </CardDescription>
+          <CardTitle>Contract Templates</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Upload your own contract templates. The AI will use these as a base instead of
+            generating from scratch.
+          </p>
         </CardHeader>
         <CardContent className="grid gap-4 pt-4">
           <label
@@ -464,12 +380,102 @@ export function AgentSettingsForm({
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="email" className="mt-0 outline-none">
+          <Card>
+            <CardHeader className="border-b">
+              <CardTitle>Email &amp; Automation</CardTitle>
+              <p className="text-sm font-normal text-muted-foreground">
+                Platform email uses your display name with the verified Letora sender address. Turn on
+                auto-send per agent type when you are ready for emails to go out without review.
+              </p>
+            </CardHeader>
+            <CardContent className="grid gap-4 pt-4">
+              <div className="grid gap-2">
+                <Label htmlFor="emailFromName">Display name (From)</Label>
+                <Input
+                  id="emailFromName"
+                  placeholder="e.g. Smith Lettings"
+                  {...form.register("emailFromName")}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Shown as the sender name; the email address is set by the platform.
+                </p>
+              </div>
+              <div className="flex flex-col">
+                <div className="flex items-center justify-between py-3 border-b last:border-0">
+                  <div className="min-w-0 flex flex-col gap-0.5">
+                    <span className="text-sm font-medium">Auto-send rent chaser emails</span>
+                    <span className="text-sm text-muted-foreground">
+                      Automatically send overdue rent emails without review.
+                    </span>
+                  </div>
+                  <Switch
+                    id="autoSendRentChaser"
+                    checked={form.watch("autoSendRentChaser")}
+                    onCheckedChange={(checked) =>
+                      form.setValue("autoSendRentChaser", checked, { shouldDirty: true })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b last:border-0">
+                  <div className="min-w-0 flex flex-col gap-0.5">
+                    <span className="text-sm font-medium">Auto-send maintenance update emails</span>
+                    <span className="text-sm text-muted-foreground">
+                      Send AI-drafted maintenance updates to tenants and landlord.
+                    </span>
+                  </div>
+                  <Switch
+                    id="autoSendMaintenanceUpdates"
+                    checked={form.watch("autoSendMaintenanceUpdates")}
+                    onCheckedChange={(checked) =>
+                      form.setValue("autoSendMaintenanceUpdates", checked, { shouldDirty: true })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b last:border-0">
+                  <div className="min-w-0 flex flex-col gap-0.5">
+                    <span className="text-sm font-medium">Auto-send tenant onboarding emails</span>
+                    <span className="text-sm text-muted-foreground">
+                      Automatically send welcome emails to new tenants.
+                    </span>
+                  </div>
+                  <Switch
+                    id="autoSendOnboardingEmails"
+                    checked={form.watch("autoSendOnboardingEmails")}
+                    onCheckedChange={(checked) =>
+                      form.setValue("autoSendOnboardingEmails", checked, { shouldDirty: true })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between py-3 border-b last:border-0">
+                  <div className="min-w-0 flex flex-col gap-0.5">
+                    <span className="text-sm font-medium">Auto-send lead update emails</span>
+                    <span className="text-sm text-muted-foreground">
+                      Send qualification results to new leads automatically.
+                    </span>
+                  </div>
+                  <Switch
+                    id="autoSendLeadUpdates"
+                    checked={form.watch("autoSendLeadUpdates")}
+                    onCheckedChange={(checked) =>
+                      form.setValue("autoSendLeadUpdates", checked, { shouldDirty: true })
+                    }
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <div className="flex justify-end">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving…" : "Save settings"}
+          {isSubmitting ? "Saving..." : "Save Settings"}
         </Button>
       </div>
     </form>
   );
 }
+
