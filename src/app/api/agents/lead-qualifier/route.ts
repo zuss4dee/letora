@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 import { runLeadQualifierAgent } from "@/lib/agents/lead-qualifier";
@@ -14,6 +15,8 @@ export async function POST() {
   }
 
   const results = await runLeadQualifierAgent(user.id);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/agents");
   return NextResponse.json({ results });
 }
 

@@ -1,6 +1,13 @@
+import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export type AgentStepType = "observe" | "think" | "act" | "complete";
+
+/** When an agent finishes its run (final step), refresh dashboard widgets that read `agent_runs`. */
+export function revalidateAgentActivityViews() {
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/agents");
+}
 
 export async function recordAgentRunStep(
   supabase: SupabaseClient,
@@ -23,5 +30,9 @@ export async function recordAgentRunStep(
   });
   if (error) {
     console.warn("[recordAgentRunStep]", error.message);
+  }
+
+  if (args.stepType === "complete" || args.toolName === "complete") {
+    revalidateAgentActivityViews();
   }
 }

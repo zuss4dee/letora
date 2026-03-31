@@ -99,6 +99,7 @@ export async function sendEmailLogNow(logId: string) {
     .eq("user_id", user.id);
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/agents");
   return { ok: true as const };
 }
 

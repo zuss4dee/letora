@@ -1,8 +1,13 @@
 "use client";
 
-import { FileText, Loader2, Mail, Users } from "lucide-react";
+import { Loader2, Mail, FileText, Users, ExternalLink } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+
+import { saveContractDraft, saveRentChaserDraft } from "@/lib/actions/agents";
+import { sendEmailDraft } from "@/lib/actions/email-drafts";
+import { updateLeadQualifiedStatus } from "@/lib/actions/leads";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,7 +19,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -33,26 +37,16 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 
-const gbp = new Intl.NumberFormat("en-GB", {
-  style: "currency",
-  currency: "GBP",
-  maximumFractionDigits: 0,
-});
-
-function truncate(text: string, limit = 120) {
-  if (text.length <= limit) return text;
-  return `${text.slice(0, limit)}...`;
-}
-
-type AgentResult = {
-  tenantName: string;
-  tenantEmail: string;
-  propertyAddress: string;
-  amountOwed: number;
-  daysOverdue: number;
-  emailSubject: string;
-  emailBody: string;
-  actionId: string;
+type RentDraft = {
+  actionId?: string;
+  tenantName?: string;
+  tenantEmail?: string;
+  propertyAddress?: string;
+  daysOverdue?: number;
+  emailSubject?: string;
+  emailBody?: string;
+  draftId?: string;
+  sent?: boolean;
 };
 
 type LeadQualifierResult = {
@@ -65,6 +59,13 @@ type LeadQualifierResult = {
   recommendation: "qualify" | "reject";
   reasoning: string;
   actionId: string;
+};
+
+type DraftContractOption = {
+  id: string;
+  contract_type: string;
+  tenant_name: string;
+  property_address: string;
 };
 
 type ContractDraftResult = {
@@ -80,64 +81,131 @@ type ContractDraftResult = {
   actionId: string;
 };
 
+const gbp = new Intl.NumberFormat("en-GB", {
+  style: "currency",
+  currency: "GBP",
+  maximumFractionDigits: 0,
+});
+
+function truncate(text: string, max = 140) {
+  if (text.length <= max) return text;
+  return `${text.slice(0, max)}…`;
+}
+
+function scoreBadge(score: number) {
+  if (score <= 40) {
+    return (
+      <Badge className="border border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-500/10 dark:text-red-300">
+        {score}
+      </Badge>
+    );
+  }
+  if (score <= 69) {
+    return (
+      <Badge className="border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/40 dark:bg-amber-500/10 dark:text-amber-300">
+        {score}
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
+      {score}
+    </Badge>
+  );
+}
+
+function recommendationBadge(value: "qualify" | "reject") {
+  if (value === "qualify") {
+    return (
+      <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
+        Qualify
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="border border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-500/10 dark:text-red-300">
+      Reject
+    </Badge>
+  );
+}
+
 export function AgentsClient() {
   const [isRentRunning, setIsRentRunning] = useState(false);
+  const [showRentDialog, setShowRentDialog] = useState(false);
+  const [rentDrafts, setRentDrafts] = useState<RentDraft[]>([]);
+  const [copiedRentIndex, setCopiedRentIndex] = useState<number | null>(null);
+  const [copiedSubjectIndex, setCopiedSubjectIndex] = useState<number | null>(null);
+  const [sendingRentIndex, setSendingRentIndex] = useState<number | null>(null);
+
   const [isLeadRunning, setIsLeadRunning] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [rentResults, setRentResults] = useState<AgentResult[]>([]);
+  const [showLeadDialog, setShowLeadDialog] = useState(false);
   const [leadResults, setLeadResults] = useState<LeadQualifierResult[]>([]);
-  const [contractDrafterLoading, setContractDrafterLoading] = useState(false);
-  const [contractDrafterResult, setContractDrafterResult] = useState<ContractDraftResult | null>(null);
-  const [draftContracts, setDraftContracts] = useState<
-    Array<{
-      id: string;
-      contract_type: string;
-      tenant_name: string;
-      property_address: string;
-    }>
-  >([]);
+  const [leadDetail, setLeadDetail] = useState<LeadQualifierResult | null>(null);
+  const [applyingLeads, setApplyingLeads] = useState(false);
+  const [appliedLeads, setAppliedLeads] = useState<Set<string>>(new Set());
+
+  const [draftContracts, setDraftContracts] = useState<DraftContractOption[]>([]);
   const [selectedContractId, setSelectedContractId] = useState("");
-  const [showContractDialog, setShowContractDialog] = useState(false);
-  const [contractError, setContractError] = useState<string | null>(null);
-  const [showRentDraftsDialog, setShowRentDraftsDialog] = useState(false);
-  const [copiedActionId, setCopiedActionId] = useState<string | null>(null);
+  const [showContractPicker, setShowContractPicker] = useState(false);
+  const [isContractRunning, setIsContractRunning] = useState(false);
+  const [contractResult, setContractResult] = useState<ContractDraftResult | null>(null);
+  const [showContractResult, setShowContractResult] = useState(false);
+  const [copiedContract, setCopiedContract] = useState(false);
+  const [savedContract, setSavedContract] = useState(false);
 
   useEffect(() => {
     fetch("/api/contracts/drafts")
       .then((r) => r.json())
-      .then((data: { contracts?: Array<{ id: string; contract_type: string; tenant_name: string; property_address: string }> }) => {
-        const rows = data.contracts ?? [];
-        setDraftContracts(rows);
-        if (rows[0]?.id) setSelectedContractId(rows[0].id);
+      .then((data: { contracts?: DraftContractOption[] }) => {
+        const list = data.contracts ?? [];
+        setDraftContracts(list);
+        if (list[0]?.id) setSelectedContractId(list[0].id);
+      })
+      .catch(() => {
+        /* ignore */
       });
   }, []);
 
-  async function onRunRentAgent() {
-    console.log("[AgentsClient] Rent Chaser Run Agent clicked");
+  async function onRunRentChaser() {
     setIsRentRunning(true);
-    setError(null);
-    setSuccessMessage(null);
     try {
-      const response = await fetch("/api/agents/rent-chaser", { method: "POST" });
-      const payload = (await response.json()) as { results?: AgentResult[]; error?: string };
-      if (!response.ok) {
-        const message = payload.error ?? "Failed to run rent chaser agent.";
-        setError(message);
-        toast.error(message);
+      const res = await fetch("/api/agents/rent-chaser", { method: "POST" });
+      const data = (await res.json()) as {
+        drafts?: RentDraft[];
+        results?: RentDraft[];
+        error?: string;
+      };
+
+      if (!res.ok) {
+        toast.error(data.error || "Something went wrong");
         return;
       }
 
-      const rows = payload.results ?? [];
-      setRentResults(rows);
-      if (rows.length === 0) {
-        toast.success("All tenants are up to date — no overdue payments found");
-      } else {
-        setShowRentDraftsDialog(true);
+      const nextDrafts = data.drafts ?? data.results ?? [];
+      if (!nextDrafts.length) {
+        toast.success("All tenants are up to date!");
+        return;
       }
+
+      const savedDrafts = await Promise.all(
+        nextDrafts.map(async (d) => {
+          try {
+            const { draftId } = await saveRentChaserDraft({
+              tenantEmail: d.tenantEmail ?? "",
+              tenantName: d.tenantName ?? "",
+              subject: d.emailSubject ?? "",
+              body: d.emailBody ?? "",
+            });
+            return { ...d, draftId };
+          } catch {
+            return d;
+          }
+        }),
+      );
+      setRentDrafts(savedDrafts);
+      setShowRentDialog(true);
     } catch {
-      setError("Failed to run rent chaser agent.");
-      toast.error("Failed to run rent chaser agent.");
+      toast.error("Something went wrong");
     } finally {
       setIsRentRunning(false);
     }
@@ -145,32 +213,45 @@ export function AgentsClient() {
 
   async function onRunLeadQualifier() {
     setIsLeadRunning(true);
-    setError(null);
-    setSuccessMessage(null);
     try {
-      const response = await fetch("/api/agents/lead-qualifier", { method: "POST" });
-      const payload = (await response.json()) as {
-        results?: LeadQualifierResult[];
-        error?: string;
-      };
-      if (!response.ok) {
-        setError(payload.error ?? "Failed to run lead qualifier agent.");
+      const res = await fetch("/api/agents/lead-qualifier", { method: "POST" });
+      const data = (await res.json()) as { results?: LeadQualifierResult[]; error?: string };
+
+      if (!res.ok) {
+        toast.error(data.error || "Failed to run lead qualifier");
         return;
       }
 
-      setLeadResults(payload.results ?? []);
+      const rows = data.results ?? [];
+      if (rows.length === 0) {
+        toast.info("No new leads to qualify");
+        return;
+      }
+
+      setLeadResults(rows);
+      setAppliedLeads(new Set());
+      setShowLeadDialog(true);
     } catch {
-      setError("Failed to run lead qualifier agent.");
+      toast.error("Failed to run lead qualifier");
     } finally {
       setIsLeadRunning(false);
     }
   }
 
-  async function runContractDrafter() {
+  function openContractPicker() {
+    if (draftContracts.length === 0) {
+      toast.info("Create a draft contract first, then run the drafter.");
+      return;
+    }
+    setShowContractPicker(true);
+  }
+
+  async function onGenerateContract() {
     if (!selectedContractId) return;
-    setShowContractDialog(false);
-    setContractDrafterLoading(true);
-    setContractError(null);
+    setShowContractPicker(false);
+    setIsContractRunning(true);
+    setContractResult(null);
+    setSavedContract(false);
     try {
       const res = await fetch("/api/agents/contract-drafter", {
         method: "POST",
@@ -178,404 +259,481 @@ export function AgentsClient() {
         body: JSON.stringify({ contractId: selectedContractId }),
       });
       const data = (await res.json()) as { result?: ContractDraftResult; error?: string };
-      if (!res.ok) throw new Error(data.error ?? "Failed");
-      setContractDrafterResult(data.result ?? null);
-    } catch (e) {
-      setContractError(e instanceof Error ? e.message : "Failed to generate contract");
+
+      if (!res.ok) {
+        toast.error(data.error || "Failed to generate contract");
+        return;
+      }
+
+      if (data.result) {
+        setContractResult(data.result);
+        setShowContractResult(true);
+      }
+    } catch {
+      toast.error("Failed to generate contract");
     } finally {
-      setContractDrafterLoading(false);
+      setIsContractRunning(false);
     }
   }
 
-  async function copyEmail(actionId: string, body: string) {
+  async function onCopyRentBody(body: string, index: number) {
     await navigator.clipboard.writeText(body);
-    setCopiedActionId(actionId);
-    setTimeout(() => setCopiedActionId(null), 1200);
+    setCopiedRentIndex(index);
+    setTimeout(() => setCopiedRentIndex(null), 1200);
   }
 
-  function scoreBadge(score: number) {
-    if (score <= 40) {
-      return (
-        <Badge className="border border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-500/10 dark:text-red-300">
-          {score}
-        </Badge>
-      );
-    }
-    if (score <= 69) {
-      return (
-        <Badge className="border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/40 dark:bg-amber-500/10 dark:text-amber-300">
-          {score}
-        </Badge>
-      );
-    }
-    return (
-      <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
-        {score}
-      </Badge>
-    );
+  async function onCopyRentSubject(subject: string, index: number) {
+    await navigator.clipboard.writeText(subject);
+    setCopiedSubjectIndex(index);
+    setTimeout(() => setCopiedSubjectIndex(null), 1200);
   }
 
-  function recommendationBadge(value: "qualify" | "reject") {
-    if (value === "qualify") {
-      return (
-        <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
-          Qualify
-        </Badge>
+  async function onCopyContractText() {
+    if (!contractResult?.contractText) return;
+    await navigator.clipboard.writeText(contractResult.contractText);
+    setCopiedContract(true);
+    setTimeout(() => setCopiedContract(false), 1200);
+  }
+
+  async function onSendRentDraft(draftId: string, index: number) {
+    setSendingRentIndex(index);
+    try {
+      await sendEmailDraft(draftId);
+      setRentDrafts((prev) =>
+        prev.map((d, i) => (i === index ? { ...d, sent: true } : d)),
       );
+    } catch {
+      toast.error("Failed to send");
+    } finally {
+      setSendingRentIndex(null);
     }
-    return (
-      <Badge className="border border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-500/10 dark:text-red-300">
-        Reject
-      </Badge>
-    );
+  }
+
+  async function onApplyLead(row: LeadQualifierResult) {
+    try {
+      await updateLeadQualifiedStatus(
+        row.leadId,
+        row.recommendation === "qualify" ? "qualified" : "disqualified",
+      );
+      setAppliedLeads((prev) => new Set([...prev, row.leadId]));
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to apply");
+    }
+  }
+
+  async function onApplyAllLeads() {
+    setApplyingLeads(true);
+    try {
+      for (const row of leadResults) {
+        await updateLeadQualifiedStatus(
+          row.leadId,
+          row.recommendation === "qualify" ? "qualified" : "disqualified",
+        );
+      }
+      toast.success("Lead statuses updated");
+      setShowLeadDialog(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to apply");
+    } finally {
+      setApplyingLeads(false);
+    }
+  }
+
+  async function onSaveContractToDb() {
+    if (!contractResult) return;
+    try {
+      await saveContractDraft(contractResult.contractId, contractResult.contractText);
+      setSavedContract(true);
+      toast.success("Contract saved");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to save");
+    }
   }
 
   return (
-    <div className="flex flex-1 flex-col">
-      <div className="@container/main flex flex-1 flex-col gap-2">
-        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-          <div className="px-4 lg:px-6">
-            <h1 className="text-base font-semibold tracking-tight">AI Agents</h1>
-            <p className="text-sm text-muted-foreground">
-              Autonomous agents that manage your property portfolio.
-            </p>
-          </div>
+    <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+        <div className="px-4 lg:px-6">
+          <h1 className="text-base font-semibold tracking-tight">AI Agents</h1>
+          <p className="text-sm text-muted-foreground">
+            Autonomous agents that manage your property portfolio.
+          </p>
+        </div>
 
-          <div className="grid gap-4 px-4 md:grid-cols-3 lg:px-6">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                  <CardTitle className="text-base">Rent Chaser</CardTitle>
-                </div>
-                <CardDescription>
-                  Detects overdue rent payments and drafts professional chase emails automatically.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  type="button"
-                  onClick={onRunRentAgent}
-                  disabled={isRentRunning}
-                  className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-                >
-                  {isRentRunning ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Running...
-                    </>
-                  ) : (
-                    "Run Agent"
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-zinc-500" />
-                  <CardTitle className="text-base">Lead Qualifier</CardTitle>
-                </div>
-                <CardDescription>
-                  Scores and qualifies incoming leads based on your criteria and property requirements.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  type="button"
-                  onClick={onRunLeadQualifier}
-                  disabled={isLeadRunning}
-                  className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-                >
-                  {isLeadRunning ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Running...
-                    </>
-                  ) : (
-                    "Run Agent"
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-zinc-500" />
-                  <CardTitle className="text-base">Contract Drafter</CardTitle>
-                </div>
-                <CardDescription>
-                  Drafts tenancy contracts and legal documents using Claude for precision.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Dialog open={showContractDialog} onOpenChange={setShowContractDialog}>
-                  <DialogTrigger asChild>
-                    <Button
-                      type="button"
-                      onClick={() => setShowContractDialog(true)}
-                      disabled={contractDrafterLoading}
-                      className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-                    >
-                      {contractDrafterLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Generating...
-                        </>
-                      ) : (
-                        "Run Agent"
-                      )}
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                      <DialogTitle>Draft Contract with AI</DialogTitle>
-                      <DialogDescription>
-                        Select a draft contract to generate the full legal document.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="grid gap-4">
-                      <Select value={selectedContractId} onValueChange={setSelectedContractId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select draft contract" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {draftContracts.length === 0 ? (
-                            <SelectItem value="__none" disabled>
-                              No draft contracts available
-                            </SelectItem>
-                          ) : (
-                            draftContracts.map((contract) => (
-                              <SelectItem key={contract.id} value={contract.id}>
-                                {contract.tenant_name} - {contract.property_address}
-                              </SelectItem>
-                            ))
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setShowContractDialog(false)}>
-                          Cancel
-                        </Button>
-                        <Button
-                          type="button"
-                          onClick={runContractDrafter}
-                          disabled={!selectedContractId || draftContracts.length === 0}
-                          className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-                        >
-                          Generate Contract
-                        </Button>
-                      </DialogFooter>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="px-4 lg:px-6">
-            {error ? (
-              <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-                {error}
+        <div className="grid gap-4 px-4 md:grid-cols-3 lg:px-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                <CardTitle className="text-base">Rent Chaser</CardTitle>
               </div>
-            ) : null}
-            {successMessage ? (
-              <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-700 dark:text-emerald-300">
-                {successMessage}
-              </div>
-            ) : null}
-            {contractDrafterLoading ? (
-              <div className="rounded-md border border-blue-500/30 bg-blue-500/10 px-3 py-2 text-sm text-blue-700 dark:text-blue-300">
-                Generating contract draft...
-              </div>
-            ) : null}
-            {contractError ? (
-              <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-                {contractError}
-              </div>
-            ) : null}
-          </div>
+              <CardDescription>
+                Automatically detects overdue rent and drafts chase emails.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Button
+                type="button"
+                onClick={onRunRentChaser}
+                disabled={isRentRunning}
+                className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+              >
+                {isRentRunning ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Running...
+                  </>
+                ) : (
+                  "Run Agent"
+                )}
+              </Button>
+              <Button type="button" variant="outline" asChild>
+                <Link href="/dashboard/rent-tracker">
+                  Rent Tracker
+                  <ExternalLink className="ml-2 h-3.5 w-3.5 opacity-70" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
 
-          <Dialog open={showRentDraftsDialog} onOpenChange={setShowRentDraftsDialog}>
-            <DialogContent className="h-[90vh] max-w-[95vw] overflow-auto sm:max-w-[95vw]">
-              <DialogHeader>
-                <DialogTitle>Rent Chaser Draft Emails</DialogTitle>
-                <DialogDescription>
-                  Review generated drafts before sending to tenants.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="grid gap-4">
-                {rentResults.map((row) => (
-                  <Card key={row.actionId}>
-                    <CardHeader className="border-b">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <CardTitle className="text-base">{row.tenantName}</CardTitle>
-                          <p className="text-sm text-muted-foreground">{row.propertyAddress}</p>
-                        </div>
-                        <Badge className="border border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-500/10 dark:text-red-300">
-                          {row.daysOverdue} days overdue
-                        </Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="grid gap-3 pt-4">
-                      <div className="rounded-md border border-zinc-200 bg-white p-4 text-sm text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
-                        <div className="mb-2 font-medium">{row.emailSubject}</div>
-                        <div className="whitespace-pre-wrap">{row.emailBody}</div>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={() => void copyEmail(row.actionId, row.emailBody)}
-                        >
-                          {copiedActionId === row.actionId ? "Copied!" : "Copy Email"}
-                        </Button>
-                        <Button
-                          type="button"
-                          className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-                          onClick={() => {
-                            const subject = encodeURIComponent(row.emailSubject);
-                            const body = encodeURIComponent(row.emailBody);
-                            window.location.href = `mailto:${row.tenantEmail}?subject=${subject}&body=${body}`;
-                          }}
-                        >
-                          Send via Email
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-zinc-500" />
+                <CardTitle className="text-base">Lead Qualifier</CardTitle>
               </div>
-            </DialogContent>
-          </Dialog>
+              <CardDescription>
+                Scores and qualifies incoming leads based on criteria.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Button
+                type="button"
+                onClick={onRunLeadQualifier}
+                disabled={isLeadRunning}
+                className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+              >
+                {isLeadRunning ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Running...
+                  </>
+                ) : (
+                  "Run Agent"
+                )}
+              </Button>
+              <Button type="button" variant="outline" asChild>
+                <Link href="/dashboard/leads">
+                  Leads
+                  <ExternalLink className="ml-2 h-3.5 w-3.5 opacity-70" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
 
-          {leadResults.length > 0 ? (
-            <div className="px-4 lg:px-6">
-              <Card>
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <FileText className="h-4 w-4 text-zinc-500" />
+                <CardTitle className="text-base">Contract Drafter</CardTitle>
+              </div>
+              <CardDescription>
+                Generates contract drafts with your tenancy details.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <Button
+                type="button"
+                onClick={openContractPicker}
+                disabled={isContractRunning}
+                className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+              >
+                {isContractRunning ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  "Run Agent"
+                )}
+              </Button>
+              <Button type="button" variant="outline" asChild>
+                <Link href="/dashboard/contracts">
+                  Contracts
+                  <ExternalLink className="ml-2 h-3.5 w-3.5 opacity-70" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Rent Chaser */}
+      <Dialog open={showRentDialog} onOpenChange={setShowRentDialog}>
+        <DialogContent className="h-[90vh] max-w-[95vw] overflow-auto sm:max-w-[95vw]">
+          <DialogHeader>
+            <DialogTitle>Rent Chaser Draft Emails</DialogTitle>
+            <DialogDescription>Review generated drafts before sending.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4">
+            {rentDrafts.map((draft, index) => (
+              <Card key={draft.actionId ?? `${draft.tenantName ?? "tenant"}-${index}`}>
                 <CardHeader className="border-b">
-                  <CardTitle>Lead Qualifier Results</CardTitle>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <CardTitle className="text-base">{draft.tenantName ?? "Unknown tenant"}</CardTitle>
+                      <p className="text-sm text-muted-foreground">
+                        {draft.propertyAddress ?? "Unknown property"}
+                      </p>
+                    </div>
+                    <Badge className="border border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-500/10 dark:text-red-300">
+                      {draft.daysOverdue ?? 0} days overdue
+                    </Badge>
+                  </div>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="hover:bg-transparent">
-                        <TableHead>Name</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Property Interested</TableHead>
-                        <TableHead>Source</TableHead>
-                        <TableHead>Score</TableHead>
-                        <TableHead>Recommendation</TableHead>
-                        <TableHead>Reasoning</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {leadResults.map((row) => (
-                        <TableRow key={row.actionId}>
-                          <TableCell className="font-medium">{row.fullName}</TableCell>
-                          <TableCell>{row.email}</TableCell>
-                          <TableCell className="max-w-[280px] truncate">
-                            {row.propertyInterested}
-                          </TableCell>
-                          <TableCell>{row.source}</TableCell>
-                          <TableCell>{scoreBadge(row.score)}</TableCell>
-                          <TableCell>{recommendationBadge(row.recommendation)}</TableCell>
-                          <TableCell className="max-w-[320px] truncate text-muted-foreground">
-                            {truncate(row.reasoning)}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="outline" size="sm">
-                                  View Full Analysis
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="sm:max-w-2xl">
-                                <DialogHeader>
-                                  <DialogTitle>{row.fullName} - Lead Analysis</DialogTitle>
-                                  <DialogDescription>
-                                    Score: {row.score} | Recommendation:{" "}
-                                    {row.recommendation === "qualify" ? "Qualify" : "Reject"}
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="grid gap-3 rounded-md border border-border bg-muted/20 p-4 text-sm">
-                                  <div>
-                                    <span className="font-medium">Score: </span>
-                                    {row.score}
-                                  </div>
-                                  <div>
-                                    <span className="font-medium">Recommendation: </span>
-                                    {row.recommendation === "qualify" ? "Qualify" : "Reject"}
-                                  </div>
-                                  <div className="whitespace-pre-wrap">
-                                    <span className="font-medium">Reasoning:</span>
-                                    <div className="mt-1">{row.reasoning}</div>
-                                  </div>
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </CardContent>
-              </Card>
-            </div>
-          ) : null}
-
-          {contractDrafterResult ? (
-            <div className="px-4 lg:px-6">
-              <Card>
-                <CardHeader className="border-b">
-                  <CardTitle>Contract Drafter Result</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 pt-4">
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div>
-                      <div className="text-xs text-muted-foreground">Tenant</div>
-                      <div className="font-medium">{contractDrafterResult.tenantName}</div>
+                <CardContent className="grid gap-3 pt-4">
+                  <div>
+                    <div className="mb-1 text-xs font-medium text-muted-foreground">Subject</div>
+                    <div className="rounded-md border border-zinc-200 bg-white p-3 text-sm font-medium text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+                      {draft.emailSubject ?? "No subject"}
                     </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground">Property</div>
-                      <div className="font-medium">{contractDrafterResult.propertyAddress}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground">Contract Type</div>
-                      <div className="font-medium">{contractDrafterResult.contractType}</div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-muted-foreground">Monthly Rent / Deposit</div>
-                      <div className="font-medium">
-                        {gbp.format(contractDrafterResult.monthlyRent)} /{" "}
-                        {gbp.format(contractDrafterResult.depositAmount)}
-                      </div>
+                    <div className="mt-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void onCopyRentSubject(draft.emailSubject ?? "", index)}
+                      >
+                        {copiedSubjectIndex === index ? "Copied!" : "Copy subject"}
+                      </Button>
                     </div>
                   </div>
-                  <Textarea
-                    readOnly
-                    value={contractDrafterResult.contractText}
-                    className="h-96 font-mono text-xs"
-                  />
-                  <div className="flex justify-end">
+                  <div>
+                    <div className="mb-1 text-xs font-medium text-muted-foreground">Body</div>
+                    <div className="whitespace-pre-wrap rounded-md border border-zinc-200 bg-white p-4 text-sm text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100">
+                      {draft.emailBody ?? "No email body generated."}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={() => navigator.clipboard.writeText(contractDrafterResult.contractText)}
+                      onClick={() => void onCopyRentBody(draft.emailBody ?? "", index)}
                     >
-                      Copy Contract
+                      {copiedRentIndex === index ? "Copied!" : "Copy body"}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="default"
+                      disabled={
+                        !draft.draftId || draft.sent === true || sendingRentIndex === index
+                      }
+                      onClick={() => void onSendRentDraft(draft.draftId!, index)}
+                      className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+                    >
+                      {sendingRentIndex === index ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending…
+                        </>
+                      ) : draft.sent ? (
+                        "Sent ✓"
+                      ) : (
+                        "Send email"
+                      )}
                     </Button>
                   </div>
                 </CardContent>
               </Card>
-            </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Lead Qualifier */}
+      <Dialog open={showLeadDialog} onOpenChange={setShowLeadDialog}>
+        <DialogContent className="max-h-[90vh] max-w-[95vw] overflow-auto sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Lead Qualifier Results</DialogTitle>
+            <DialogDescription>AI scores and recommendations for your new leads.</DialogDescription>
+          </DialogHeader>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Property</TableHead>
+                <TableHead>Source</TableHead>
+                <TableHead>Score</TableHead>
+                <TableHead>Recommendation</TableHead>
+                <TableHead className="max-w-[200px]">Reasoning</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {leadResults.map((row) => (
+                <TableRow key={row.leadId}>
+                  <TableCell className="font-medium">{row.fullName}</TableCell>
+                  <TableCell>{row.email}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{row.propertyInterested}</TableCell>
+                  <TableCell>{row.source}</TableCell>
+                  <TableCell>{scoreBadge(row.score)}</TableCell>
+                  <TableCell>{recommendationBadge(row.recommendation)}</TableCell>
+                  <TableCell className="max-w-[220px] text-muted-foreground text-xs">
+                    {truncate(row.reasoning)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => void onApplyLead(row)}
+                        disabled={appliedLeads.has(row.leadId)}
+                      >
+                        {appliedLeads.has(row.leadId) ? "Applied ✓" : "Apply"}
+                      </Button>
+                      <Button type="button" variant="outline" size="sm" onClick={() => setLeadDetail(row)}>
+                        Full analysis
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <DialogFooter>
+            <Button
+              type="button"
+              disabled={applyingLeads || leadResults.length === 0}
+              onClick={() => void onApplyAllLeads()}
+              className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+            >
+              {applyingLeads ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Applying…
+                </>
+              ) : (
+                "Apply all"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!leadDetail} onOpenChange={(open) => !open && setLeadDetail(null)}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{leadDetail?.fullName ?? "Lead"}</DialogTitle>
+            <DialogDescription>
+              Score: {leadDetail?.score ?? "—"} · Recommendation:{" "}
+              {leadDetail?.recommendation === "qualify" ? "Qualify" : "Reject"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-md border border-border bg-muted/30 p-4 text-sm whitespace-pre-wrap">
+            {leadDetail?.reasoning}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Contract picker */}
+      <Dialog open={showContractPicker} onOpenChange={setShowContractPicker}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Draft contract with AI</DialogTitle>
+            <DialogDescription>Choose a draft contract to generate full text.</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <Select value={selectedContractId} onValueChange={setSelectedContractId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a draft" />
+              </SelectTrigger>
+              <SelectContent>
+                {draftContracts.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.tenant_name} — {c.property_address}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setShowContractPicker(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              disabled={!selectedContractId}
+              onClick={() => void onGenerateContract()}
+              className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+            >
+              Generate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Contract result */}
+      <Dialog open={showContractResult} onOpenChange={setShowContractResult}>
+        <DialogContent className="max-h-[90vh] max-w-[95vw] overflow-hidden sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Contract draft</DialogTitle>
+            <DialogDescription>
+              {contractResult?.tenantName} · {contractResult?.propertyAddress}
+            </DialogDescription>
+          </DialogHeader>
+          {contractResult ? (
+            <>
+              <div className="grid max-h-[70vh] gap-4 overflow-auto">
+                <div className="grid gap-2 text-sm sm:grid-cols-2">
+                  <div>
+                    <span className="text-muted-foreground">Type</span>
+                    <div className="font-medium">{contractResult.contractType}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Rent / Deposit</span>
+                    <div className="font-medium">
+                      {gbp.format(contractResult.monthlyRent)} / {gbp.format(contractResult.depositAmount)}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Start</span>
+                    <div className="font-medium">{contractResult.startDate}</div>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">End</span>
+                    <div className="font-medium">{contractResult.endDate}</div>
+                  </div>
+                </div>
+                <Textarea readOnly className="min-h-[240px] font-mono text-xs" value={contractResult.contractText} />
+                <div className="flex justify-end">
+                  <Button type="button" variant="outline" onClick={() => void onCopyContractText()}>
+                    {copiedContract ? "Copied!" : "Copy contract"}
+                  </Button>
+                </div>
+              </div>
+              <DialogFooter className="gap-2 sm:justify-between">
+                <Button
+                  type="button"
+                  disabled={savedContract}
+                  onClick={() => void onSaveContractToDb()}
+                  className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+                >
+                  {savedContract ? "Saved ✓" : "Save to contract"}
+                </Button>
+                {savedContract ? (
+                  <Button variant="outline" asChild>
+                    <Link href={`/dashboard/contracts/${contractResult.contractId}`}>
+                      View contract →
+                    </Link>
+                  </Button>
+                ) : null}
+              </DialogFooter>
+            </>
           ) : null}
-        </div>
-      </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-

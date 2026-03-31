@@ -171,6 +171,23 @@ Adapt this template for the new tenancy details, keeping the landlord's preferre
     .select("id")
     .single<{ id: string }>();
 
+  if (action?.id) {
+    const { error: runErr } = await supabase.from("agent_runs").insert({
+      user_id: userId,
+      agent_type: "contract_drafter",
+      status: "completed",
+      payload: {
+        contractId,
+        tenantName,
+        propertyAddress,
+        contractType,
+      },
+    });
+    if (runErr) {
+      console.warn("[contract-drafter] agent_runs insert:", runErr.message);
+    }
+  }
+
   return {
     contractId,
     tenantName,

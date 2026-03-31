@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 import { runContractDrafterAgent } from "@/lib/agents/contract-drafter";
@@ -17,6 +18,8 @@ export async function POST(req: Request) {
     }
 
     const result = await runContractDrafterAgent(contractId, user.id);
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/agents");
     return NextResponse.json({ result });
   } catch (error) {
     console.error("Contract drafter error:", error);

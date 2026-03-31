@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
 import { runRentChaserAgent } from "@/lib/agents/rent-chaser";
@@ -14,6 +15,8 @@ export async function POST() {
   }
 
   const results = await runRentChaserAgent(user.id);
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/agents");
   return NextResponse.json({ results });
 }
 

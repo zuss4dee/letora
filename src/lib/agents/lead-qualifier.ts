@@ -157,6 +157,14 @@ export async function runLeadQualifierAgent(userId: string): Promise<LeadQualifi
   }
 
   if (results.length > 0) {
+    await supabase.from("agent_runs").insert({
+      user_id: userId,
+      agent_type: "lead_qualifier",
+      status: "completed",
+      payload: {
+        count: results.length,
+      },
+    });
     revalidatePath("/dashboard/leads");
   }
 

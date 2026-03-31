@@ -537,6 +537,7 @@ export async function runMaintenanceAgent(
   });
 
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/agents");
   revalidatePath("/dashboard/maintenance");
   revalidatePath(`/dashboard/maintenance/${maintenanceRequestId}`);
 

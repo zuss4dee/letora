@@ -6,6 +6,7 @@ import {
   Home,
   PoundSterling,
   ShieldAlert,
+  Users,
   Wrench,
 } from "lucide-react";
 
@@ -44,6 +45,8 @@ function humanAgentName(agentType: string | null): string {
       return "Maintenance";
     case "safety_alert":
       return "Safety alert";
+    case "lead_qualifier":
+      return "Lead Qualifier";
     default:
       if (!agentType) return "Unknown agent";
       return agentType
@@ -60,6 +63,9 @@ function agentAccent(agentType: string | null): { iconBg: string; Icon: typeof B
   }
   if (t === "rent_chaser") {
     return { iconBg: "bg-amber-500", Icon: PoundSterling };
+  }
+  if (t === "lead_qualifier") {
+    return { iconBg: "bg-teal-500", Icon: Users };
   }
   if (t === "contract_drafter") {
     return { iconBg: "bg-violet-500", Icon: FileText };
@@ -84,6 +90,11 @@ function pickString(obj: Record<string, unknown>, keys: string[]): string | null
 function extractActivitySubtitle(payload: unknown): string | null {
   if (payload == null || typeof payload !== "object") return null;
   const p = payload as Record<string, unknown>;
+  const countRaw = p.count;
+  const count = typeof countRaw === "number" ? countRaw : Number(countRaw);
+  if (Number.isFinite(count) && count > 0) {
+    return `${count} lead${count === 1 ? "" : "s"} processed`;
+  }
   const tenantName = pickString(p, ["tenantName", "tenant_name"]);
   const rawAddress = pickString(p, ["propertyAddress", "property_address"]);
   const propertyAddress = rawAddress ? normalizePropertyAddressLabel(rawAddress) : null;

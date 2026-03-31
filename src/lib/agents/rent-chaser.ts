@@ -329,6 +329,18 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
         .eq("user_id", resolvedUserId);
     }
 
+    await supabase
+      .from("agent_runs")
+      .update({
+        status: "completed",
+        payload: {
+          ...payload,
+          emailSent,
+        },
+      })
+      .eq("id", inserted.id)
+      .eq("user_id", resolvedUserId);
+
     results.push({
       tenantName,
       tenantEmail,
