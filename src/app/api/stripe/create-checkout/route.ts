@@ -1,4 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+
+/**
+ * Stripe Checkout — disabled until pricing returns.
+ * Requires: STRIPE_SECRET_KEY, active `stripe` export in `@/lib/stripe`.
+ */
+export async function POST(_req: NextRequest) {
+  return NextResponse.json(
+    { error: "Stripe billing is temporarily disabled." },
+    { status: 501 },
+  );
+}
+
+/*
 import type Stripe from "stripe";
 
 import { stripe } from "@/lib/stripe";
@@ -64,4 +77,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
+*/

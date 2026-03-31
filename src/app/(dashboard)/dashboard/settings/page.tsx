@@ -30,7 +30,6 @@
  */
 
 import { AgentSettingsForm } from "@/components/settings/agent-settings-form";
-import { BillingSection } from "@/components/settings/billing-section";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -49,6 +48,11 @@ const defaultValues: UserSettingsInput = {
   firstChaseDays: 3,
   emailSignoff: "",
   includePaymentPlan: true,
+  emailFromName: "",
+  autoSendRentChaser: false,
+  autoSendMaintenanceUpdates: false,
+  autoSendOnboardingEmails: false,
+  autoSendLeadUpdates: false,
   rentChaserInstructions: "",
   minLeadScore: 70,
   preferredSources: [],
@@ -87,9 +91,6 @@ export default async function AgentSettingsPage() {
                   <p className="text-sm text-muted-foreground">
                     Customise how your AI agents communicate and operate.
                   </p>
-                </div>
-                <div className="px-4 lg:px-6">
-                  <BillingSection />
                 </div>
                 <div className="px-4 lg:px-6">
                   <AgentSettingsForm initialValues={initialValues} userId={user?.id ?? ""} />

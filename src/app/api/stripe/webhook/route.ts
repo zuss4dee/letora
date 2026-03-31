@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+
+export const dynamic = "force-dynamic";
+
+/**
+ * Stripe webhooks — disabled until pricing returns.
+ * Requires: STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, active `stripe` in `@/lib/stripe`,
+ * SUPABASE_SERVICE_ROLE_KEY + NEXT_PUBLIC_SUPABASE_URL for the service-role client below.
+ */
+export async function POST(_req: NextRequest) {
+  return NextResponse.json(
+    { error: "Stripe webhooks are temporarily disabled." },
+    { status: 501 },
+  );
+}
+
+/*
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import Stripe from "stripe";
 
 import { stripe } from "@/lib/stripe";
-
-export const dynamic = "force-dynamic";
 
 // Service role client — no user session available in webhooks
 const supabase = createClient(
@@ -84,4 +99,4 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ received: true });
 }
-
+*/

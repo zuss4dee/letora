@@ -21,6 +21,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select,
   SelectContent,
@@ -128,6 +129,13 @@ export function AgentSettingsForm({
 
   return (
     <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
+      <Tabs defaultValue="agents" className="w-full gap-4">
+        <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto">
+          <TabsTrigger value="agents">Agents</TabsTrigger>
+          <TabsTrigger value="email">Email &amp; Automation</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="agents" className="mt-0 flex flex-col gap-4 outline-none">
       <Card>
         <CardHeader className="border-b">
           <CardTitle>Business Profile</CardTitle>
@@ -363,6 +371,97 @@ export function AgentSettingsForm({
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="email" className="mt-0 outline-none">
+          <Card>
+            <CardHeader className="border-b">
+              <CardTitle>Email &amp; Automation</CardTitle>
+              <p className="text-sm font-normal text-muted-foreground">
+                Platform email uses your display name with the verified Letora sender address. Turn on
+                auto-send per agent type when you are ready for emails to go out without review.
+              </p>
+            </CardHeader>
+            <CardContent className="grid gap-4 pt-4">
+              <div className="grid gap-2">
+                <Label htmlFor="emailFromName">Display name (From)</Label>
+                <Input
+                  id="emailFromName"
+                  placeholder="e.g. Smith Lettings"
+                  {...form.register("emailFromName")}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Shown as the sender name; the email address is set by the platform.
+                </p>
+              </div>
+              <div className="flex items-start gap-3 rounded-md border border-border p-3">
+                <Checkbox
+                  id="autoSendRentChaser"
+                  className="mt-0.5"
+                  checked={form.watch("autoSendRentChaser")}
+                  onCheckedChange={(checked) =>
+                    form.setValue("autoSendRentChaser", checked === true, { shouldDirty: true })
+                  }
+                />
+                <div className="grid gap-1">
+                  <Label htmlFor="autoSendRentChaser">Rent chaser</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Send rent reminder emails automatically after each run (when Resend is configured).
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 rounded-md border border-border p-3">
+                <Checkbox
+                  id="autoSendMaintenanceUpdates"
+                  className="mt-0.5"
+                  checked={form.watch("autoSendMaintenanceUpdates")}
+                  onCheckedChange={(checked) =>
+                    form.setValue("autoSendMaintenanceUpdates", checked === true, { shouldDirty: true })
+                  }
+                />
+                <div className="grid gap-1">
+                  <Label htmlFor="autoSendMaintenanceUpdates">Maintenance updates</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Reserved for maintenance agent emails (future).
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 rounded-md border border-border p-3">
+                <Checkbox
+                  id="autoSendOnboardingEmails"
+                  className="mt-0.5"
+                  checked={form.watch("autoSendOnboardingEmails")}
+                  onCheckedChange={(checked) =>
+                    form.setValue("autoSendOnboardingEmails", checked === true, { shouldDirty: true })
+                  }
+                />
+                <div className="grid gap-1">
+                  <Label htmlFor="autoSendOnboardingEmails">Onboarding emails</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Reserved for tenant onboarding flows (future).
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start gap-3 rounded-md border border-border p-3">
+                <Checkbox
+                  id="autoSendLeadUpdates"
+                  className="mt-0.5"
+                  checked={form.watch("autoSendLeadUpdates")}
+                  onCheckedChange={(checked) =>
+                    form.setValue("autoSendLeadUpdates", checked === true, { shouldDirty: true })
+                  }
+                />
+                <div className="grid gap-1">
+                  <Label htmlFor="autoSendLeadUpdates">Lead updates</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Reserved for lead qualifier follow-ups (future).
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <div className="flex justify-end">
         <Button type="submit" disabled={isSubmitting}>

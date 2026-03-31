@@ -12,6 +12,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { EmailDraftsCard } from "@/components/dashboard/email-drafts-card";
+import { getPendingEmailDrafts } from "@/lib/actions/email-drafts";
 import { createClient } from "@/lib/supabase/server";
 
 const gbp = new Intl.NumberFormat("en-GB", {
@@ -101,6 +103,7 @@ export default async function DashboardPage() {
   let overduePayments = 0;
   let activity: ActivityRow[] = [];
   let properties: PropertyRow[] = [];
+  let emailDrafts: Awaited<ReturnType<typeof getPendingEmailDrafts>> = [];
 
   if (userId) {
     const today = new Date().toISOString().slice(0, 10);
@@ -113,6 +116,7 @@ export default async function DashboardPage() {
       paymentsRes,
       activityRes,
       propertiesRes,
+      pendingDrafts,
     ] = await Promise.all([
       supabase.from("properties").select("id", { count: "exact", head: true }).eq("user_id", userId),
       supabase
@@ -134,7 +138,10 @@ export default async function DashboardPage() {
         .select("id,address,city")
         .eq("user_id", userId)
         .order("created_at", { ascending: false }),
+      getPendingEmailDrafts(userId),
     ]);
+
+    emailDrafts = pendingDrafts;
 
     totalProperties = propertiesCountRes.count ?? 0;
     activeTenants = tenantsCountRes.count ?? 0;
@@ -178,6 +185,12 @@ export default async function DashboardPage() {
                   {statCard("Monthly Rent", gbp.format(monthlyRent))}
                   {statCard("Overdue Payments", String(overduePayments))}
                 </div>
+
+                {userId ? (
+                  <div className="px-4 lg:px-6">
+                    <EmailDraftsCard drafts={emailDrafts} />
+                  </div>
+                ) : null}
 
                 <div className="grid gap-4 px-4 lg:px-6 xl:grid-cols-2">
                   <Card>

@@ -20,6 +20,12 @@ export const userSettingsSchema = z.object({
   firstChaseDays: preprocessInt(3, 1),
   emailSignoff: z.string().optional(),
   includePaymentPlan: z.boolean(),
+  /** Display name for Resend From header (platform address from env). */
+  emailFromName: z.string().optional(),
+  autoSendRentChaser: z.boolean().default(false),
+  autoSendMaintenanceUpdates: z.boolean().default(false),
+  autoSendOnboardingEmails: z.boolean().default(false),
+  autoSendLeadUpdates: z.boolean().default(false),
   rentChaserInstructions: z.string().optional(),
   minLeadScore: preprocessInt(70, 1, 100),
   preferredSources: z.array(sourceEnum),

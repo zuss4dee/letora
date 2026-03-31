@@ -1,5 +1,10 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { recordAgentRunStep } from "@/lib/agents/audit";
+import { loadAgentContext } from "@/lib/agents/context-loader";
+import { assertStepBudget } from "@/lib/agents/ota-loop";
+import { sendEmailTool } from "@/lib/tools/send-email";
 import { createClient } from "@/lib/supabase/server";
 
 export interface AgentResult {
@@ -11,6 +16,7 @@ export interface AgentResult {
   emailSubject: string;
   emailBody: string;
   actionId: string;
+  emailSent?: boolean;
 }
 
 type PaymentRow = {
@@ -38,6 +44,7 @@ function getDaysOverdue(dueDateIso: string | null) {
 
 async function generateEmailDraft(
   model: ReturnType<GoogleGenerativeAI["getGenerativeModel"]>,
+  systemContext: string,
   tenantName: string,
   propertyAddress: string,
   amountOwed: number,
@@ -51,7 +58,11 @@ async function generateEmailDraft(
     instructions: string;
   },
 ) {
-  const prompt = `You are a professional UK letting agent. Write a rent chase email.
+  const prompt = `${systemContext}
+
+---
+
+Task: Write a rent chase email for the following facts.
 Tenant name: ${tenantName}
 Property address: ${propertyAddress}
 Amount owed: £${amountOwed}
@@ -82,13 +93,29 @@ Return ONLY valid JSON in this exact format:
   };
 }
 
-export async function runRentChaserAgent(userId: string): Promise<AgentResult[]> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const resolvedUserId = user?.id ?? userId;
+export type RunRentChaserOptions = {
+  supabase?: SupabaseClient;
+};
+
+export async function runRentChaserAgent(userId: string, options?: RunRentChaserOptions): Promise<AgentResult[]> {
+  const supabase = options?.supabase ?? (await createClient());
+  let sessionUserEmail: string | undefined;
+  if (!options?.supabase) {
+    const {
+      data: { user: sessionUser },
+    } = await supabase.auth.getUser();
+    sessionUserEmail = sessionUser?.email ?? undefined;
+  }
+  const resolvedUserId = userId;
   if (!resolvedUserId) return [];
+
+  let stepCount = 0;
+  function nextStep() {
+    stepCount += 1;
+    assertStepBudget(stepCount);
+    return stepCount;
+  }
+
   const apiKey = process.env.GOOGLE_AI_API_KEY;
   if (!apiKey) {
     throw new Error("Missing GOOGLE_AI_API_KEY");
@@ -96,6 +123,16 @@ export async function runRentChaserAgent(userId: string): Promise<AgentResult[]>
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
   const today = new Date().toISOString().split("T")[0];
+
+  let systemContext = "";
+  try {
+    systemContext = await loadAgentContext(supabase, "rent_chaser", resolvedUserId);
+  } catch (e) {
+    console.error("[RentChaser] loadAgentContext failed", e);
+    systemContext =
+      "You are a professional UK letting agent. Follow user settings and UK English. Output JSON with subject and body.";
+  }
+
   const { data: settings } = await supabase
     .from("user_settings")
     .select(
@@ -112,8 +149,7 @@ export async function runRentChaserAgent(userId: string): Promise<AgentResult[]>
       rent_chaser_instructions: string | null;
     }>();
 
-  const landlordFallbackEmail =
-    settings?.contact_email?.trim() || user?.email?.trim() || "";
+  const landlordFallbackEmail = settings?.contact_email?.trim() || sessionUserEmail?.trim() || "";
 
   const promptSettings = {
     businessName: settings?.business_name ?? "Letora Property Management",
@@ -141,20 +177,21 @@ export async function runRentChaserAgent(userId: string): Promise<AgentResult[]>
     return [];
   }
 
-  console.log(
-    "[RentChaser] Found candidates:",
-    overdueData?.length ?? 0,
-    "overdue,",
-    pendingData?.length ?? 0,
-    "pending",
-  );
-
   const merged = [...(overdueData ?? []), ...(pendingData ?? [])] as PaymentRow[];
   const seenIds = new Set<string>();
   const candidates = merged.filter((row) => {
     if (seenIds.has(row.id)) return false;
     seenIds.add(row.id);
     return true;
+  });
+
+  await recordAgentRunStep(supabase, {
+    userId: resolvedUserId,
+    agentRunId: null,
+    stepIndex: nextStep(),
+    stepType: "observe",
+    toolName: "list_chaseable_payments",
+    detail: { overdue: overdueData?.length ?? 0, pendingPastDue: pendingData?.length ?? 0, merged: candidates.length },
   });
 
   const propertyIds = candidates
@@ -175,9 +212,6 @@ export async function runRentChaserAgent(userId: string): Promise<AgentResult[]>
       .in("id", tenantIds.length ? tenantIds : ["none"]),
   ]);
 
-  // Include all payment rows Rent Tracker would treat as chaseable. Do not require tenant email —
-  // Rent Tracker can show "Unknown tenant" when tenant_id is missing; we still draft a chase and
-  // use landlord contact / account email for mailto when needed.
   const filtered = candidates
     .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""))
     .map((row) => {
@@ -193,16 +227,25 @@ export async function runRentChaserAgent(userId: string): Promise<AgentResult[]>
   for (const entry of filtered) {
     const { row, property, tenant } = entry;
     const tenantName = tenant?.full_name ?? "Unknown tenant";
-    const tenantEmail =
-      tenant?.email?.trim() || landlordFallbackEmail;
+    const tenantEmail = tenant?.email?.trim() || landlordFallbackEmail;
     const address = property?.address ?? "Unknown property";
     const city = property?.city;
     const propertyAddress = city ? `${address}, ${city}` : address;
     const amountOwed = Math.max(0, toNumber(row.amount));
     const daysOverdue = getDaysOverdue(row.due_date);
 
+    await recordAgentRunStep(supabase, {
+      userId: resolvedUserId,
+      agentRunId: null,
+      stepIndex: nextStep(),
+      stepType: "think",
+      toolName: "draft_chase_email",
+      detail: { rentPaymentId: row.id, tenantName, propertyAddress },
+    });
+
     const draft = await generateEmailDraft(
       model,
+      systemContext,
       tenantName,
       propertyAddress,
       amountOwed,
@@ -234,7 +277,50 @@ export async function runRentChaserAgent(userId: string): Promise<AgentResult[]>
 
     if (insertError || !inserted) continue;
 
-    // Promote pending-but-past-due payments to overdue after chasing.
+    await recordAgentRunStep(supabase, {
+      userId: resolvedUserId,
+      agentRunId: inserted.id,
+      stepIndex: nextStep(),
+      stepType: "act",
+      toolName: "save_agent_run",
+      detail: { rentPaymentId: row.id, agentRunId: inserted.id },
+    });
+
+    let emailSent = false;
+    if (tenantEmail.trim()) {
+      const sendResult = await sendEmailTool(supabase, resolvedUserId, inserted.id, {
+        to: tenantEmail,
+        toName: tenantName,
+        subject: draft.subject,
+        body: draft.body,
+        agentType: "rent_chaser",
+      });
+      emailSent = sendResult.sent;
+      await recordAgentRunStep(supabase, {
+        userId: resolvedUserId,
+        agentRunId: inserted.id,
+        stepIndex: nextStep(),
+        stepType: "act",
+        toolName: "send_email_tool",
+        detail: {
+          to: tenantEmail,
+          emailLogId: sendResult.emailLogId,
+          sent: sendResult.sent,
+          message: sendResult.message,
+          error: sendResult.error,
+        },
+      });
+    } else {
+      await recordAgentRunStep(supabase, {
+        userId: resolvedUserId,
+        agentRunId: inserted.id,
+        stepIndex: nextStep(),
+        stepType: "act",
+        toolName: "send_email_tool",
+        detail: { skipped: true, reason: "No recipient email" },
+      });
+    }
+
     if ((row.status ?? "").toLowerCase() === "pending") {
       await supabase
         .from("rent_payments")
@@ -252,9 +338,9 @@ export async function runRentChaserAgent(userId: string): Promise<AgentResult[]>
       emailSubject: draft.subject,
       emailBody: draft.body,
       actionId: inserted.id,
+      emailSent,
     });
   }
 
   return results;
 }
-
