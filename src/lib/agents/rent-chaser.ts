@@ -5,6 +5,7 @@ import { recordAgentRunStep } from "@/lib/agents/audit";
 import { loadAgentContext } from "@/lib/agents/context-loader";
 import { assertStepBudget } from "@/lib/agents/ota-loop";
 import { sendEmailTool } from "@/lib/tools/send-email";
+import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 
 export interface AgentResult {
@@ -204,7 +205,7 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
   const [{ data: properties }, { data: tenants }] = await Promise.all([
     supabase
       .from("properties")
-      .select("id,address,city")
+      .select("id,address")
       .in("id", propertyIds.length ? propertyIds : ["none"]),
     supabase
       .from("tenant_profiles")
@@ -228,9 +229,8 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
     const { row, property, tenant } = entry;
     const tenantName = tenant?.full_name ?? "Unknown tenant";
     const tenantEmail = tenant?.email?.trim() || landlordFallbackEmail;
-    const address = property?.address ?? "Unknown property";
-    const city = property?.city;
-    const propertyAddress = city ? `${address}, ${city}` : address;
+    const propertyAddress =
+      normalizePropertyAddressLabel(property?.address ?? "") || "Unknown property";
     const amountOwed = Math.max(0, toNumber(row.amount));
     const daysOverdue = getDaysOverdue(row.due_date);
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 import { tenantSchema } from "@/lib/validations/tenant";
 
@@ -42,12 +43,63 @@ export async function getTenants(userId: string): Promise<TenantRow[]> {
       fullName: row.full_name ?? null,
       email: row.email ?? null,
       phone: row.phone ?? null,
-      propertyAddress: firstTenancy?.properties?.address ?? null,
+      propertyAddress:
+        normalizePropertyAddressLabel(firstTenancy?.properties?.address ?? "") || null,
       rightToRentStatus: row.right_to_rent_status ?? null,
       tenancyStatus: firstTenancy?.status ?? null,
       createdAt: row.created_at ?? null,
     };
   });
+}
+
+/** Tenants linked to the auth user's properties via tenancies (contract picker). */
+export type TenantPickListItem = {
+  id: string;
+  fullName: string | null;
+  email: string | null;
+};
+
+export async function getTenantProfilesForContracts(): Promise<TenantPickListItem[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data: props } = await supabase.from("properties").select("id").eq("user_id", user.id);
+  const propertyIds = (props ?? []).map((p) => p.id as string);
+  if (propertyIds.length === 0) return [];
+
+  const { data: tenancies, error: tenErr } = await supabase
+    .from("tenancies")
+    .select("tenant_id")
+    .in("property_id", propertyIds);
+
+  if (tenErr || !tenancies?.length) return [];
+
+  const tenantIds = [
+    ...new Set(
+      tenancies
+        .map((t) => t.tenant_id as string | null)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+
+  if (tenantIds.length === 0) return [];
+
+  const { data: profiles, error: profErr } = await supabase
+    .from("tenant_profiles")
+    .select("id,full_name,email")
+    .in("id", tenantIds)
+    .order("full_name", { ascending: true });
+
+  if (profErr || !profiles) return [];
+
+  return profiles.map((row) => ({
+    id: row.id,
+    fullName: row.full_name ?? null,
+    email: row.email ?? null,
+  }));
 }
 
 export async function addTenant(formData: unknown) {

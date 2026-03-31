@@ -1,6 +1,8 @@
+import Link from "next/link";
+
 import { AppSidebar } from "@/components/app-sidebar";
+import { AiActivityCard, type ActivityRun } from "@/components/dashboard/ai-activity-card";
 import { SiteHeader } from "@/components/site-header";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,7 +15,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { EmailDraftsCard } from "@/components/dashboard/email-drafts-card";
+import { SafetyAlertsCard } from "@/components/dashboard/safety-alerts-card";
+import {
+  getMonthlyRentFromActiveTenancies,
+  getOverdueRentPaymentCount,
+} from "@/lib/actions/dashboard";
 import { getPendingEmailDrafts } from "@/lib/actions/email-drafts";
+import { getSafetyAlertsLast7Days } from "@/lib/actions/safety-alerts";
 import { createClient } from "@/lib/supabase/server";
 
 const gbp = new Intl.NumberFormat("en-GB", {
@@ -21,47 +29,6 @@ const gbp = new Intl.NumberFormat("en-GB", {
   currency: "GBP",
   maximumFractionDigits: 0,
 });
-
-function formatAgentType(agentType: string | null) {
-  if (!agentType) return "Unknown Agent";
-  return agentType
-    .split("_")
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function statusBadge(status: string | null) {
-  const normalized = (status ?? "draft").toLowerCase();
-  if (normalized === "success" || normalized === "completed") {
-    return (
-      <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
-        {status ?? "Completed"}
-      </Badge>
-    );
-  }
-  if (normalized === "failed" || normalized === "error") {
-    return (
-      <Badge className="border border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-500/10 dark:text-red-300">
-        {status ?? "Failed"}
-      </Badge>
-    );
-  }
-  if (normalized === "draft" || normalized === "pending") {
-    return (
-      <Badge className="border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/40 dark:bg-amber-500/10 dark:text-amber-300">
-        {status ?? "Draft"}
-      </Badge>
-    );
-  }
-  return (
-    <Badge
-      variant="secondary"
-      className="border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/40 dark:bg-blue-500/10 dark:text-blue-300"
-    >
-      {status ?? "Unknown"}
-    </Badge>
-  );
-}
 
 function statCard(title: string, value: string) {
   return (
@@ -75,13 +42,6 @@ function statCard(title: string, value: string) {
     </Card>
   );
 }
-
-type ActivityRow = {
-  id: string;
-  agent_type: string | null;
-  status: string | null;
-  created_at: string | null;
-};
 
 type PropertyRow = {
   id: string;
@@ -101,65 +61,61 @@ export default async function DashboardPage() {
   let activeTenants = 0;
   let monthlyRent = 0;
   let overduePayments = 0;
-  let activity: ActivityRow[] = [];
+  let activity: ActivityRun[] = [];
   let properties: PropertyRow[] = [];
   let emailDrafts: Awaited<ReturnType<typeof getPendingEmailDrafts>> = [];
+  let safetyAlerts: Awaited<ReturnType<typeof getSafetyAlertsLast7Days>> = [];
 
   if (userId) {
-    const today = new Date().toISOString().slice(0, 10);
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    const monthStartIso = startOfMonth.toISOString().slice(0, 10);
     const [
       propertiesCountRes,
       tenantsCountRes,
-      paymentsRes,
+      monthlyRentTotal,
+      overdueCount,
       activityRes,
       propertiesRes,
       pendingDrafts,
+      alerts,
     ] = await Promise.all([
       supabase.from("properties").select("id", { count: "exact", head: true }).eq("user_id", userId),
       supabase
         .from("tenant_profiles")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId),
+      getMonthlyRentFromActiveTenancies(userId),
+      getOverdueRentPaymentCount(userId),
       supabase
-        .from("rent_payments")
-        .select("id,status,due_date,amount,paid_date")
-        .eq("user_id", userId),
-      supabase
-        .from("agent_actions")
-        .select("id,agent_type,status,created_at")
+        .from("agent_runs")
+        .select("id,agent_type,status,created_at,payload")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
-        .limit(5),
+        .limit(10),
       supabase
         .from("properties")
         .select("id,address,city")
         .eq("user_id", userId)
         .order("created_at", { ascending: false }),
       getPendingEmailDrafts(userId),
+      getSafetyAlertsLast7Days(userId),
     ]);
 
     emailDrafts = pendingDrafts;
+    safetyAlerts = alerts;
 
     totalProperties = propertiesCountRes.count ?? 0;
     activeTenants = tenantsCountRes.count ?? 0;
-    monthlyRent = (paymentsRes.data ?? [])
-      .filter((row) => {
-        const status = (row.status ?? "").toLowerCase();
-        return status === "paid" && !!row.paid_date && row.paid_date >= monthStartIso;
-      })
-      .reduce((sum, row) => {
-        const amount =
-          typeof row.amount === "number" ? row.amount : Number(row.amount ?? 0);
-        return sum + (Number.isFinite(amount) ? amount : 0);
-      }, 0);
-    overduePayments = (paymentsRes.data ?? []).filter((row) => {
-      const status = (row.status ?? "").toLowerCase();
-      return status === "overdue" || (status === "pending" && !!row.due_date && row.due_date < today);
-    }).length;
-    activity = (activityRes.data ?? []) as ActivityRow[];
+    monthlyRent = monthlyRentTotal;
+    overduePayments = overdueCount;
+    activity = (activityRes.data ?? []).map((row) => ({
+      id: row.id as string,
+      agent_type: row.agent_type as string | null,
+      status: row.status as string | null,
+      created_at: row.created_at as string | null,
+      payload:
+        row.payload && typeof row.payload === "object" && !Array.isArray(row.payload)
+          ? (row.payload as Record<string, unknown>)
+          : null,
+    }));
     properties = (propertiesRes.data ?? []) as PropertyRow[];
   }
 
@@ -183,58 +139,34 @@ export default async function DashboardPage() {
                   {statCard("Total Properties", String(totalProperties))}
                   {statCard("Active Tenants", String(activeTenants))}
                   {statCard("Monthly Rent", gbp.format(monthlyRent))}
-                  {statCard("Overdue Payments", String(overduePayments))}
+                  <Link
+                    href="/dashboard/rent-tracker"
+                    className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Card className="h-full transition-colors hover:bg-muted/50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                          Overdue Payments
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-semibold tracking-tight">
+                          {String(overduePayments)}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
                 </div>
 
                 {userId ? (
-                  <div className="px-4 lg:px-6">
+                  <div className="grid gap-4 px-4 lg:px-6">
+                    <SafetyAlertsCard alerts={safetyAlerts} />
                     <EmailDraftsCard drafts={emailDrafts} />
                   </div>
                 ) : null}
 
                 <div className="grid gap-4 px-4 lg:px-6 xl:grid-cols-2">
-                  <Card>
-                    <CardHeader className="border-b">
-                      <CardTitle>Recent Activity</CardTitle>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="hover:bg-transparent">
-                            <TableHead>Agent Type</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Created</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {activity.length === 0 ? (
-                            <TableRow>
-                              <TableCell
-                                colSpan={3}
-                                className="py-10 text-center text-sm text-muted-foreground"
-                              >
-                                No recent agent activity.
-                              </TableCell>
-                            </TableRow>
-                          ) : (
-                            activity.map((row) => (
-                              <TableRow key={row.id}>
-                                <TableCell className="font-medium">
-                                  {formatAgentType(row.agent_type)}
-                                </TableCell>
-                                <TableCell>{statusBadge(row.status)}</TableCell>
-                                <TableCell>
-                                  {row.created_at
-                                    ? new Date(row.created_at).toLocaleDateString("en-GB")
-                                    : "—"}
-                                </TableCell>
-                              </TableRow>
-                            ))
-                          )}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
+                  <AiActivityCard initialRuns={activity} />
 
                   <Card>
                     <CardHeader className="border-b">

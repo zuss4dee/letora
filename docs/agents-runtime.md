@@ -7,6 +7,7 @@
 - **`src/lib/agents/context-loader.ts`**: Loads markdown + optional `user_agent_memory` rows from Supabase.
 - **`src/lib/agents/rent-chaser.ts`**: Rent chaser pipeline — Observe (payments) → Think (Gemini draft) → Act (`agent_runs`, then `sendEmailTool` / `email_logs`).
 - **`src/lib/agents/tenant-onboarding.ts`**: Tenant onboarding — Observe (tenancy/tenant/property) → Think (load `tenant_onboarding` markdown) → Act (`sendEmailTool` with `agentType: 'onboarding'`, create **`onboarding_tasks`**, set **`tenancies.onboarding_status`** to `in_progress`, **`agent_runs`** summary).
+- **`src/lib/agents/maintenance-agent.ts`**: Maintenance / complaints — Observe (maintenance request + property + tenant) → Think (Gemini JSON triage from `maintenance_agent` skills) → Act (update **`maintenance_requests`** `ai_triage_*`, **`sendEmailTool`** ×2 with `agentType: 'maintenance'`, optional **`agent_runs`** row with `agent_type: 'safety_alert'` for **urgent-safety**, timestamps, **`agent_runs`** completion). Max **5** OTA steps; every step logged to **`agent_run_steps`**.
 - **`src/lib/agents/audit.ts`**: Writes `agent_run_steps` for each step.
 - **`src/lib/agents/mcp-host.ts`**: In-process MCP-style tool catalog (`listRentChaserMcpTools`) for discovery; execution stays in TS.
 
@@ -31,6 +32,20 @@
 - **`email_logs`**: Stores `to_email`, `to_name`, `subject`, `body`, `status`, optional `agent_run_id`, `agent_type`, `sent_at`, `error_message`.
 - **Rent chaser** (`src/lib/agents/rent-chaser.ts`): After Gemini draft, inserts **`agent_runs`**, then calls **`sendEmailTool`** with `agentType: 'rent_chaser'` and the new run id.
 - **Tenant onboarding** (`src/lib/agents/tenant-onboarding.ts`): Welcome email via **`sendEmailTool`** (`agentType: 'onboarding'`); reference-check tasks (due move-in minus 14 days); move-in instructions email task (due move-in minus 3 days); manual tenancy-agreement task. Respects **`auto_send_onboarding_emails`**.
+- **Maintenance agent** (`src/lib/agents/maintenance-agent.ts`): Tenant acknowledgement + landlord summary emails only via **`sendEmailTool`** (`agentType: 'maintenance'`). Respects **`auto_send_maintenance_updates`**. Tenant acknowledgement is **always** drafted first (never skipped when auto-send is off). **urgent-safety** triage always inserts an additional **`agent_runs`** row with `agent_type: 'safety_alert'` so the main dashboard can show a **Safety alerts** card (last 7 days) — safety is never silent.
+
+## Auto-trigger (maintenance)
+
+After a successful insert of a **`maintenance_requests`** row, **`addMaintenanceRequest`** (`src/lib/actions/maintenance.ts`) calls **`runMaintenanceAgent(requestId, userId)`** in the background with **`.catch(console.error)`** (fire-and-forget, does not block the UI). The landlord’s session email is passed as **`landlordEmailFallback`** when **`user_settings.contact_email`** is empty so the landlord summary still has a recipient.
+
+## `maintenance_requests` AI columns (Phase 3)
+
+| Column | Notes |
+|--------|--------|
+| `ai_triage_category` | `urgent-safety` \| `urgent` \| `routine` \| `low-priority` |
+| `ai_triage_summary` | One-line AI summary |
+| `tenant_acknowledged_at` | Set when tenant acknowledgement email log is created |
+| `landlord_notified_at` | Set when landlord summary email log is created |
 
 ## `onboarding_tasks` (Supabase)
 
@@ -54,6 +69,7 @@ RLS: users manage rows where `user_id = auth.uid()`.
 | Route | Purpose |
 |-------|---------|
 | `POST /api/agents/onboarding` | Body: `{ tenancyId }`. Session auth. Runs **`runTenantOnboardingAgent`**. Returns `{ success, agentRunId, tasksCreated, emailStatus, message? }`. |
+| `POST /api/agents/maintenance` | Body: `{ maintenanceRequestId }`. Session auth. Manual re-run of **`runMaintenanceAgent`**. Returns `{ success, agentRunId?, triageCategory?, tenantEmailStatus?, landlordEmailStatus? }`. |
 
 ## Cron
 

@@ -116,7 +116,7 @@ export default async function RentTrackerPage() {
 
   const propertyOptions = properties.map((p) => ({
     id: p.id,
-    label: `${p.address ?? "Property"}${p.city ? `, ${p.city}` : ""}`,
+    label: p.address ?? "Property",
   }));
 
   const tenantOptions = tenants.map((t) => ({

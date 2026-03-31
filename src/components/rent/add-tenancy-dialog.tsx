@@ -7,13 +7,19 @@ import { useForm, type Resolver } from "react-hook-form";
 
 import { addTenancy } from "@/lib/actions/tenancies";
 import { type AddTenancyInput, addTenancySchema } from "@/lib/validations/tenancy";
+import {
+  DIALOG_FIELD_CLASS,
+  DIALOG_FORM_STACK_CLASS,
+  DIALOG_SINGLE_COLUMN_CLASS,
+  dialogFormFooterClass,
+} from "@/lib/ui/dialog-form";
 
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -83,26 +89,27 @@ export function AddTenancyDialog({
           Add Tenancy
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
         <DialogHeader>
           <DialogTitle>Add tenancy</DialogTitle>
           <DialogDescription>
-            Link a tenant to a property and set the rent terms.
+            Link a tenant to a property and set rent terms. Property and tenant are shown by address
+            and name.
           </DialogDescription>
         </DialogHeader>
 
-        <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label>Property</Label>
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <div className={DIALOG_FORM_STACK_CLASS}>
+            <div className={DIALOG_FIELD_CLASS}>
+              <Label htmlFor="at-property">Property</Label>
               <Select
                 value={form.watch("propertyId")}
                 onValueChange={(v) =>
                   form.setValue("propertyId", v, { shouldValidate: true })
                 }
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select property" />
+                <SelectTrigger id="at-property" className="w-full">
+                  <SelectValue placeholder="Select by address" />
                 </SelectTrigger>
                 <SelectContent>
                   {properties.map((p) => (
@@ -119,16 +126,16 @@ export function AddTenancyDialog({
               ) : null}
             </div>
 
-            <div className="grid gap-2">
-              <Label>Tenant</Label>
+            <div className={DIALOG_FIELD_CLASS}>
+              <Label htmlFor="at-tenant">Tenant</Label>
               <Select
                 value={form.watch("tenantId")}
                 onValueChange={(v) =>
                   form.setValue("tenantId", v, { shouldValidate: true })
                 }
               >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select tenant" />
+                <SelectTrigger id="at-tenant" className="w-full">
+                  <SelectValue placeholder="Name (email)" />
                 </SelectTrigger>
                 <SelectContent>
                   {tenants.map((t) => (
@@ -144,84 +151,92 @@ export function AddTenancyDialog({
                 </p>
               ) : null}
             </div>
+
+            <div className="grid w-full min-w-0 gap-4 sm:grid-cols-2">
+              <div className={DIALOG_FIELD_CLASS}>
+                <Label htmlFor="at-start">Start date</Label>
+                <Input id="at-start" className="w-full" type="date" {...form.register("startDate")} />
+                {form.formState.errors.startDate?.message ? (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    {form.formState.errors.startDate.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className={DIALOG_FIELD_CLASS}>
+                <Label htmlFor="at-end">End date</Label>
+                <Input id="at-end" className="w-full" type="date" {...form.register("endDate")} />
+                {form.formState.errors.endDate?.message ? (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    {form.formState.errors.endDate.message}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className={DIALOG_FIELD_CLASS}>
+              <Label htmlFor="at-movein">Move-in date (optional)</Label>
+              <Input id="at-movein" className="w-full" type="date" {...form.register("moveInDate")} />
+              <p className="text-xs text-muted-foreground">
+                If blank, onboarding and reminders use the tenancy start date.
+              </p>
+            </div>
+
+            <div className="grid w-full min-w-0 gap-4 sm:grid-cols-2">
+              <div className={DIALOG_FIELD_CLASS}>
+                <Label htmlFor="at-rent">Monthly rent (£)</Label>
+                <Input
+                  id="at-rent"
+                  className="w-full"
+                  type="number"
+                  min={0}
+                  step="1"
+                  placeholder="e.g. 1200"
+                  {...form.register("monthlyRent", { valueAsNumber: true })}
+                />
+                {form.formState.errors.monthlyRent?.message ? (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    {form.formState.errors.monthlyRent.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className={DIALOG_FIELD_CLASS}>
+                <Label htmlFor="at-dep">Deposit (£)</Label>
+                <Input
+                  id="at-dep"
+                  className="w-full"
+                  type="number"
+                  min={0}
+                  step="1"
+                  placeholder="e.g. 1200"
+                  {...form.register("depositAmount", { valueAsNumber: true })}
+                />
+                {form.formState.errors.depositAmount?.message ? (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    {form.formState.errors.depositAmount.message}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            {submitError ? (
+              <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+                {submitError}
+              </p>
+            ) : null}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="startDate">Start date</Label>
-              <Input id="startDate" type="date" {...form.register("startDate")} />
-              {form.formState.errors.startDate?.message ? (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {form.formState.errors.startDate.message}
-                </p>
-              ) : null}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="endDate">End date</Label>
-              <Input id="endDate" type="date" {...form.register("endDate")} />
-              {form.formState.errors.endDate?.message ? (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {form.formState.errors.endDate.message}
-                </p>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="grid gap-2">
-            <Label htmlFor="moveInDate">Move-in date (optional)</Label>
-            <Input id="moveInDate" type="date" {...form.register("moveInDate")} />
-            <p className="text-xs text-muted-foreground">
-              If left blank, onboarding and reminders use the tenancy start date.
-            </p>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="monthlyRent">Monthly rent (£)</Label>
-              <Input
-                id="monthlyRent"
-                type="number"
-                min={0}
-                step="1"
-                {...form.register("monthlyRent", { valueAsNumber: true })}
-              />
-              {form.formState.errors.monthlyRent?.message ? (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {form.formState.errors.monthlyRent.message}
-                </p>
-              ) : null}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="depositAmount">Deposit amount (£)</Label>
-              <Input
-                id="depositAmount"
-                type="number"
-                min={0}
-                step="1"
-                {...form.register("depositAmount", { valueAsNumber: true })}
-              />
-              {form.formState.errors.depositAmount?.message ? (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {form.formState.errors.depositAmount.message}
-                </p>
-              ) : null}
-            </div>
-          </div>
-
-          {submitError ? (
-            <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-              {submitError}
-            </p>
-          ) : null}
-
-          <DialogFooter>
+          <div className={dialogFormFooterClass()}>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </DialogClose>
             <Button type="submit" disabled={isSubmitting || disabled}>
-              {isSubmitting ? "Adding..." : "Add tenancy"}
+              {isSubmitting ? "Adding…" : "Add tenancy"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
   );
 }
-

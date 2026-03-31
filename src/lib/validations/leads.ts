@@ -1,21 +1,45 @@
 import { z } from "zod";
 
+const SOURCE_OPTIONS = [
+  "Rightmove",
+  "Zoopla",
+  "OnTheMarket",
+  "Referral",
+  "Walk-in",
+  "Social Media",
+  "Other",
+] as const;
+
+export const LEAD_SOURCE_OPTIONS = SOURCE_OPTIONS;
+
+/** Sentinel for optional Select (Radix disallows value=""). */
+export const LEAD_OPTION_NONE = "__none__" as const;
+
 export const addLeadSchema = z.object({
-  fullName: z.string().min(2, "Full name is required"),
-  email: z.string().email("Enter a valid email"),
-  phone: z.string().min(7, "Phone is required"),
-  propertyId: z.string().uuid("Select a property"),
-  moveInDate: z.string().min(1, "Move-in date is required"),
-  source: z.enum([
-    "Rightmove",
-    "Zoopla",
-    "OnTheMarket",
-    "Referral",
-    "Direct",
-    "Other",
-  ]),
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Valid email required"),
+  phone: z.string().optional(),
+  propertyId: z
+    .string()
+    .optional()
+    .transform((v) =>
+      v === undefined || v === "" || v === LEAD_OPTION_NONE ? undefined : v,
+    )
+    .pipe(z.union([z.string().uuid(), z.undefined()])),
+  source: z
+    .string()
+    .optional()
+    .transform((v) =>
+      v === undefined || v === "" || v === LEAD_OPTION_NONE ? undefined : v,
+    )
+    .pipe(z.union([z.enum(SOURCE_OPTIONS), z.undefined()])),
+  budget: z.number().positive().optional(),
+  moveInDate: z.string().optional(),
   notes: z.string().optional(),
 });
 
+/** Parsed / API shape after Zod transforms */
 export type AddLeadInput = z.infer<typeof addLeadSchema>;
 
+/** react-hook-form values before transforms (e.g. Select sentinels) */
+export type AddLeadFormValues = z.input<typeof addLeadSchema>;

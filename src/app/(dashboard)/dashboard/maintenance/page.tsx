@@ -1,44 +1,7 @@
-/**
- * Supabase migration (add/replace maintenance_requests table)
- *
- * ```sql
- * create table if not exists public.maintenance_requests (
- *   id uuid primary key,
- *   user_id uuid references auth.users (id),
- *   property_id uuid references public.properties (id),
- *   tenant_id uuid references public.tenant_profiles (id),
- *   title text not null,
- *   description text not null,
- *   priority text not null default 'medium',
- *   status text not null default 'open',
- *   created_at timestamptz not null default now(),
- *   updated_at timestamptz not null default now()
- * );
- *
- * alter table public.maintenance_requests enable row level security;
- *
- * create policy "maintenance_requests_select_own"
- * on public.maintenance_requests for select
- * using (user_id = auth.uid());
- *
- * create policy "maintenance_requests_insert_own"
- * on public.maintenance_requests for insert
- * with check (user_id = auth.uid());
- *
- * create policy "maintenance_requests_update_own"
- * on public.maintenance_requests for update
- * using (user_id = auth.uid())
- * with check (user_id = auth.uid());
- *
- * create policy "maintenance_requests_delete_own"
- * on public.maintenance_requests for delete
- * using (user_id = auth.uid());
- * ```
- */
-
 import Link from "next/link";
 
 import { AppSidebar } from "@/components/app-sidebar";
+import { DashboardPollRefresh } from "@/hooks/use-dashboard-poll-refresh";
 import { AddRequestDialog } from "@/components/maintenance/add-request-dialog";
 import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
@@ -54,9 +17,9 @@ import {
 } from "@/components/ui/table";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import type { MaintenanceRequestRow } from "@/lib/actions/maintenance";
 import { getMaintenanceRequests } from "@/lib/actions/maintenance";
-import { getProperties } from "@/lib/actions/properties";
-import { getTenants } from "@/lib/actions/tenants";
+import { getTenancies } from "@/lib/actions/tenancies";
 import { createClient } from "@/lib/supabase/server";
 
 type PriorityUi = "low" | "medium" | "high" | "urgent";
@@ -92,6 +55,48 @@ function priorityBadge(priority: string | null) {
   );
 }
 
+function aiTriageBadge(category: string | null) {
+  if (!category) {
+    return (
+      <Badge className="border border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900/40 dark:bg-blue-500/10 dark:text-blue-300">
+        Analysing…
+      </Badge>
+    );
+  }
+  const c = category.toLowerCase();
+  if (c === "urgent-safety") {
+    return (
+      <Badge className="border border-red-300 bg-red-100 text-red-900 dark:border-red-900/50 dark:bg-red-950/50 dark:text-red-100">
+        urgent-safety
+      </Badge>
+    );
+  }
+  if (c === "urgent") {
+    return (
+      <Badge className="border border-orange-200 bg-orange-50 text-orange-900 dark:border-orange-900/40 dark:bg-orange-500/10 dark:text-orange-200">
+        urgent
+      </Badge>
+    );
+  }
+  if (c === "routine") {
+    return (
+      <Badge className="border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/40 dark:bg-amber-500/10 dark:text-amber-200">
+        routine
+      </Badge>
+    );
+  }
+  return (
+    <Badge className="border border-zinc-300 bg-zinc-100 text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+      low-priority
+    </Badge>
+  );
+}
+
+function truncateSummary(s: string | null, max = 60) {
+  if (!s) return "—";
+  return s.length <= max ? s : `${s.slice(0, max)}…`;
+}
+
 function statusBadge(status: string | null) {
   const s = (status ?? "open").toLowerCase() as StatusUi;
   if (s === "resolved") {
@@ -124,30 +129,18 @@ export default async function MaintenancePage() {
   const userId = user?.id ?? null;
   const userEmail = user?.email ?? null;
 
-  const [requests, properties, tenants] = userId
-    ? await Promise.all([
-        getMaintenanceRequests(userId),
-        getProperties(userId),
-        getTenants(userId),
-      ])
-    : [
-        { open: [], resolved: [] },
-        [],
-        [],
-      ];
+  const [requests, tenancies] = userId
+    ? await Promise.all([getMaintenanceRequests(userId), getTenancies(userId)])
+    : [{ open: [], resolved: [] }, []];
 
-  const propertyOptions = properties.map((p) => ({
-    id: p.id,
-    label: `${p.address ?? "Property"}${p.city ? `, ${p.city}` : ""}`,
-  }));
-
-  const tenantOptions = tenants.map((t) => ({
+  const tenancyOptions = tenancies.map((t) => ({
     id: t.id,
-    label: `${t.fullName ?? "Tenant"}${t.email ? ` (${t.email})` : ""}`,
+    label: `${t.propertyAddress ?? "Property"} · ${t.tenantFullName ?? "Tenant"}`,
   }));
 
   return (
     <TooltipProvider>
+      <DashboardPollRefresh />
       <SidebarProvider
         style={
           {
@@ -169,7 +162,7 @@ export default async function MaintenancePage() {
                       Track and manage property maintenance requests.
                     </p>
                   </div>
-                  <AddRequestDialog properties={propertyOptions} tenants={tenantOptions} />
+                  <AddRequestDialog tenancies={tenancyOptions} />
                 </div>
 
                 <div className="grid gap-4 px-4 lg:px-6">
@@ -183,9 +176,13 @@ export default async function MaintenancePage() {
                           <TableRow className="hover:bg-transparent">
                             <TableHead>Property</TableHead>
                             <TableHead>Tenant</TableHead>
-                            <TableHead>Issue</TableHead>
+                            <TableHead>Description</TableHead>
                             <TableHead>Priority</TableHead>
+                            <TableHead>AI triage</TableHead>
+                            <TableHead>AI summary</TableHead>
+                            <TableHead>Contractor</TableHead>
                             <TableHead>Date Reported</TableHead>
+                            <TableHead>Resolved on</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
@@ -194,24 +191,32 @@ export default async function MaintenancePage() {
                           {requests.open.length === 0 ? (
                             <TableRow>
                               <TableCell
-                                colSpan={7}
+                                colSpan={11}
                                 className="py-10 text-center text-sm text-muted-foreground"
                               >
                                 No open maintenance requests.
                               </TableCell>
                             </TableRow>
                           ) : (
-                            requests.open.map((r) => (
+                            requests.open.map((r: MaintenanceRequestRow) => (
                               <TableRow key={r.id}>
                                 <TableCell className="font-medium">
                                   {r.propertyAddress ?? "—"}
                                 </TableCell>
                                 <TableCell>{r.tenantFullName ?? "—"}</TableCell>
                                 <TableCell className="max-w-[360px] truncate">
-                                  {r.title ?? "—"}
+                                  {truncateSummary(r.description)}
                                 </TableCell>
                                 <TableCell>{priorityBadge(r.priority)}</TableCell>
+                                <TableCell>{aiTriageBadge(r.aiTriageCategory)}</TableCell>
+                                <TableCell className="max-w-[200px] text-sm text-muted-foreground">
+                                  {truncateSummary(r.aiTriageSummary)}
+                                </TableCell>
+                                <TableCell className="max-w-[160px] truncate">
+                                  {r.contractorName?.trim() || "—"}
+                                </TableCell>
                                 <TableCell>{r.createdAt?.slice(0, 10) ?? "—"}</TableCell>
+                                <TableCell className="text-muted-foreground">—</TableCell>
                                 <TableCell>{statusBadge(r.status)}</TableCell>
                                 <TableCell className="text-right">
                                   <Button asChild variant="outline" size="sm">
@@ -236,9 +241,12 @@ export default async function MaintenancePage() {
                           <TableRow className="hover:bg-transparent">
                             <TableHead>Property</TableHead>
                             <TableHead>Tenant</TableHead>
-                            <TableHead>Issue</TableHead>
+                            <TableHead>Description</TableHead>
                             <TableHead>Priority</TableHead>
+                            <TableHead>AI triage</TableHead>
+                            <TableHead>AI summary</TableHead>
                             <TableHead>Date Reported</TableHead>
+                            <TableHead>Resolved on</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
@@ -247,24 +255,31 @@ export default async function MaintenancePage() {
                           {requests.resolved.length === 0 ? (
                             <TableRow>
                               <TableCell
-                                colSpan={7}
+                                colSpan={10}
                                 className="py-10 text-center text-sm text-muted-foreground"
                               >
                                 No resolved maintenance requests yet.
                               </TableCell>
                             </TableRow>
                           ) : (
-                            requests.resolved.map((r) => (
+                            requests.resolved.map((r: MaintenanceRequestRow) => (
                               <TableRow key={r.id}>
                                 <TableCell className="font-medium">
                                   {r.propertyAddress ?? "—"}
                                 </TableCell>
                                 <TableCell>{r.tenantFullName ?? "—"}</TableCell>
                                 <TableCell className="max-w-[360px] truncate">
-                                  {r.title ?? "—"}
+                                  {truncateSummary(r.description)}
                                 </TableCell>
                                 <TableCell>{priorityBadge(r.priority)}</TableCell>
+                                <TableCell>{aiTriageBadge(r.aiTriageCategory)}</TableCell>
+                                <TableCell className="max-w-[200px] text-sm text-muted-foreground">
+                                  {truncateSummary(r.aiTriageSummary)}
+                                </TableCell>
                                 <TableCell>{r.createdAt?.slice(0, 10) ?? "—"}</TableCell>
+                                <TableCell>
+                                  {r.resolvedAt ? r.resolvedAt.slice(0, 10) : "—"}
+                                </TableCell>
                                 <TableCell>{statusBadge(r.status)}</TableCell>
                                 <TableCell className="text-right">
                                   <Button asChild variant="outline" size="sm">

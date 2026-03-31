@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 
 type PaymentRow = {
@@ -42,7 +43,7 @@ export async function GET() {
   const [{ data: properties }, { data: tenants }] = await Promise.all([
     supabase
       .from("properties")
-      .select("id,address,city")
+      .select("id,address")
       .in("id", propertyIds.length ? propertyIds : ["none"]),
     supabase
       .from("tenant_profiles")
@@ -53,13 +54,12 @@ export async function GET() {
   const result = rows.map((p) => {
     const property = properties?.find((pr) => pr.id === p.property_id);
     const tenant = tenants?.find((t) => t.id === p.tenant_id);
-    const address = property?.address ?? "Unknown property";
-    const city = property?.city ? `, ${property.city}` : "";
+    const address = normalizePropertyAddressLabel(property?.address ?? "") || "Unknown property";
 
     return {
       id: p.id,
       propertyId: p.property_id,
-      propertyName: `${address}${city}`,
+      propertyName: address,
       tenantId: p.tenant_id,
       tenantName: tenant?.full_name ?? "Unknown tenant",
       tenantEmail: tenant?.email ?? null,

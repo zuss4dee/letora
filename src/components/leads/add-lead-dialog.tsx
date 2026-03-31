@@ -2,18 +2,30 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { toast } from "sonner";
 
 import { addLead } from "@/lib/actions/leads";
-import { type AddLeadInput, addLeadSchema } from "@/lib/validations/leads";
+import {
+  type AddLeadFormValues,
+  addLeadSchema,
+  LEAD_OPTION_NONE,
+  LEAD_SOURCE_OPTIONS,
+} from "@/lib/validations/leads";
+import {
+  DIALOG_FIELD_CLASS,
+  DIALOG_FORM_STACK_CLASS,
+  DIALOG_SINGLE_COLUMN_CLASS,
+  dialogFormFooterClass,
+} from "@/lib/ui/dialog-form";
+import type { PropertyPickListItem } from "@/lib/actions/properties";
 
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -29,151 +41,242 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 
-export function AddLeadDialog({
-  properties,
-}: {
-  properties: Array<{ id: string; label: string }>;
-}) {
+function defaultFormValues(): AddLeadFormValues {
+  return {
+    name: "",
+    email: "",
+    phone: "",
+    propertyId: LEAD_OPTION_NONE,
+    source: LEAD_OPTION_NONE,
+    moveInDate: "",
+    notes: "",
+    budget: undefined,
+  };
+}
+
+export function AddLeadDialog({ properties }: { properties: PropertyPickListItem[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const prevOpenRef = useRef(false);
 
-  const defaultValues = useMemo<AddLeadInput>(
-    () => ({
-      fullName: "",
-      email: "",
-      phone: "",
-      propertyId: properties[0]?.id ?? "00000000-0000-0000-0000-000000000000",
-      moveInDate: "",
-      source: "Rightmove",
-      notes: "",
-    }),
-    [properties],
-  );
+  const defaultValues = useMemo(() => defaultFormValues(), []);
 
-  const form = useForm<AddLeadInput>({
+  const form = useForm<AddLeadFormValues>({
     resolver: zodResolver(addLeadSchema),
     defaultValues,
   });
 
-  const isSubmitting = form.formState.isSubmitting;
-  const disabled = properties.length === 0;
-
-  async function onSubmit(values: AddLeadInput) {
-    setSubmitError(null);
-    const result = await addLead(values);
-    if (!result.ok) {
-      setSubmitError(result.error);
-      return;
+  useEffect(() => {
+    if (open && !prevOpenRef.current) {
+      form.reset(defaultFormValues());
     }
-    setOpen(false);
-    router.refresh();
+    prevOpenRef.current = open;
+  }, [open, form]);
+
+  const isSubmitting = form.formState.isSubmitting;
+  const { errors } = form.formState;
+
+  async function onSubmit(values: AddLeadFormValues) {
+    try {
+      await addLead({
+        name: values.name,
+        email: values.email,
+        phone: values.phone,
+        propertyId: values.propertyId,
+        source: values.source,
+        budget: values.budget,
+        moveInDate: values.moveInDate,
+        notes: values.notes,
+      });
+      toast.success("Lead added.");
+      form.reset(defaultFormValues());
+      setOpen(false);
+      router.refresh();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Could not add lead";
+      toast.error(msg);
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-          disabled={disabled}
-        >
+        <Button className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300">
           Add Lead
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-xl">
+      <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
         <DialogHeader>
           <DialogTitle>Add lead</DialogTitle>
           <DialogDescription>Create a new prospective tenant lead.</DialogDescription>
         </DialogHeader>
 
-        <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="fullName">Full Name</Label>
-              <Input id="fullName" {...form.register("fullName")} />
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <div className={DIALOG_FORM_STACK_CLASS}>
+            <div className={DIALOG_FIELD_CLASS}>
+              <Label htmlFor="lead-name">Full name</Label>
+              <Input
+                id="lead-name"
+                placeholder="e.g. Sarah Johnson"
+                autoComplete="name"
+                {...form.register("name")}
+              />
+              {errors.name ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {errors.name.message}
+                </p>
+              ) : null}
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" {...form.register("email")} />
-            </div>
-          </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" {...form.register("phone")} />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className={DIALOG_FIELD_CLASS}>
+                <Label htmlFor="lead-email">Email</Label>
+                <Input
+                  id="lead-email"
+                  type="email"
+                  placeholder="e.g. sarah@email.com"
+                  autoComplete="email"
+                  {...form.register("email")}
+                />
+                {errors.email ? (
+                  <p className="text-sm text-destructive" role="alert">
+                    {errors.email.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className={DIALOG_FIELD_CLASS}>
+                <Label htmlFor="lead-phone">Phone</Label>
+                <Input
+                  id="lead-phone"
+                  type="tel"
+                  placeholder="e.g. 07700 900123"
+                  autoComplete="tel"
+                  {...form.register("phone")}
+                />
+                {errors.phone ? (
+                  <p className="text-sm text-destructive" role="alert">
+                    {errors.phone.message}
+                  </p>
+                ) : null}
+              </div>
             </div>
-            <div className="grid gap-2">
-              <Label>Property Interested In</Label>
-              <Select
-                value={form.watch("propertyId")}
-                onValueChange={(v) =>
-                  form.setValue("propertyId", v, { shouldValidate: true })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select property" />
-                </SelectTrigger>
-                <SelectContent>
-                  {properties.map((property) => (
-                    <SelectItem key={property.id} value={property.id}>
-                      {property.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="moveInDate">Desired Move-in Date</Label>
-              <Input id="moveInDate" type="date" {...form.register("moveInDate")} />
+            <div className={DIALOG_FIELD_CLASS}>
+              <Label>Property interest</Label>
+              <Controller
+                control={form.control}
+                name="propertyId"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="No specific property" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={LEAD_OPTION_NONE}>No specific property</SelectItem>
+                      {properties.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.address?.trim() || "Property"}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.propertyId ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {errors.propertyId.message}
+                </p>
+              ) : null}
             </div>
-            <div className="grid gap-2">
+
+            <div className={DIALOG_FIELD_CLASS}>
               <Label>Source</Label>
-              <Select
-                value={form.watch("source")}
-                onValueChange={(v) =>
-                  form.setValue("source", v as AddLeadInput["source"], {
-                    shouldValidate: true,
-                  })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select source" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Rightmove">Rightmove</SelectItem>
-                  <SelectItem value="Zoopla">Zoopla</SelectItem>
-                  <SelectItem value="OnTheMarket">OnTheMarket</SelectItem>
-                  <SelectItem value="Referral">Referral</SelectItem>
-                  <SelectItem value="Direct">Direct</SelectItem>
-                  <SelectItem value="Other">Other</SelectItem>
-                </SelectContent>
-              </Select>
+              <Controller
+                control={form.control}
+                name="source"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={LEAD_OPTION_NONE}>Not specified</SelectItem>
+                      {LEAD_SOURCE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt} value={opt}>
+                          {opt}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+              {errors.source ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {errors.source.message}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className={DIALOG_FIELD_CLASS}>
+                <Label htmlFor="lead-budget">Budget</Label>
+                <Input
+                  id="lead-budget"
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  placeholder="e.g. 950.00"
+                  {...form.register("budget", {
+                    setValueAs: (v) => {
+                      if (v === "" || v === null || v === undefined) return undefined;
+                      const n = typeof v === "number" ? v : Number(v);
+                      return Number.isFinite(n) && !Number.isNaN(n) ? n : undefined;
+                    },
+                  })}
+                />
+                {errors.budget ? (
+                  <p className="text-sm text-destructive" role="alert">
+                    {errors.budget.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className={DIALOG_FIELD_CLASS}>
+                <Label htmlFor="lead-move-in">Move-in date</Label>
+                <Input id="lead-move-in" type="date" {...form.register("moveInDate")} />
+                {errors.moveInDate ? (
+                  <p className="text-sm text-destructive" role="alert">
+                    {errors.moveInDate.message}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className={DIALOG_FIELD_CLASS}>
+              <Label htmlFor="lead-notes">Notes</Label>
+              <Textarea
+                id="lead-notes"
+                placeholder="e.g. Looking for 2-bed, flexible on dates"
+                rows={4}
+                {...form.register("notes")}
+              />
+              {errors.notes ? (
+                <p className="text-sm text-destructive" role="alert">
+                  {errors.notes.message}
+                </p>
+              ) : null}
             </div>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" {...form.register("notes")} />
-          </div>
-
-          {submitError ? (
-            <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-              {submitError}
-            </p>
-          ) : null}
-
-          <DialogFooter>
-            <Button type="submit" disabled={isSubmitting || disabled}>
-              {isSubmitting ? "Saving..." : "Submit"}
+          <div className={dialogFormFooterClass("mt-4")}>
+            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+              Cancel
             </Button>
-          </DialogFooter>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Adding…" : "Add lead"}
+            </Button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
   );
 }
-

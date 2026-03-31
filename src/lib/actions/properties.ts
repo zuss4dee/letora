@@ -50,6 +50,33 @@ export async function getProperties(userId: string): Promise<PropertyRow[]> {
   }));
 }
 
+/** `id` and `address` only, for the authenticated user (e.g. contract picker). */
+export type PropertyPickListItem = {
+  id: string;
+  address: string | null;
+};
+
+export async function getPropertyPickList(): Promise<PropertyPickListItem[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("properties")
+    .select("id,address")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return data.map((row) => ({
+    id: row.id,
+    address: row.address ?? null,
+  }));
+}
+
 export async function addProperty(formData: unknown) {
   const supabase = await createClient();
   const {

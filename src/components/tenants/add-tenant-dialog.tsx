@@ -7,13 +7,19 @@ import { useForm } from "react-hook-form";
 
 import { addTenant } from "@/lib/actions/tenants";
 import { type AddTenantInput, tenantSchema } from "@/lib/validations/tenant";
+import {
+  DIALOG_FIELD_CLASS,
+  DIALOG_FORM_STACK_CLASS,
+  DIALOG_SINGLE_COLUMN_CLASS,
+  dialogFormFooterClass,
+} from "@/lib/ui/dialog-form";
 
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -71,95 +77,119 @@ export function AddTenantDialog() {
           Add Tenant
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
         <DialogHeader>
           <DialogTitle>Add tenant</DialogTitle>
-          <DialogDescription>Add a tenant profile to your portfolio.</DialogDescription>
+          <DialogDescription>
+            Create a tenant profile. Use a real email so rent and maintenance notices can be sent.
+          </DialogDescription>
         </DialogHeader>
 
-        <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-          <div className="grid gap-2">
-            <Label htmlFor="fullName">Full name</Label>
-            <Input id="fullName" placeholder="Ava Johnson" {...form.register("fullName")} />
-            {form.formState.errors.fullName?.message ? (
-              <p className="text-xs text-red-600 dark:text-red-400">
-                {form.formState.errors.fullName.message}
+        <form onSubmit={form.handleSubmit(onSubmit)}>
+          <div className={DIALOG_FORM_STACK_CLASS}>
+            <div className={DIALOG_FIELD_CLASS}>
+              <Label htmlFor="tn-name">Full name</Label>
+              <Input
+                id="tn-name"
+                className="w-full"
+                placeholder="e.g. Ava Johnson"
+                {...form.register("fullName")}
+              />
+              {form.formState.errors.fullName?.message ? (
+                <p className="text-xs text-red-600 dark:text-red-400">
+                  {form.formState.errors.fullName.message}
+                </p>
+              ) : null}
+            </div>
+
+            <div className="grid w-full min-w-0 gap-4 sm:grid-cols-2">
+              <div className={DIALOG_FIELD_CLASS}>
+                <Label htmlFor="tn-email">Email</Label>
+                <Input
+                  id="tn-email"
+                  className="w-full"
+                  type="email"
+                  placeholder="e.g. ava.johnson@email.com"
+                  {...form.register("email")}
+                />
+                {form.formState.errors.email?.message ? (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    {form.formState.errors.email.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className={DIALOG_FIELD_CLASS}>
+                <Label htmlFor="tn-phone">Phone</Label>
+                <Input
+                  id="tn-phone"
+                  className="w-full"
+                  placeholder="e.g. +44 7700 900123"
+                  {...form.register("phone")}
+                />
+                {form.formState.errors.phone?.message ? (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    {form.formState.errors.phone.message}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="grid w-full min-w-0 gap-4 sm:grid-cols-2">
+              <div className={DIALOG_FIELD_CLASS}>
+                <Label htmlFor="tn-dob">Date of birth</Label>
+                <Input id="tn-dob" className="w-full" type="date" {...form.register("dateOfBirth")} />
+                {form.formState.errors.dateOfBirth?.message ? (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    {form.formState.errors.dateOfBirth.message}
+                  </p>
+                ) : null}
+              </div>
+              <div className={DIALOG_FIELD_CLASS}>
+                <Label htmlFor="tn-rtr">Right to Rent</Label>
+                <Select
+                  value={form.watch("rightToRentStatus")}
+                  onValueChange={(v) =>
+                    form.setValue("rightToRentStatus", v as AddTenantInput["rightToRentStatus"], {
+                      shouldValidate: true,
+                    })
+                  }
+                >
+                  <SelectTrigger id="tn-rtr" className="w-full">
+                    <SelectValue placeholder="Verification status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="verified">Verified</SelectItem>
+                    <SelectItem value="failed">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.rightToRentStatus?.message ? (
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    {form.formState.errors.rightToRentStatus.message}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            {submitError ? (
+              <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+                {submitError}
               </p>
             ) : null}
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="ava@example.com" {...form.register("email")} />
-              {form.formState.errors.email?.message ? (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {form.formState.errors.email.message}
-                </p>
-              ) : null}
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" placeholder="+44 7700 900123" {...form.register("phone")} />
-              {form.formState.errors.phone?.message ? (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {form.formState.errors.phone.message}
-                </p>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-2">
-              <Label htmlFor="dateOfBirth">Date of birth</Label>
-              <Input id="dateOfBirth" type="date" {...form.register("dateOfBirth")} />
-              {form.formState.errors.dateOfBirth?.message ? (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {form.formState.errors.dateOfBirth.message}
-                </p>
-              ) : null}
-            </div>
-            <div className="grid gap-2">
-              <Label>Right to Rent</Label>
-              <Select
-                value={form.watch("rightToRentStatus")}
-                onValueChange={(v) =>
-                  form.setValue("rightToRentStatus", v as AddTenantInput["rightToRentStatus"], {
-                    shouldValidate: true,
-                  })
-                }
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="verified">Verified</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                </SelectContent>
-              </Select>
-              {form.formState.errors.rightToRentStatus?.message ? (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {form.formState.errors.rightToRentStatus.message}
-                </p>
-              ) : null}
-            </div>
-          </div>
-
-          {submitError ? (
-            <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-              {submitError}
-            </p>
-          ) : null}
-
-          <DialogFooter>
+          <div className={dialogFormFooterClass()}>
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </DialogClose>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Adding..." : "Add tenant"}
+              {isSubmitting ? "Adding…" : "Add tenant"}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
       </DialogContent>
     </Dialog>
   );
 }
-

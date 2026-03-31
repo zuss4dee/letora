@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 
 export type OnboardingTaskRow = {
@@ -39,7 +40,7 @@ export async function getTenancyOnboardingDetail(tenancyId: string): Promise<Ten
       id,
       start_date,
       onboarding_status,
-      properties!inner ( address, city, user_id ),
+      properties!inner ( address, user_id ),
       tenant_profiles ( full_name )
     `,
     )
@@ -48,12 +49,11 @@ export async function getTenancyOnboardingDetail(tenancyId: string): Promise<Ten
 
   if (error || !row) return null;
 
-  const property = row.properties as unknown as { address: string | null; city: string | null; user_id: string };
+  const property = row.properties as unknown as { address: string | null; user_id: string };
   if (property.user_id !== user.id) return null;
 
   const tenantRaw = row.tenant_profiles as unknown as { full_name: string | null } | null | { full_name: string | null }[];
   const tenant = Array.isArray(tenantRaw) ? tenantRaw[0] : tenantRaw;
-  const addressParts = [property.address, property.city].filter(Boolean);
   const onboardingStatus = (row as { onboarding_status?: string }).onboarding_status ?? "not_started";
 
   const { data: taskRows } = await supabase
@@ -92,7 +92,7 @@ export async function getTenancyOnboardingDetail(tenancyId: string): Promise<Ten
 
   return {
     id: row.id,
-    propertyAddress: addressParts.join(", ") || null,
+    propertyAddress: normalizePropertyAddressLabel(property.address?.trim() ?? "") || null,
     tenantName: tenant?.full_name ?? null,
     onboarding_status: onboardingStatus,
     start_date: (row as { start_date?: string | null }).start_date ?? null,

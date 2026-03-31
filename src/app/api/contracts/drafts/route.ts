@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
@@ -28,7 +29,7 @@ export async function GET() {
 
     const { data: properties } = await supabase
       .from("properties")
-      .select("id, address, city")
+      .select("id, address")
       .in("id", propertyIds.length ? propertyIds : ["none"]);
 
     const enriched = contracts.map((c) => ({
@@ -37,7 +38,7 @@ export async function GET() {
       tenant_name: tenants?.find((t) => t.id === c.tenant_id)?.full_name ?? "Unknown Tenant",
       property_address: (() => {
         const p = properties?.find((p) => p.id === c.property_id);
-        return p ? `${p.address}, ${p.city}` : "Unknown Property";
+        return normalizePropertyAddressLabel(p?.address ?? "") || "Unknown Property";
       })(),
     }));
 

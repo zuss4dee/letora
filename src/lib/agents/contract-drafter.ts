@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import mammoth from "mammoth";
 import { PDFParse } from "pdf-parse";
 
+import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 
 export interface ContractDraftResult {
@@ -83,9 +84,9 @@ export async function runContractDrafterAgent(
   // Fetch property separately
   const { data: property } = await supabase
     .from("properties")
-    .select("id, address, city")
+    .select("id, address")
     .eq("id", contract.property_id)
-    .single<{ id: string; address: string | null; city: string | null }>();
+    .single<{ id: string; address: string | null }>();
 
   const { data: settings } = await supabase
     .from("user_settings")
@@ -95,9 +96,7 @@ export async function runContractDrafterAgent(
 
   const businessName = settings?.business_name ?? "Letora Property Management";
   const tenantName = tenant?.full_name ?? "Unknown";
-  const address = property?.address ?? "";
-  const city = property?.city ?? "";
-  const propertyAddress = city ? `${address}, ${city}` : address;
+  const propertyAddress = normalizePropertyAddressLabel(property?.address ?? "") || "";
   const contractType = contract.contract_type ?? "Assured Shorthold Tenancy (AST)";
   const startDate = contract.start_date ?? "";
   const endDate = contract.end_date ?? "";

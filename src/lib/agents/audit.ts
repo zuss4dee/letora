@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type AgentStepType = "observe" | "think" | "act";
+export type AgentStepType = "observe" | "think" | "act" | "complete";
 
 export async function recordAgentRunStep(
   supabase: SupabaseClient,

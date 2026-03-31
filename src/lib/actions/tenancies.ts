@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
+import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 import {
   addTenancySchema,
@@ -72,7 +73,7 @@ export async function getTenancies(userId: string): Promise<TenancyRow[]> {
     return {
     id: row.id,
     propertyId: row.property_id ?? null,
-    propertyAddress: property?.address ?? null,
+    propertyAddress: normalizePropertyAddressLabel(property?.address ?? "") || null,
     tenantId: row.tenant_id ?? null,
     tenantFullName: tenant?.full_name ?? null,
     startDate: row.start_date ?? null,
@@ -217,7 +218,7 @@ export async function getThisMonthPayments(userId: string): Promise<RentPaymentR
     return {
     id: row.id,
     tenancyId: row.tenancy_id ?? null,
-    propertyAddress: property?.address ?? null,
+    propertyAddress: normalizePropertyAddressLabel(property?.address ?? "") || null,
     tenantFullName: tenant?.full_name ?? null,
     dueDate: row.due_date ?? null,
     amountDue:

@@ -101,3 +101,62 @@ export async function sendEmailLogNow(logId: string) {
   revalidatePath("/dashboard");
   return { ok: true as const };
 }
+
+export type ReviewEmailDraftResult = {
+  id: string;
+  to: string;
+  subject: string;
+  body: string;
+};
+
+/**
+ * Loads a draft for the review modal. Ownership is enforced via `email_logs.user_id`
+ * (same row as pending drafts; there is no separate `email_drafts` table).
+ */
+export async function reviewEmailDraft(draftId: string): Promise<ReviewEmailDraftResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    throw new Error("Not authenticated");
+  }
+
+  const { data: row, error: fetchError } = await supabase
+    .from("email_logs")
+    .select("id,user_id,status,to_email,to_name,subject,body")
+    .eq("id", draftId)
+    .maybeSingle();
+
+  if (fetchError || !row) {
+    throw new Error("Draft not found");
+  }
+  if (row.user_id !== user.id) {
+    throw new Error("Draft not found");
+  }
+  if (row.status !== "draft") {
+    throw new Error("Draft not found or already sent");
+  }
+
+  const to = row.to_name?.trim()
+    ? `${row.to_name.trim()} <${row.to_email}>`
+    : row.to_email;
+
+  return {
+    id: row.id as string,
+    to,
+    subject: row.subject,
+    body: row.body,
+  };
+}
+
+/**
+ * Sends a draft via Resend and marks it sent. Revalidates dashboard and maintenance routes.
+ */
+export async function sendEmailDraft(draftId: string): Promise<void> {
+  const result = await sendEmailLogNow(draftId);
+  if (!result.ok) {
+    throw new Error(result.error);
+  }
+  revalidatePath("/dashboard/maintenance");
+}

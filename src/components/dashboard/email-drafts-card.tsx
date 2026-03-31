@@ -4,16 +4,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
 
-import { sendEmailLogNow, type EmailDraftRow } from "@/lib/actions/email-drafts";
+import { useDashboardPollRefresh } from "@/hooks/use-dashboard-poll-refresh";
+import { ReviewDraftModal } from "@/components/email/review-draft-modal";
+import { reviewEmailDraft, sendEmailDraft, type EmailDraftRow } from "@/lib/actions/email-drafts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Table,
   TableBody,
@@ -31,21 +26,37 @@ function formatAgentType(agentType: string) {
 }
 
 export function EmailDraftsCard({ drafts }: { drafts: EmailDraftRow[] }) {
+  useDashboardPollRefresh();
   const router = useRouter();
-  const [preview, setPreview] = useState<EmailDraftRow | null>(null);
+  const [reviewDraft, setReviewDraft] = useState<Awaited<
+    ReturnType<typeof reviewEmailDraft>
+  > | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
   const [sendingId, setSendingId] = useState<string | null>(null);
 
   async function handleSendNow(logId: string) {
     setSendingId(logId);
-    const result = await sendEmailLogNow(logId);
-    setSendingId(null);
-    if (!result.ok) {
-      toast.error(result.error);
-      return;
+    try {
+      await sendEmailDraft(logId);
+      toast.success("Email sent.");
+      setReviewOpen(false);
+      setReviewDraft(null);
+      router.refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not send email");
+    } finally {
+      setSendingId(null);
     }
-    toast.success("Email sent.");
-    setPreview(null);
-    router.refresh();
+  }
+
+  async function handleReviewClick(logId: string) {
+    try {
+      const data = await reviewEmailDraft(logId);
+      setReviewDraft(data);
+      setReviewOpen(true);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not load draft");
+    }
   }
 
   return (
@@ -87,12 +98,18 @@ export function EmailDraftsCard({ drafts }: { drafts: EmailDraftRow[] }) {
                     <TableCell>{formatAgentType(row.agent_type)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button type="button" variant="outline" size="sm" onClick={() => setPreview(row)}>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => void handleReviewClick(row.id)}
+                        >
                           Review
                         </Button>
                         <Button
                           type="button"
                           size="sm"
+                          className="bg-zinc-950 text-white hover:bg-zinc-900 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-800"
                           disabled={sendingId === row.id}
                           onClick={() => void handleSendNow(row.id)}
                         >
@@ -108,35 +125,16 @@ export function EmailDraftsCard({ drafts }: { drafts: EmailDraftRow[] }) {
         </CardContent>
       </Card>
 
-      <Dialog open={preview !== null} onOpenChange={(open) => !open && setPreview(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>{preview?.subject ?? "Preview"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2 text-sm">
-            <p className="text-muted-foreground">
-              To: {preview?.to_name ? `${preview.to_name} <${preview.to_email}>` : preview?.to_email}
-            </p>
-            <pre className="whitespace-pre-wrap rounded-md border border-border bg-muted/40 p-3 font-sans text-sm">
-              {preview?.body}
-            </pre>
-          </div>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setPreview(null)}>
-              Close
-            </Button>
-            {preview ? (
-              <Button
-                type="button"
-                disabled={sendingId === preview.id}
-                onClick={() => void handleSendNow(preview.id)}
-              >
-                {sendingId === preview.id ? "Sending…" : "Send now"}
-              </Button>
-            ) : null}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ReviewDraftModal
+        open={reviewOpen}
+        onOpenChange={(open) => {
+          setReviewOpen(open);
+          if (!open) setReviewDraft(null);
+        }}
+        draft={reviewDraft}
+        sending={reviewDraft != null && sendingId === reviewDraft.id}
+        onSendNow={() => (reviewDraft ? handleSendNow(reviewDraft.id) : undefined)}
+      />
     </>
   );
 }

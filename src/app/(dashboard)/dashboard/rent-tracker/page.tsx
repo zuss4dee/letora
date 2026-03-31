@@ -1,11 +1,17 @@
+import { notFound } from "next/navigation";
+
 import { AppSidebar } from "@/components/app-sidebar";
-import { RentTrackerClient } from "@/components/rent-tracker/rent-tracker-client";
+import { RentTrackerContent } from "@/components/rent-tracker/rent-tracker-content";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { getRentPayments } from "@/lib/actions/rent-tracker";
+import { computeRentTrackerStats } from "@/lib/rent-tracker-stats";
+import { getTenancies } from "@/lib/actions/tenancies";
+import { DashboardPollRefresh } from "@/hooks/use-dashboard-poll-refresh";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function RentTrackerStandalonePage() {
+export default async function RentTrackerPage() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -14,38 +20,20 @@ export default async function RentTrackerStandalonePage() {
   const userId = user?.id ?? null;
   const userEmail = user?.email ?? null;
 
-  const [propertiesRes, tenantsRes] = userId
-    ? await Promise.all([
-        supabase
-          .from("properties")
-          .select("id,address,city")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false }),
-        supabase
-          .from("tenant_profiles")
-          .select("id,full_name,tenancies(property_id)")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false }),
-      ])
-    : [
-        { data: [] as Array<{ id: string; address: string; city: string | null }> },
-        { data: [] as Array<{ id: string; full_name: string | null; tenancies?: Array<{ property_id: string | null }> }> },
-      ];
+  if (!userId) notFound();
 
-  const properties = (propertiesRes.data ?? []).map((p) => ({
-    id: p.id,
-    address: p.address ?? "Unknown property",
-    city: p.city ?? null,
-  }));
+  const todayIso = new Date().toISOString().slice(0, 10);
 
-  const tenants = (tenantsRes.data ?? []).map((t) => ({
-    id: t.id,
-    fullName: t.full_name ?? "Unknown tenant",
-    propertyId: t.tenancies?.[0]?.property_id ?? null,
-  }));
+  const [payments, tenancies] = await Promise.all([
+    getRentPayments(),
+    getTenancies(userId),
+  ]);
+
+  const stats = computeRentTrackerStats(payments, todayIso);
 
   return (
     <TooltipProvider>
+      <DashboardPollRefresh />
       <SidebarProvider
         style={
           {
@@ -59,7 +47,12 @@ export default async function RentTrackerStandalonePage() {
           <SiteHeader />
           <div className="flex flex-1 flex-col">
             <div className="@container/main flex flex-1 flex-col gap-2">
-              <RentTrackerClient properties={properties} tenants={tenants} />
+              <RentTrackerContent
+                payments={payments}
+                stats={stats}
+                tenancies={tenancies}
+                todayIso={todayIso}
+              />
             </div>
           </div>
         </SidebarInset>
@@ -67,4 +60,3 @@ export default async function RentTrackerStandalonePage() {
     </TooltipProvider>
   );
 }
-

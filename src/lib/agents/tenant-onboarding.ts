@@ -4,6 +4,7 @@ import { recordAgentRunStep } from "@/lib/agents/audit";
 import { loadAgentContext } from "@/lib/agents/context-loader";
 import { assertStepBudget } from "@/lib/agents/ota-loop";
 import { readAgentFile } from "@/lib/agents/paths";
+import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { sendEmailTool } from "@/lib/tools/send-email";
 import { createClient } from "@/lib/supabase/server";
 
@@ -113,7 +114,7 @@ export async function runTenantOnboardingAgent(
       monthly_rent,
       deposit_amount,
       onboarding_status,
-      properties!inner ( user_id, address, city, postcode ),
+      properties!inner ( user_id, address ),
       tenant_profiles ( full_name, email, phone )
     `,
     )
@@ -134,8 +135,6 @@ export async function runTenantOnboardingAgent(
   const property = (Array.isArray(propRaw) ? propRaw[0] : propRaw) as {
     user_id: string;
     address: string | null;
-    city: string | null;
-    postcode: string | null;
   };
   const tenRaw = row.tenant_profiles as unknown;
   const tenant = (Array.isArray(tenRaw) ? tenRaw[0] : tenRaw) as {
@@ -181,8 +180,8 @@ export async function runTenantOnboardingAgent(
     (typeof moveInExplicit === "string" && moveInExplicit.trim() !== ""
       ? moveInExplicit.trim()
       : null) ?? startDateIso;
-  const addressParts = [property.address, property.city, property.postcode].filter(Boolean);
-  const propertyAddress = addressParts.join(", ") || "the property";
+  const propertyAddress =
+    normalizePropertyAddressLabel(property.address?.trim() ?? "") || "the property";
 
   const { data: settings } = await supabase
     .from("user_settings")

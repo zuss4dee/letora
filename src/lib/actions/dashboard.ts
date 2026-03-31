@@ -1,6 +1,42 @@
 "use server";
 
+import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
+
+/** Sum of `monthly_rent` for tenancies with `status = 'active'` owned by the user. */
+export async function getMonthlyRentFromActiveTenancies(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("tenancies")
+    .select("monthly_rent, properties!inner(user_id)")
+    .eq("properties.user_id", userId)
+    .eq("status", "active");
+
+  if (error || !data) return 0;
+
+  return data.reduce((sum, row) => {
+    const raw = row.monthly_rent;
+    const n = raw == null ? 0 : typeof raw === "number" ? raw : Number(raw);
+    return sum + (Number.isFinite(n) ? n : 0);
+  }, 0);
+}
+
+/** Count of rent payments that are overdue or pending with a past due date. */
+export async function getOverdueRentPaymentCount(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const today = new Date().toISOString().slice(0, 10);
+  const { data, error } = await supabase
+    .from("rent_payments")
+    .select("id,status,due_date")
+    .eq("user_id", userId);
+
+  if (error || !data) return 0;
+
+  return data.filter((row) => {
+    const st = (row.status ?? "").toLowerCase();
+    return st === "overdue" || (st === "pending" && !!row.due_date && row.due_date < today);
+  }).length;
+}
 
 export type DashboardStats = {
   totalProperties: number;
@@ -65,7 +101,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
       .from("leads")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .in("qualified_status", ["new", "qualified"]),
+      .eq("qualified_status", "pending"),
   ]);
 
   const totalProperties = totalPropertiesRes.count ?? 0;
@@ -119,7 +155,7 @@ export async function getThisMonthsRentPayments(
       | undefined;
 
     return {
-      propertyAddress: tenancy?.properties?.address ?? null,
+      propertyAddress: normalizePropertyAddressLabel(tenancy?.properties?.address ?? "") || null,
       tenantFullName: tenancy?.tenant_profiles?.full_name ?? null,
       dueDate: row.due_date ?? null,
       amountDue:

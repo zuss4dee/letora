@@ -1,4 +1,4 @@
-export type AgentId = "rent_chaser" | "tenant_onboarding";
+export type AgentId = "rent_chaser" | "tenant_onboarding" | "maintenance_agent";
 
 export type AgentRegistryEntry = {
   id: AgentId;
@@ -24,6 +24,15 @@ export const AGENT_REGISTRY: Record<AgentId, AgentRegistryEntry> = {
       "tenant_onboarding/skills/send_welcome_email.md",
       "tenant_onboarding/skills/reference_check_checklist.md",
       "tenant_onboarding/skills/move_in_instructions.md",
+    ],
+  },
+  maintenance_agent: {
+    id: "maintenance_agent",
+    agentsMd: "maintenance_agent/agents.md",
+    skillPaths: [
+      "maintenance_agent/skills/triage_request.md",
+      "maintenance_agent/skills/tenant_acknowledgement.md",
+      "maintenance_agent/skills/landlord_summary.md",
     ],
   },
 };

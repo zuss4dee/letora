@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { revalidatePath } from "next/cache";
 
+import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 
 export interface LeadQualifierResult {
@@ -22,8 +23,7 @@ type LeadRow = {
   move_in_date: string | null;
   source: string | null;
   notes: string | null;
-  /** Supabase may type this as a one-element array for FK joins. */
-  properties: { address: string | null; city: string | null } | { address: string | null; city: string | null }[] | null;
+  property_id: string | null;
 };
 
 function parseRecommendation(value: string | undefined): "qualify" | "reject" {
@@ -76,21 +76,35 @@ export async function runLeadQualifierAgent(userId: string): Promise<LeadQualifi
 
   const { data, error } = await supabase
     .from("leads")
-    .select("id,full_name,email,move_in_date,source,notes,properties(address,city)")
+    .select("id,full_name,email,move_in_date,source,notes,property_id")
     .eq("user_id", userId)
     .eq("status", "new")
+    .eq("qualified_status", "pending")
     .order("created_at", { ascending: false });
 
   if (error || !data || data.length === 0) return [];
 
+  const propertyIds = [
+    ...new Set(
+      (data as LeadRow[])
+        .map((l) => l.property_id)
+        .filter((id): id is string => Boolean(id)),
+    ),
+  ];
+  const { data: properties } =
+    propertyIds.length > 0
+      ? await supabase.from("properties").select("id, address").in("id", propertyIds)
+      : { data: [] as { id: string; address: string | null }[] | null };
+
+  const propById = new Map((properties ?? []).map((p) => [p.id, p] as const));
+
   const results: LeadQualifierResult[] = [];
   for (const lead of data as LeadRow[]) {
-    const prop = Array.isArray(lead.properties) ? lead.properties[0] : lead.properties;
+    const prop = lead.property_id ? propById.get(lead.property_id) : undefined;
     const fullName = lead.full_name ?? "Unknown";
     const email = lead.email ?? "";
-    const address = prop?.address ?? "Unknown property";
-    const city = prop?.city;
-    const propertyInterested = city ? `${address}, ${city}` : address;
+    const propertyInterested =
+      normalizePropertyAddressLabel(prop?.address ?? "") || "Unknown property";
     const source = lead.source ?? "Unknown";
 
     const analysis = await scoreLead(model, lead);
@@ -118,13 +132,12 @@ export async function runLeadQualifierAgent(userId: string): Promise<LeadQualifi
 
     if (insertError || !action) continue;
 
-    // Move lead into the correct bucket on /dashboard/leads (qualified vs rejected).
-    const nextStatus: "qualified" | "rejected" =
-      analysis.recommendation === "qualify" ? "qualified" : "rejected";
+    const nextQualified: "qualified" | "disqualified" =
+      analysis.recommendation === "qualify" ? "qualified" : "disqualified";
     await supabase
       .from("leads")
       .update({
-        status: nextStatus,
+        qualified_status: nextQualified,
         updated_at: new Date().toISOString(),
       })
       .eq("id", lead.id)
