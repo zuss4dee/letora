@@ -1,13 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { AppSidebar } from "@/components/app-sidebar";
 import { ContractDetailActions } from "@/components/contracts/contract-detail-actions";
-import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { getContractDetail } from "@/lib/actions/contracts";
 import { createClient } from "@/lib/supabase/server";
 
@@ -62,7 +58,6 @@ export default async function ContractDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
   const userId = user?.id ?? null;
-  const userEmail = user?.email ?? null;
 
   if (!userId) notFound();
 
@@ -70,21 +65,8 @@ export default async function ContractDetailPage({
   if (!contract) notFound();
 
   return (
-    <TooltipProvider>
-      <SidebarProvider
-        style={
-          {
-            "--sidebar-width": "calc(var(--spacing) * 72)",
-            "--header-height": "calc(var(--spacing) * 12)",
-          } as React.CSSProperties
-        }
-      >
-        <AppSidebar variant="inset" userEmail={userEmail} />
-        <SidebarInset>
-          <SiteHeader />
-          <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+    <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                 <div className="flex flex-col gap-3 px-4 lg:px-6">
                   <Link
                     href="/dashboard/contracts"
@@ -152,11 +134,7 @@ export default async function ContractDetailPage({
 
                   <ContractDetailActions contractId={contract.id} status={contract.status} />
                 </div>
-              </div>
-            </div>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </TooltipProvider>
+      </div>
+    </div>
   );
 }

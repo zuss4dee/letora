@@ -1,7 +1,5 @@
 import { AddTenancyDialog } from "@/components/rent/add-tenancy-dialog";
 import { LogPaymentDialog } from "@/components/rent/log-payment-dialog";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -12,8 +10,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { getProperties } from "@/lib/actions/properties";
 import { getTenants } from "@/lib/actions/tenants";
 import {
@@ -99,7 +95,6 @@ export default async function RentTrackerPage() {
   } = await supabase.auth.getUser();
 
   const userId = user?.id ?? null;
-  const userEmail = user?.email ?? null;
 
   if (userId) {
     await autoGeneratePendingPayments(userId);
@@ -125,21 +120,8 @@ export default async function RentTrackerPage() {
   }));
 
   return (
-    <TooltipProvider>
-      <SidebarProvider
-        style={
-          {
-            "--sidebar-width": "calc(var(--spacing) * 72)",
-            "--header-height": "calc(var(--spacing) * 12)",
-          } as React.CSSProperties
-        }
-      >
-        <AppSidebar variant="inset" userEmail={userEmail} />
-        <SidebarInset>
-          <SiteHeader />
-          <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+    <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                 <div className="flex items-center justify-between gap-3 px-4 lg:px-6">
                   <div>
                     <h1 className="text-base font-semibold tracking-tight">Rent Tracker</h1>
@@ -279,12 +261,8 @@ export default async function RentTrackerPage() {
                     </CardContent>
                   </Card>
                 </div>
-              </div>
-            </div>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </TooltipProvider>
+      </div>
+    </div>
   );
 }
 

@@ -23,6 +23,10 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
 
   if (error || !data) return null;
 
+  const rawTone = data.rent_chaser_tone ?? "professional_firm";
+  const rentChaserTone: UserSettingsInput["rentChaserTone"] =
+    rawTone === "friendly_polite" ? "friendly_reminder" : (rawTone as UserSettingsInput["rentChaserTone"]);
+
   return {
     id: data.id,
     userId: data.user_id,
@@ -31,7 +35,12 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
     contactPhone: data.contact_phone ?? "",
     contactEmail: data.contact_email ?? "",
     businessAddress: data.business_address ?? "",
-    rentChaserTone: (data.rent_chaser_tone ?? "professional_firm") as UserSettingsInput["rentChaserTone"],
+    rentChaserTone:
+      rentChaserTone === "professional_firm" ||
+      rentChaserTone === "friendly_reminder" ||
+      rentChaserTone === "formal_legal"
+        ? rentChaserTone
+        : "professional_firm",
     firstChaseDays: data.first_chase_days ?? 3,
     emailSignoff: data.email_signoff ?? "",
     includePaymentPlan: data.include_payment_plan ?? true,
@@ -92,5 +101,10 @@ export async function saveSettings(formData: unknown) {
 
   revalidatePath("/dashboard/settings");
   return { ok: true as const };
+}
+
+/** Alias for `saveSettings` — same behaviour (upsert user_settings). */
+export async function saveUserSettings(formData: unknown) {
+  return saveSettings(formData);
 }
 

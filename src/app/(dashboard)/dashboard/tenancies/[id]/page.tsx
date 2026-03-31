@@ -3,10 +3,6 @@ import { notFound } from "next/navigation";
 
 import { EditTenancyDialog } from "@/components/tenancies/edit-tenancy-dialog";
 import { TenancyOnboardingPanel } from "@/components/tenancies/tenancy-onboarding-panel";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { getTenancyOnboardingDetail } from "@/lib/actions/onboarding";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,8 +18,6 @@ export default async function TenancyDetailPage({ params }: { params: Promise<{ 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const userEmail = user?.email ?? null;
-
   const detail = await getTenancyOnboardingDetail(id);
   if (!detail) return notFound();
 
@@ -53,21 +47,8 @@ export default async function TenancyDetailPage({ params }: { params: Promise<{ 
   const userId = user?.id ?? null;
 
   return (
-    <TooltipProvider>
-      <SidebarProvider
-        style={
-          {
-            "--sidebar-width": "calc(var(--spacing) * 72)",
-            "--header-height": "calc(var(--spacing) * 12)",
-          } as React.CSSProperties
-        }
-      >
-        <AppSidebar variant="inset" userEmail={userEmail} />
-        <SidebarInset>
-          <SiteHeader />
-          <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+    <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                 <div className="flex flex-col gap-3 px-4 lg:px-6 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <Link
@@ -136,11 +117,7 @@ export default async function TenancyDetailPage({ params }: { params: Promise<{ 
                     tasks={detail.tasks}
                   />
                 </div>
-              </div>
-            </div>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </TooltipProvider>
+      </div>
+    </div>
   );
 }

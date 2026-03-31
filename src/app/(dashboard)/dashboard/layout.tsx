@@ -6,7 +6,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function AgentsLayout({ children }: { children: ReactNode }) {
+export default async function DashboardShellLayout({ children }: { children: ReactNode }) {
   const supabase = await createClient();
   const {
     data: { user },

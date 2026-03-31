@@ -29,11 +29,9 @@
  * -- add storage.objects RLS policies so users can manage only files under "contract-templates/{auth.uid()}/..."
  */
 
+export const dynamic = "force-dynamic";
+
 import { AgentSettingsForm } from "@/components/settings/agent-settings-form";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { getUserSettings } from "@/lib/actions/user-settings";
 import { createClient } from "@/lib/supabase/server";
 import { type UserSettingsInput } from "@/lib/validations/user-settings";
@@ -60,47 +58,28 @@ const defaultValues: UserSettingsInput = {
   leadQualifierCriteria: "",
 };
 
-export default async function AgentSettingsPage() {
+export default async function SettingsPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const userEmail = user?.email ?? null;
   const existing = user?.id ? await getUserSettings(user.id) : null;
   const initialValues = existing ? { ...defaultValues, ...existing } : defaultValues;
 
   return (
-    <TooltipProvider>
-      <SidebarProvider
-        style={
-          {
-            "--sidebar-width": "calc(var(--spacing) * 72)",
-            "--header-height": "calc(var(--spacing) * 12)",
-          } as React.CSSProperties
-        }
-      >
-        <AppSidebar variant="inset" userEmail={userEmail} />
-        <SidebarInset>
-          <SiteHeader />
-          <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                <div className="px-4 lg:px-6">
-                  <h1 className="text-base font-semibold tracking-tight">Agent Settings</h1>
-                  <p className="text-sm text-muted-foreground">
-                    Customise how your AI agents communicate and operate.
-                  </p>
-                </div>
-                <div className="px-4 lg:px-6">
-                  <AgentSettingsForm initialValues={initialValues} userId={user?.id ?? ""} />
-                </div>
-              </div>
-            </div>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </TooltipProvider>
+    <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-6 py-4 md:py-6">
+        <div className="px-4 lg:px-6">
+          <h1 className="text-base font-semibold tracking-tight">Settings</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage your business profile and agent preferences.
+          </p>
+        </div>
+        <div className="flex flex-col gap-6 px-4 lg:px-6">
+          <AgentSettingsForm initialValues={initialValues} userId={user?.id ?? ""} />
+        </div>
+      </div>
+    </div>
   );
 }
-

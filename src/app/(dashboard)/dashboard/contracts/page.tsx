@@ -1,12 +1,8 @@
 import { notFound } from "next/navigation";
 
-import { AppSidebar } from "@/components/app-sidebar";
 import { AddContractDialog } from "@/components/contracts/add-contract-dialog";
 import { ContractsTable } from "@/components/contracts/contracts-table";
-import { SiteHeader } from "@/components/site-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { getContracts, type ContractListRow } from "@/lib/actions/contracts";
 import { getPropertyPickList } from "@/lib/actions/properties";
 import { getTenantProfilesForContracts } from "@/lib/actions/tenants";
@@ -52,7 +48,6 @@ export default async function ContractsPage() {
   } = await supabase.auth.getUser();
 
   const userId = user?.id ?? null;
-  const userEmail = user?.email ?? null;
 
   if (!userId) notFound();
 
@@ -65,22 +60,10 @@ export default async function ContractsPage() {
   const stats = computeContractStats(contracts);
 
   return (
-    <TooltipProvider>
+    <>
       <DashboardPollRefresh />
-      <SidebarProvider
-        style={
-          {
-            "--sidebar-width": "calc(var(--spacing) * 72)",
-            "--header-height": "calc(var(--spacing) * 12)",
-          } as React.CSSProperties
-        }
-      >
-        <AppSidebar variant="inset" userEmail={userEmail} />
-        <SidebarInset>
-          <SiteHeader />
-          <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+      <div className="@container/main flex flex-1 flex-col gap-2">
+        <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                 <div className="flex flex-wrap items-start justify-between gap-3 px-4 lg:px-6">
                   <div>
                     <h1 className="text-base font-semibold tracking-tight">Contracts</h1>
@@ -141,11 +124,8 @@ export default async function ContractsPage() {
                     </CardContent>
                   </Card>
                 </div>
-              </div>
-            </div>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </TooltipProvider>
+        </div>
+      </div>
+    </>
   );
 }

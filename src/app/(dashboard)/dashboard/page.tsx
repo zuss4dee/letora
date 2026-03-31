@@ -2,12 +2,8 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 
-import { AppSidebar } from "@/components/app-sidebar";
 import { AiActivityCard, type ActivityRun } from "@/components/dashboard/ai-activity-card";
-import { SiteHeader } from "@/components/site-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -56,7 +52,6 @@ export default async function DashboardPage() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const userEmail = user?.email ?? null;
   const userId = user?.id ?? null;
 
   let totalProperties = 0;
@@ -122,21 +117,8 @@ export default async function DashboardPage() {
   }
 
   return (
-    <TooltipProvider>
-      <SidebarProvider
-        style={
-          {
-            "--sidebar-width": "calc(var(--spacing) * 72)",
-            "--header-height": "calc(var(--spacing) * 12)",
-          } as React.CSSProperties
-        }
-      >
-        <AppSidebar variant="inset" userEmail={userEmail} />
-        <SidebarInset>
-          <SiteHeader />
-          <div className="flex flex-1 flex-col">
-            <div className="@container/main flex flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+    <div className="@container/main flex flex-1 flex-col gap-2">
+      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
                 <div className="grid gap-4 px-4 md:grid-cols-2 xl:grid-cols-4 lg:px-6">
                   {statCard("Total Properties", String(totalProperties))}
                   {statCard("Active Tenants", String(activeTenants))}
@@ -208,11 +190,7 @@ export default async function DashboardPage() {
                   </Card>
                 </div>
               </div>
-            </div>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </TooltipProvider>
+    </div>
   );
 }
 
