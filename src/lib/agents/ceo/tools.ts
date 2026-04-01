@@ -99,10 +99,20 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
   {
     name: "start_tenant_onboarding",
     description:
-      "Start onboarding: (1) existing tenancy_id, (2) create tenancy from existing tenant_id + property_id + start_date then onboard, or (3) lead_id + auto_create_tenant_and_tenancy to create tenant+tenancy from a lead then onboard. Use search_properties to resolve property UUIDs.",
+      "Start onboarding: (1) **onboarding_for** — tenant’s full name (plain English; resolves to tenancy automatically), (2) existing tenancy_id, (3) tenant_id + property_id + start_date to create tenancy then onboard, or (4) lead_id + auto_create_tenant_and_tenancy. If multiple tenancies exist for the same person, use onboarding_property_hint or tenancy_id from list_tenants.",
     input_schema: {
       type: "object",
       properties: {
+        onboarding_for: {
+          type: "string",
+          description:
+            "Start onboarding for this tenant by **name** (e.g. “Alexis Dami”) — no UUIDs. Resolves the tenant profile and their tenancy/tenancies on this account. Prefer this when the user speaks in plain English.",
+        },
+        onboarding_property_hint: {
+          type: "string",
+          description:
+            "Optional street or city substring if the tenant has more than one tenancy — narrows to one property before starting.",
+        },
         tenancy_id: {
           type: "string",
           description: "Existing tenancy UUID to start onboarding for.",

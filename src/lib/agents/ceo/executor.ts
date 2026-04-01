@@ -14,12 +14,92 @@ function formatTenantNameFromProfile(tenant: { full_name?: string | null } | nul
   return tenant?.full_name?.trim() || "Unknown tenant";
 }
 
-function normalizeTenancyRows(tenancies: unknown): { property_id?: string | null; status?: string | null }[] {
-  if (Array.isArray(tenancies)) return tenancies as { property_id?: string | null; status?: string | null }[];
+function normalizeTenancyRows(tenancies: unknown): {
+  id?: string | null;
+  property_id?: string | null;
+  status?: string | null;
+}[] {
+  if (Array.isArray(tenancies)) {
+    return tenancies as { id?: string | null; property_id?: string | null; status?: string | null }[];
+  }
   if (tenancies && typeof tenancies === "object") {
-    return [tenancies as { property_id?: string | null; status?: string | null }];
+    return [tenancies as { id?: string | null; property_id?: string | null; status?: string | null }];
   }
   return [];
+}
+
+function unwrapTenancyProperty(row: { properties?: unknown }): { address?: string | null; city?: string | null } | null {
+  const p = row.properties as unknown;
+  const o = Array.isArray(p) ? p[0] : p;
+  return o && typeof o === "object" ? (o as { address?: string | null; city?: string | null }) : null;
+}
+
+function tenancyMatchesOnboardingHint(row: { properties?: unknown }, hint: string): boolean {
+  const p = unwrapTenancyProperty(row);
+  if (!p) return false;
+  const h = hint.toLowerCase().trim();
+  if (!h) return false;
+  const addr = (p.address ?? "").toLowerCase();
+  const city = (p.city ?? "").toLowerCase();
+  const words = h.split(/\s+/).filter((w) => w.length > 1);
+  return addr.includes(h) || city.includes(h) || words.some((w) => addr.includes(w) || city.includes(w));
+}
+
+type TenancyRowForOnboarding = {
+  id: string;
+  status?: string | null;
+  properties?: unknown;
+};
+
+function mapTenancyCandidate(r: TenancyRowForOnboarding) {
+  const p = unwrapTenancyProperty(r);
+  return {
+    tenancy_id: r.id,
+    status: r.status ?? null,
+    address: p?.address ?? null,
+    city: p?.city ?? null,
+  };
+}
+
+/**
+ * Pick a single tenancy for onboarding: optional address/city hint, then prefer active when ambiguous.
+ */
+function pickTenancyForOnboarding(
+  rows: TenancyRowForOnboarding[],
+  propertyHint?: string,
+):
+  | { ok: true; tenancy_id: string }
+  | { ok: false; error: string; candidates: ReturnType<typeof mapTenancyCandidate>[] } {
+  let work = rows;
+  const hint = propertyHint?.trim();
+  if (hint) {
+    const narrowed = rows.filter((r) => tenancyMatchesOnboardingHint(r, hint));
+    if (narrowed.length === 1) {
+      return { ok: true, tenancy_id: narrowed[0].id };
+    }
+    if (narrowed.length === 0) {
+      return {
+        ok: false,
+        error:
+          "No tenancy matched onboarding_property_hint — try a street or city from the candidates, or pass tenancy_id from list_tenants.",
+        candidates: rows.map(mapTenancyCandidate),
+      };
+    }
+    work = narrowed;
+  }
+  const active = work.filter((r) => (r.status ?? "").toLowerCase() === "active");
+  const pool = active.length ? active : work;
+  if (pool.length === 1) {
+    return { ok: true, tenancy_id: pool[0].id };
+  }
+  return {
+    ok: false,
+    error:
+      pool.length === 0
+        ? "No tenancy found for this tenant."
+        : "Multiple tenancies match — add onboarding_property_hint (street or city) or pick tenancy_id from list_tenants.",
+    candidates: pool.map(mapTenancyCandidate),
+  };
 }
 
 const defaultSupabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -32,6 +112,9 @@ interface ToolCallArgs {
   property_id?: string;
   lead_id?: string;
   tenancy_id?: string;
+  /** Resolve tenant by name then tenancy — use with start_tenant_onboarding (no UUIDs required). */
+  onboarding_for?: string;
+  onboarding_property_hint?: string;
   auto_create_tenant_and_tenancy?: boolean;
   start_date?: string;
   /** search_properties */
@@ -291,6 +374,60 @@ export async function executeCEOTool(
         });
       }
 
+      const onboardingFor = args.onboarding_for?.trim();
+      if (onboardingFor) {
+        const resolved = await resolveTenantProfileForAccount(supabase, userId, onboardingFor);
+        if (!resolved.ok) {
+          return JSON.stringify(resolved.body);
+        }
+        const { data: tenRows, error: tenErr } = await supabase
+          .from("tenancies")
+          .select(
+            `
+            id,
+            status,
+            property_id,
+            properties!inner ( address, city, user_id )
+          `,
+          )
+          .eq("tenant_id", resolved.tenantId)
+          .eq("properties.user_id", userId);
+
+        if (tenErr) {
+          return JSON.stringify({ error: `Could not load tenancies: ${tenErr.message}` });
+        }
+        const rows = (tenRows ?? []) as TenancyRowForOnboarding[];
+        if (rows.length === 0) {
+          return JSON.stringify({
+            error:
+              "No tenancy found for this tenant on your account. Create a tenancy first (tenant + property + start date) or use the dashboard.",
+            tenant_id: resolved.tenantId,
+            full_name: resolved.full_name,
+          });
+        }
+
+        const picked = pickTenancyForOnboarding(rows, args.onboarding_property_hint);
+        if (!picked.ok) {
+          return JSON.stringify({
+            error: picked.error,
+            tenant_id: resolved.tenantId,
+            full_name: resolved.full_name,
+            tenant_resolved_via: resolved.resolved_via,
+            candidates: picked.candidates,
+          });
+        }
+
+        const result = await runTenantOnboardingAgent(picked.tenancy_id, userId, supabase);
+        return JSON.stringify({
+          mode: "onboarding_for_name",
+          onboarded_for: resolved.full_name,
+          tenant_id: resolved.tenantId,
+          tenant_resolved_via: resolved.resolved_via,
+          tenancy_id: picked.tenancy_id,
+          ...result,
+        });
+      }
+
       const tenantIdNew = args.tenant_id?.trim();
       const propertyIdNew = args.property_id?.trim();
       const startDateNew = args.start_date?.trim();
@@ -368,7 +505,7 @@ export async function executeCEOTool(
       if (!leadId || !createFromLead) {
         return JSON.stringify({
           error:
-            "Provide `tenancy_id`, or `tenant_id` + `property_id` + `start_date` (existing tenant on a property), or `lead_id` with `auto_create_tenant_and_tenancy=true`. Use search_properties to resolve property UUIDs from an address.",
+            "Provide `onboarding_for` (tenant name — no UUIDs), or `tenancy_id`, or `tenant_id` + `property_id` + `start_date`, or `lead_id` with `auto_create_tenant_and_tenancy=true`. Optional `onboarding_property_hint` disambiguates multiple tenancies. Use search_properties for property UUIDs when creating a new tenancy.",
         });
       }
 
@@ -1031,7 +1168,9 @@ export async function executeCEOTool(
     case "list_tenants": {
       const { data: raw } = await supabase
         .from("tenant_profiles")
-        .select("id, full_name, email, tenancies(property_id, status, properties(address, city))")
+        .select(
+          "id, full_name, email, tenancies(id, property_id, status, properties(address, city))",
+        )
         .eq("user_id", userId)
         .limit(80);
 

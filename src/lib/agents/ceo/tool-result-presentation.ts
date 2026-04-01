@@ -13,7 +13,7 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
   search_properties:
     "List matching properties with their **id** (UUID), human-readable label, and hint if multiple matches — tell the user to pick the right one before mutating tools. Never treat a unit number as a UUID.",
   start_tenant_onboarding:
-    "Confirm what onboarding started, whether any tenant/tenancy records were created, how many tasks were created, and whether welcome email was drafted/sent.",
+    "Confirm who onboarding started for (name if onboarding_for was used), whether any records were created, task count, and welcome email status. If the tool returned candidates (multiple tenancies), ask the user to specify street/city or pick from the list — do not ask for raw UUIDs unless they prefer it.",
   dispatch_maintenance_request:
     "Confirm issue logged, inferred category/urgency, and contractor dispatch status (drafted/sent/failed). Keep next steps practical.",
   generate_property_listing:

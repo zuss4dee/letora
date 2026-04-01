@@ -134,7 +134,9 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
       case "decide_lead_application":
         return `• **Approve or reject applicant** (final decision on a lead in applied stage${c.input.decision ? ` — **${c.input.decision}**` : ""})`
       case "start_tenant_onboarding":
-        return "• **Start tenant onboarding** (may create tenancy records, checklist tasks, and welcome communications)"
+        return `• **Start tenant onboarding**${
+          c.input.onboarding_for ? ` for **${c.input.onboarding_for}**` : ""
+        } (may create tenancy records, checklist tasks, and welcome communications)`
       case "dispatch_maintenance_request":
         return "• **Dispatch maintenance request** (logs issue and may notify contractor)"
       case "generate_property_listing":
