@@ -8,6 +8,8 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
     "State how many tenants are overdue, approximate total overdue amount, and mention a few tenant names when helpful. Note that reminder drafts were prepared.",
   get_maintenance_summary:
     "Lead with urgent items, then open vs in-progress. Summarize the most important tickets by title; do not list raw IDs.",
+  get_leads_summary:
+    "State whether there are any new leads, then give pending/qualified/disqualified counts and a short list of recent lead names when helpful.",
   qualify_leads:
     "Say how many leads were scored and how many look high priority; summarize reasons in plain language, not as a JSON array.",
   draft_contract:
