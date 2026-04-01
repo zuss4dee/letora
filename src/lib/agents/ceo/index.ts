@@ -257,9 +257,6 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
 
   const latestUser = getLatestUserContent(contextMessages);
   const route = routeCEOIntent(latestUser);
-  if (route.needsClarification && route.clarificationQuestion) {
-    return { outcome: "needs_clarification", message: route.clarificationQuestion };
-  }
 
   const routerHint = formatRouterHintForSystem(route);
   const systemPrompt = routerHint ? `${CEO_SYSTEM_PROMPT}\n\n${routerHint}` : CEO_SYSTEM_PROMPT;

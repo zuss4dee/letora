@@ -17,6 +17,7 @@ const READ_ONLY_TOOLS: readonly CEOToolName[] = [
   "get_dashboard_summary",
   "get_rent_status",
   "get_maintenance_summary",
+  "get_leads_summary",
   "list_tenants",
 ]
 

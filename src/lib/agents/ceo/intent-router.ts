@@ -43,7 +43,7 @@ function toolsForIntent(id: CEOPropertyIntentId): CEOToolName[] {
     case "maintenance":
       return ["get_maintenance_summary"]
     case "leads":
-      return ["qualify_leads"]
+      return ["get_leads_summary"]
     case "contracts":
       return ["draft_contract"]
     case "portfolio":
@@ -106,6 +106,7 @@ const ROUTE_PATTERNS: ReadonlyArray<{
     weight: 2,
     re: /\b(new\s+leads?|bad\s+leads?|qualify\s+(prospects|leads)|prospect|inquir(y|ies)|viewing\s+requests?)\b/i,
   },
+  { id: "leads", weight: 1.8, re: /\b(do\s+i\s+have\s+any\s+leads?|any\s+leads?)\b/i },
   {
     id: "contracts",
     weight: 2,
@@ -116,7 +117,20 @@ const ROUTE_PATTERNS: ReadonlyArray<{
     weight: 2.2,
     re: /\b(what\s+needs\s+my\s+attention|what'?s\s+going\s+on|portfolio|big\s+picture|summary|dashboard|today|this\s+week|everything\s+ok|catch\s+me\s+up)\b/i,
   },
-  { id: "tenants", weight: 1.5, re: /\b(list\s+tenants|tenant\s+list|which\s+tenants|all\s+tenants)\b/i },
+  // “List my active tenants” has words between list and tenants — keep patterns broad.
+  {
+    id: "tenants",
+    weight: 2.2,
+    re: /\b(list|show|give)\s+(me\s+)?(my\s+|the\s+|our\s+|all\s+)?(active\s+)?tenants?\b/i,
+  },
+  {
+    id: "tenants",
+    weight: 2,
+    re: /\b(list|show)\s+(me\s+)?(all\s+|every\s+)?(active\s+)?tenants?\b/i,
+  },
+  { id: "tenants", weight: 1.8, re: /\b(active\s+tenants?|tenant\s+list|which\s+tenants?|all\s+tenants?)\b/i },
+  { id: "tenants", weight: 1.6, re: /\b(who\s+are\s+(my\s+|the\s+)?tenants?|tenants?\s+in\s+the\s+system)\b/i },
+  { id: "tenants", weight: 1.5, re: /\b(list\s+tenants|all\s+tenants)\b/i },
 ]
 
 function isPropertyRelated(text: string): boolean {
@@ -177,17 +191,35 @@ const CLARIFICATION_QUESTION =
 
 const CONFIDENCE_NORMALIZER = 6
 
+/** Lightweight typo normalization so users don't need exact phrasing. */
+function normalizeForRouting(text: string): string {
+  const t = text.toLowerCase()
+  return t
+    .replace(/\btenats\b/g, "tenants")
+    .replace(/\btenent(s)?\b/g, "tenant$1")
+    .replace(/\btennant(s)?\b/g, "tenant$1")
+    .replace(/\barreers\b/g, "arrears")
+    .replace(/\barrers\b/g, "arrears")
+    .replace(/\bmaintenence\b/g, "maintenance")
+    .replace(/\bmaintainance\b/g, "maintenance")
+    .replace(/\bcontrcat(s)?\b/g, "contract$1")
+    .replace(/\bleadz\b/g, "leads")
+    .replace(/\bproeprty\b/g, "property")
+    .replace(/\bdashbord\b/g, "dashboard")
+}
+
 /**
  * Maps natural-language property-management phrasing to internal tools and safety hints.
  */
 export function routeCEOIntent(userMessage: string): CEOIntentRoute {
   const trimmed = userMessage.trim()
-  const scores = scoreMessage(trimmed)
+  const normalized = normalizeForRouting(trimmed)
+  const scores = scoreMessage(normalized)
   const totalScore = Object.values(scores).reduce((a, b) => a + b, 0)
 
   if (totalScore <= 0) {
     const needsClarification =
-      isPropertyRelated(trimmed) &&
+      isPropertyRelated(normalized) &&
       trimmed.length >= 10 &&
       trimmed.length <= 600 &&
       !isAffirmativeShort(trimmed)
@@ -216,13 +248,13 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
 
   const confidence = Math.min(1, primaryScore / CONFIDENCE_NORMALIZER)
 
-  const safetyIntent: CEOIntent = classifyCEOIntent(trimmed)
+  const safetyIntent: CEOIntent = classifyCEOIntent(normalized)
   const confirmationRequired = toolsRequireUserConfirmation(safetyIntent, recommendedTools)
 
   const strongEnough = primaryScore >= 0.95 || confidence >= 0.35
   const needsClarification =
     !strongEnough &&
-    isPropertyRelated(trimmed) &&
+    isPropertyRelated(normalized) &&
     trimmed.length >= 10 &&
     trimmed.length <= 600 &&
     !isAffirmativeShort(trimmed)

@@ -2,6 +2,7 @@ import type Anthropic from "@anthropic-ai/sdk"
 export type CEOToolName =
   | "chase_rent"
   | "get_maintenance_summary"
+  | "get_leads_summary"
   | "qualify_leads"
   | "draft_contract"
   | "get_dashboard_summary"
@@ -11,6 +12,7 @@ export type CEOToolName =
 export const CEO_TOOL_NAMES: readonly CEOToolName[] = [
   "chase_rent",
   "get_maintenance_summary",
+  "get_leads_summary",
   "qualify_leads",
   "draft_contract",
   "get_dashboard_summary",
@@ -49,6 +51,16 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
           description: "Filter by status. Defaults to all.",
         },
       },
+      required: [],
+    },
+  },
+  {
+    name: "get_leads_summary",
+    description:
+      "Read-only lead overview: count new/pending/qualified/disqualified leads and list recent lead records. Does not change lead statuses.",
+    input_schema: {
+      type: "object",
+      properties: {},
       required: [],
     },
   },

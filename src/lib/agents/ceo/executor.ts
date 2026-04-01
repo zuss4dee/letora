@@ -150,6 +150,36 @@ export async function executeCEOTool(toolName: CEOToolName, args: ToolCallArgs, 
         tickets,
       });
     }
+    case "get_leads_summary": {
+      const { data: leads } = await supabase
+        .from("leads")
+        .select("id, full_name, name, email, status, qualified_status, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      const rows = leads ?? [];
+      const byQualified = (q: string) => rows.filter((l) => (l.qualified_status ?? "").toLowerCase() === q).length;
+      const byStatus = (s: string) => rows.filter((l) => (l.status ?? "").toLowerCase() === s).length;
+
+      const recent = rows.slice(0, 8).map((l) => ({
+        id: l.id,
+        full_name: l.full_name ?? l.name ?? "Unknown",
+        email: l.email ?? null,
+        status: l.status ?? null,
+        qualified_status: l.qualified_status ?? null,
+        created_at: l.created_at ?? null,
+      }));
+
+      return JSON.stringify({
+        total: rows.length,
+        new: byStatus("new"),
+        pending_qualification: byQualified("pending"),
+        qualified: byQualified("qualified"),
+        disqualified: byQualified("disqualified"),
+        recent,
+      });
+    }
     case "qualify_leads": {
       const { data: leads } = await supabase
         .from("leads")
