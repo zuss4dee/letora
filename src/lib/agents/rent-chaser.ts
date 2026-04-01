@@ -96,9 +96,15 @@ Return ONLY valid JSON in this exact format:
 
 export type RunRentChaserOptions = {
   supabase?: SupabaseClient;
+  /** If set, only chase payments whose due date falls in this calendar month (YYYY-MM). */
+  month?: string;
+  /** Traced in agent run payload for audit (e.g. `ceo_assistant`). */
+  source?: string;
 };
 
 export async function runRentChaserAgent(userId: string, options?: RunRentChaserOptions): Promise<AgentResult[]> {
+  const monthFilter = options?.month?.trim();
+  const sourceTag = options?.source?.trim() || "rent_chaser_agent";
   const supabase = options?.supabase ?? (await createClient());
   let sessionUserEmail: string | undefined;
   if (!options?.supabase) {
@@ -180,11 +186,21 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
 
   const merged = [...(overdueData ?? []), ...(pendingData ?? [])] as PaymentRow[];
   const seenIds = new Set<string>();
-  const candidates = merged.filter((row) => {
+  let candidates = merged.filter((row) => {
     if (seenIds.has(row.id)) return false;
     seenIds.add(row.id);
     return true;
   });
+
+  if (monthFilter && /^\d{4}-\d{2}$/.test(monthFilter)) {
+    const start = `${monthFilter}-01`;
+    const end = `${monthFilter}-31`;
+    candidates = candidates.filter((row) => {
+      const d = row.due_date;
+      if (!d) return false;
+      return d >= start && d <= end;
+    });
+  }
 
   await recordAgentRunStep(supabase, {
     userId: resolvedUserId,
@@ -192,7 +208,13 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
     stepIndex: nextStep(),
     stepType: "observe",
     toolName: "list_chaseable_payments",
-    detail: { overdue: overdueData?.length ?? 0, pendingPastDue: pendingData?.length ?? 0, merged: candidates.length },
+    detail: {
+      overdue: overdueData?.length ?? 0,
+      pendingPastDue: pendingData?.length ?? 0,
+      merged: candidates.length,
+      monthFilter: monthFilter ?? null,
+      source: sourceTag,
+    },
   });
 
   const propertyIds = candidates
@@ -270,7 +292,7 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
         user_id: resolvedUserId,
         agent_type: "rent_chaser",
         status: "draft",
-        payload,
+        payload: { ...payload, source: sourceTag },
       })
       .select("id")
       .single();

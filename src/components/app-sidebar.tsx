@@ -22,6 +22,7 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
+  MessageSquare,
   Settings,
   UserPlus,
   Users,
@@ -76,6 +77,11 @@ const data = {
       title: "Agents",
       url: "/dashboard/agents",
       icon: <Bot />,
+    },
+    {
+      title: "Assistant",
+      url: "/dashboard/assistant",
+      icon: <MessageSquare />,
     },
     {
       title: "Settings",
