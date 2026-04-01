@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
@@ -64,8 +65,16 @@ Return ONLY valid JSON: { score: number, recommendation: 'qualify' | 'reject', r
   };
 }
 
-export async function runLeadQualifierAgent(userId: string): Promise<LeadQualifierResult[]> {
-  const supabase = await createClient();
+/** Same pattern as `runRentChaserAgent`: pass the caller's Supabase client (e.g. CEO chat) so RLS matches the signed-in user. */
+export type RunLeadQualifierOptions = {
+  supabase?: SupabaseClient;
+};
+
+export async function runLeadQualifierAgent(
+  userId: string,
+  options?: RunLeadQualifierOptions,
+): Promise<LeadQualifierResult[]> {
+  const supabase = options?.supabase ?? (await createClient());
   const apiKey = process.env.GOOGLE_AI_API_KEY;
   if (!apiKey) {
     throw new Error("Missing GOOGLE_AI_API_KEY");

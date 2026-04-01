@@ -23,6 +23,10 @@ export type TenancyOnboardingDetail = {
   tenantName: string | null;
   onboarding_status: string;
   start_date: string | null;
+  referencing_token: string | null;
+  referencing_agency_email_override: string | null;
+  referencing_last_outbound_at: string | null;
+  referencing_last_inbound_at: string | null;
   tasks: OnboardingTaskRow[];
 };
 
@@ -40,6 +44,10 @@ export async function getTenancyOnboardingDetail(tenancyId: string): Promise<Ten
       id,
       start_date,
       onboarding_status,
+      referencing_token,
+      referencing_agency_email_override,
+      referencing_last_outbound_at,
+      referencing_last_inbound_at,
       properties!inner ( address, user_id ),
       tenant_profiles ( full_name )
     `,
@@ -90,12 +98,24 @@ export async function getTenancyOnboardingDetail(tenancyId: string): Promise<Ten
     });
   }
 
+  const r = row as {
+    start_date?: string | null;
+    referencing_token?: string | null;
+    referencing_agency_email_override?: string | null;
+    referencing_last_outbound_at?: string | null;
+    referencing_last_inbound_at?: string | null;
+  };
+
   return {
     id: row.id,
     propertyAddress: normalizePropertyAddressLabel(property.address?.trim() ?? "") || null,
     tenantName: tenant?.full_name ?? null,
     onboarding_status: onboardingStatus,
-    start_date: (row as { start_date?: string | null }).start_date ?? null,
+    start_date: r.start_date ?? null,
+    referencing_token: r.referencing_token ?? null,
+    referencing_agency_email_override: r.referencing_agency_email_override ?? null,
+    referencing_last_outbound_at: r.referencing_last_outbound_at ?? null,
+    referencing_last_inbound_at: r.referencing_last_inbound_at ?? null,
     tasks,
   };
 }

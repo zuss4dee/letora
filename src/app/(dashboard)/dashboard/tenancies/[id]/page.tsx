@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { EditTenancyDialog } from "@/components/tenancies/edit-tenancy-dialog";
+import { ReferencingPanel } from "@/components/tenancies/referencing-panel";
 import { TenancyOnboardingPanel } from "@/components/tenancies/tenancy-onboarding-panel";
+import { getReferencingEvents } from "@/lib/actions/referencing";
 import { getTenancyOnboardingDetail } from "@/lib/actions/onboarding";
 import { createClient } from "@/lib/supabase/server";
 
@@ -45,6 +47,7 @@ export default async function TenancyDetailPage({ params }: { params: Promise<{ 
   const tenancyStatus = tenancy?.status ?? null;
 
   const userId = user?.id ?? null;
+  const referencingEvents = userId ? await getReferencingEvents(userId, id) : [];
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
@@ -110,7 +113,19 @@ export default async function TenancyDetailPage({ params }: { params: Promise<{ 
                   </div>
                 </div>
 
-                <div className="px-4 lg:px-6">
+                <div className="grid gap-4 px-4 lg:px-6">
+                  {userId ? (
+                    <ReferencingPanel
+                      tenancyId={id}
+                      userId={userId}
+                      initialEvents={referencingEvents}
+                      referencingToken={detail.referencing_token}
+                      referencingAgencyEmailOverride={detail.referencing_agency_email_override}
+                      lastOutboundAt={detail.referencing_last_outbound_at}
+                      lastInboundAt={detail.referencing_last_inbound_at}
+                      onboardingStatus={detail.onboarding_status}
+                    />
+                  ) : null}
                   <TenancyOnboardingPanel
                     tenancyId={id}
                     onboardingStatus={detail.onboarding_status}

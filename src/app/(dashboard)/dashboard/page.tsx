@@ -162,13 +162,14 @@ export default async function DashboardPage() {
                           <TableRow className="hover:bg-transparent">
                             <TableHead>Address</TableHead>
                             <TableHead>City</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {properties.length === 0 ? (
                             <TableRow>
                               <TableCell
-                                colSpan={2}
+                                colSpan={3}
                                 className="py-10 text-center text-sm text-muted-foreground"
                               >
                                 No properties found.
@@ -181,6 +182,14 @@ export default async function DashboardPage() {
                                   {property.address ?? "—"}
                                 </TableCell>
                                 <TableCell>{property.city ?? "—"}</TableCell>
+                                <TableCell className="text-right">
+                                  <Link
+                                    href={`/dashboard/properties/${property.id}`}
+                                    className="text-sm text-indigo-600 hover:underline dark:text-indigo-400"
+                                  >
+                                    View
+                                  </Link>
+                                </TableCell>
                               </TableRow>
                             ))
                           )}

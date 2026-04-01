@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
-import { tenantSchema } from "@/lib/validations/tenant";
+import { tenantSchema, tenantUpdateSchema } from "@/lib/validations/tenant";
 
 export type TenantRow = {
   id: string;
@@ -30,26 +30,106 @@ export async function getTenants(userId: string): Promise<TenantRow[]> {
 
   if (error) return [];
 
-  return (data ?? []).map((row) => {
-    const tenancies = (row.tenancies ?? []) as Array<{
+  return (data ?? []).map((row) => mapTenantListRow(row));
+}
+
+function mapTenantListRow(row: {
+  id: string;
+  full_name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  right_to_rent_status?: string | null;
+  created_at?: string | null;
+  tenancies?: unknown;
+}): TenantRow {
+  const tenancies = (row.tenancies ?? []) as Array<{
+    status?: string | null;
+    properties?: { address?: string | null } | null;
+  }>;
+
+  const firstTenancy = tenancies[0] ?? null;
+
+  return {
+    id: row.id,
+    fullName: row.full_name ?? null,
+    email: row.email ?? null,
+    phone: row.phone ?? null,
+    propertyAddress:
+      normalizePropertyAddressLabel(firstTenancy?.properties?.address ?? "") || null,
+    rightToRentStatus: row.right_to_rent_status ?? null,
+    tenancyStatus: firstTenancy?.status ?? null,
+    createdAt: row.created_at ?? null,
+  };
+}
+
+export type TenantDetailRow = {
+  id: string;
+  fullName: string | null;
+  email: string | null;
+  phone: string | null;
+  dateOfBirth: string | null;
+  rightToRentStatus: string | null;
+  createdAt: string | null;
+  tenancies: Array<{
+    id: string;
+    status: string | null;
+    startDate: string | null;
+    propertyId: string | null;
+    propertyAddress: string | null;
+  }>;
+};
+
+export async function getTenantById(userId: string, tenantId: string): Promise<TenantDetailRow | null> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("tenant_profiles")
+    .select(
+      "id,full_name,email,phone,date_of_birth,right_to_rent_status,created_at,tenancies(id,status,start_date,property_id,properties(address))",
+    )
+    .eq("id", tenantId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+
+  const rawTenancies = data.tenancies;
+  const tenList = Array.isArray(rawTenancies)
+    ? rawTenancies
+    : rawTenancies
+      ? [rawTenancies]
+      : [];
+
+  const tenancies = tenList.map((t) => {
+    const row = t as {
+      id?: string;
       status?: string | null;
+      start_date?: string | null;
+      property_id?: string | null;
       properties?: { address?: string | null } | null;
-    }>;
-
-    const firstTenancy = tenancies[0] ?? null;
-
+    };
     return {
-      id: row.id,
-      fullName: row.full_name ?? null,
-      email: row.email ?? null,
-      phone: row.phone ?? null,
+      id: String(row.id ?? ""),
+      status: row.status ?? null,
+      startDate: row.start_date ?? null,
+      propertyId: row.property_id ?? null,
       propertyAddress:
-        normalizePropertyAddressLabel(firstTenancy?.properties?.address ?? "") || null,
-      rightToRentStatus: row.right_to_rent_status ?? null,
-      tenancyStatus: firstTenancy?.status ?? null,
-      createdAt: row.created_at ?? null,
+        normalizePropertyAddressLabel(row.properties?.address ?? "") || null,
     };
   });
+
+  const dob = data.date_of_birth as string | null | undefined;
+
+  return {
+    id: data.id,
+    fullName: data.full_name ?? null,
+    email: data.email ?? null,
+    phone: data.phone ?? null,
+    dateOfBirth: dob ? String(dob).slice(0, 10) : null,
+    rightToRentStatus: data.right_to_rent_status ?? null,
+    createdAt: data.created_at ?? null,
+    tenancies,
+  };
 }
 
 /** Tenants linked to the auth user's properties via tenancies (contract picker). */
@@ -128,6 +208,40 @@ export async function addTenant(formData: unknown) {
   if (error) return { ok: false as const, error: error.message };
 
   revalidatePath("/dashboard/tenants");
+  return { ok: true as const };
+}
+
+export async function updateTenant(tenantId: string, formData: unknown) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { ok: false as const, error: "Not authenticated" };
+
+  const parsed = tenantUpdateSchema.safeParse(formData);
+  if (!parsed.success) return { ok: false as const, error: "Invalid form data" };
+
+  const values = parsed.data;
+  const dob =
+    values.dateOfBirth && values.dateOfBirth.trim().length > 0 ? values.dateOfBirth.trim() : null;
+
+  const { error } = await supabase
+    .from("tenant_profiles")
+    .update({
+      full_name: values.fullName,
+      email: values.email,
+      phone: values.phone,
+      date_of_birth: dob,
+      right_to_rent_status: values.rightToRentStatus,
+    })
+    .eq("id", tenantId)
+    .eq("user_id", user.id);
+
+  if (error) return { ok: false as const, error: error.message };
+
+  revalidatePath("/dashboard/tenants");
+  revalidatePath(`/dashboard/tenants/${tenantId}`);
   return { ok: true as const };
 }
 

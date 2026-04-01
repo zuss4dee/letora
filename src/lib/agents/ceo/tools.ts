@@ -3,7 +3,13 @@ export type CEOToolName =
   | "chase_rent"
   | "get_maintenance_summary"
   | "get_leads_summary"
+  | "search_properties"
+  | "start_tenant_onboarding"
+  | "dispatch_maintenance_request"
+  | "generate_property_listing"
   | "qualify_leads"
+  | "nurture_lead"
+  | "decide_lead_application"
   | "draft_contract"
   | "get_dashboard_summary"
   | "get_rent_status"
@@ -13,7 +19,13 @@ export const CEO_TOOL_NAMES: readonly CEOToolName[] = [
   "chase_rent",
   "get_maintenance_summary",
   "get_leads_summary",
+  "search_properties",
+  "start_tenant_onboarding",
+  "dispatch_maintenance_request",
+  "generate_property_listing",
   "qualify_leads",
+  "nurture_lead",
+  "decide_lead_application",
   "draft_contract",
   "get_dashboard_summary",
   "get_rent_status",
@@ -65,13 +77,182 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "search_properties",
+    description:
+      "Find properties by address fragments, postcode, city, or full property UUID. Always use this before passing property_id to other tools — never guess a property id from a flat/unit number alone.",
+    input_schema: {
+      type: "object",
+      properties: {
+        query: {
+          type: "string",
+          description:
+            "Search text (e.g. “Apartment 706 Salford M3 7GX”) or a property UUID. Tokens are matched against address, city, and postcode.",
+        },
+        limit: {
+          type: "number",
+          description: "Max candidates to return (default 15, max 30).",
+        },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "start_tenant_onboarding",
+    description:
+      "Start onboarding: (1) existing tenancy_id, (2) create tenancy from existing tenant_id + property_id + start_date then onboard, or (3) lead_id + auto_create_tenant_and_tenancy to create tenant+tenancy from a lead then onboard. Use search_properties to resolve property UUIDs.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tenancy_id: {
+          type: "string",
+          description: "Existing tenancy UUID to start onboarding for.",
+        },
+        tenant_id: {
+          type: "string",
+          description:
+            "Existing tenant profile: exact UUID from list_tenants (preferred), or a distinctive full name if it matches exactly one tenant on the account. Do not combine with lead_id.",
+        },
+        lead_id: {
+          type: "string",
+          description: "Lead UUID to onboard from when using lead conversion.",
+        },
+        property_id: {
+          type: "string",
+          description:
+            "Property UUID from search_properties — required with tenant_id+start_date, or when creating from lead if lead has no property.",
+        },
+        auto_create_tenant_and_tenancy: {
+          type: "boolean",
+          description: "If true and tenancy_id is missing, create tenant + tenancy from lead details.",
+        },
+        start_date: {
+          type: "string",
+          description: "Tenancy start date YYYY-MM-DD when creating a tenancy (tenant+property or lead path).",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "dispatch_maintenance_request",
+    description:
+      "Log a new maintenance issue, classify severity/category, and optionally assign + draft/send contractor communication.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tenancy_id: {
+          type: "string",
+          description: "Tenancy UUID for the issue location.",
+        },
+        issue_title: {
+          type: "string",
+          description: "Short issue title (e.g., leaking kitchen tap).",
+        },
+        issue_description: {
+          type: "string",
+          description: "Detailed issue description from tenant/manager.",
+        },
+        contractor_name: {
+          type: "string",
+          description: "Optional preferred contractor name.",
+        },
+        contractor_email: {
+          type: "string",
+          description: "Optional preferred contractor email.",
+        },
+        dispatch_channel: {
+          type: "string",
+          enum: ["email", "sms", "both"],
+          description: "Dispatch target channel. Current implementation supports email.",
+        },
+      },
+      required: ["tenancy_id", "issue_description"],
+    },
+  },
+  {
+    name: "generate_property_listing",
+    description:
+      "Generate polished UK-market listing copy from property data. Can preview only or save back to the property record.",
+    input_schema: {
+      type: "object",
+      properties: {
+        property_id: {
+          type: "string",
+          description: "Property UUID to generate listing copy for.",
+        },
+        tone: {
+          type: "string",
+          enum: ["premium", "family", "student", "investor"],
+          description: "Optional marketing tone.",
+        },
+        target_channel: {
+          type: "string",
+          enum: ["rightmove", "zoopla", "generic"],
+          description: "Optional target channel style.",
+        },
+        save_to_property: {
+          type: "boolean",
+          description: "If true, persist generated description to the property record.",
+        },
+      },
+      required: ["property_id"],
+    },
+  },
+  {
     name: "qualify_leads",
     description:
       "Run the lead qualifier on leads with qualified_status pending: scores each lead and persists qualified/disqualified status plus a short note on the lead row.",
     input_schema: {
       type: "object",
-      properties: {},
+      properties: {
+        lead_id: {
+          type: "string",
+          description:
+            "Optional UUID. When set, only score and update this lead (must be pipeline **new** and qualification **pending**).",
+        },
+      },
       required: [],
+    },
+  },
+  {
+    name: "nurture_lead",
+    description:
+      "For a qualified lead with an email address: advance the pipeline one step (new→contacted→viewing→applied), draft a professional follow-up email, save/send via email logs per auto-send settings, and update the lead status. Requires the correct current stage.",
+    input_schema: {
+      type: "object",
+      properties: {
+        lead_id: {
+          type: "string",
+          description: "UUID of the lead row.",
+        },
+        step: {
+          type: "string",
+          enum: ["initial_contact", "viewing", "application"],
+          description:
+            "initial_contact (from new to contacted), viewing (from contacted to viewing), application (from viewing to applied).",
+        },
+      },
+      required: ["lead_id", "step"],
+    },
+  },
+  {
+    name: "decide_lead_application",
+    description:
+      "Landlord decision on a lead in applied stage: set status to approved or rejected (human gate after application). Does not send email.",
+    input_schema: {
+      type: "object",
+      properties: {
+        lead_id: {
+          type: "string",
+          description: "UUID of the lead row.",
+        },
+        decision: {
+          type: "string",
+          enum: ["approved", "rejected"],
+          description: "Final outcome for this applicant.",
+        },
+      },
+      required: ["lead_id", "decision"],
     },
   },
   {

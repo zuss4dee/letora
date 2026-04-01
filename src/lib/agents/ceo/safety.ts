@@ -18,6 +18,7 @@ const READ_ONLY_TOOLS: readonly CEOToolName[] = [
   "get_rent_status",
   "get_maintenance_summary",
   "get_leads_summary",
+  "search_properties",
   "list_tenants",
 ]
 
@@ -40,11 +41,16 @@ export function classifyCEOIntent(latestUserText: string): CEOIntent {
   if (t.length === 0) return "read_only"
 
   if (
-    /\b(send|dispatch|blast|transmit|actually\s+send|go\s+ahead\s+and\s+send|email\s+them\s+now|mark\s+.*\s+resolved|mark\s+as\s+resolved|close\s+the\s+tickets?|delete\s+|remove\s+permanently|cancel\s+the\s+|finalize\s+and\s+send)\b/.test(
+    /\b(send|dispatch|onboard|start\s+onboarding|blast|transmit|actually\s+send|go\s+ahead\s+and\s+send|email\s+them\s+now|mark\s+.*\s+resolved|mark\s+as\s+resolved|close\s+the\s+tickets?|delete\s+|remove\s+permanently|cancel\s+the\s+|finalize\s+and\s+send)\b/.test(
       t,
     )
   ) {
     return "confirmation_required"
+  }
+
+  /** Avoid “list/show my leads and qualify” being classified read_only. */
+  if (/\bqualify\b/.test(t) && /\bleads?\b/.test(t)) {
+    return "draft_suggest"
   }
 
   if (
@@ -66,6 +72,8 @@ export function classifyCEOIntent(latestUserText: string): CEOIntent {
 
 /**
  * Non–read-only tools need explicit confirmation unless the user is in draft/suggest mode.
+ * Onboarding (`start_tenant_onboarding`) stays behind confirmation when the user message
+ * triggers `confirmation_required` (e.g. says “onboard”) — plan: safer default (A).
  */
 export function toolsRequireUserConfirmation(
   intent: CEOIntent,
@@ -74,6 +82,8 @@ export function toolsRequireUserConfirmation(
   const mutating = toolNames.filter((n) => !isReadOnlyTool(n))
   if (mutating.length === 0) return false
   if (intent === "draft_suggest") return false
+  /** Same UX as Agents → Lead Qualifier: qualify without an extra confirmation step. */
+  if (mutating.length === 1 && mutating[0] === "qualify_leads") return false
   return true
 }
 
@@ -119,8 +129,20 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
         }`
       case "qualify_leads":
         return "• **Qualify pending leads** (score and recommend follow-up)"
+      case "nurture_lead":
+        return `• **Nurture a lead** (advance pipeline step${c.input.lead_id ? ` for lead **${c.input.lead_id.slice(0, 8)}…**` : ""}${c.input.step ? ` — **${c.input.step}**` : ""}; may draft/send email)`
+      case "decide_lead_application":
+        return `• **Approve or reject applicant** (final decision on a lead in applied stage${c.input.decision ? ` — **${c.input.decision}**` : ""})`
+      case "start_tenant_onboarding":
+        return "• **Start tenant onboarding** (may create tenancy records, checklist tasks, and welcome communications)"
+      case "dispatch_maintenance_request":
+        return "• **Dispatch maintenance request** (logs issue and may notify contractor)"
+      case "generate_property_listing":
+        return "• **Generate property listing** (can save generated marketing description to property record)"
       case "get_maintenance_summary":
         return "• **Summarise maintenance tickets** (read-only)"
+      case "get_leads_summary":
+        return "• **Leads pipeline summary** (read-only)"
       case "get_dashboard_summary":
         return "• **Portfolio dashboard summary** (read-only)"
       case "get_rent_status":
@@ -129,6 +151,8 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
         } (read-only)`
       case "list_tenants":
         return "• **List tenants** (read-only)"
+      case "search_properties":
+        return "• **Search properties** (read-only — resolve address to property UUIDs)"
       default:
         return `• **${(c as { name: string }).name}**`
     }

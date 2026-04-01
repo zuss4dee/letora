@@ -41,4 +41,25 @@ describe("routeCEOIntent — tenant list phrasing", () => {
     expect(r.recommendedTools).toContain("get_leads_summary");
     expect(r.recommendedTools).not.toContain("qualify_leads");
   });
+
+  it("routes singular “show me my lead” to leads (was falling through to portfolio)", () => {
+    const r = routeCEOIntent("show me my lead");
+    expect(r.needsClarification).toBe(false);
+    expect(r.primaryIntent).toBe("leads");
+    expect(r.recommendedTools).toContain("get_leads_summary");
+  });
+
+  it("routes “Qualify pending leads” to qualify_leads (not get_leads_summary only)", () => {
+    const r = routeCEOIntent("Qualify pending leads");
+    expect(r.primaryIntent).toBe("leads");
+    expect(r.recommendedTools[0]).toBe("qualify_leads");
+    expect(r.recommendedTools).toContain("qualify_leads");
+    expect(r.wantsLeadQualification).toBe(true);
+  });
+
+  it("sets wantsLeadQualification for singular “qualify my lead”", () => {
+    const r = routeCEOIntent("qualify my lead");
+    expect(r.wantsLeadQualification).toBe(true);
+    expect(r.recommendedTools).toContain("qualify_leads");
+  });
 });

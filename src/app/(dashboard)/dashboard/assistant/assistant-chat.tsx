@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import type { AssistantConversationListItem } from "@/lib/assistant-messages/store";
+import {
+  parseLeadQualifyEmbed,
+  type LeadQualifyEmbedPayloadV1,
+} from "@/lib/assistant/lead-qualify-embed";
 import { cn } from "@/lib/utils";
 
 type ChatRole = "user" | "assistant";
@@ -24,8 +28,148 @@ type PendingCEOActionClient = {
   toolCalls: { name: string; input: Record<string, string> }[];
 };
 
+function formatQualifyOutcomeRaw(raw: string): string {
+  try {
+    const j = JSON.parse(raw) as Record<string, unknown>;
+    if (typeof j.error === "string") return j.error;
+    if (j.parse_ok === false) {
+      return typeof j.reason === "string" ? j.reason : JSON.stringify(j.details ?? j, null, 2);
+    }
+    const d = j.details as Record<string, unknown> | undefined;
+    if (d && typeof d === "object") {
+      const rec = d as {
+        fullName?: string;
+        score?: number;
+        recommendation?: string;
+        reasoning?: string;
+      };
+      const bits: string[] = [];
+      if (rec.recommendation) bits.push(`Decision: ${rec.recommendation}`);
+      if (rec.score != null) bits.push(`Score: ${rec.score}`);
+      if (rec.reasoning) bits.push(String(rec.reasoning).slice(0, 400));
+      if (bits.length) return bits.join("\n");
+    }
+    return JSON.stringify(j, null, 2).slice(0, 800);
+  } catch {
+    return raw.slice(0, 500);
+  }
+}
+
+function LeadQualifyPanel({ payload }: { payload: LeadQualifyEmbedPayloadV1 }) {
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [outcomeById, setOutcomeById] = useState<Record<string, string>>({});
+  const [rowErr, setRowErr] = useState<string | null>(null);
+
+  async function runQualify(leadId: string) {
+    setRowErr(null);
+    setLoadingId(leadId);
+    try {
+      const res = await fetch("/api/assistant/qualify-lead", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ leadId }),
+      });
+      const data = (await res.json()) as { ok?: boolean; raw?: string; error?: string };
+      if (!res.ok) throw new Error(data.error ?? "Request failed");
+      if (typeof data.raw === "string") {
+        setOutcomeById((prev) => ({ ...prev, [leadId]: data.raw as string }));
+      }
+    } catch (e) {
+      setRowErr(e instanceof Error ? e.message : "Something went wrong.");
+    } finally {
+      setLoadingId(null);
+    }
+  }
+
+  return (
+    <div className="mt-3 space-y-2 border-t border-border pt-3">
+      <p className="text-xs font-medium text-muted-foreground">Manual qualification</p>
+      {rowErr ? (
+        <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-600 dark:text-red-400">
+          {rowErr}
+        </p>
+      ) : null}
+      <div className="space-y-2">
+        {payload.leads.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No leads in your account yet.</p>
+        ) : (
+          payload.leads.map((row) => (
+            <div
+              key={row.id}
+              className="rounded-lg border border-border bg-background/60 p-3 text-left dark:bg-background/40"
+            >
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0">
+                  <div className="font-medium text-foreground">{row.fullName}</div>
+                  <div className="text-xs text-muted-foreground">
+                    Pipeline: {row.pipelineStatus ?? "—"} · Qualification:{" "}
+                    {row.qualificationStatus ?? "—"}
+                  </div>
+                  {row.email ? (
+                    <div className="truncate text-xs text-muted-foreground">{row.email}</div>
+                  ) : null}
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="secondary"
+                  disabled={!row.eligibleForAiQualify || loadingId === row.id}
+                  title={
+                    row.eligibleForAiQualify
+                      ? "Run the Lead Qualifier on this lead"
+                      : (row.ineligibleReason ?? "Not eligible")
+                  }
+                  className="shrink-0"
+                  onClick={() => void runQualify(row.id)}
+                >
+                  {loadingId === row.id ? (
+                    <>
+                      <Loader2 className="mr-1 size-4 animate-spin" aria-hidden />
+                      Running…
+                    </>
+                  ) : (
+                    "Qualify with AI"
+                  )}
+                </Button>
+              </div>
+              {!row.eligibleForAiQualify && row.ineligibleReason ? (
+                <p className="mt-2 text-xs text-muted-foreground">{row.ineligibleReason}</p>
+              ) : null}
+              {outcomeById[row.id] ? (
+                <pre className="mt-2 max-h-40 overflow-auto rounded border border-border/60 bg-muted/50 p-2 text-xs whitespace-pre-wrap text-foreground">
+                  {formatQualifyOutcomeRaw(outcomeById[row.id])}
+                </pre>
+              ) : null}
+            </div>
+          ))
+        )}
+      </div>
+      <Link
+        href="/dashboard/leads"
+        className="inline-block text-xs font-medium text-primary underline-offset-4 hover:underline"
+      >
+        Manage all leads →
+      </Link>
+    </div>
+  );
+}
+
 function MessageBubble({ role, content }: ChatMessage) {
   const isUser = role === "user";
+  if (role === "assistant") {
+    const parsed = parseLeadQualifyEmbed(content);
+    if (parsed) {
+      return (
+        <div className="flex w-full justify-start">
+          <div className="max-w-[min(100%,42rem)] rounded-xl border border-border bg-muted/60 px-3 py-2.5 text-sm leading-relaxed text-foreground shadow-sm dark:bg-muted/40">
+            <p className="whitespace-pre-wrap break-words">{parsed.introText}</p>
+            <LeadQualifyPanel payload={parsed.payload} />
+          </div>
+        </div>
+      );
+    }
+  }
   return (
     <div className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}>
       <div
@@ -78,6 +222,7 @@ async function postChatRequest(
   | { kind: "stream"; consume: (onDelta: (chunk: string) => void) => Promise<void> }
   | { kind: "clarification"; message: string }
   | { kind: "confirmation"; message: string; pendingAction: PendingCEOActionClient }
+  | { kind: "lead_qualify"; message: string }
 > {
   const body: Record<string, unknown> = { conversationId, messages };
   if (options?.confirmedExecution === true && options.pendingAction) {
@@ -87,6 +232,7 @@ async function postChatRequest(
 
   const res = await fetch("/api/chat", {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
@@ -126,6 +272,9 @@ async function postChatRequest(
           message: o.message,
           pendingAction: o.pendingAction,
         };
+      }
+      if (o.needsLeadQualifyPrompt === true && typeof o.message === "string") {
+        return { kind: "lead_qualify", message: o.message };
       }
     }
     throw new Error("Unexpected response from assistant.");
@@ -279,6 +428,12 @@ export function AssistantChat({
       });
 
       if (result.kind === "clarification") {
+        setMessages((prev) => [...prev, { role: "assistant", content: result.message }]);
+        router.refresh();
+        return;
+      }
+
+      if (result.kind === "lead_qualify") {
         setMessages((prev) => [...prev, { role: "assistant", content: result.message }]);
         router.refresh();
         return;

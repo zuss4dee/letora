@@ -38,6 +38,10 @@ export const userSettingsSchema = z.object({
   preferredSources: z.array(sourceEnum).default([]),
   disqualifyNoMovein: z.boolean().default(false),
   leadQualifierCriteria: z.string().optional(),
+  referencingAgencyName: z.string().optional(),
+  referencingAgencyEmail: z.string().email("Enter a valid email").or(z.literal("")),
+  referencingAgencyNotes: z.string().optional(),
+  autoSendReferencingEmails: z.boolean().default(false),
 });
 
 export type UserSettingsInput = z.output<typeof userSettingsSchema>;

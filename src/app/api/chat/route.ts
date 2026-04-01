@@ -6,12 +6,15 @@ import {
   runCEOChat,
 } from "@/lib/agents/ceo";
 import type { CEOMessage } from "@/lib/agents/ceo";
+import { buildLeadQualifyAssistantMessage } from "@/lib/assistant/build-lead-qualify-message";
+import { shouldOfferManualLeadQualifyUi } from "@/lib/assistant/lead-qualify-embed";
 import {
   assertConversationOwnedByUser,
   insertAssistantMessage,
   isAssistantConversationId,
 } from "@/lib/assistant-messages/store";
 import { checkChatRateLimit } from "@/lib/chat-rate-limit";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 type ResolvedAuth =
@@ -230,20 +233,46 @@ export async function POST(request: Request) {
     }
   }
 
+  // Prefer service role + explicit user_id filters in tools (matches verified JWT). Cookie-only
+  // clients can miss session in some API contexts and return empty rows under RLS.
+  const supabase = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+    ? createServiceRoleClient()
+    : await createClient();
+
+  if (
+    bodyObj.confirmedExecution !== true &&
+    last.role === "user" &&
+    shouldOfferManualLeadQualifyUi(last.content)
+  ) {
+    const assistantContent = await buildLeadQualifyAssistantMessage(userId, supabase);
+    try {
+      await insertAssistantMessage(conversationId, "assistant", assistantContent);
+    } catch {
+      return NextResponse.json(
+        { error: "Could not save the assistant reply." },
+        { status: 500 },
+      );
+    }
+    return NextResponse.json(
+      {
+        needsLeadQualifyPrompt: true,
+        message: assistantContent,
+      },
+      { status: 200 },
+    );
+  }
+
   let result;
   try {
     result = await runCEOChat({
       userId,
+      supabase,
       messages,
       confirmedExecution: bodyObj.confirmedExecution === true,
       pendingAction,
     });
   } catch (err) {
     const mapped = mapAssistantError(err);
-    console.error("[/api/chat] runCEOChat failed", {
-      mapped,
-      raw: err instanceof Error ? err.message : String(err),
-    });
     return NextResponse.json(
       { error: mapped.message, code: mapped.code },
       { status: mapped.status },

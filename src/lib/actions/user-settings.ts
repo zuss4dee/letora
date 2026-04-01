@@ -16,7 +16,7 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
   const { data, error } = await supabase
     .from("user_settings")
     .select(
-      "id,user_id,business_name,landlord_name,contact_phone,contact_email,business_address,rent_chaser_tone,first_chase_days,email_signoff,include_payment_plan,email_from_name,auto_send_rent_chaser,auto_send_maintenance_updates,auto_send_onboarding_emails,auto_send_lead_updates,rent_chaser_instructions,min_lead_score,preferred_sources,disqualify_no_movein,lead_qualifier_criteria",
+      "id,user_id,business_name,landlord_name,contact_phone,contact_email,business_address,rent_chaser_tone,first_chase_days,email_signoff,include_payment_plan,email_from_name,auto_send_rent_chaser,auto_send_maintenance_updates,auto_send_onboarding_emails,auto_send_lead_updates,auto_send_referencing_emails,referencing_agency_name,referencing_agency_email,referencing_agency_notes,rent_chaser_instructions,min_lead_score,preferred_sources,disqualify_no_movein,lead_qualifier_criteria",
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -49,6 +49,10 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
     autoSendMaintenanceUpdates: data.auto_send_maintenance_updates ?? false,
     autoSendOnboardingEmails: data.auto_send_onboarding_emails ?? false,
     autoSendLeadUpdates: data.auto_send_lead_updates ?? false,
+    autoSendReferencingEmails: data.auto_send_referencing_emails ?? false,
+    referencingAgencyName: data.referencing_agency_name ?? "",
+    referencingAgencyEmail: data.referencing_agency_email ?? "",
+    referencingAgencyNotes: data.referencing_agency_notes ?? "",
     rentChaserInstructions: data.rent_chaser_instructions ?? "",
     minLeadScore: data.min_lead_score ?? 70,
     preferredSources: (data.preferred_sources ?? []) as UserSettingsInput["preferredSources"],
@@ -96,6 +100,10 @@ export async function saveSettings(formData: unknown) {
       auto_send_maintenance_updates: values.autoSendMaintenanceUpdates,
       auto_send_onboarding_emails: values.autoSendOnboardingEmails,
       auto_send_lead_updates: values.autoSendLeadUpdates,
+      auto_send_referencing_emails: values.autoSendReferencingEmails,
+      referencing_agency_name: values.referencingAgencyName || null,
+      referencing_agency_email: values.referencingAgencyEmail || null,
+      referencing_agency_notes: values.referencingAgencyNotes || null,
       rent_chaser_instructions: values.rentChaserInstructions || null,
       min_lead_score: values.minLeadScore,
       preferred_sources: values.preferredSources,

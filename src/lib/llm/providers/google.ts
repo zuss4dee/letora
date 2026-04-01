@@ -1,9 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai"
 import type { LLMMessage, LLMResponse, AgentName } from "../types"
 
-const client = new GoogleGenerativeAI(
-  process.env.GOOGLE_GENERATIVE_AI_API_KEY ?? ""
-)
+function googleApiKey(): string {
+  return (
+    process.env.GOOGLE_AI_API_KEY?.trim() ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY?.trim() ||
+    ""
+  )
+}
 
 export async function runGoogle(
   model: string,
@@ -12,7 +16,14 @@ export async function runGoogle(
   temperature = 0.4,
   maxTokens = 1024
 ): Promise<LLMResponse> {
-  const genModel = client.getGenerativeModel({
+  const key = googleApiKey()
+  if (!key) {
+    throw new Error(
+      "Missing GOOGLE_AI_API_KEY (set in .env — same variable used elsewhere for Gemini)",
+    )
+  }
+
+  const genModel = new GoogleGenerativeAI(key).getGenerativeModel({
     model,
     generationConfig: { temperature, maxOutputTokens: maxTokens },
   })

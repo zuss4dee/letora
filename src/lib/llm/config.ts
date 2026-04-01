@@ -8,6 +8,7 @@ export const AGENT_MODEL_CONFIG: Record<AgentName, AgentModelConfig> = {
   rentChaser: { provider: "google", model: "gemini-1.5-flash" },
   maintenance: { provider: "anthropic", model: "claude-3-haiku-20240307" },
   contracts: { provider: "openai", model: "gpt-4o" },
-  leads: { provider: "google", model: "gemini-1.5-flash" },
+  // Haiku for batch JSON; use a widely available model ID (Haiku 4.5 may require newer API access).
+  leads: { provider: "anthropic", model: "claude-3-5-haiku-20241022" },
   analytics: { provider: "openai", model: "gpt-4o-mini" },
 }

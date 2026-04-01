@@ -2,7 +2,7 @@ import { Resend } from "resend";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 /** Maps to user_settings.auto_send_* columns */
-export type EmailAgentType = "rent_chaser" | "maintenance" | "onboarding" | "lead";
+export type EmailAgentType = "rent_chaser" | "maintenance" | "onboarding" | "lead" | "referencing";
 
 export type SendEmailToolParams = {
   to: string;
@@ -25,6 +25,7 @@ type SettingsRow = {
   auto_send_maintenance_updates: boolean | null;
   auto_send_onboarding_emails: boolean | null;
   auto_send_lead_updates: boolean | null;
+  auto_send_referencing_emails: boolean | null;
 };
 
 function isAutoSendEnabled(settings: SettingsRow, agentType: EmailAgentType): boolean {
@@ -37,6 +38,8 @@ function isAutoSendEnabled(settings: SettingsRow, agentType: EmailAgentType): bo
       return settings.auto_send_onboarding_emails === true;
     case "lead":
       return settings.auto_send_lead_updates === true;
+    case "referencing":
+      return settings.auto_send_referencing_emails === true;
     default:
       return false;
   }
@@ -90,7 +93,7 @@ export async function sendEmailTool(
   const { data: settings, error: settingsError } = await supabase
     .from("user_settings")
     .select(
-      "email_from_name,auto_send_rent_chaser,auto_send_maintenance_updates,auto_send_onboarding_emails,auto_send_lead_updates",
+      "email_from_name,auto_send_rent_chaser,auto_send_maintenance_updates,auto_send_onboarding_emails,auto_send_lead_updates,auto_send_referencing_emails",
     )
     .eq("user_id", userId)
     .maybeSingle<SettingsRow>();
@@ -110,6 +113,7 @@ export async function sendEmailTool(
     auto_send_maintenance_updates: false,
     auto_send_onboarding_emails: false,
     auto_send_lead_updates: false,
+    auto_send_referencing_emails: false,
   };
 
   if (!isAutoSendEnabled(row, params.agentType)) {

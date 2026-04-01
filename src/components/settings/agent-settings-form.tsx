@@ -464,6 +464,41 @@ export function AgentSettingsForm({
                     }
                   />
                 </div>
+                <div className="flex items-center justify-between py-3 border-b last:border-0">
+                  <div className="min-w-0 flex flex-col gap-0.5">
+                    <span className="text-sm font-medium">Auto-send referencing handoff emails</span>
+                    <span className="text-sm text-muted-foreground">
+                      Send agency handoff emails without review when you click send (if enabled).
+                    </span>
+                  </div>
+                  <Switch
+                    id="autoSendReferencingEmails"
+                    checked={form.watch("autoSendReferencingEmails")}
+                    onCheckedChange={(checked) =>
+                      form.setValue("autoSendReferencingEmails", checked, { shouldDirty: true })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-4 rounded-lg border border-border p-4">
+                <div className="text-sm font-medium">Default referencing agency</div>
+                <p className="text-sm text-muted-foreground">
+                  Used when you send a referencing handoff from a tenancy unless you set an override on that
+                  tenancy.
+                </p>
+                <div className="grid gap-2">
+                  <Label htmlFor="referencingAgencyName">Agency name</Label>
+                  <Input id="referencingAgencyName" {...form.register("referencingAgencyName")} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="referencingAgencyEmail">Agency email</Label>
+                  <Input id="referencingAgencyEmail" type="email" {...form.register("referencingAgencyEmail")} />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="referencingAgencyNotes">Notes (included in handoff email)</Label>
+                  <Textarea id="referencingAgencyNotes" {...form.register("referencingAgencyNotes")} />
+                </div>
               </div>
             </CardContent>
           </Card>

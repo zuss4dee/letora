@@ -21,8 +21,9 @@ export async function runAnthropic(
       content: m.content,
     })),
   })
-  const firstBlock = response.content[0]
-  const text = firstBlock?.type === "text" ? firstBlock.text : ""
+  const text = response.content
+    .map((b) => (b.type === "text" ? b.text : ""))
+    .join("")
   return {
     text,
     agentName,

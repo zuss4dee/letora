@@ -304,7 +304,7 @@ export async function resolveMaintenanceRequest(requestId: string): Promise<void
       updated_at: now,
     })
     .eq("id", requestId)
-    .eq("status", "open")
+    .in("status", ["open", "in_progress"])
     .select("id")
     .maybeSingle();
 
@@ -315,6 +315,7 @@ export async function resolveMaintenanceRequest(requestId: string): Promise<void
     throw new Error("Request is not open or could not be updated");
   }
 
+  revalidatePath("/dashboard");
   revalidatePath("/dashboard/maintenance");
   revalidatePath(`/dashboard/maintenance/${requestId}`);
 }

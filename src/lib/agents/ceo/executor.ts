@@ -1,7 +1,13 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
+import { runLeadQualifierAgent } from "@/lib/agents/lead-qualifier";
+import { runMaintenanceAgent } from "@/lib/agents/maintenance-agent";
 import { runRentChaserAgent } from "@/lib/agents/rent-chaser";
+import { runTenantOnboardingAgent } from "@/lib/agents/tenant-onboarding";
 import { runLLM } from "@/lib/llm/router";
+import { sendEmailTool } from "@/lib/tools/send-email";
+import { labelPropertyRow, rankPropertySearch, type PropertySearchRow } from "@/lib/agents/ceo/search-properties";
+import { resolveTenantProfileForAccount } from "@/lib/agents/ceo/resolve-tenant-profile";
 import type { CEOToolName } from "./tools";
 
 function formatTenantNameFromProfile(tenant: { full_name?: string | null } | null): string {
@@ -16,27 +22,7 @@ function normalizeTenancyRows(tenancies: unknown): { property_id?: string | null
   return [];
 }
 
-function extractJsonArray(text: string): unknown[] | null {
-  const trimmed = text.trim();
-  const tryParse = (s: string) => {
-    try {
-      const v = JSON.parse(s) as unknown;
-      return Array.isArray(v) ? v : null;
-    } catch {
-      return null;
-    }
-  };
-  const direct = tryParse(trimmed);
-  if (direct) return direct;
-  const match = trimmed.match(/\[[\s\S]*\]/);
-  if (match) {
-    const inner = tryParse(match[0]);
-    if (inner) return inner;
-  }
-  return null;
-}
-
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+const defaultSupabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 interface ToolCallArgs {
   month?: string;
@@ -44,9 +30,83 @@ interface ToolCallArgs {
   tenant_name?: string;
   tenant_id?: string;
   property_id?: string;
+  lead_id?: string;
+  tenancy_id?: string;
+  auto_create_tenant_and_tenancy?: boolean;
+  start_date?: string;
+  /** search_properties */
+  query?: string;
+  limit?: string | number;
+  issue_title?: string;
+  issue_description?: string;
+  contractor_name?: string;
+  contractor_email?: string;
+  dispatch_channel?: "email" | "sms" | "both";
+  tone?: "premium" | "family" | "student" | "investor";
+  target_channel?: "rightmove" | "zoopla" | "generic";
+  save_to_property?: boolean;
+  /** From tool input (strings). */
+  step?: string;
+  decision?: string;
 }
 
-export async function executeCEOTool(toolName: CEOToolName, args: ToolCallArgs, userId: string): Promise<string> {
+function normalizePipelineStatus(value: unknown): string {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function addOneYearIsoDate(startDateIso: string): string {
+  const d = new Date(`${startDateIso.trim()}T12:00:00.000Z`);
+  if (Number.isNaN(d.getTime())) {
+    const fallback = new Date();
+    fallback.setUTCFullYear(fallback.getUTCFullYear() + 1);
+    return fallback.toISOString().slice(0, 10);
+  }
+  d.setUTCFullYear(d.getUTCFullYear() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+function displayLeadName(lead: { full_name?: string | null; name?: string | null }): string {
+  const n = (lead.full_name ?? lead.name ?? "").trim();
+  return n || "Unknown lead";
+}
+
+function appendLeadNote(prev: string | null | undefined, line: string): string {
+  const p = (prev ?? "").trim();
+  const day = new Date().toISOString().slice(0, 10);
+  const block = `[${day}] ${line}`;
+  return p ? `${p}\n\n${block}` : block;
+}
+
+function classifyMaintenanceCategory(desc: string): {
+  category: "plumbing" | "electrical" | "heating" | "structural" | "general";
+  priority: "urgent" | "standard";
+} {
+  const t = desc.toLowerCase();
+  const urgent =
+    /\b(gas|smoke|fire|flood|burst|no\s+heat|no\s+heating|electrical\s+burn|sparks?|shock|ceiling\s+collapse)\b/.test(
+      t,
+    ) || /\burgent|emergency|immediately|asap\b/.test(t);
+  if (/\b(pipe|leak|toilet|drain|plumb)\b/.test(t)) {
+    return { category: "plumbing", priority: urgent ? "urgent" : "standard" };
+  }
+  if (/\b(electric|socket|power|lighting|fuse|breaker|wire)\b/.test(t)) {
+    return { category: "electrical", priority: urgent ? "urgent" : "standard" };
+  }
+  if (/\b(boiler|radiator|heating|thermostat|hot\s+water)\b/.test(t)) {
+    return { category: "heating", priority: urgent ? "urgent" : "standard" };
+  }
+  if (/\b(roof|wall|window|door|crack|damp|mould|mold)\b/.test(t)) {
+    return { category: "structural", priority: urgent ? "urgent" : "standard" };
+  }
+  return { category: "general", priority: urgent ? "urgent" : "standard" };
+}
+
+export async function executeCEOTool(
+  toolName: CEOToolName,
+  args: ToolCallArgs,
+  userId: string,
+  supabase: SupabaseClient = defaultSupabase,
+): Promise<string> {
   switch (toolName) {
     case "get_dashboard_summary": {
       const [properties, tenants, maintenance, rentPayments] = await Promise.all([
@@ -180,71 +240,697 @@ export async function executeCEOTool(toolName: CEOToolName, args: ToolCallArgs, 
         recent,
       });
     }
-    case "qualify_leads": {
-      const { data: leads } = await supabase
-        .from("leads")
-        .select("id, name, full_name, email, phone, message, status, qualified_status, created_at")
+    case "search_properties": {
+      const query = (args.query ?? "").trim();
+      const rawLim = args.limit;
+      const parsedLim =
+        typeof rawLim === "number"
+          ? rawLim
+          : rawLim != null && String(rawLim).length > 0
+            ? parseInt(String(rawLim), 10)
+            : 15;
+      const limit = Math.min(30, Math.max(1, Number.isFinite(parsedLim) ? parsedLim : 15));
+
+      const { data: rows, error } = await supabase
+        .from("properties")
+        .select("id, address, city, postcode, monthly_rent")
         .eq("user_id", userId)
-        .eq("qualified_status", "pending")
-        .limit(20);
-      if (!leads || leads.length === 0) {
-        return JSON.stringify({ message: "No pending leads to qualify.", leads: [], persisted: [] });
+        .order("created_at", { ascending: false })
+        .limit(250);
+
+      if (error) {
+        return JSON.stringify({ error: error.message, candidates: [] });
       }
-      const result = await runLLM({
-        agentName: "leads",
+
+      const { candidates, hint } = rankPropertySearch(query, (rows ?? []) as PropertySearchRow[], limit);
+      return JSON.stringify({
+        query,
+        candidates: candidates.map((r) => ({
+          id: r.id,
+          label: labelPropertyRow(r),
+          address: r.address,
+          city: r.city,
+          postcode: r.postcode,
+          monthly_rent: r.monthly_rent,
+        })),
+        hint,
+        disambiguation:
+          candidates.length > 1
+            ? "Multiple properties matched — use city and monthly_rent to choose the correct **id** (full UUID), not a unit number alone."
+            : null,
+      });
+    }
+    case "start_tenant_onboarding": {
+      const tenancyId = args.tenancy_id?.trim();
+      if (tenancyId) {
+        const result = await runTenantOnboardingAgent(tenancyId, userId, supabase);
+        return JSON.stringify({
+          mode: "existing_tenancy",
+          tenancy_id: tenancyId,
+          ...result,
+        });
+      }
+
+      const tenantIdNew = args.tenant_id?.trim();
+      const propertyIdNew = args.property_id?.trim();
+      const startDateNew = args.start_date?.trim();
+      const leadIdArg = args.lead_id?.trim();
+
+      if (tenantIdNew && propertyIdNew && startDateNew && !leadIdArg) {
+        const resolvedTenant = await resolveTenantProfileForAccount(supabase, userId, tenantIdNew);
+        if (!resolvedTenant.ok) {
+          return JSON.stringify(resolvedTenant.body);
+        }
+        const tenantIdResolved = resolvedTenant.tenantId;
+
+        const { data: propertyRow, error: propErr } = await supabase
+          .from("properties")
+          .select("id, user_id, monthly_rent")
+          .eq("id", propertyIdNew)
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (propErr) {
+          return JSON.stringify({ error: `Could not load property: ${propErr.message}` });
+        }
+        if (!propertyRow) {
+          return JSON.stringify({
+            error:
+              "Property not found for this account. Call search_properties with the address or postcode to get the correct property UUID.",
+          });
+        }
+
+        const { data: dup } = await supabase
+          .from("tenancies")
+          .select("id")
+          .eq("tenant_id", tenantIdResolved)
+          .eq("property_id", propertyIdNew)
+          .eq("status", "active")
+          .maybeSingle();
+        if (dup) {
+          return JSON.stringify({
+            error:
+              "An active tenancy already exists for this tenant and property. Use tenancy_id with start_tenant_onboarding, or open /dashboard/tenancies.",
+            tenancy_id: dup.id,
+          });
+        }
+
+        const monthlyRent =
+          propertyRow.monthly_rent == null ? null : Number(propertyRow.monthly_rent) || null;
+        const endDate = addOneYearIsoDate(startDateNew);
+        const newTenancyId = crypto.randomUUID();
+        const { error: tenancyErr } = await supabase.from("tenancies").insert({
+          id: newTenancyId,
+          property_id: propertyIdNew,
+          tenant_id: tenantIdResolved,
+          start_date: startDateNew,
+          end_date: endDate,
+          monthly_rent: monthlyRent,
+          deposit_amount: monthlyRent,
+          status: "active",
+        });
+        if (tenancyErr) {
+          return JSON.stringify({ error: `Could not create tenancy: ${tenancyErr.message}` });
+        }
+
+        const result = await runTenantOnboardingAgent(newTenancyId, userId, supabase);
+        return JSON.stringify({
+          mode: "tenant_and_property",
+          tenant_id: tenantIdResolved,
+          tenant_resolved_via: resolvedTenant.resolved_via,
+          property_id: propertyIdNew,
+          tenancy_id: newTenancyId,
+          ...result,
+        });
+      }
+
+      const leadId = args.lead_id?.trim();
+      const createFromLead = args.auto_create_tenant_and_tenancy === true;
+      if (!leadId || !createFromLead) {
+        return JSON.stringify({
+          error:
+            "Provide `tenancy_id`, or `tenant_id` + `property_id` + `start_date` (existing tenant on a property), or `lead_id` with `auto_create_tenant_and_tenancy=true`. Use search_properties to resolve property UUIDs from an address.",
+        });
+      }
+
+      const { data: lead } = await supabase
+        .from("leads")
+        .select("id, user_id, property_id, full_name, name, email, phone, move_in_date, qualified_status, status")
+        .eq("id", leadId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!lead) {
+        return JSON.stringify({ error: "Lead not found for this account." });
+      }
+
+      const propertyId = (args.property_id?.trim() || lead.property_id || "") as string;
+      if (!propertyId) {
+        return JSON.stringify({
+          error: "Property is required to create tenancy from lead. Provide property_id or ensure lead has property_id.",
+        });
+      }
+
+      const { data: property } = await supabase
+        .from("properties")
+        .select("id, user_id, monthly_rent")
+        .eq("id", propertyId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!property) {
+        return JSON.stringify({ error: "Property not found for this account." });
+      }
+
+      const tenantId = crypto.randomUUID();
+      const tenantName = (lead.full_name ?? lead.name ?? "").trim();
+      const { error: tenantErr } = await supabase.from("tenant_profiles").insert({
+        id: tenantId,
+        user_id: userId,
+        full_name: tenantName || "New tenant",
+        email: lead.email ?? null,
+        phone: lead.phone ?? null,
+      });
+      if (tenantErr) {
+        return JSON.stringify({ error: `Could not create tenant profile: ${tenantErr.message}` });
+      }
+
+      const newTenancyId = crypto.randomUUID();
+      const startDate = (args.start_date ?? lead.move_in_date ?? new Date().toISOString().slice(0, 10)) as string;
+      const monthlyRent =
+        property.monthly_rent == null ? null : Number(property.monthly_rent) || null;
+      const { error: tenancyErr } = await supabase.from("tenancies").insert({
+        id: newTenancyId,
+        property_id: propertyId,
+        tenant_id: tenantId,
+        start_date: startDate,
+        monthly_rent: monthlyRent,
+        deposit_amount: monthlyRent,
+        status: "active",
+      });
+      if (tenancyErr) {
+        return JSON.stringify({ error: `Could not create tenancy: ${tenancyErr.message}` });
+      }
+
+      await supabase
+        .from("leads")
+        .update({
+          qualified_status: "qualified",
+          status: "approved",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", leadId)
+        .eq("user_id", userId);
+
+      const result = await runTenantOnboardingAgent(newTenancyId, userId, supabase);
+      return JSON.stringify({
+        mode: "lead_conversion",
+        lead_id: leadId,
+        tenant_id: tenantId,
+        tenancy_id: newTenancyId,
+        ...result,
+      });
+    }
+    case "dispatch_maintenance_request": {
+      const tenancyId = args.tenancy_id?.trim();
+      const issue = (args.issue_description ?? "").trim();
+      if (!tenancyId || !issue) {
+        return JSON.stringify({
+          error: "tenancy_id and issue_description are required.",
+        });
+      }
+
+      const { data: tenancy } = await supabase
+        .from("tenancies")
+        .select(
+          "id, property_id, properties!inner(user_id, address), tenant_profiles!inner(id, full_name, email)",
+        )
+        .eq("id", tenancyId)
+        .eq("properties.user_id", userId)
+        .maybeSingle();
+      if (!tenancy) {
+        return JSON.stringify({ error: "Tenancy not found for this account." });
+      }
+
+      const classified = classifyMaintenanceCategory(
+        `${args.issue_title ?? ""} ${args.issue_description ?? ""}`,
+      );
+      const requestId = crypto.randomUUID();
+      const fullDescription = [args.issue_title?.trim(), args.issue_description?.trim()]
+        .filter(Boolean)
+        .join("\n\n");
+      const { error: insertErr } = await supabase.from("maintenance_requests").insert({
+        id: requestId,
+        tenancy_id: tenancyId,
+        description: fullDescription,
+        category: classified.category,
+        priority: classified.priority,
+        status: "open",
+        reported_by_tenant: false,
+      });
+      if (insertErr) {
+        return JSON.stringify({ error: `Failed to create maintenance request: ${insertErr.message}` });
+      }
+
+      const triage = await runMaintenanceAgent(requestId, userId, supabase);
+      const contractorEmail = args.contractor_email?.trim();
+      const contractorName = args.contractor_name?.trim() || "Contractor";
+      const requestedChannel = args.dispatch_channel ?? "email";
+      let contractorDispatch:
+        | { sent: boolean; emailLogId: string; message: string; error?: string }
+        | null = null;
+
+      if (requestedChannel !== "sms" && contractorEmail) {
+        contractorDispatch = await sendEmailTool(supabase, userId, triage.agentRunId, {
+          to: contractorEmail,
+          toName: contractorName,
+          agentType: "maintenance",
+          subject: `Maintenance dispatch: ${args.issue_title?.trim() || "New issue"}`,
+          body: [
+            `A maintenance request has been raised.`,
+            `Category: ${classified.category}`,
+            `Priority: ${classified.priority}`,
+            "",
+            `Issue details:`,
+            fullDescription,
+          ].join("\n"),
+        });
+
+        await supabase
+          .from("maintenance_requests")
+          .update({
+            contractor_name: contractorName,
+            contractor_email: contractorEmail,
+            status: "in_progress",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", requestId);
+      }
+
+      return JSON.stringify({
+        maintenance_request_id: requestId,
+        category: classified.category,
+        priority: classified.priority,
+        triage,
+        contractor_dispatch: contractorDispatch,
+        channel_note:
+          requestedChannel === "sms"
+            ? "SMS dispatch requested but SMS transport is not yet implemented in-app; no SMS sent."
+            : requestedChannel === "both"
+              ? "Email dispatch attempted; SMS not yet implemented."
+              : "Email dispatch handled based on provided contractor details and settings.",
+      });
+    }
+    case "generate_property_listing": {
+      const propertyId = args.property_id?.trim();
+      if (!propertyId) {
+        return JSON.stringify({ error: "property_id is required." });
+      }
+      const { data: property } = await supabase
+        .from("properties")
+        .select("id, user_id, address, city, postcode, property_type, bedrooms, bathrooms, monthly_rent, status")
+        .eq("id", propertyId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!property) {
+        return JSON.stringify({ error: "Property not found for this account." });
+      }
+
+      const tone = args.tone ?? "premium";
+      const channel = args.target_channel ?? "generic";
+      const save = args.save_to_property !== false;
+      const listingResp = await runLLM({
+        agentName: "ceo",
         messages: [
           {
             role: "system",
             content:
-              "You are a lead qualification assistant for a property rental business. Score each lead from 1-10. Return ONLY a JSON array of objects: { \"id\": string (UUID), \"score\": number, \"reason\": string, \"recommendation\": \"qualified\" | \"disqualified\" } — one object per lead id from the user message.",
+              "You are a UK property marketing copywriter. Write concise, factual, compliant listing copy. Do not invent features.",
           },
           {
             role: "user",
-            content: `Qualify these leads (use each id exactly as given): ${JSON.stringify(leads)}`,
+            content: `Generate ${channel} listing copy in a ${tone} tone for this property JSON: ${JSON.stringify(
+              property,
+            )}. Return plain text only.`,
           },
         ],
+        maxTokens: 700,
       });
-      const parsed = extractJsonArray(result.text);
-      const persisted: { id: string; qualified_status: string; score?: number }[] = [];
-      if (parsed) {
-        for (const row of parsed) {
-          if (typeof row !== "object" || row === null) continue;
-          const o = row as Record<string, unknown>;
-          const id = typeof o.id === "string" ? o.id : null;
-          if (!id || !leads.some((l) => l.id === id)) continue;
-          const score = typeof o.score === "number" && Number.isFinite(o.score) ? o.score : null;
-          const rec =
-            o.recommendation === "qualified" || o.recommendation === "disqualified"
-              ? o.recommendation
-              : score !== null && score >= 6
-                ? "qualified"
-                : "disqualified";
-          const reason = typeof o.reason === "string" ? o.reason : "";
-          const noteLine =
-            score !== null
-              ? `Assistant qualification (score ${score}/10): ${reason}`.trim()
-              : `Assistant qualification: ${reason}`.trim();
+      const listing = listingResp.text.trim();
+      if (!save) {
+        return JSON.stringify({
+          property_id: propertyId,
+          saved: false,
+          listing_description: listing,
+        });
+      }
 
-          const { error: upErr } = await supabase
-            .from("leads")
-            .update({
-              qualified_status: rec,
-              notes: noteLine,
-              updated_at: new Date().toISOString(),
-            })
-            .eq("id", id)
-            .eq("user_id", userId);
+      const { error: saveErr } = await supabase
+        .from("properties")
+        .update({ marketing_description: listing })
+        .eq("id", propertyId)
+        .eq("user_id", userId);
 
-          if (!upErr) {
-            persisted.push({ id, qualified_status: rec, score: score ?? undefined });
-          }
+      return JSON.stringify({
+        property_id: propertyId,
+        saved: !saveErr,
+        save_error: saveErr?.message ?? null,
+        listing_description: listing,
+      });
+    }
+    case "qualify_leads": {
+      /**
+       * Delegates to `runLeadQualifierAgent(userId)` — the specialist uses its own DB client and rules.
+       * Optional `lead_id` in tool input (not required by schema) scopes pre-checks to one lead.
+       */
+      const optionalLeadId = args.lead_id?.trim();
+
+      const notEligible = (reason: string, extra: Record<string, unknown>) =>
+        JSON.stringify({
+          parse_ok: false,
+          persisted: [] as { id: string; qualified_status: string; score?: number }[],
+          error: "qualification_skipped",
+          reason,
+          details: extra,
+        });
+
+      if (optionalLeadId) {
+        const { data: lead, error: leadErr } = await supabase
+          .from("leads")
+          .select("id, status, qualified_status")
+          .eq("id", optionalLeadId)
+          .eq("user_id", userId)
+          .maybeSingle();
+
+        if (leadErr) {
+          return JSON.stringify({
+            parse_ok: false,
+            persisted: [],
+            error: "database_error",
+            details: { message: leadErr.message },
+          });
+        }
+        if (!lead) {
+          return notEligible("lead_not_found", { lead_id: optionalLeadId });
+        }
+
+        const pipeline = normalizePipelineStatus(lead.status);
+        const qs = normalizePipelineStatus(lead.qualified_status);
+
+        if (qs !== "pending") {
+          return notEligible("qualified_status_not_pending", {
+            lead_id: optionalLeadId,
+            qualified_status: lead.qualified_status ?? null,
+          });
+        }
+        if (pipeline !== "new") {
+          return notEligible("pipeline_status_not_new", {
+            lead_id: optionalLeadId,
+            status: lead.status ?? null,
+          });
+        }
+      } else {
+        const { data: anyEligible, error: eligErr } = await supabase
+          .from("leads")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("status", "new")
+          .eq("qualified_status", "pending")
+          .limit(1);
+
+        if (eligErr) {
+          return JSON.stringify({
+            parse_ok: false,
+            persisted: [],
+            error: "database_error",
+            details: { message: eligErr.message },
+          });
+        }
+        if (!anyEligible?.length) {
+          return JSON.stringify({
+            parse_ok: true,
+            persisted: [],
+            details: {
+              message:
+                "No eligible leads: the specialist requires pipeline status new and qualification pending.",
+            },
+          });
         }
       }
+
+      let results: Awaited<ReturnType<typeof runLeadQualifierAgent>>;
+      try {
+        /** Session-scoped client — same as rent chaser / API route so RLS updates succeed. */
+        results = await runLeadQualifierAgent(userId, { supabase });
+      } catch (e) {
+        return JSON.stringify({
+          parse_ok: false,
+          persisted: [],
+          error: "lead_qualifier_agent_failed",
+          details: { message: e instanceof Error ? e.message : String(e) },
+        });
+      }
+
+      const persistedAll = results.map((r) => ({
+        id: r.leadId,
+        qualified_status: r.recommendation === "qualify" ? "qualified" : "disqualified",
+        score: r.score,
+      }));
+
+      if (optionalLeadId) {
+        const hit = results.find((r) => r.leadId === optionalLeadId);
+        if (!hit) {
+          return JSON.stringify({
+            parse_ok: false,
+            persisted: persistedAll,
+            error: "target_lead_not_in_result",
+            reason:
+              "The specialist ran but did not return this lead (e.g. skipped during processing). Check /dashboard/leads.",
+            details: {
+              lead_id: optionalLeadId,
+              processed_count: results.length,
+              processed_lead_ids: results.map((r) => r.leadId),
+            },
+          });
+        }
+        return JSON.stringify({
+          parse_ok: true,
+          persisted: [
+            {
+              id: hit.leadId,
+              qualified_status: hit.recommendation === "qualify" ? "qualified" : "disqualified",
+              score: hit.score,
+            },
+          ],
+          details: {
+            fullName: hit.fullName,
+            score: hit.score,
+            recommendation: hit.recommendation,
+            reasoning: hit.reasoning,
+            actionId: hit.actionId,
+          },
+        });
+      }
+
       return JSON.stringify({
-        total_leads: leads.length,
-        qualifications: result.text,
-        persisted,
-        parse_ok: Boolean(parsed && persisted.length > 0),
+        parse_ok: results.length > 0,
+        persisted: persistedAll,
+        details: {
+          total_processed: results.length,
+          results: results.map((r) => ({
+            leadId: r.leadId,
+            fullName: r.fullName,
+            score: r.score,
+            recommendation: r.recommendation,
+            reasoning: r.reasoning,
+          })),
+        },
+      });
+    }
+    case "nurture_lead": {
+      const leadId = args.lead_id?.trim();
+      const rawStep = (args.step ?? "").trim();
+      const step =
+        rawStep === "initial_contact" || rawStep === "viewing" || rawStep === "application"
+          ? rawStep
+          : null;
+      if (!leadId || !step) {
+        return JSON.stringify({ error: "lead_id and step (initial_contact | viewing | application) are required." });
+      }
+
+      const { data: lead } = await supabase
+        .from("leads")
+        .select(
+          "id, user_id, property_id, full_name, name, email, phone, budget, move_in_date, qualified_status, status, notes",
+        )
+        .eq("id", leadId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!lead) {
+        return JSON.stringify({ error: "Lead not found for this account." });
+      }
+
+      const qualified = normalizePipelineStatus(lead.qualified_status);
+      if (qualified !== "qualified") {
+        return JSON.stringify({
+          error: "This lead must be qualified before nurture. Run qualify_leads or use the Leads dashboard first.",
+          qualified_status: lead.qualified_status ?? null,
+        });
+      }
+
+      const toEmail = (lead.email ?? "").trim();
+      if (!toEmail) {
+        return JSON.stringify({ error: "Lead has no email address; add one on the lead record before nurturing." });
+      }
+
+      let propertyAddress = "the property";
+      if (lead.property_id) {
+        const { data: prop } = await supabase
+          .from("properties")
+          .select("address, city, postcode")
+          .eq("id", lead.property_id as string)
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (prop) {
+          const parts = [prop.address, prop.city, prop.postcode].filter(Boolean).join(", ");
+          if (parts.trim()) propertyAddress = parts.trim();
+        }
+      }
+
+      const current = normalizePipelineStatus(lead.status);
+      type NurtureStep = "initial_contact" | "viewing" | "application";
+      const expected: Record<NurtureStep, { from: string; to: string }> = {
+        initial_contact: { from: "new", to: "contacted" },
+        viewing: { from: "contacted", to: "viewing" },
+        application: { from: "viewing", to: "applied" },
+      };
+
+      const transition = expected[step];
+      if (current !== transition.from) {
+        return JSON.stringify({
+          error: `Wrong pipeline stage for this step. Current status is "${current}"; expected "${transition.from}" for ${step}.`,
+          current_status: current,
+          expected_status: transition.from,
+        });
+      }
+
+      const leadName = displayLeadName(lead);
+      const stepLabel =
+        step === "initial_contact"
+          ? "initial contact after their enquiry"
+          : step === "viewing"
+            ? "scheduling or confirming a viewing"
+            : "inviting them to complete the tenancy application";
+
+      const subject =
+        step === "initial_contact"
+          ? "Re: your property enquiry"
+          : step === "viewing"
+            ? "Viewing arrangement"
+            : "Tenancy application — next steps";
+
+      const draft = await runLLM({
+        agentName: "ceo",
+        messages: [
+          {
+            role: "system",
+            content:
+              "You write concise, professional UK landlord emails to prospective tenants. Output plain text only (no subject line). 3–4 short paragraphs max. Warm but businesslike.",
+          },
+          {
+            role: "user",
+            content: `Draft an email to ${leadName} (${toEmail}) about ${propertyAddress}, for ${stepLabel}. Context: budget ${lead.budget ?? "n/a"}, move-in preference ${lead.move_in_date ?? "n/a"}.`,
+          },
+        ],
+        maxTokens: 600,
+      });
+
+      const body = draft.text.trim();
+      const emailResult = await sendEmailTool(supabase, userId, null, {
+        to: toEmail,
+        toName: leadName,
+        subject,
+        body,
+        agentType: "lead",
+      });
+
+      const noteLine = `Nurture (${step}): email ${emailResult.sent ? "sent" : "saved as draft"} — ${emailResult.message}`;
+      const note = appendLeadNote(lead.notes as string | null, noteLine);
+
+      const { error: upErr } = await supabase
+        .from("leads")
+        .update({
+          status: transition.to,
+          notes: note,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", leadId)
+        .eq("user_id", userId);
+
+      if (upErr) {
+        return JSON.stringify({
+          error: `Email prepared but could not update lead: ${upErr.message}`,
+          email_sent: emailResult.sent,
+          email_log_id: emailResult.emailLogId,
+        });
+      }
+
+      return JSON.stringify({
+        lead_id: leadId,
+        step,
+        previous_status: transition.from,
+        new_status: transition.to,
+        email_draft_or_sent: emailResult.sent ? "sent" : "draft",
+        email_log_id: emailResult.emailLogId,
+        email_message: emailResult.message,
+      });
+    }
+    case "decide_lead_application": {
+      const leadId = args.lead_id?.trim();
+      const rawDecision = (args.decision ?? "").trim().toLowerCase();
+      const decision = rawDecision === "approved" || rawDecision === "rejected" ? rawDecision : null;
+      if (!leadId || !decision) {
+        return JSON.stringify({ error: "lead_id and decision (approved | rejected) are required." });
+      }
+
+      const { data: lead } = await supabase
+        .from("leads")
+        .select("id, status, notes")
+        .eq("id", leadId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!lead) {
+        return JSON.stringify({ error: "Lead not found for this account." });
+      }
+
+      const current = normalizePipelineStatus(lead.status);
+      if (current !== "applied") {
+        return JSON.stringify({
+          error: `Landlord decision applies only to leads in the applied stage. Current status: "${current}".`,
+          current_status: current,
+        });
+      }
+
+      const newStatus = decision === "approved" ? "approved" : "rejected";
+      const note = appendLeadNote(lead.notes as string | null, `Landlord decision: ${decision}`);
+
+      const { error: upErr } = await supabase
+        .from("leads")
+        .update({
+          status: newStatus,
+          notes: note,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", leadId)
+        .eq("user_id", userId);
+
+      if (upErr) {
+        return JSON.stringify({ error: upErr.message });
+      }
+
+      return JSON.stringify({
+        lead_id: leadId,
+        decision,
+        new_status: newStatus,
       });
     }
     case "draft_contract": {
@@ -345,7 +1031,7 @@ export async function executeCEOTool(toolName: CEOToolName, args: ToolCallArgs, 
     case "list_tenants": {
       const { data: raw } = await supabase
         .from("tenant_profiles")
-        .select("id, full_name, email, tenancies(property_id, status, properties(name))")
+        .select("id, full_name, email, tenancies(property_id, status, properties(address, city))")
         .eq("user_id", userId)
         .limit(80);
 

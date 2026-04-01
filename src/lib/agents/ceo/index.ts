@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type {
   Message,
@@ -25,7 +26,11 @@ import {
   trimConversationMessages,
 } from "./trim-conversation";
 import { wrapToolResultForModel } from "./tool-result-presentation";
-import { formatRouterHintForSystem, routeCEOIntent } from "./intent-router";
+import {
+  formatRouterHintForSystem,
+  routeCEOIntent,
+  type CEOIntentRoute,
+} from "./intent-router";
 import {
   buildCeoFailureThrottleKey,
   shouldInsertSystemAlertRow,
@@ -170,6 +175,8 @@ export interface CEOMessage {
 
 export interface CEOAgentOptions {
   userId: string;
+  /** Session-scoped client (same as dashboard) so RLS matches the signed-in user. */
+  supabase: SupabaseClient;
   messages: CEOMessage[];
   confirmedExecution?: boolean;
   pendingAction?: PendingCEOAction | null;
@@ -188,8 +195,98 @@ function extractFinalText(message: Message): string {
   return parts.join("\n").trim() || "I'm sorry, I couldn't process that request.";
 }
 
+/** When routing misses or the model ends_turn without tools, we still inject real lead rows. */
+function shouldInjectLeadsAuthoritativeSummary(route: CEOIntentRoute, latestUser: string): boolean {
+  const u = latestUser.trim();
+  if (/\bqualify\b/i.test(u) && /\bleads?\b/i.test(u)) {
+    return false;
+  }
+  if (route.primaryIntent === "leads" || route.recommendedTools.includes("get_leads_summary")) {
+    return true;
+  }
+  const t = latestUser.trim();
+  return (
+    /\b(show\s+me\s+)?(my\s+)?(the\s+)?leads?\b/i.test(t) ||
+    /\b(leads?\s+pipeline|lead\s+pipeline)\b/i.test(t) ||
+    /\b(prospects?|enquir(y|ies))\b/i.test(t) ||
+    /\b(my\s+)?(sales\s+)?pipeline\b/i.test(t)
+  );
+}
+
+type LeadsSummaryPayload = {
+  total: number;
+  new: number;
+  pending_qualification: number;
+  qualified: number;
+  disqualified: number;
+  recent?: Array<{
+    id?: string;
+    full_name?: string;
+    email?: string | null;
+    status?: string | null;
+    qualified_status?: string | null;
+    created_at?: string | null;
+  }>;
+  error?: string;
+};
+
+function parseLeadsSummaryPayload(raw: string): LeadsSummaryPayload | null {
+  try {
+    const j = JSON.parse(raw) as unknown;
+    if (typeof j !== "object" || j === null) return null;
+    const o = j as Record<string, unknown>;
+    if (typeof o.total !== "number") return null;
+    return o as LeadsSummaryPayload;
+  } catch {
+    return null;
+  }
+}
+
+function formatLeadPipelineMarkdown(p: LeadsSummaryPayload): string {
+  const lines = [
+    "**Lead pipeline**",
+    "",
+    `- **Total leads:** ${p.total}`,
+    `- **New leads:** ${p.new}`,
+    `- **Pending qualification:** ${p.pending_qualification}`,
+    `- **Qualified:** ${p.qualified}`,
+    `- **Disqualified:** ${p.disqualified}`,
+  ];
+  if (p.recent && p.recent.length > 0) {
+    lines.push("", "**Recent:**");
+    for (const r of p.recent) {
+      const name = r.full_name ?? "Unknown";
+      const status = r.status ?? "—";
+      const q = r.qualified_status ?? "—";
+      lines.push(`- **${name}** — status: ${status}; qualification: ${q}`);
+    }
+  }
+  return lines.join("\n");
+}
+
+/** The model often ignores injected JSON and returns end_turn with “0 leads”; override with DB truth. */
+function correctLeadReplyAgainstAuthoritative(reply: string, authoritativeRaw: string | null): string {
+  if (!authoritativeRaw) return reply;
+  const payload = parseLeadsSummaryPayload(authoritativeRaw);
+  if (!payload || payload.error) return reply;
+  if (payload.total <= 0) return reply;
+
+  const t = reply.toLowerCase();
+  const claimsEmpty =
+    /\b(no leads|zero leads|don't have any leads|do not have any leads|lead pipeline is empty|nothing in (your )?pipeline)\b/.test(
+      t,
+    ) ||
+    /\*\*total leads:\*\*\s*0\b/i.test(reply) ||
+    /\btotal leads:\s*0\b/i.test(t);
+
+  if (claimsEmpty) {
+    return formatLeadPipelineMarkdown(payload);
+  }
+  return reply;
+}
+
 export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResult> {
-  const { userId, messages, confirmedExecution, pendingAction } = options;
+  const { userId, supabase, messages, confirmedExecution, pendingAction } = options;
   const contextMessages = trimConversationMessages(
     messages,
     DEFAULT_MAX_CEO_CONVERSATION_MESSAGES,
@@ -207,7 +304,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
 
     const resultBlocks: string[] = [];
     for (const call of pendingAction.toolCalls) {
-      const raw = await executeCEOTool(call.name, call.input, userId);
+      const raw = await executeCEOTool(call.name, call.input, userId, supabase);
       resultBlocks.push(wrapToolResultForModel(call.name, raw));
     }
 
@@ -261,6 +358,16 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
   const routerHint = formatRouterHintForSystem(route);
   const systemPrompt = routerHint ? `${CEO_SYSTEM_PROMPT}\n\n${routerHint}` : CEO_SYSTEM_PROMPT;
 
+  /** Snapshot JSON from get_leads_summary — used to override model text that ignores system injection. */
+  let authoritativeLeadsRaw: string | null = null;
+
+  let effectiveSystemPrompt = systemPrompt;
+  if (shouldInjectLeadsAuthoritativeSummary(route, latestUser)) {
+    const leadsRaw = await executeCEOTool("get_leads_summary", {}, userId, supabase);
+    authoritativeLeadsRaw = leadsRaw;
+    effectiveSystemPrompt = `${systemPrompt}\n\nAuthoritative lead data from the database (use these exact counts and recent rows; do not invent numbers):\n${leadsRaw}`;
+  }
+
   const intent = classifyCEOIntent(latestUser);
   const conversation: MessageParam[] = contextMessages.map((m) => ({
     role: m.role,
@@ -273,7 +380,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
       response = await anthropic.messages.create({
         model: ANTHROPIC_CEO_MODEL,
         max_tokens: 2048,
-        system: systemPrompt,
+        system: effectiveSystemPrompt,
         tools: CEO_TOOLS,
         messages: conversation,
       });
@@ -285,10 +392,13 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
       });
       try {
         const reply = await runGeminiFallback({
-          systemPrompt,
+          systemPrompt: effectiveSystemPrompt,
           conversation,
         });
-        return { outcome: "complete", reply };
+        return {
+          outcome: "complete",
+          reply: correctLeadReplyAgainstAuthoritative(reply, authoritativeLeadsRaw),
+        };
       } catch (geminiError) {
         console.error("[ceo] gemini fallback failure", {
           stage: "anthropic_loop",
@@ -304,13 +414,19 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
     }
 
     if (response.stop_reason === "end_turn") {
-      return { outcome: "complete", reply: extractFinalText(response) };
+      return {
+        outcome: "complete",
+        reply: correctLeadReplyAgainstAuthoritative(extractFinalText(response), authoritativeLeadsRaw),
+      };
     }
 
     conversation.push({ role: "assistant", content: response.content });
     const toolUseBlocks = response.content.filter((b): b is ToolUseBlock => b.type === "tool_use");
     if (toolUseBlocks.length === 0) {
-      return { outcome: "complete", reply: extractFinalText(response) };
+      return {
+        outcome: "complete",
+        reply: correctLeadReplyAgainstAuthoritative(extractFinalText(response), authoritativeLeadsRaw),
+      };
     }
 
     const toolNames: CEOToolName[] = toolUseBlocks.map((b) => {
@@ -333,7 +449,10 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
       toolUseBlocks.map(async (block) => {
         const toolName = block.name as CEOToolName;
         const args = block.input as Record<string, string>;
-        const result = await executeCEOTool(toolName, args, userId);
+        const result = await executeCEOTool(toolName, args, userId, supabase);
+        if (toolName === "get_leads_summary") {
+          authoritativeLeadsRaw = result;
+        }
         return {
           type: "tool_result" as const,
           tool_use_id: block.id,

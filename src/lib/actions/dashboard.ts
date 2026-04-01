@@ -101,7 +101,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
       .from("leads")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .eq("qualified_status", "pending"),
+      .ilike("qualified_status", "pending"),
   ]);
 
   const totalProperties = totalPropertiesRes.count ?? 0;

@@ -13,6 +13,50 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      properties: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          address: string | null;
+          postcode: string | null;
+          city: string | null;
+          property_type: string | null;
+          bedrooms: number | null;
+          bathrooms: number | null;
+          monthly_rent: number | null;
+          status: string | null;
+          marketing_description: string | null;
+          created_at: string | null;
+        };
+        Insert: {
+          id: string;
+          user_id: string;
+          address?: string | null;
+          postcode?: string | null;
+          city?: string | null;
+          property_type?: string | null;
+          bedrooms?: number | null;
+          bathrooms?: number | null;
+          monthly_rent?: number | null;
+          status?: string | null;
+          marketing_description?: string | null;
+          created_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          address?: string | null;
+          postcode?: string | null;
+          city?: string | null;
+          property_type?: string | null;
+          bedrooms?: number | null;
+          bathrooms?: number | null;
+          monthly_rent?: number | null;
+          status?: string | null;
+          marketing_description?: string | null;
+          created_at?: string | null;
+        };
+      };
       system_alerts: {
         Row: {
           id: string;

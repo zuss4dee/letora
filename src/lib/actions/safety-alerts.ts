@@ -30,5 +30,34 @@ export async function getSafetyAlertsLast7Days(userId: string): Promise<SafetyAl
 
   if (error || !data) return [];
 
-  return data as SafetyAlertRow[];
+  const rows = data as SafetyAlertRow[];
+
+  const maintenanceIds = [
+    ...new Set(
+      rows
+        .map((r) => r.payload?.maintenanceRequestId)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
+  ];
+
+  if (maintenanceIds.length === 0) {
+    return rows;
+  }
+
+  const { data: requests } = await supabase
+    .from("maintenance_requests")
+    .select("id, status")
+    .in("id", maintenanceIds);
+
+  const resolvedIds = new Set(
+    (requests ?? [])
+      .filter((row) => (String(row.status ?? "").toLowerCase() === "resolved"))
+      .map((row) => row.id as string),
+  );
+
+  return rows.filter((r) => {
+    const mid = r.payload?.maintenanceRequestId;
+    if (!mid) return true;
+    return !resolvedIds.has(mid);
+  });
 }

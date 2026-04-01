@@ -9,7 +9,10 @@ export type CEOPropertyIntentId =
   | "rent_collection"
   | "rent_status"
   | "maintenance"
+  | "maintenance_dispatch"
   | "leads"
+  | "onboarding"
+  | "listing_generation"
   | "contracts"
   | "portfolio"
   | "tenants"
@@ -20,6 +23,8 @@ export type CEOIntentRoute = {
   confidence: number
   recommendedTools: CEOToolName[]
   confirmationRequired: boolean
+  /** True when the user asked to qualify lead(s); used for router hints and CEO tooling. */
+  wantsLeadQualification: boolean
   needsClarification: boolean
   clarificationQuestion: string | null
 }
@@ -28,7 +33,10 @@ const INTENT_LABELS: Record<CEOPropertyIntentId, string> = {
   rent_collection: "rent collection / chasing overdue rent",
   rent_status: "rent status & arrears",
   maintenance: "maintenance & repairs",
+  maintenance_dispatch: "maintenance dispatch / contractor coordination",
   leads: "leads & prospect qualification",
+  onboarding: "tenant onboarding workflows",
+  listing_generation: "property listing generation",
   contracts: "contracts & tenancy paperwork",
   portfolio: "portfolio overview & priorities",
   tenants: "tenant directory & filters",
@@ -42,14 +50,20 @@ function toolsForIntent(id: CEOPropertyIntentId): CEOToolName[] {
       return ["get_rent_status", "list_tenants"]
     case "maintenance":
       return ["get_maintenance_summary"]
+    case "maintenance_dispatch":
+      return ["dispatch_maintenance_request", "get_maintenance_summary"]
     case "leads":
       return ["get_leads_summary"]
+    case "onboarding":
+      return ["search_properties", "list_tenants", "start_tenant_onboarding"]
+    case "listing_generation":
+      return ["generate_property_listing"]
     case "contracts":
       return ["draft_contract"]
     case "portfolio":
       return ["get_dashboard_summary", "get_rent_status"]
     case "tenants":
-      return ["list_tenants"]
+      return ["list_tenants", "search_properties"]
   }
 }
 
@@ -72,7 +86,10 @@ function emptyScores(): ScoreRow {
     rent_collection: 0,
     rent_status: 0,
     maintenance: 0,
+    maintenance_dispatch: 0,
     leads: 0,
+    onboarding: 0,
+    listing_generation: 0,
     contracts: 0,
     portfolio: 0,
     tenants: 0,
@@ -102,11 +119,34 @@ const ROUTE_PATTERNS: ReadonlyArray<{
     re: /\b(maintenance|urgent\s+repairs?|what'?s\s+broken|repairs?|fix(es|ing)?|boiler|leak|damp|ticket|work\s+order)\b/i,
   },
   {
+    id: "maintenance_dispatch",
+    weight: 2.4,
+    re: /\b(log|report|raise|dispatch|send|assign)\s+.*\b(maintenance|repair|issue|contractor|plumber|electrician)\b/i,
+  },
+  {
     id: "leads",
     weight: 2,
     re: /\b(new\s+leads?|bad\s+leads?|qualify\s+(prospects|leads)|prospect|inquir(y|ies)|viewing\s+requests?)\b/i,
   },
+  /** “Qualify pending leads” — words between qualify and leads */
+  { id: "leads", weight: 2.5, re: /\bqualify\b[\s\S]{0,48}\bleads?\b/i },
   { id: "leads", weight: 1.8, re: /\b(do\s+i\s+have\s+any\s+leads?|any\s+leads?)\b/i },
+  /** Singular “lead” / “show me my lead” */
+  {
+    id: "leads",
+    weight: 2.6,
+    re: /\b(show\s+me\s+)?(my\s+)?(the\s+)?leads?\b/i,
+  },
+  {
+    id: "onboarding",
+    weight: 2.4,
+    re: /\b(onboard|onboarding|move[-\s]?in|start\s+onboarding|welcome\s+pack|right\s+to\s+rent|references?)\b/i,
+  },
+  {
+    id: "listing_generation",
+    weight: 2.3,
+    re: /\b(listing|advert|ad\s+copy|marketing\s+description|property\s+description|rightmove|zoopla)\b/i,
+  },
   {
     id: "contracts",
     weight: 2,
@@ -214,6 +254,7 @@ function normalizeForRouting(text: string): string {
 export function routeCEOIntent(userMessage: string): CEOIntentRoute {
   const trimmed = userMessage.trim()
   const normalized = normalizeForRouting(trimmed)
+  const wantsLeadQualification = /\bqualify\b/i.test(normalized) && /\bleads?\b/i.test(normalized)
   const scores = scoreMessage(normalized)
   const totalScore = Object.values(scores).reduce((a, b) => a + b, 0)
 
@@ -230,6 +271,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
       confidence: 0,
       recommendedTools: [],
       confirmationRequired: false,
+      wantsLeadQualification,
       needsClarification,
       clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
     }
@@ -244,7 +286,44 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
   for (const s of secondaryIntents) {
     toolBuckets.push(...toolsForIntent(s))
   }
-  const recommendedTools = uniqueToolsOrdered(toolBuckets, 5)
+  let recommendedTools = uniqueToolsOrdered(toolBuckets, 5)
+
+  if (wantsLeadQualification) {
+    recommendedTools = uniqueToolsOrdered(
+      ["qualify_leads", ...recommendedTools.filter((t) => t !== "qualify_leads")],
+      5,
+    )
+  }
+
+  const wantsLeadNurture =
+    /\bleads?\b/i.test(normalized) &&
+    /\b(contact|email|reach\s+out|nurture|follow\s+up|initial\s+contact|schedule\s+viewing|book\s+viewing|application\s+link)\b/i.test(
+      normalized,
+    )
+  if (wantsLeadNurture) {
+    recommendedTools = uniqueToolsOrdered(
+      [
+        "get_leads_summary",
+        "nurture_lead",
+        ...recommendedTools.filter((t) => t !== "get_leads_summary" && t !== "nurture_lead"),
+      ],
+      5,
+    )
+  }
+
+  const wantsLeadDecision =
+    /\b(approve|reject)\b/i.test(normalized) &&
+    (/\b(applicant|application|applied)\b/i.test(normalized) || /\b(this|that|the)\s+lead\b/i.test(normalized))
+  if (wantsLeadDecision) {
+    recommendedTools = uniqueToolsOrdered(
+      [
+        "get_leads_summary",
+        "decide_lead_application",
+        ...recommendedTools.filter((t) => t !== "get_leads_summary" && t !== "decide_lead_application"),
+      ],
+      5,
+    )
+  }
 
   const confidence = Math.min(1, primaryScore / CONFIDENCE_NORMALIZER)
 
@@ -265,6 +344,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     confidence,
     recommendedTools,
     confirmationRequired,
+    wantsLeadQualification,
     needsClarification,
     clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
   }
@@ -284,6 +364,12 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
 
   if (route.recommendedTools.length > 0) {
     lines.push(`- Recommended tools: ${route.recommendedTools.join(", ")}.`)
+  }
+
+  if (route.wantsLeadQualification) {
+    lines.push(
+      "- The user asked to **qualify** lead(s). In **Letora chat**, a manual qualify card may already show pipeline summary and per-lead actions; with tools alone, use **get_leads_summary** for an overview or **qualify_leads** to run the specialist on eligible leads.",
+    )
   }
 
   if (route.secondaryIntents.length > 0) {
