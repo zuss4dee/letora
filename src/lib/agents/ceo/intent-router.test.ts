@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { routeCEOIntent } from "./intent-router";
+import { formatRouterHintForSystem, routeCEOIntent } from "./intent-router";
 
 describe("routeCEOIntent — tenant list phrasing", () => {
   it("does not force category picker for “list my active tenants”", () => {
@@ -61,5 +61,15 @@ describe("routeCEOIntent — tenant list phrasing", () => {
     const r = routeCEOIntent("qualify my lead");
     expect(r.wantsLeadQualification).toBe(true);
     expect(r.recommendedTools).toContain("qualify_leads");
+  });
+
+  it("routes start onboarding for [Name] to onboarding with onboarding_for hint", () => {
+    const r = routeCEOIntent("Start onboarding for Alexis Adeosun");
+    expect(r.primaryIntent).toBe("onboarding");
+    expect(r.wantsOnboardingByPlainName).toBe(true);
+    expect(r.recommendedTools).toContain("start_tenant_onboarding");
+    const hint = formatRouterHintForSystem(r);
+    expect(hint).toContain("onboarding_for");
+    expect(hint).toContain("Do **not** tell the user the system only accepts UUIDs");
   });
 });

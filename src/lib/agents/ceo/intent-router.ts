@@ -23,8 +23,12 @@ export type CEOIntentRoute = {
   confidence: number
   recommendedTools: CEOToolName[]
   confirmationRequired: boolean
-  /** True when the user asked to qualify lead(s); used for router hints and CEO tooling. */
+  /** True when the user asked to qualify lead(s); used to ensure qualify_leads runs in chat. */
   wantsLeadQualification: boolean
+  /**
+   * True when phrasing is like “start onboarding for [Name]” — model must use onboarding_for, not ask for UUIDs first.
+   */
+  wantsOnboardingByPlainName: boolean
   needsClarification: boolean
   clarificationQuestion: string | null
 }
@@ -55,7 +59,7 @@ function toolsForIntent(id: CEOPropertyIntentId): CEOToolName[] {
     case "leads":
       return ["get_leads_summary"]
     case "onboarding":
-      return ["search_properties", "list_tenants", "start_tenant_onboarding"]
+      return ["start_tenant_onboarding"]
     case "listing_generation":
       return ["generate_property_listing"]
     case "contracts":
@@ -63,7 +67,7 @@ function toolsForIntent(id: CEOPropertyIntentId): CEOToolName[] {
     case "portfolio":
       return ["get_dashboard_summary", "get_rent_status"]
     case "tenants":
-      return ["list_tenants", "search_properties"]
+      return ["list_tenants"]
   }
 }
 
@@ -259,19 +263,24 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
   const totalScore = Object.values(scores).reduce((a, b) => a + b, 0)
 
   if (totalScore <= 0) {
+    const wantsOnboardingByPlainName = detectOnboardingByPlainName(normalized)
     const needsClarification =
       isPropertyRelated(normalized) &&
       trimmed.length >= 10 &&
       trimmed.length <= 600 &&
-      !isAffirmativeShort(trimmed)
+      !isAffirmativeShort(trimmed) &&
+      !wantsOnboardingByPlainName
 
     return {
-      primaryIntent: "portfolio",
+      primaryIntent: wantsOnboardingByPlainName ? "onboarding" : "portfolio",
       secondaryIntents: [],
-      confidence: 0,
-      recommendedTools: [],
-      confirmationRequired: false,
+      confidence: wantsOnboardingByPlainName ? 0.45 : 0,
+      recommendedTools: wantsOnboardingByPlainName ? ["start_tenant_onboarding"] : [],
+      confirmationRequired: wantsOnboardingByPlainName
+        ? toolsRequireUserConfirmation(classifyCEOIntent(normalized), ["start_tenant_onboarding"])
+        : false,
       wantsLeadQualification,
+      wantsOnboardingByPlainName,
       needsClarification,
       clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
     }
@@ -338,6 +347,10 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     trimmed.length <= 600 &&
     !isAffirmativeShort(trimmed)
 
+  const wantsOnboardingByPlainName =
+    detectOnboardingByPlainName(normalized) &&
+    (primaryIntent === "onboarding" || scores.onboarding >= 1)
+
   return {
     primaryIntent,
     secondaryIntents,
@@ -345,17 +358,34 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     recommendedTools,
     confirmationRequired,
     wantsLeadQualification,
+    wantsOnboardingByPlainName,
     needsClarification,
     clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
   }
+}
+
+/** “Start onboarding for Jane Smith” / “onboarding for …” — use tool param onboarding_for, not UUID preflight. */
+function detectOnboardingByPlainName(normalized: string): boolean {
+  const mentionsOnboardingForName =
+    /\b(start\s+)?onboarding\s+for\b/i.test(normalized) ||
+    /\bonboard(?:ing)?\s+for\b/i.test(normalized)
+  if (!mentionsOnboardingForName) return false
+  // Optional: user pasted UUID workflow — don’t override with name hint
+  if (/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i.test(normalized)) {
+    return false
+  }
+  return true
 }
 
 /**
  * Injected into the model system prompt so Claude aligns tool choice with the router.
  */
 export function formatRouterHintForSystem(route: CEOIntentRoute): string {
-  if (route.needsClarification) return ""
-  if (route.confidence === 0 && route.recommendedTools.length === 0) return ""
+  // Still inject mandatory tool hints (e.g. onboarding_for) even if the generic “pick a category” clarifier would otherwise hide routing.
+  if (route.needsClarification && !route.wantsOnboardingByPlainName) return ""
+  if (route.confidence === 0 && route.recommendedTools.length === 0 && !route.wantsOnboardingByPlainName) {
+    return ""
+  }
 
   const lines: string[] = [
     "Intent routing (prioritize these tools where they match the user’s words; you may call several in parallel when the request spans multiple areas):",
@@ -368,7 +398,13 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
 
   if (route.wantsLeadQualification) {
     lines.push(
-      "- The user asked to **qualify** lead(s). In **Letora chat**, a manual qualify card may already show pipeline summary and per-lead actions; with tools alone, use **get_leads_summary** for an overview or **qualify_leads** to run the specialist on eligible leads.",
+      "- **Required:** The user asked to **qualify** lead(s). Call **qualify_leads** in this turn (not only get_leads_summary). If you use get_leads_summary, you must still call qualify_leads so scores and statuses are persisted.",
+    )
+  }
+
+  if (route.wantsOnboardingByPlainName) {
+    lines.push(
+      "- **Required (onboarding by name):** Call **start_tenant_onboarding** with **onboarding_for** set to the tenant’s **full name** taken from the user’s message (the name after “for”). Do **not** tell the user the system only accepts UUIDs. Do **not** ask them to list tenants or paste IDs before calling the tool. If they mentioned a street, city, or postcode, also set **onboarding_property_hint**. Only if the tool JSON returns **candidates** (multiple tenancies) should you ask which property — using addresses from **candidates**, not raw UUIDs.",
     )
   }
 
