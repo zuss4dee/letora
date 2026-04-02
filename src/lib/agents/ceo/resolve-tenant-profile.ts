@@ -65,12 +65,31 @@ export async function resolveTenantProfileForAccount(
     };
   }
 
-  const { data: rows, error: nameErr } = await supabase
+  const words = fragment.split(/\s+/).filter((w) => w.length >= 2);
+
+  let { data: rows, error: nameErr } = await supabase
     .from("tenant_profiles")
     .select("id, full_name")
     .eq("user_id", userId)
     .ilike("full_name", `%${fragment}%`)
     .limit(8);
+
+  if (nameErr) {
+    return { ok: false, body: { error: `Could not search tenants: ${nameErr.message}` } };
+  }
+
+  /** If the full phrase is missing (e.g. extra punctuation in DB) but each word matches one profile. */
+  if ((!rows?.length) && words.length >= 2) {
+    let q = supabase.from("tenant_profiles").select("id, full_name").eq("user_id", userId);
+    for (const w of words) {
+      q = q.ilike("full_name", `%${w}%`);
+    }
+    const second = await q.limit(8);
+    rows = second.data;
+    if (second.error) {
+      nameErr = second.error;
+    }
+  }
 
   if (nameErr) {
     return { ok: false, body: { error: `Could not search tenants: ${nameErr.message}` } };

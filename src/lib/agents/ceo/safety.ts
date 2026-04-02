@@ -95,7 +95,11 @@ export function isAffirmativeConfirmation(text: string): boolean {
   )
 }
 
-function normalizeToolInput(input: unknown): Record<string, string> {
+/**
+ * Coerce model tool input to string values so `.trim()` and string APIs never throw
+ * (Anthropic sometimes returns booleans/numbers).
+ */
+export function normalizeCEOToolInput(input: unknown): Record<string, string> {
   if (typeof input !== "object" || input === null) return {}
   const out: Record<string, string> = {}
   for (const [k, v] of Object.entries(input)) {
@@ -111,7 +115,7 @@ export function pendingActionFromToolUseBlocks(blocks: readonly ToolUseBlock[]):
     if (!isCEOToolName(name)) {
       throw new Error(`Unsupported tool in pending action: ${name}`)
     }
-    return { name, input: normalizeToolInput(b.input) }
+    return { name, input: normalizeCEOToolInput(b.input) }
   })
   return { v: 1, toolCalls }
 }

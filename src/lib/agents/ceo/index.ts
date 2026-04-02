@@ -32,6 +32,10 @@ import {
   type CEOIntentRoute,
 } from "./intent-router";
 import {
+  inferOnboardingForFromConversation,
+  mergeEnrichedOnboardingInput,
+} from "./enrich-onboarding-input";
+import {
   buildCeoFailureThrottleKey,
   shouldInsertSystemAlertRow,
   shouldSendAdminAlertEmail,
@@ -302,15 +306,22 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
       };
     }
 
+    const inferredOnboardingName = inferOnboardingForFromConversation(contextMessages);
+
     const resultBlocks: string[] = [];
     for (const call of pendingAction.toolCalls) {
-      const raw = await executeCEOTool(call.name, call.input, userId, supabase);
+      const input =
+        call.name === "start_tenant_onboarding"
+          ? mergeEnrichedOnboardingInput(call.input, inferredOnboardingName)
+          : call.input;
+      const raw = await executeCEOTool(call.name, input, userId, supabase);
       resultBlocks.push(wrapToolResultForModel(call.name, raw));
     }
 
     const summarySystemPrompt =
       CEO_SYSTEM_PROMPT +
-      "\n\nThe landlord already confirmed the pending actions. Tool runs are complete. Summarize outcomes in natural language. Do not ask for confirmation again.";
+      "\n\nThe landlord already confirmed the pending actions. Tool runs are complete. Summarize outcomes in natural language. Do not ask for confirmation again." +
+      "\n\n**Mandatory for tool JSON:** If any result has `success`: false or an `error` string, say exactly what failed using the `message` or `error` field (e.g. missing email, onboarding already started). **Do not** claim the system rejected a plain-name input, or cite UUID/form validation errors, unless those exact words appear in the JSON.";
     const summaryMessages: MessageParam[] = [
       {
         role: "user",

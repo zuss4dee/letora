@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { classifyCEOIntent, toolsRequireUserConfirmation } from "./safety";
+import { classifyCEOIntent, normalizeCEOToolInput, toolsRequireUserConfirmation } from "./safety";
 import type { CEOToolName } from "./tools";
 
 describe("CEO safety confirmation gating", () => {
@@ -37,6 +37,19 @@ describe("CEO safety confirmation gating", () => {
     const intent = classifyCEOIntent("do i have any leads?");
     const tools: CEOToolName[] = ["qualify_leads"];
     expect(toolsRequireUserConfirmation(intent, tools)).toBe(false);
+  });
+});
+
+describe("normalizeCEOToolInput", () => {
+  it("stringifies non-string values so downstream code can safely treat fields as strings", () => {
+    const out = normalizeCEOToolInput({
+      onboarding_for: "Jane Doe",
+      auto_create_tenant_and_tenancy: true,
+      limit: 15,
+    });
+    expect(out.onboarding_for).toBe("Jane Doe");
+    expect(out.auto_create_tenant_and_tenancy).toBe("true");
+    expect(out.limit).toBe("15");
   });
 });
 

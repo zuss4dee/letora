@@ -7,8 +7,9 @@ import { runTenantOnboardingAgent } from "@/lib/agents/tenant-onboarding";
 import { runLLM } from "@/lib/llm/router";
 import { sendEmailTool } from "@/lib/tools/send-email";
 import { labelPropertyRow, rankPropertySearch, type PropertySearchRow } from "@/lib/agents/ceo/search-properties";
-import { resolveTenantProfileForAccount } from "@/lib/agents/ceo/resolve-tenant-profile";
+import { looksLikeUuid, resolveTenantProfileForAccount } from "@/lib/agents/ceo/resolve-tenant-profile";
 import type { CEOToolName } from "./tools";
+import { normalizeCEOToolInput } from "./safety";
 
 function formatTenantNameFromProfile(tenant: { full_name?: string | null } | null): string {
   return tenant?.full_name?.trim() || "Unknown tenant";
@@ -184,12 +185,21 @@ function classifyMaintenanceCategory(desc: string): {
   return { category: "general", priority: urgent ? "urgent" : "standard" };
 }
 
+function parseBoolArg(v: unknown): boolean {
+  if (v === true) return true;
+  if (v === false) return false;
+  if (typeof v === "string") return v.toLowerCase() === "true";
+  return false;
+}
+
 export async function executeCEOTool(
   toolName: CEOToolName,
-  args: ToolCallArgs,
+  rawArgs: ToolCallArgs,
   userId: string,
   supabase: SupabaseClient = defaultSupabase,
 ): Promise<string> {
+  const args = normalizeCEOToolInput(rawArgs as unknown as Record<string, unknown>) as unknown as ToolCallArgs;
+
   switch (toolName) {
     case "get_dashboard_summary": {
       const [properties, tenants, maintenance, rentPayments] = await Promise.all([
@@ -374,7 +384,16 @@ export async function executeCEOTool(
         });
       }
 
-      const onboardingFor = args.onboarding_for?.trim();
+      let onboardingFor = args.onboarding_for?.trim() ?? "";
+      if (
+        !onboardingFor &&
+        args.tenant_id?.trim() &&
+        !looksLikeUuid(args.tenant_id.trim()) &&
+        !args.property_id?.trim() &&
+        !args.lead_id?.trim()
+      ) {
+        onboardingFor = args.tenant_id.trim();
+      }
       if (onboardingFor) {
         const resolved = await resolveTenantProfileForAccount(supabase, userId, onboardingFor);
         if (!resolved.ok) {
@@ -501,7 +520,7 @@ export async function executeCEOTool(
       }
 
       const leadId = args.lead_id?.trim();
-      const createFromLead = args.auto_create_tenant_and_tenancy === true;
+      const createFromLead = parseBoolArg(args.auto_create_tenant_and_tenancy);
       if (!leadId || !createFromLead) {
         return JSON.stringify({
           error:
