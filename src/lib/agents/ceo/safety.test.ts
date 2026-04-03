@@ -38,6 +38,13 @@ describe("CEO safety confirmation gating", () => {
     const tools: CEOToolName[] = ["qualify_leads"];
     expect(toolsRequireUserConfirmation(intent, tools)).toBe(false);
   });
+
+  it("treats “what’s next / next step” as draft_suggest so mutating tools are not stuck behind confirmation", () => {
+    expect(classifyCEOIntent("what's the next thing to do?")).toBe("draft_suggest");
+    expect(classifyCEOIntent("what's the next step")).toBe("draft_suggest");
+    const intent = classifyCEOIntent("what's the next thing to do?");
+    expect(toolsRequireUserConfirmation(intent, ["draft_contract"])).toBe(false);
+  });
 });
 
 describe("normalizeCEOToolInput", () => {

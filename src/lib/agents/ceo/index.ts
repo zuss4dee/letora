@@ -357,6 +357,66 @@ function correctReferencingInboundReply(
   ].join("\n");
 }
 
+/**
+ * Model often end_turns with “backend issue / can’t resolve tenant” even when the DB has the tenant.
+ * If we prefetched onboarding JSON successfully, replace that narrative with tool truth.
+ */
+function correctOnboardingHallucinationReply(
+  reply: string,
+  onboardingPrefetchRaw: string | null,
+  lastToolBatch: readonly { name: CEOToolName; raw: string }[],
+): string {
+  const claimsFailure =
+    /\b(backend\s+issue|technical\s+issue|persistent\s+system|cannot\s+resolve|can'?t\s+resolve|tenant\s+profile|tenant\s+record|isn'?t\s+resolving|not\s+loading|doesn'?t\s+load|configuration\s+issue|manual(ly)?\s+from\s+\/dashboard\/contracts|draft\s+manually\s+from)\b/i.test(
+      reply,
+    );
+
+  if (!claimsFailure) return reply;
+
+  const lastDraft = [...lastToolBatch].reverse().find((t) => t.name === "draft_contract");
+  if (lastDraft) {
+    try {
+      const p = JSON.parse(lastDraft.raw) as { saved?: boolean; error?: string };
+      if (p.saved === true) return reply;
+      if (typeof p.error === "string" && p.error.trim() !== "") return reply;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (!onboardingPrefetchRaw) return reply;
+
+  try {
+    const o = JSON.parse(onboardingPrefetchRaw) as {
+      success?: boolean;
+      mode?: string;
+      tenant_name?: string;
+      tenancy_id?: string;
+      pending_task_names?: string[];
+      referencing_complete?: boolean;
+      message?: string;
+    };
+    if (o.success !== true) return reply;
+
+    const name = (o.tenant_name ?? "This tenant").trim();
+    const pending = Array.isArray(o.pending_task_names) ? o.pending_task_names.join("; ") : "—";
+    const refDone = o.referencing_complete === true;
+
+    return [
+      `**${name}** — Letora **does** have this tenant and tenancy on file (the profile is not “missing”):`,
+      "",
+      refDone
+        ? "- Referencing is marked **complete** for this tenancy (`referencing_complete` in tools)."
+        : "- Referencing is **not** yet marked complete on the tenancy — finish that before an AST, or use **override** on **draft_contract** if the user insists.",
+      `- **Pending checklist:** ${pending}`,
+      "",
+      "To draft in chat: call **draft_contract** with **tenancy_id** from the onboarding tool JSON (or **tenant_name** as above). Do not tell the user to work only from the dashboard unless a tool returned a real **error**.",
+    ].join("\n");
+  } catch {
+    return reply;
+  }
+}
+
 function pickPrepareReferencingRawFromBatch(
   lastToolBatch: readonly { name: CEOToolName; raw: string }[],
 ): string | null {
@@ -373,11 +433,13 @@ function completeWithSuggestedActions(
   authoritativeLeadsRaw: string | null,
   referencingPrefetchRaw: string | null = null,
   referencingInboundDigest: string | null = null,
+  onboardingPrefetchRaw: string | null = null,
 ): { outcome: "complete"; reply: string; suggestedActions?: LetoraSuggestedAction[] } {
   const corrected = correctLeadReplyAgainstAuthoritative(reply, authoritativeLeadsRaw);
   const prefetchMerged = pickPrepareReferencingRawFromBatch(lastToolBatch) ?? referencingPrefetchRaw;
   const correctedRef = correctReferencingInboundReply(corrected, prefetchMerged, referencingInboundDigest);
-  const { reply: cleaned, suggestedActions } = mergeCompleteReplySuggestedActions(correctedRef, lastToolBatch);
+  const correctedOnboarding = correctOnboardingHallucinationReply(correctedRef, onboardingPrefetchRaw, lastToolBatch);
+  const { reply: cleaned, suggestedActions } = mergeCompleteReplySuggestedActions(correctedOnboarding, lastToolBatch);
   return {
     outcome: "complete",
     reply: stripCeoHexUuidsFromText(cleaned),
@@ -542,6 +604,30 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
     }
   }
 
+  /** Same pattern as referencing: prefetch resume JSON so the model cannot “invent” missing tenants. */
+  let onboardingPrefetchRaw: string | null = null;
+  const inferredOnboardingName = inferOnboardingForFromConversation(contextMessages);
+  const wantsOnboardingPrefetch =
+    Boolean(inferredOnboardingName) &&
+    !route.wantsReferencingStatus &&
+    (route.wantsContinueOnboarding ||
+      route.wantsOnboardingByPlainName ||
+      route.primaryIntent === "onboarding" ||
+      route.primaryIntent === "contracts" ||
+      /\b(next\s+step|next\s+thing|what'?s\s+next|draft|contract|tenancy|onboarding|welcome|move[-\s]?in|what\s+to\s+do)\b/i.test(
+        latestUser,
+      ));
+
+  if (wantsOnboardingPrefetch && inferredOnboardingName) {
+    onboardingPrefetchRaw = await executeCEOTool(
+      "start_tenant_onboarding",
+      { onboarding_for: inferredOnboardingName },
+      userId,
+      supabase,
+    );
+    effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n**Server-fetched onboarding (authoritative — your answer MUST match this JSON; never claim the tenant cannot be resolved by name):**\n${onboardingPrefetchRaw}\n\nYou MUST use **tenancy_id**, **pending_task_names**, and **referencing_complete** from this JSON. To draft a contract in chat, call **draft_contract** with **tenancy_id** when present, or **tenant_name** as **${inferredOnboardingName}**. **Do not** invent “backend issues”, “tenant profile not loading”, or “draft manually from /dashboard/contracts” unless a tool JSON returned a real **error** field.`;
+  }
+
   const intent = classifyCEOIntent(latestUser);
   const conversation: MessageParam[] = contextMessages.map((m) => ({
     role: m.role,
@@ -577,6 +663,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
           authoritativeLeadsRaw,
           referencingPrefetchRaw,
           referencingInboundDigest,
+          onboardingPrefetchRaw,
         );
       } catch (geminiError) {
         console.error("[ceo] gemini fallback failure", {
@@ -599,6 +686,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
         authoritativeLeadsRaw,
         referencingPrefetchRaw,
         referencingInboundDigest,
+        onboardingPrefetchRaw,
       );
     }
 
@@ -611,6 +699,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
         authoritativeLeadsRaw,
         referencingPrefetchRaw,
         referencingInboundDigest,
+        onboardingPrefetchRaw,
       );
     }
 
@@ -660,6 +749,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
     authoritativeLeadsRaw,
     referencingPrefetchRaw,
     referencingInboundDigest,
+    onboardingPrefetchRaw,
   );
 }
 

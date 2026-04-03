@@ -55,6 +55,18 @@ export function classifyCEOIntent(latestUserText: string): CEOIntent {
     return "draft_suggest"
   }
 
+  /**
+   * “What’s next” / next steps are action-oriented — must not force confirmation on
+   * draft_contract / start_tenant_onboarding (otherwise the model often end_turns with generic advice).
+   */
+  if (
+    /\b(next\s+step|next\s+thing|what'?s\s+next|what\s+to\s+do\s+next|what\s+do\s+i\s+do\s+next|what\s+should\s+i\s+do\s+next|what'?s\s+left|what\s+else\s+to\s+do|remaining\s+tasks?|continue\s+with|check\s+the\s+tenancy|look\s+up\s+the\s+tenancy)\b/i.test(
+      t,
+    )
+  ) {
+    return "draft_suggest"
+  }
+
   if (
     /\b(how\s+many|how\s+much|list|show\s+me|what('s|s| is)|status|summary|overview|dashboard|breakdown|who\s+(has|is|are)|total|count|any\s+overdue|do\s+i\s+have|tell\s+me\s+about)\b/.test(
       t,
