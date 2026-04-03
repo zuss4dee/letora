@@ -29,7 +29,7 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
   decide_lead_application:
     "State clearly whether the applicant was approved or rejected and that the lead record was updated.",
   draft_contract:
-    "Confirm the tenant’s full name and that a draft was generated; give a one-line status (e.g. draft ready for review). Do not paste the full contract unless the user asks.",
+    "Read **saved**, **contract_id**, **error**, and **code**. If **code** is **llm_error** or **save_failed**, repeat the **error** string in plain language — do **not** blame “tenant record resolution” or “backend configuration” unless those exact words appear in **error**. If **code** is **ambiguous_tenancy** or **multiple_tenants**, list **candidates** and ask the user to pick (or pass **tenancy_id**). If **saved** is true, confirm the draft was saved and point to **/dashboard/contracts**. Do not paste the full contract unless asked.",
   get_dashboard_summary:
     "Give a compact portfolio snapshot: property and tenant counts, overdue rent pressure, maintenance load, and what deserves attention first.",
   get_rent_status:

@@ -78,3 +78,19 @@ export function mergeEnrichedOnboardingInput(
   }
   return out;
 }
+
+/**
+ * When the user confirms a pending **draft_contract** and the model omitted tenant fields,
+ * recover **tenant_name** from earlier user lines (e.g. “continue onboarding for Alexis …” then “yes”).
+ */
+export function mergeDraftContractInput(
+  input: Record<string, string>,
+  inferredName: string | null,
+): Record<string, string> {
+  const out = { ...input };
+  if (out.tenancy_id?.trim() || out.tenant_id?.trim() || out.tenant_name?.trim()) return out;
+  if (inferredName) {
+    out.tenant_name = inferredName;
+  }
+  return out;
+}

@@ -320,17 +320,27 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
   {
     name: "draft_contract",
     description:
-      "Draft a tenancy (AST) for a tenant by name or ID and save a draft row in Contracts with the generated text (review in /dashboard/contracts).",
+      "Draft a tenancy (AST) for a tenant and save a draft row in Contracts (review in /dashboard/contracts). Prefer tenancy_id from list_tenants or start_tenant_onboarding resume when available; otherwise tenant_name or tenant_id (tenant profile UUID from list_tenants).",
     input_schema: {
       type: "object",
       properties: {
         tenant_name: {
           type: "string",
-          description: "The full name of the tenant to draft the contract for.",
+          description: "Full name of the tenant (same resolution as onboarding — distinctive spelling).",
         },
         tenant_id: {
           type: "string",
-          description: "The UUID of the tenant if known.",
+          description: "Tenant profile UUID from list_tenants (not tenancy_id unless you also pass it as tenancy_id).",
+        },
+        tenancy_id: {
+          type: "string",
+          description:
+            "Specific tenancy UUID when known (e.g. from start_tenant_onboarding resume or list_tenants nested tenancies) — avoids wrong tenant when several people share a name.",
+        },
+        onboarding_property_hint: {
+          type: "string",
+          description:
+            "Street or city when the tenant has multiple tenancies — narrows which property to use.",
         },
         override: {
           type: "boolean",

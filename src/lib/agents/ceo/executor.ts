@@ -1428,46 +1428,169 @@ export async function executeCEOTool(
       });
     }
     case "draft_contract": {
-      let tenantQuery = supabase
-        .from("tenant_profiles")
-        .select(
-          "id, full_name, email, phone, tenancies(id, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, properties(name, address))",
-        )
-        .eq("user_id", userId);
-      if (args.tenant_id) {
-        tenantQuery = tenantQuery.eq("id", args.tenant_id);
-      } else if (args.tenant_name) {
-        tenantQuery = tenantQuery.ilike("full_name", `%${args.tenant_name.trim()}%`);
-      }
-      const { data: tenants } = await tenantQuery.limit(1);
-      const tenant = tenants?.[0];
-      if (!tenant) {
-        return JSON.stringify({ error: "Tenant not found. Please check the name and try again." });
-      }
-
-      const tenanciesRaw = tenant.tenancies;
-      const tenancies = Array.isArray(tenanciesRaw) ? tenanciesRaw : tenanciesRaw ? [tenanciesRaw] : [];
-      const tenancy = tenancies[0] as
-        | {
-            start_date?: string | null;
-            end_date?: string | null;
-            monthly_rent?: number | string | null;
-            deposit_amount?: number | string | null;
-            property_id?: string | null;
-            onboarding_status?: string | null;
-          }
-        | undefined;
-
-      const propertyId = tenancy?.property_id ?? null;
-      if (!propertyId) {
-        return JSON.stringify({
-          error: "No active tenancy with a property linked to this tenant. Open Tenancies and link a property first.",
-        });
-      }
-
-      const onboardingStatus = String(tenancy?.onboarding_status ?? "not_started");
-      const blockedStatuses = ["not_started", "in_progress", "references"];
       const overrideContract = parseBoolArg(args.override);
+      const tenancyIdArg = args.tenancy_id?.trim();
+      const propertyHint = args.onboarding_property_hint?.trim();
+
+      type TenantRow = {
+        id: string;
+        full_name: string | null;
+        email: string | null;
+        phone: string | null;
+      };
+
+      let tenantRow: TenantRow;
+      let resolvedTenancyId: string;
+      let tenancyData: {
+        start_date: string | null;
+        end_date: string | null;
+        monthly_rent: number | string | null;
+        deposit_amount: number | string | null;
+        property_id: string;
+        onboarding_status: string | null;
+      };
+      let propertyLabel: string;
+
+      if (tenancyIdArg) {
+        const { data: row, error: rowErr } = await supabase
+          .from("tenancies")
+          .select(
+            `id, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status,
+             tenant_profiles ( id, full_name, email, phone ),
+             properties!inner ( user_id, name, address, city )`,
+          )
+          .eq("id", tenancyIdArg)
+          .maybeSingle();
+
+        if (rowErr || !row) {
+          return JSON.stringify({
+            error: "Tenancy not found for this account.",
+            code: "not_found",
+          });
+        }
+        const prop = row.properties as unknown as {
+          user_id: string;
+          name: string | null;
+          address: string | null;
+          city: string | null;
+        };
+        if (prop.user_id !== userId) {
+          return JSON.stringify({
+            error: "Tenancy not found for this account.",
+            code: "not_found",
+          });
+        }
+        const tr = row.tenant_profiles as unknown as TenantRow | TenantRow[] | null;
+        const tp = Array.isArray(tr) ? tr[0] : tr;
+        if (!tp?.id) {
+          return JSON.stringify({
+            error: "This tenancy has no tenant profile linked.",
+            code: "invalid_tenancy",
+          });
+        }
+        tenantRow = tp;
+        resolvedTenancyId = String(row.id);
+        tenancyData = {
+          start_date: row.start_date as string | null,
+          end_date: row.end_date as string | null,
+          monthly_rent: row.monthly_rent as number | string | null,
+          deposit_amount: row.deposit_amount as number | string | null,
+          property_id: String(row.property_id),
+          onboarding_status: row.onboarding_status as string | null,
+        };
+        propertyLabel = [prop.name, prop.address, prop.city].filter(Boolean).join(", ") || "Property";
+      } else {
+        const tid = args.tenant_id?.trim();
+        const tname = args.tenant_name?.trim();
+        if (!tid && !tname) {
+          return JSON.stringify({
+            error:
+              "Pass tenant_name, tenant_id (UUID from list_tenants), or tenancy_id (from onboarding resume / list_tenants).",
+            code: "missing_tenant",
+          });
+        }
+        const raw = tid ?? tname ?? "";
+        const resolved = await resolveTenantProfileForAccount(supabase, userId, raw);
+        if (!resolved.ok) {
+          return JSON.stringify({
+            ...resolved.body,
+            code: Array.isArray(resolved.body.candidates) ? "multiple_tenants" : "tenant_not_found",
+          });
+        }
+
+        const { data: tp } = await supabase
+          .from("tenant_profiles")
+          .select("id, full_name, email, phone")
+          .eq("id", resolved.tenantId)
+          .maybeSingle();
+
+        if (!tp) {
+          return JSON.stringify({
+            error: "Could not load tenant profile after resolve.",
+            code: "tenant_not_found",
+          });
+        }
+        tenantRow = tp as TenantRow;
+
+        const { data: tenRows } = await supabase
+          .from("tenancies")
+          .select(
+            `id, status, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, properties!inner ( user_id, name, address, city )`,
+          )
+          .eq("tenant_id", resolved.tenantId);
+
+        const owned = (tenRows ?? []).filter((r) => {
+          const p = r.properties as unknown as { user_id: string };
+          return p.user_id === userId;
+        });
+
+        if (owned.length === 0) {
+          return JSON.stringify({
+            error:
+              "No tenancy with a property on your account for this tenant. Open Tenancies and link a property first.",
+            code: "no_tenancy",
+          });
+        }
+
+        const pool = owned.map((r) => ({
+          id: r.id as string,
+          status: r.status as string | null | undefined,
+          properties: r.properties,
+        })) as TenancyRowForOnboarding[];
+
+        const picked = pickTenancyForOnboarding(pool, propertyHint);
+        if (!picked.ok) {
+          return JSON.stringify({
+            error: picked.error,
+            code: "ambiguous_tenancy",
+            candidates: picked.candidates,
+          });
+        }
+
+        const chosen = owned.find((r) => String(r.id) === picked.tenancy_id);
+        if (!chosen) {
+          return JSON.stringify({ error: "Could not load the chosen tenancy.", code: "internal" });
+        }
+
+        const p = chosen.properties as unknown as {
+          name: string | null;
+          address: string | null;
+          city: string | null;
+        };
+        propertyLabel = [p.name, p.address, p.city].filter(Boolean).join(", ") || "Property";
+        resolvedTenancyId = String(chosen.id);
+        tenancyData = {
+          start_date: chosen.start_date as string | null,
+          end_date: chosen.end_date as string | null,
+          monthly_rent: chosen.monthly_rent as number | string | null,
+          deposit_amount: chosen.deposit_amount as number | string | null,
+          property_id: String(chosen.property_id),
+          onboarding_status: chosen.onboarding_status as string | null,
+        };
+      }
+
+      const onboardingStatus = String(tenancyData.onboarding_status ?? "not_started");
+      const blockedStatuses = ["not_started", "in_progress", "references"];
       if (blockedStatuses.includes(onboardingStatus) && !overrideContract) {
         return JSON.stringify({
           error:
@@ -1477,36 +1600,56 @@ export async function executeCEOTool(
         });
       }
 
-      const result = await runLLM({
-        agentName: "contracts",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a tenancy contract drafting assistant. Draft a professional UK Assured Shorthold Tenancy (AST) contract using the provided tenant and property details.",
-          },
-          {
-            role: "user",
-            content: `Draft a tenancy contract for: ${JSON.stringify(tenant)}`,
-          },
-        ],
-        maxTokens: 2048,
-      });
+      const tenantPayload = {
+        tenant: tenantRow,
+        tenancy_id: resolvedTenancyId,
+        property: propertyLabel,
+        onboarding_status: onboardingStatus,
+      };
+
+      let result: { text: string };
+      try {
+        result = await runLLM({
+          agentName: "contracts",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a tenancy contract drafting assistant. Draft a professional UK Assured Shorthold Tenancy (AST) contract using the provided tenant and property details.",
+            },
+            {
+              role: "user",
+              content: `Draft a tenancy contract for: ${JSON.stringify(tenantPayload)}`,
+            },
+          ],
+          maxTokens: 2048,
+        });
+      } catch (e) {
+        console.error("[draft_contract] runLLM failed", e);
+        const msg = e instanceof Error ? e.message : String(e);
+        return JSON.stringify({
+          error:
+            msg ||
+            "Contract text could not be generated. If this persists, check OPENAI_API_KEY and the contracts agent LLM config.",
+          code: "llm_error",
+          tenant_name: formatTenantNameFromProfile(tenantRow),
+        });
+      }
 
       const today = new Date();
-      const defaultStart = tenancy?.start_date ?? today.toISOString().slice(0, 10);
+      const defaultStart = tenancyData.start_date ?? today.toISOString().slice(0, 10);
       const defaultEnd =
-        tenancy?.end_date ??
+        tenancyData.end_date ??
         new Date(today.getFullYear() + 1, today.getMonth(), today.getDate()).toISOString().slice(0, 10);
-      const monthlyRent = Number(tenancy?.monthly_rent ?? 0) || 0;
-      const depositAmount = Number(tenancy?.deposit_amount ?? monthlyRent) || 0;
+      const monthlyRent = Number(tenancyData.monthly_rent ?? 0) || 0;
+      const depositAmount = Number(tenancyData.deposit_amount ?? monthlyRent) || 0;
 
       const { data: inserted, error: insErr } = await supabase
         .from("contracts")
         .insert({
           user_id: userId,
-          tenant_id: tenant.id,
-          property_id: propertyId,
+          tenant_id: tenantRow.id,
+          property_id: tenancyData.property_id,
           contract_type: "AST",
           start_date: defaultStart,
           end_date: defaultEnd,
@@ -1521,18 +1664,20 @@ export async function executeCEOTool(
 
       if (insErr || !inserted) {
         return JSON.stringify({
-          tenant_name: formatTenantNameFromProfile(tenant),
+          tenant_name: formatTenantNameFromProfile(tenantRow),
           contract_draft: result.text,
           saved: false,
           error: insErr?.message ?? "Could not save draft contract",
+          code: "save_failed",
         });
       }
 
       return JSON.stringify({
-        tenant_name: formatTenantNameFromProfile(tenant),
+        tenant_name: formatTenantNameFromProfile(tenantRow),
         contract_draft: result.text,
         saved: true,
         contract_id: inserted.id as string,
+        tenancy_id: resolvedTenancyId,
       });
     }
     case "resolve_onboarding_navigation": {

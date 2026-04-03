@@ -36,6 +36,7 @@ import {
 } from "./intent-router";
 import {
   inferOnboardingForFromConversation,
+  mergeDraftContractInput,
   mergeEnrichedOnboardingInput,
 } from "./enrich-onboarding-input";
 import {
@@ -450,7 +451,9 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
       const input =
         call.name === "start_tenant_onboarding"
           ? mergeEnrichedOnboardingInput(call.input, inferredOnboardingName)
-          : call.input;
+          : call.name === "draft_contract"
+            ? mergeDraftContractInput(call.input, inferredOnboardingName)
+            : call.input;
       const raw = await executeCEOTool(call.name, input, userId, supabase);
       rawBatch.push({ name: call.name, raw });
       resultBlocks.push(wrapToolResultForModel(call.name, raw));
