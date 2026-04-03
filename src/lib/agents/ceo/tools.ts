@@ -5,6 +5,8 @@ export type CEOToolName =
   | "get_leads_summary"
   | "search_properties"
   | "start_tenant_onboarding"
+  | "send_referencing_handoff"
+  | "prepare_referencing"
   | "dispatch_maintenance_request"
   | "generate_property_listing"
   | "qualify_leads"
@@ -14,6 +16,7 @@ export type CEOToolName =
   | "get_dashboard_summary"
   | "get_rent_status"
   | "list_tenants"
+  | "resolve_onboarding_navigation"
 
 export const CEO_TOOL_NAMES: readonly CEOToolName[] = [
   "chase_rent",
@@ -21,6 +24,8 @@ export const CEO_TOOL_NAMES: readonly CEOToolName[] = [
   "get_leads_summary",
   "search_properties",
   "start_tenant_onboarding",
+  "send_referencing_handoff",
+  "prepare_referencing",
   "dispatch_maintenance_request",
   "generate_property_listing",
   "qualify_leads",
@@ -30,6 +35,7 @@ export const CEO_TOOL_NAMES: readonly CEOToolName[] = [
   "get_dashboard_summary",
   "get_rent_status",
   "list_tenants",
+  "resolve_onboarding_navigation",
 ]
 
 export function isCEOToolName(name: string): name is CEOToolName {
@@ -138,6 +144,52 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
         start_date: {
           type: "string",
           description: "Tenancy start date YYYY-MM-DD when creating a tenancy (tenant+property or lead path).",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "send_referencing_handoff",
+    description:
+      "Email the landlord’s referencing agency a structured handoff (tenant + property + LETORA_REF) — same as Tenancy → Send referencing handoff. Requires a default agency email in Settings or a per-tenancy override. Pass **tenancy_id** when known; otherwise **tenant_id** (profile UUID) or **tenant_name** to resolve the tenancy.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tenancy_id: {
+          type: "string",
+          description: "Tenancy UUID (preferred when known).",
+        },
+        tenant_id: {
+          type: "string",
+          description: "Tenant profile UUID from list_tenants when tenancy_id is unknown.",
+        },
+        tenant_name: {
+          type: "string",
+          description: "Tenant full name when tenancy_id is unknown (e.g. from the user’s message).",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "prepare_referencing",
+    description:
+      "Read-only: check referencing setup for a tenancy (agency email in Settings or tenancy override), onboarding_status, handoff timestamps, checklist tasks, and **recent inbound mail rows** from the database for that tenancy. Pass **tenancy_id**, or **tenant_id** (profile UUID), or **tenant_name** (same resolution as send_referencing_handoff). Use before send_referencing_handoff when guiding next steps.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tenancy_id: {
+          type: "string",
+          description: "Tenancy UUID to check.",
+        },
+        tenant_id: {
+          type: "string",
+          description: "Tenant profile UUID (from list_tenants) if tenancy_id is unknown.",
+        },
+        tenant_name: {
+          type: "string",
+          description: "Tenant full name when tenancy_id is unknown (e.g. Alexis Adeosun).",
         },
       },
       required: [],
@@ -280,6 +332,11 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
           type: "string",
           description: "The UUID of the tenant if known.",
         },
+        override: {
+          type: "boolean",
+          description:
+            "Set true only when the user explicitly asks to force or override referencing — drafts the contract even if referencing is not yet marked complete.",
+        },
       },
       required: [],
     },
@@ -321,6 +378,29 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
         property_id: {
           type: "string",
           description: "Optional property UUID to filter tenants by property.",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "resolve_onboarding_navigation",
+    description:
+      "Read-only: resolve a deep link to the tenancy onboarding screen (/dashboard/tenancies/[id]). Pass tenancy_id, or tenant_id (tenant profile UUID), or tenant_name. If nothing is specified or the tenant is ambiguous, the JSON explains what to ask the user.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tenancy_id: {
+          type: "string",
+          description: "Tenancy UUID — opens that tenancy’s onboarding panel.",
+        },
+        tenant_id: {
+          type: "string",
+          description: "Tenant profile UUID — opens onboarding for that tenant’s tenancy when unique.",
+        },
+        tenant_name: {
+          type: "string",
+          description: "Tenant full name — resolves to tenant profile then tenancy (same as other tools).",
         },
       },
       required: [],

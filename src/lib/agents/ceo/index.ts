@@ -18,6 +18,7 @@ import {
   getLatestUserContent,
   isAffirmativeConfirmation,
   pendingActionFromToolUseBlocks,
+  stripCeoHexUuidsFromText,
   toolsRequireUserConfirmation,
 } from "./safety";
 import type { PendingCEOAction } from "./safety";
@@ -26,6 +27,8 @@ import {
   trimConversationMessages,
 } from "./trim-conversation";
 import { wrapToolResultForModel } from "./tool-result-presentation";
+import { mergeCompleteReplySuggestedActions } from "./suggested-actions";
+import type { LetoraSuggestedAction } from "./suggested-actions";
 import {
   formatRouterHintForSystem,
   routeCEOIntent,
@@ -41,9 +44,11 @@ import {
   shouldSendAdminAlertEmail,
 } from "@/lib/alerts/alert-throttle";
 import { createSystemAlert, notifyAdminByEmail } from "@/lib/alerts/admin-alerts";
+import { fetchReferencingInboundDigestForCeo } from "@/lib/referencing/inbound-digest";
 
 export type { PendingCEOAction } from "./safety";
 export { parsePendingCEOActionFromJson } from "./safety";
+export type { LetoraSuggestedAction } from "./suggested-actions";
 export type { CEOIntentRoute, CEOPropertyIntentId } from "./intent-router";
 export { formatRouterHintForSystem, routeCEOIntent } from "./intent-router";
 
@@ -187,7 +192,7 @@ export interface CEOAgentOptions {
 }
 
 export type CEOChatResult =
-  | { outcome: "complete"; reply: string }
+  | { outcome: "complete"; reply: string; suggestedActions?: LetoraSuggestedAction[] }
   | { outcome: "needs_clarification"; message: string }
   | { outcome: "needs_confirmation"; message: string; pendingAction: PendingCEOAction };
 
@@ -268,7 +273,136 @@ function formatLeadPipelineMarkdown(p: LeadsSummaryPayload): string {
   return lines.join("\n");
 }
 
+function scrubUuidLike(s: string): string {
+  return s.replace(/\b[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\b/gi, "[ref]");
+}
+
+/** Same failure mode as empty lead counts: model end_turn ignores prefetched JSON — replace with DB truth. */
+function correctReferencingInboundReply(
+  reply: string,
+  referencingPrefetchRaw: string | null,
+  referencingInboundDigest: string | null,
+): string {
+  const claimsNoInbound =
+    /\b(no\s+response|no\s+reply|not\s+responded|no\s+inbound|still\s+awaiting|haven'?t\s+(heard|received)|waiting\s+for\s+(the\s+)?(agency|referencing)|no\s+agency\s+(reply|response)|no\s+inbound\s+updates?|provided\s+any\s+inbound|no\s+new\s+update|not\s+confirmed\s+completion)\b/i.test(
+      reply,
+    ) ||
+    /\b(awaiting\s+.*\s+agency|referencing\s+incomplete)\b/i.test(reply);
+
+  if (!claimsNoInbound) return reply;
+
+  type InboundRow = { body_preview?: string | null; subject?: string | null; outcome?: string | null; created_at?: string | null };
+  let rows: InboundRow[] = [];
+  let tenantLabel: string | null = null;
+
+  if (referencingPrefetchRaw) {
+    try {
+      const parsed = JSON.parse(referencingPrefetchRaw) as {
+        ok?: boolean;
+        recent_inbound_mail?: InboundRow[];
+        tenant_name?: string | null;
+      };
+      if (parsed.ok === true && Array.isArray(parsed.recent_inbound_mail) && parsed.recent_inbound_mail.length > 0) {
+        rows = parsed.recent_inbound_mail;
+        tenantLabel =
+          typeof parsed.tenant_name === "string" && parsed.tenant_name.trim() ? parsed.tenant_name.trim() : null;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (rows.length === 0 && referencingInboundDigest) {
+    const lineRe = /^-\s+(.+)$/gm;
+    let m: RegExpExecArray | null;
+    const digestLines: string[] = [];
+    while ((m = lineRe.exec(referencingInboundDigest)) !== null) {
+      digestLines.push(m[1].trim());
+    }
+    if (digestLines.length > 0) {
+      return [
+        "**Referencing — inbound activity on record**",
+        "",
+        "Letora has logged inbound referencing mail recently. Summary from your account:",
+        ...digestLines.map((l) => `- ${scrubUuidLike(l)}`),
+        "",
+        "Open **Tenancy → Referencing** for full detail.",
+      ].join("\n");
+    }
+  }
+
+  if (rows.length === 0) return reply;
+
+  const label = tenantLabel ?? "this tenancy";
+  const bullets = rows.slice(0, 4).map((r) => {
+    const when =
+      typeof r.created_at === "string" && r.created_at.length >= 16
+        ? `${r.created_at.slice(0, 16).replace("T", " ")} UTC`
+        : "recent";
+    const oc = (r.outcome ?? "—").trim();
+    const preview = scrubUuidLike(
+      ((r.body_preview ?? r.subject ?? "") as string).trim().slice(0, 320) || "—",
+    );
+    return `- **${when}** · outcome **${oc}** · ${preview}`;
+  });
+
+  return [
+    `**Referencing update — ${label}**`,
+    "",
+    "Letora **has** recorded inbound referencing mail for this tenancy (this is not “no reply” in the system):",
+    ...bullets,
+    "",
+    "Classification may show as **unknown** until wording clearly matches pass/fail keywords. Check **Tenancy → Referencing** for the full thread.",
+  ].join("\n");
+}
+
+function pickPrepareReferencingRawFromBatch(
+  lastToolBatch: readonly { name: CEOToolName; raw: string }[],
+): string | null {
+  for (let i = lastToolBatch.length - 1; i >= 0; i--) {
+    if (lastToolBatch[i]!.name === "prepare_referencing") return lastToolBatch[i]!.raw;
+  }
+  return null;
+}
+
 /** The model often ignores injected JSON and returns end_turn with “0 leads”; override with DB truth. */
+function completeWithSuggestedActions(
+  reply: string,
+  lastToolBatch: readonly { name: CEOToolName; raw: string }[],
+  authoritativeLeadsRaw: string | null,
+  referencingPrefetchRaw: string | null = null,
+  referencingInboundDigest: string | null = null,
+): { outcome: "complete"; reply: string; suggestedActions?: LetoraSuggestedAction[] } {
+  const corrected = correctLeadReplyAgainstAuthoritative(reply, authoritativeLeadsRaw);
+  const prefetchMerged = pickPrepareReferencingRawFromBatch(lastToolBatch) ?? referencingPrefetchRaw;
+  const correctedRef = correctReferencingInboundReply(corrected, prefetchMerged, referencingInboundDigest);
+  const { reply: cleaned, suggestedActions } = mergeCompleteReplySuggestedActions(correctedRef, lastToolBatch);
+  return {
+    outcome: "complete",
+    reply: stripCeoHexUuidsFromText(cleaned),
+    ...(suggestedActions.length > 0 ? { suggestedActions } : {}),
+  };
+}
+
+/** Best-effort name after "for …" / "about …" so we can prefetch prepare_referencing without tool calls. */
+function extractTenantNameForReferencingQuery(message: string): string | null {
+  const t = message.trim();
+  const patterns = [
+    /\b(?:referencing|reference)\b[^?.!\n]{0,160}?\bfor\s+([A-Za-z][A-Za-z\s'.-]{1,80})(?:\s*[?.!]|$)/i,
+    /\bupdate\s+for\s+([A-Za-z][A-Za-z\s'.-]{1,80})(?:\s*[?.!]|$)/i,
+    /\bfor\s+([A-Za-z][A-Za-z\s'.-]{1,80})(?:\s*[?.!]|$)/i,
+    /\babout\s+([A-Za-z][A-Za-z\s'.-]{1,80})(?:\s*[?.!]|$)/i,
+  ];
+  for (const re of patterns) {
+    const m = re.exec(t);
+    if (m?.[1]) {
+      const name = m[1].trim();
+      if (name.length >= 2 && !/^(the|a|an|my|our|this|that|any)$/i.test(name)) return name;
+    }
+  }
+  return null;
+}
+
 function correctLeadReplyAgainstAuthoritative(reply: string, authoritativeRaw: string | null): string {
   if (!authoritativeRaw) return reply;
   const payload = parseLeadsSummaryPayload(authoritativeRaw);
@@ -308,20 +442,26 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
 
     const inferredOnboardingName = inferOnboardingForFromConversation(contextMessages);
 
+    const referencingInboundDigest = await fetchReferencingInboundDigestForCeo(userId, supabase);
+
     const resultBlocks: string[] = [];
+    const rawBatch: { name: CEOToolName; raw: string }[] = [];
     for (const call of pendingAction.toolCalls) {
       const input =
         call.name === "start_tenant_onboarding"
           ? mergeEnrichedOnboardingInput(call.input, inferredOnboardingName)
           : call.input;
       const raw = await executeCEOTool(call.name, input, userId, supabase);
+      rawBatch.push({ name: call.name, raw });
       resultBlocks.push(wrapToolResultForModel(call.name, raw));
     }
 
     const summarySystemPrompt =
       CEO_SYSTEM_PROMPT +
+      (referencingInboundDigest ? `\n\n${referencingInboundDigest}` : "") +
       "\n\nThe landlord already confirmed the pending actions. Tool runs are complete. Summarize outcomes in natural language. Do not ask for confirmation again." +
-      "\n\n**Mandatory for tool JSON:** If any result has `success`: false or an `error` string, say exactly what failed using the `message` or `error` field (e.g. missing email, onboarding already started). **Do not** claim the system rejected a plain-name input, or cite UUID/form validation errors, unless those exact words appear in the JSON.";
+      "\n\n**Mandatory for tool JSON:** If any result has `success`: false or an `error` string, say exactly what failed using the `message` or `error` field (e.g. missing email, onboarding already started). **Do not** claim the system rejected a plain-name input, or cite UUID/form validation errors, unless those exact words appear in the JSON." +
+      "\n\n**Product truth:** Letora does not have a tenant portal or tenant app. Tenants are reached by **email**. Onboarding **tasks** are for the **landlord** in the dashboard. **Never** tell the user that tenants will see a checklist in a portal or log in to Letora.";
     const summaryMessages: MessageParam[] = [
       {
         role: "user",
@@ -335,7 +475,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
         system: summarySystemPrompt,
         messages: summaryMessages,
       });
-      return { outcome: "complete", reply: extractFinalText(summaryResp) };
+      return completeWithSuggestedActions(extractFinalText(summaryResp), rawBatch, null);
     } catch (anthropicError) {
       await runAdminFailureAlert({
         stage: "anthropic_summary",
@@ -347,7 +487,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
           systemPrompt: summarySystemPrompt,
           conversation: summaryMessages,
         });
-        return { outcome: "complete", reply };
+        return completeWithSuggestedActions(reply, rawBatch, null);
       } catch (geminiError) {
         console.error("[ceo] gemini fallback failure", {
           stage: "anthropic_summary",
@@ -379,11 +519,33 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
     effectiveSystemPrompt = `${systemPrompt}\n\nAuthoritative lead data from the database (use these exact counts and recent rows; do not invent numbers):\n${leadsRaw}`;
   }
 
+  const referencingInboundDigest = await fetchReferencingInboundDigestForCeo(userId, supabase);
+  if (referencingInboundDigest) {
+    effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n${referencingInboundDigest}`;
+  }
+
+  /** So the model cannot end_turn with “no agency reply” before calling tools — same JSON as prepare_referencing. */
+  let referencingPrefetchRaw: string | null = null;
+  if (route.wantsReferencingStatus) {
+    const tenantGuess = extractTenantNameForReferencingQuery(latestUser);
+    if (tenantGuess) {
+      referencingPrefetchRaw = await executeCEOTool(
+        "prepare_referencing",
+        { tenant_name: tenantGuess },
+        userId,
+        supabase,
+      );
+      effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n**Server-fetched referencing status (authoritative — your answer MUST match this JSON):**\n${referencingPrefetchRaw}\n\nIf **recent_inbound_mail** is a non-empty array, you MUST summarize what Letora recorded (preview text) and MUST NOT claim the agency sent no reply or that there are no inbound updates.`;
+    }
+  }
+
   const intent = classifyCEOIntent(latestUser);
   const conversation: MessageParam[] = contextMessages.map((m) => ({
     role: m.role,
     content: m.content,
   }));
+
+  let lastToolBatch: { name: CEOToolName; raw: string }[] = [];
 
   for (let i = 0; i < 5; i++) {
     let response: Message;
@@ -406,10 +568,13 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
           systemPrompt: effectiveSystemPrompt,
           conversation,
         });
-        return {
-          outcome: "complete",
-          reply: correctLeadReplyAgainstAuthoritative(reply, authoritativeLeadsRaw),
-        };
+        return completeWithSuggestedActions(
+          reply,
+          [],
+          authoritativeLeadsRaw,
+          referencingPrefetchRaw,
+          referencingInboundDigest,
+        );
       } catch (geminiError) {
         console.error("[ceo] gemini fallback failure", {
           stage: "anthropic_loop",
@@ -425,19 +590,25 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
     }
 
     if (response.stop_reason === "end_turn") {
-      return {
-        outcome: "complete",
-        reply: correctLeadReplyAgainstAuthoritative(extractFinalText(response), authoritativeLeadsRaw),
-      };
+      return completeWithSuggestedActions(
+        extractFinalText(response),
+        lastToolBatch,
+        authoritativeLeadsRaw,
+        referencingPrefetchRaw,
+        referencingInboundDigest,
+      );
     }
 
     conversation.push({ role: "assistant", content: response.content });
     const toolUseBlocks = response.content.filter((b): b is ToolUseBlock => b.type === "tool_use");
     if (toolUseBlocks.length === 0) {
-      return {
-        outcome: "complete",
-        reply: correctLeadReplyAgainstAuthoritative(extractFinalText(response), authoritativeLeadsRaw),
-      };
+      return completeWithSuggestedActions(
+        extractFinalText(response),
+        lastToolBatch,
+        authoritativeLeadsRaw,
+        referencingPrefetchRaw,
+        referencingInboundDigest,
+      );
     }
 
     const toolNames: CEOToolName[] = toolUseBlocks.map((b) => {
@@ -456,7 +627,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
       };
     }
 
-    const toolResults = await Promise.all(
+    const executed = await Promise.all(
       toolUseBlocks.map(async (block) => {
         const toolName = block.name as CEOToolName;
         const args = block.input as Record<string, string>;
@@ -465,19 +636,28 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
           authoritativeLeadsRaw = result;
         }
         return {
-          type: "tool_result" as const,
-          tool_use_id: block.id,
-          content: wrapToolResultForModel(toolName, result),
+          toolName,
+          result,
+          block,
         };
       }),
     );
+    lastToolBatch = executed.map((e) => ({ name: e.toolName, raw: e.result }));
+    const toolResults = executed.map((e) => ({
+      type: "tool_result" as const,
+      tool_use_id: e.block.id,
+      content: wrapToolResultForModel(e.toolName, e.result),
+    }));
     conversation.push({ role: "user", content: toolResults });
   }
 
-  return {
-    outcome: "complete",
-    reply: "I'm having trouble completing this request. Please try again.",
-  };
+  return completeWithSuggestedActions(
+    "I'm having trouble completing this request. Please try again.",
+    lastToolBatch,
+    authoritativeLeadsRaw,
+    referencingPrefetchRaw,
+    referencingInboundDigest,
+  );
 }
 
 export async function runCEOAgent(options: CEOAgentOptions): Promise<string> {

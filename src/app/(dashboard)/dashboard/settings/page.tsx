@@ -31,6 +31,8 @@
 
 export const dynamic = "force-dynamic";
 
+import { Suspense } from "react";
+
 import { AgentSettingsForm } from "@/components/settings/agent-settings-form";
 import { getUserSettings } from "@/lib/actions/user-settings";
 import { createClient } from "@/lib/supabase/server";
@@ -81,7 +83,13 @@ export default async function SettingsPage() {
           </p>
         </div>
         <div className="flex flex-col gap-6 px-4 lg:px-6">
-          <AgentSettingsForm initialValues={initialValues} userId={user?.id ?? ""} />
+          <Suspense
+            fallback={
+              <div className="text-sm text-muted-foreground">Loading settings…</div>
+            }
+          >
+            <AgentSettingsForm initialValues={initialValues} userId={user?.id ?? ""} />
+          </Suspense>
         </div>
       </div>
     </div>

@@ -70,6 +70,7 @@ RLS: users manage rows where `user_id = auth.uid()`.
 |-------|---------|
 | `POST /api/agents/onboarding` | Body: `{ tenancyId }`. Session auth. Runs **`runTenantOnboardingAgent`**. Returns `{ success, agentRunId, tasksCreated, emailStatus, message? }`. |
 | `POST /api/agents/maintenance` | Body: `{ maintenanceRequestId }`. Session auth. Manual re-run of **`runMaintenanceAgent`**. Returns `{ success, agentRunId?, triageCategory?, tenantEmailStatus?, landlordEmailStatus? }`. |
+| `POST /api/webhooks/inbound-email` | Resend/Svix inbound; correlates **`LETORA_REF`** to tenancies. See **[referencing-inbound.md](./referencing-inbound.md)**. |
 
 ## Cron
 

@@ -6,6 +6,7 @@ import {
   runCEOChat,
 } from "@/lib/agents/ceo";
 import type { CEOMessage } from "@/lib/agents/ceo";
+import { stripCeoHexUuidsFromText } from "@/lib/agents/ceo/safety";
 import { buildLeadQualifyAssistantMessage } from "@/lib/assistant/build-lead-qualify-message";
 import { shouldOfferManualLeadQualifyUi } from "@/lib/assistant/lead-qualify-embed";
 import {
@@ -126,6 +127,11 @@ function mapAssistantError(err: unknown): { status: number; code: string; messag
   };
 }
 
+/** Last line of defense: never persist or stream raw tenancy UUIDs the model echoed from tool JSON. */
+function sanitizeAssistantReply(text: string): string {
+  return stripCeoHexUuidsFromText(text);
+}
+
 function chunkUtf8Text(text: string, maxChars: number): string[] {
   if (text.length <= maxChars) return text ? [text] : [];
   const chunks: string[] = [];
@@ -244,7 +250,9 @@ export async function POST(request: Request) {
     last.role === "user" &&
     shouldOfferManualLeadQualifyUi(last.content)
   ) {
-    const assistantContent = await buildLeadQualifyAssistantMessage(userId, supabase);
+    const assistantContent = sanitizeAssistantReply(
+      await buildLeadQualifyAssistantMessage(userId, supabase),
+    );
     try {
       await insertAssistantMessage(conversationId, "assistant", assistantContent);
     } catch {
@@ -280,8 +288,9 @@ export async function POST(request: Request) {
   }
 
   if (result.outcome === "needs_clarification") {
+    const msg = sanitizeAssistantReply(result.message);
     try {
-      await insertAssistantMessage(conversationId, "assistant", result.message);
+      await insertAssistantMessage(conversationId, "assistant", msg);
     } catch {
       return NextResponse.json(
         { error: "Could not save the assistant reply." },
@@ -291,15 +300,18 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         needsClarification: true,
-        message: result.message,
+        message: msg,
       },
       { status: 200 },
     );
   }
 
   if (result.outcome === "needs_confirmation") {
+    const msg = sanitizeAssistantReply(result.message);
     try {
-      await insertAssistantMessage(conversationId, "assistant", result.message);
+      await insertAssistantMessage(conversationId, "assistant", msg, {
+        pendingCeoAction: result.pendingAction,
+      });
     } catch {
       return NextResponse.json(
         { error: "Could not save the assistant reply." },
@@ -309,15 +321,41 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         needsConfirmation: true,
-        message: result.message,
+        message: msg,
         pendingAction: result.pendingAction,
       },
       { status: 200 },
     );
   }
 
+  if (
+    result.outcome === "complete" &&
+    result.suggestedActions &&
+    result.suggestedActions.length > 0
+  ) {
+    const reply = sanitizeAssistantReply(result.reply);
+    try {
+      await insertAssistantMessage(conversationId, "assistant", reply, {
+        suggestedActions: result.suggestedActions,
+      });
+    } catch {
+      return NextResponse.json(
+        { error: "Could not save the assistant reply." },
+        { status: 500 },
+      );
+    }
+    return NextResponse.json(
+      {
+        message: reply,
+        suggestedActions: result.suggestedActions,
+      },
+      { status: 200 },
+    );
+  }
+
+  const reply = sanitizeAssistantReply(result.reply);
   try {
-    await insertAssistantMessage(conversationId, "assistant", result.reply);
+    await insertAssistantMessage(conversationId, "assistant", reply);
   } catch {
     return NextResponse.json(
       { error: "Could not save the assistant reply." },
@@ -326,7 +364,7 @@ export async function POST(request: Request) {
   }
 
   const encoder = new TextEncoder();
-  const pieces = chunkUtf8Text(result.reply, 64);
+  const pieces = chunkUtf8Text(reply, 64);
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {

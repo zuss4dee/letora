@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
@@ -48,6 +48,15 @@ export function AgentSettingsForm({
   userId: string;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [settingsTab, setSettingsTab] = useState<"agents" | "email">(() =>
+    searchParams.get("tab") === "email" ? "email" : "agents",
+  );
+
+  useEffect(() => {
+    if (searchParams.get("tab") === "email") setSettingsTab("email");
+  }, [searchParams]);
+
   const form = useForm<UserSettingsInput>({
     resolver: zodResolver(userSettingsSchema) as Resolver<UserSettingsInput>,
     defaultValues: initialValues,
@@ -130,7 +139,11 @@ export function AgentSettingsForm({
 
   return (
     <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
-      <Tabs defaultValue="agents" className="w-full gap-4">
+      <Tabs
+        value={settingsTab}
+        onValueChange={(v) => setSettingsTab(v as "agents" | "email")}
+        className="w-full gap-4"
+      >
         <TabsList className="grid w-full grid-cols-2 sm:inline-flex sm:w-auto">
           <TabsTrigger value="agents">Agents</TabsTrigger>
           <TabsTrigger value="email">Email &amp; Automation</TabsTrigger>
@@ -484,8 +497,10 @@ export function AgentSettingsForm({
               <div className="mt-6 grid gap-4 rounded-lg border border-border p-4">
                 <div className="text-sm font-medium">Default referencing agency</div>
                 <p className="text-sm text-muted-foreground">
-                  Used when you send a referencing handoff from a tenancy unless you set an override on that
-                  tenancy.
+                  UK referencing providers (e.g. Goodlord, HomeLet) run credit and reference checks; they may
+                  contact the tenant with their own process. Letora does not run those checks — it sends this
+                  email address a <strong>handoff</strong> with tenant and property details. Used when you
+                  send a handoff from a tenancy unless you set an override on that tenancy.
                 </p>
                 <div className="grid gap-2">
                   <Label htmlFor="referencingAgencyName">Agency name</Label>

@@ -6,7 +6,6 @@ import {
   createAssistantConversation,
   listAssistantConversationsForSession,
   listAssistantMessagesForConversation,
-  type AssistantConversationListItem,
 } from "@/lib/assistant-messages/store";
 
 export default async function AssistantPage({
@@ -34,10 +33,16 @@ export default async function AssistantPage({
     redirect(`/dashboard/assistant?c=${activeId}`);
   }
 
-  const initialMessages = await listAssistantMessagesForConversation(
+  const rawMessages = await listAssistantMessagesForConversation(
     activeId,
     ASSISTANT_UI_MESSAGE_LIMIT,
   );
+  const initialMessages = rawMessages.map((m) => ({
+    role: m.role,
+    content: m.content,
+    suggestedActions: m.metadata?.suggestedActions,
+    pendingCeoAction: m.metadata?.pendingCeoAction,
+  }));
 
   return (
     <AssistantChat

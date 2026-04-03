@@ -49,6 +49,19 @@ export default async function TenancyDetailPage({ params }: { params: Promise<{ 
   const userId = user?.id ?? null;
   const referencingEvents = userId ? await getReferencingEvents(userId, id) : [];
 
+  let hasDefaultReferencingAgencyEmail = false;
+  let defaultReferencingAgencyEmail: string | null = null;
+  if (userId) {
+    const { data: refSettings } = await supabase
+      .from("user_settings")
+      .select("referencing_agency_email")
+      .eq("user_id", userId)
+      .maybeSingle();
+    defaultReferencingAgencyEmail =
+      (refSettings?.referencing_agency_email as string | null)?.trim() || null;
+    hasDefaultReferencingAgencyEmail = Boolean(defaultReferencingAgencyEmail);
+  }
+
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
@@ -121,6 +134,8 @@ export default async function TenancyDetailPage({ params }: { params: Promise<{ 
                       initialEvents={referencingEvents}
                       referencingToken={detail.referencing_token}
                       referencingAgencyEmailOverride={detail.referencing_agency_email_override}
+                      defaultReferencingAgencyEmail={defaultReferencingAgencyEmail}
+                      hasDefaultReferencingAgencyEmail={hasDefaultReferencingAgencyEmail}
                       lastOutboundAt={detail.referencing_last_outbound_at}
                       lastInboundAt={detail.referencing_last_inbound_at}
                       onboardingStatus={detail.onboarding_status}

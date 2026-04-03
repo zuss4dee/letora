@@ -8,7 +8,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
+import { getPendingCeoActionFromMessages } from "@/lib/assistant/pending-ceo-from-messages";
 import type { AssistantConversationListItem } from "@/lib/assistant-messages/store";
+import type { PendingCEOAction } from "@/lib/agents/ceo/safety";
+import type { LetoraSuggestedAction } from "@/lib/agents/ceo/suggested-actions";
 import {
   parseLeadQualifyEmbed,
   type LeadQualifyEmbedPayloadV1,
@@ -20,13 +23,10 @@ type ChatRole = "user" | "assistant";
 export interface ChatMessage {
   role: ChatRole;
   content: string;
+  suggestedActions?: LetoraSuggestedAction[];
+  /** Present when assistant is waiting for Reply yes (persisted in DB metadata on refresh). */
+  pendingCeoAction?: PendingCEOAction;
 }
-
-/** Mirrors server `PendingCEOAction` for in-memory session only (re-sent on confirm). */
-type PendingCEOActionClient = {
-  v: 1;
-  toolCalls: { name: string; input: Record<string, string> }[];
-};
 
 function formatQualifyOutcomeRaw(raw: string): string {
   try {
@@ -155,7 +155,41 @@ function LeadQualifyPanel({ payload }: { payload: LeadQualifyEmbedPayloadV1 }) {
   );
 }
 
-function MessageBubble({ role, content }: ChatMessage) {
+function SuggestedActionChips({
+  actions,
+  onMessagePick,
+}: {
+  actions: LetoraSuggestedAction[];
+  onMessagePick: (text: string) => void;
+}) {
+  const router = useRouter();
+  return (
+    <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Suggested actions">
+      {actions.map((a) => (
+        <Button
+          key={a.id}
+          type="button"
+          size="sm"
+          variant="secondary"
+          className="h-auto min-h-8 max-w-full whitespace-normal text-left text-xs"
+          onClick={() => {
+            if (a.kind === "link" && a.href) router.push(a.href);
+            else if (a.kind === "message" && a.message) onMessagePick(a.message);
+          }}
+        >
+          {a.label}
+        </Button>
+      ))}
+    </div>
+  );
+}
+
+function MessageBubble({
+  role,
+  content,
+  suggestedActions,
+  onPickSuggestedMessage,
+}: ChatMessage & { onPickSuggestedMessage?: (text: string) => void }) {
   const isUser = role === "user";
   if (role === "assistant") {
     const parsed = parseLeadQualifyEmbed(content);
@@ -181,6 +215,9 @@ function MessageBubble({ role, content }: ChatMessage) {
         )}
       >
         <p className="whitespace-pre-wrap break-words">{content}</p>
+        {role === "assistant" && suggestedActions && suggestedActions.length > 0 && onPickSuggestedMessage ? (
+          <SuggestedActionChips actions={suggestedActions} onMessagePick={onPickSuggestedMessage} />
+        ) : null}
       </div>
     </div>
   );
@@ -199,7 +236,7 @@ function isAffirmingPendingAction(text: string): boolean {
   );
 }
 
-function isPendingCEOActionClient(value: unknown): value is PendingCEOActionClient {
+function isPendingCEOActionClient(value: unknown): value is PendingCEOAction {
   if (typeof value !== "object" || value === null) return false;
   const o = value as Record<string, unknown>;
   if (o.v !== 1) return false;
@@ -216,13 +253,14 @@ async function postChatRequest(
   messages: ChatMessage[],
   options?: {
     confirmedExecution?: boolean;
-    pendingAction?: PendingCEOActionClient | null;
+    pendingAction?: PendingCEOAction | null;
   },
 ): Promise<
   | { kind: "stream"; consume: (onDelta: (chunk: string) => void) => Promise<void> }
   | { kind: "clarification"; message: string }
-  | { kind: "confirmation"; message: string; pendingAction: PendingCEOActionClient }
+  | { kind: "confirmation"; message: string; pendingAction: PendingCEOAction }
   | { kind: "lead_qualify"; message: string }
+  | { kind: "suggested_actions"; message: string; suggestedActions: LetoraSuggestedAction[] }
 > {
   const body: Record<string, unknown> = { conversationId, messages };
   if (options?.confirmedExecution === true && options.pendingAction) {
@@ -275,6 +313,17 @@ async function postChatRequest(
       }
       if (o.needsLeadQualifyPrompt === true && typeof o.message === "string") {
         return { kind: "lead_qualify", message: o.message };
+      }
+      if (
+        typeof o.message === "string" &&
+        Array.isArray(o.suggestedActions) &&
+        o.suggestedActions.length > 0
+      ) {
+        return {
+          kind: "suggested_actions",
+          message: o.message,
+          suggestedActions: o.suggestedActions as LetoraSuggestedAction[],
+        };
       }
     }
     throw new Error("Unexpected response from assistant.");
@@ -358,12 +407,21 @@ export function AssistantChat({
     kind: "idle",
   });
   const [error, setError] = useState<string | null>(null);
-  const [pendingAction, setPendingAction] = useState<PendingCEOActionClient | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingCEOAction | null>(() =>
+    getPendingCeoActionFromMessages(initialMessages),
+  );
   const [mobileOpen, setMobileOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMessages(initialMessages);
+    const next = initialMessages.map((m) => ({
+      role: m.role,
+      content: m.content,
+      suggestedActions: m.suggestedActions,
+      pendingCeoAction: m.pendingCeoAction,
+    }));
+    setMessages(next);
+    setPendingAction(getPendingCeoActionFromMessages(next));
   }, [activeConversationId, initialMessages]);
 
   const scrollToLatest = useCallback(() => {
@@ -408,7 +466,7 @@ export function AssistantChat({
     setAssistantStream({ kind: "thinking" });
 
     let confirmedExecution = false;
-    let actionPayload: PendingCEOActionClient | null = null;
+    let actionPayload: PendingCEOAction | null = null;
 
     if (pendingAction) {
       if (isAffirmingPendingAction(trimmed)) {
@@ -441,7 +499,27 @@ export function AssistantChat({
 
       if (result.kind === "confirmation") {
         setPendingAction(result.pendingAction);
-        setMessages((prev) => [...prev, { role: "assistant", content: result.message }]);
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: result.message,
+            pendingCeoAction: result.pendingAction,
+          },
+        ]);
+        router.refresh();
+        return;
+      }
+
+      if (result.kind === "suggested_actions") {
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: result.message,
+            suggestedActions: result.suggestedActions,
+          },
+        ]);
         router.refresh();
         return;
       }
@@ -544,7 +622,13 @@ export function AssistantChat({
               ) : (
                 <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
                   {messages.map((m, i) => (
-                    <MessageBubble key={`${m.role}-${i}-${m.content.slice(0, 24)}`} {...m} />
+                    <MessageBubble
+                      key={`${m.role}-${i}-${m.content.slice(0, 24)}`}
+                      role={m.role}
+                      content={m.content}
+                      suggestedActions={m.suggestedActions}
+                      onPickSuggestedMessage={(text) => setInput(text)}
+                    />
                   ))}
                   {assistantStream.kind === "thinking" ? (
                     <div className="flex justify-start">

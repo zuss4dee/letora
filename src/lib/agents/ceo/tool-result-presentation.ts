@@ -13,7 +13,11 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
   search_properties:
     "List matching properties with their **id** (UUID), human-readable label, and hint if multiple matches — tell the user to pick the right one before mutating tools. Never treat a unit number as a UUID.",
   start_tenant_onboarding:
-    "Confirm who onboarding started for (name if onboarding_for was used), whether any records were created, task count, and welcome email status. If the tool returned candidates (multiple tenancies), ask the user to specify street/city or pick from the list — do not ask for raw UUIDs unless they prefer it.",
+    "Confirm who onboarding started for, task count, and welcome email status (draft vs sent). **Letora has no tenant-facing portal.** Tenants are contacted by **email** only. Onboarding **tasks** in Letora are for the **landlord** (dashboard) to track — do not say tenants will see a checklist in a portal or app. If the tool returned candidates (multiple tenancies), ask for street/city — do not ask for raw UUIDs unless they prefer.",
+  send_referencing_handoff:
+    "Read **sent** (boolean) and **message**. Use **tenant_name** / **property_address** when describing who the handoff was for. Do **not** quote **tenancy_id** in prose. If sent is true, confirm the email was sent to the agency. If sent is false, say what happened per **message** — never claim the email was sent unless sent is true.",
+  prepare_referencing:
+    "Follow **ceo_instruction** verbatim for what to say about inbound mail. Summarize **recent_inbound_mail** previews when present. **onboarding_status**, **referencing_complete**, **handoff_sent**, **referencing_last_inbound_at**, **tasks** / **tasks_complete**/**tasks_total**. If missing_agency_email, point to Settings → Email & Automation (referencing). If handoff_sent is true, do not imply the user still needs to send the first handoff.",
   dispatch_maintenance_request:
     "Confirm issue logged, inferred category/urgency, and contractor dispatch status (drafted/sent/failed). Keep next steps practical.",
   generate_property_listing:
@@ -32,6 +36,8 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
     "For the month: paid count vs overdue, totals collected vs still due, and highlight a few names if useful.",
   list_tenants:
     "Give the count and a short bullet list of names (and property if clear); avoid dumping the full table.",
+  resolve_onboarding_navigation:
+    "If ok=true, give the user the open tenancy onboarding action (button in UI). If needs_tenant or multiple_tenants, ask which tenant or use chips. If multiple_tenancies, ask them to pick the right property. Do not paste raw JSON.",
 }
 
 /**
@@ -46,11 +52,27 @@ export function wrapToolResultForModel(toolName: CEOToolName, raw: string): stri
           "Mandatory for qualify_leads: read the JSON fields. If `error` or `details` exists, your reply must reflect them. If `parse_failed` or `parse_ok: false`, do not blame a vague platform outage — say parsing/application failed and suggest /dashboard/leads per `hint`.",
         ]
       : []
+  const onboardingExtra =
+    toolName === "start_tenant_onboarding"
+      ? [
+          "",
+          "Mandatory for start_tenant_onboarding: never mention a tenant portal, tenant app, or tenant login in Letora. Communication with tenants is by email. Task lists are visible to the landlord in the dashboard.",
+        ]
+      : []
+  const referencingHandoffExtra =
+    toolName === "send_referencing_handoff"
+      ? [
+          "",
+          "Mandatory for send_referencing_handoff: the JSON includes **sent**. Your reply MUST match sent: if false, do not say the email was delivered, resent, or received by the agency; use the **message** field. Never include **tenancy_id** in user-facing text — use **tenant_name** (and **property_address** if present).",
+        ]
+      : []
   return [
     "Tool output (internal data for you only):",
     "",
     `Summarize for the landlord with this focus: ${focus}`,
     ...qualifyExtra,
+    ...onboardingExtra,
+    ...referencingHandoffExtra,
     "",
     raw,
     "",

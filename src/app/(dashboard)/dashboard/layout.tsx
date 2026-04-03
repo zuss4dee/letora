@@ -1,6 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { AppSidebar } from "@/components/app-sidebar";
+import { ReferencingInboundRealtimeListener } from "@/components/referencing-inbound-realtime-listener";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +13,7 @@ export default async function DashboardShellLayout({ children }: { children: Rea
     data: { user },
   } = await supabase.auth.getUser();
   const userEmail = user?.email ?? null;
+  const userId = user?.id ?? null;
 
   return (
     <TooltipProvider>
@@ -25,6 +27,7 @@ export default async function DashboardShellLayout({ children }: { children: Rea
       >
         <AppSidebar variant="inset" userEmail={userEmail} />
         <SidebarInset>
+          {userId ? <ReferencingInboundRealtimeListener userId={userId} /> : null}
           <SiteHeader />
           <div className="flex flex-1 flex-col">{children}</div>
         </SidebarInset>

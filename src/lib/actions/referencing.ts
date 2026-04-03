@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/server";
 import { sendEmailTool } from "@/lib/tools/send-email";
@@ -39,19 +40,24 @@ export async function getReferencingEvents(
   }));
 }
 
-export async function sendReferencingHandoff(tenancyId: string) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false as const, error: "Not authenticated" };
-
+/**
+ * Core handoff logic (session or service-role client). Used by dashboard action and CEO executor.
+ */
+export async function runReferencingHandoffForUser(
+  tenancyId: string,
+  userId: string,
+  supabase: SupabaseClient,
+  options?: { forceSend?: boolean },
+): Promise<
+  | { ok: true; emailLogId: string; message: string; sent: boolean }
+  | { ok: false; error: string }
+> {
   const { data: settings } = await supabase
     .from("user_settings")
     .select(
       "contact_email,landlord_name,referencing_agency_name,referencing_agency_email,referencing_agency_notes",
     )
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .maybeSingle();
 
   const { data: tenancy, error: tenErr } = await supabase
@@ -70,7 +76,7 @@ export async function sendReferencingHandoff(tenancyId: string) {
     .eq("id", tenancyId)
     .maybeSingle();
 
-  if (tenErr || !tenancy) return { ok: false as const, error: "Tenancy not found" };
+  if (tenErr || !tenancy) return { ok: false, error: "Tenancy not found" };
 
   const prop = tenancy.properties as unknown as {
     address: string | null;
@@ -78,7 +84,7 @@ export async function sendReferencingHandoff(tenancyId: string) {
     postcode: string | null;
     user_id: string;
   };
-  if (prop.user_id !== user.id) return { ok: false as const, error: "Not found" };
+  if (prop.user_id !== userId) return { ok: false, error: "Not found" };
 
   const tenantRaw = tenancy.tenant_profiles as unknown as
     | { full_name: string | null; email: string | null; phone: string | null }
@@ -92,7 +98,7 @@ export async function sendReferencingHandoff(tenancyId: string) {
     "";
   if (!agencyEmail) {
     return {
-      ok: false as const,
+      ok: false,
       error:
         "Set a referencing agency email in Settings (Referencing) or add an override on this tenancy.",
     };
@@ -105,13 +111,13 @@ export async function sendReferencingHandoff(tenancyId: string) {
       .from("tenancies")
       .update({ referencing_token: token })
       .eq("id", tenancyId);
-    if (upTok) return { ok: false as const, error: upTok.message };
+    if (upTok) return { ok: false, error: upTok.message };
   }
 
   const agencyName =
     (settings?.referencing_agency_name as string | null)?.trim() || "team";
   const addressLabel = [prop.address, prop.city, prop.postcode].filter(Boolean).join(", ");
-  const landlordContact = (settings?.contact_email as string | null)?.trim() || user.email || "";
+  const landlordContact = (settings?.contact_email as string | null)?.trim() || "";
   const notes = (settings?.referencing_agency_notes as string | null)?.trim();
 
   const subject = `Referencing request — ${tenant?.full_name ?? "Tenant"} — ${addressLabel || "Property"}`;
@@ -146,12 +152,13 @@ export async function sendReferencingHandoff(tenancyId: string) {
     .filter(Boolean)
     .join("\n");
 
-  const sendResult = await sendEmailTool(supabase, user.id, null, {
+  const sendResult = await sendEmailTool(supabase, userId, null, {
     to: agencyEmail,
     toName: agencyName,
     subject,
     body,
     agentType: "referencing",
+    forceSend: options?.forceSend === true,
   });
 
   const now = new Date().toISOString();
@@ -161,7 +168,7 @@ export async function sendReferencingHandoff(tenancyId: string) {
     .eq("id", tenancyId);
 
   await supabase.from("referencing_events").insert({
-    user_id: user.id,
+    user_id: userId,
     tenancy_id: tenancyId,
     direction: "outbound",
     email_log_id: sendResult.emailLogId || null,
@@ -174,10 +181,28 @@ export async function sendReferencingHandoff(tenancyId: string) {
   revalidatePath("/dashboard/tenancies");
 
   return {
-    ok: true as const,
+    ok: true,
     emailLogId: sendResult.emailLogId,
     message: sendResult.message,
     sent: sendResult.sent,
+  };
+}
+
+export async function sendReferencingHandoff(tenancyId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, error: "Not authenticated" };
+
+  /** Explicit dashboard click — always attempt Resend (same as CEO-confirmed send). Auto-send toggle only gates automated/agent sends without confirmation. */
+  const result = await runReferencingHandoffForUser(tenancyId, user.id, supabase, { forceSend: true });
+  if (!result.ok) return result;
+  return {
+    ok: true as const,
+    emailLogId: result.emailLogId,
+    message: result.message,
+    sent: result.sent,
   };
 }
 

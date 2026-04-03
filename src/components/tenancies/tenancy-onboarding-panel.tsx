@@ -3,9 +3,14 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { completeManualOnboardingTask, type OnboardingTaskRow } from "@/lib/actions/onboarding";
+import {
+  completeManualOnboardingTask,
+  revertOnboardingTaskToPending,
+  type OnboardingTaskRow,
+} from "@/lib/actions/onboarding";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
@@ -152,6 +157,18 @@ export function TenancyOnboardingPanel({
     router.refresh();
   }
 
+  async function revertToPending(taskId: string) {
+    setTaskLoadingId(taskId);
+    const result = await revertOnboardingTaskToPending(taskId);
+    setTaskLoadingId(null);
+    if (!result.ok) {
+      toast.error(result.error);
+      return;
+    }
+    toast.success("Task moved back to pending");
+    router.refresh();
+  }
+
   return (
     <Card>
       <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 border-b">
@@ -174,16 +191,38 @@ export function TenancyOnboardingPanel({
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
+                <TableHead className="w-12 text-center">Done</TableHead>
                 <TableHead>Task</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Due</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {tasks.map((task) => (
                 <TableRow key={task.id}>
+                  <TableCell className="text-center align-middle">
+                    <Checkbox
+                      checked={task.status === "complete"}
+                      disabled={
+                        (task.status !== "pending" && task.status !== "complete") ||
+                        taskLoadingId === task.id
+                      }
+                      aria-label={
+                        task.status === "complete"
+                          ? `Mark ${task.task_name} as not done`
+                          : `Mark ${task.task_name} complete`
+                      }
+                      onCheckedChange={(checked) => {
+                        if (checked === true && task.status === "pending") {
+                          void markManualComplete(task.id);
+                        }
+                        if (checked === false && task.status === "complete") {
+                          void revertToPending(task.id);
+                        }
+                      }}
+                    />
+                  </TableCell>
                   <TableCell className="font-medium">{task.task_name}</TableCell>
                   <TableCell>{taskTypeBadge(task.task_type)}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">
@@ -198,21 +237,6 @@ export function TenancyOnboardingPanel({
                       {taskStatusBadge(task)}
                       {emailTaskLabel(task)}
                     </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {task.task_type === "manual" && task.status === "pending" ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={taskLoadingId === task.id}
-                        onClick={() => void markManualComplete(task.id)}
-                      >
-                        {taskLoadingId === task.id ? "Saving…" : "Mark complete"}
-                      </Button>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    )}
                   </TableCell>
                 </TableRow>
               ))}

@@ -20,6 +20,8 @@ const READ_ONLY_TOOLS: readonly CEOToolName[] = [
   "get_leads_summary",
   "search_properties",
   "list_tenants",
+  "prepare_referencing",
+  "resolve_onboarding_navigation",
 ]
 
 function isReadOnlyTool(name: CEOToolName): boolean {
@@ -41,7 +43,7 @@ export function classifyCEOIntent(latestUserText: string): CEOIntent {
   if (t.length === 0) return "read_only"
 
   if (
-    /\b(send|dispatch|onboard|start\s+onboarding|blast|transmit|actually\s+send|go\s+ahead\s+and\s+send|email\s+them\s+now|mark\s+.*\s+resolved|mark\s+as\s+resolved|close\s+the\s+tickets?|delete\s+|remove\s+permanently|cancel\s+the\s+|finalize\s+and\s+send)\b/.test(
+    /\b(send|resend|dispatch|onboard|start\s+onboarding|blast|transmit|actually\s+send|go\s+ahead\s+and\s+send|email\s+them\s+now|mark\s+.*\s+resolved|mark\s+as\s+resolved|close\s+the\s+tickets?|delete\s+|remove\s+permanently|cancel\s+the\s+|finalize\s+and\s+send)\b/.test(
       t,
     )
   ) {
@@ -120,6 +122,28 @@ export function pendingActionFromToolUseBlocks(blocks: readonly ToolUseBlock[]):
   return { v: 1, toolCalls }
 }
 
+/** Removes hex UUIDs and "(tenancy …)" fragments so chat never shows raw tenancy ids. */
+export function stripCeoHexUuidsFromText(text: string): string {
+  let t = text;
+  t = t.replace(/\(\s*tenancy\s+[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\s*\)/gi, "");
+  t = t.replace(/\(\s*tenancy\s+[0-9a-f-]{36}\s*\)/gi, "");
+  t = t.replace(
+    /\(\s*tenancy\s*(?:id)?\s*:\s*[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\s*\)/gi,
+    "",
+  );
+  t = t.replace(
+    /\btenancy\s*(?:id)?\s*:\s*[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\b/gi,
+    "",
+  );
+  // Do not strip UUIDs in /dashboard/tenancies/<id> (link chips / deep links).
+  t = t.replace(/(?<!\/tenancies\/)\b[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}\b/gi, "");
+  t = t.replace(/\(\s*\)/g, "");
+  t = t.replace(/\*{2}\s*\*{2}/g, "");
+  t = t.replace(/[ \t]{2,}/g, " ");
+  t = t.replace(/\n{3,}/g, "\n\n");
+  return t.trim();
+}
+
 export function buildConfirmationMessage(action: PendingCEOAction): string {
   const lines = action.toolCalls.map((c) => {
     switch (c.name) {
@@ -141,6 +165,17 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
         return `• **Start tenant onboarding**${
           c.input.onboarding_for ? ` for **${c.input.onboarding_for}**` : ""
         } (may create tenancy records, checklist tasks, and welcome communications)`
+      case "send_referencing_handoff": {
+        const tn = c.input.tenant_name?.trim()
+        if (tn) {
+          return `• **Send referencing handoff to agency** for **${tn}** (drafts or sends email to your referencing provider)`
+        }
+        return `• **Send referencing handoff to agency** for the tenant you mean (drafts or sends email to your referencing provider)`
+      }
+      case "prepare_referencing":
+        return `• **Check referencing setup** (read-only — agency email, onboarding stage, checklist progress)`
+      case "resolve_onboarding_navigation":
+        return "• **Resolve onboarding screen link** (read-only — deep link to tenancy onboarding)"
       case "dispatch_maintenance_request":
         return "• **Dispatch maintenance request** (logs issue and may notify contractor)"
       case "generate_property_listing":
@@ -164,9 +199,13 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
     }
   })
 
-  return (
-    `The next step may **contact tenants** or **change what they see**, or run actions that go beyond a simple lookup:\n\n${lines.join("\n")}\n\n` +
-    `Reply **yes** to proceed, or tell me what to change.`
+  const hasReferencingSend = action.toolCalls.some((c) => c.name === "send_referencing_handoff");
+  const intro = hasReferencingSend
+    ? `The next step will **email your referencing agency** with tenant and property details from Letora (same as the tenancy page handoff):\n\n`
+    : `The next step may **contact tenants** or **change what they see**, or run actions that go beyond a simple lookup:\n\n`;
+
+  return stripCeoHexUuidsFromText(
+    `${intro}${lines.join("\n")}\n\nReply **yes** to proceed, or tell me what to change.`,
   )
 }
 

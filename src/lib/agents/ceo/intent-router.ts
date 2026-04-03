@@ -29,6 +29,10 @@ export type CEOIntentRoute = {
    * True when phrasing is like “start onboarding for [Name]” — model must use onboarding_for, not ask for UUIDs first.
    */
   wantsOnboardingByPlainName: boolean
+  /**
+   * True when the user asks for referencing / agency reply status — router must recommend prepare_referencing.
+   */
+  wantsReferencingStatus: boolean
   needsClarification: boolean
   clarificationQuestion: string | null
 }
@@ -144,7 +148,7 @@ const ROUTE_PATTERNS: ReadonlyArray<{
   {
     id: "onboarding",
     weight: 2.4,
-    re: /\b(onboard|onboarding|move[-\s]?in|start\s+onboarding|welcome\s+pack|right\s+to\s+rent|references?)\b/i,
+    re: /\b(onboard|onboarding|move[-\s]?in|start\s+onboarding|welcome\s+pack|right\s+to\s+rent|references?|referencing)\b/i,
   },
   {
     id: "listing_generation",
@@ -252,6 +256,20 @@ function normalizeForRouting(text: string): string {
     .replace(/\bdashbord\b/g, "dashboard")
 }
 
+/** “Referencing update”, “agency reply”, etc. — must route to prepare_referencing (regex “references?” misses “referencing”). */
+function detectReferencingStatusQuestion(normalized: string): boolean {
+  const mentionsRef =
+    /\b(referencing|tenant\s+referencing|letting\s+reference|reference\s+agency|agency\s+referencing)\b/i.test(
+      normalized,
+    )
+  const asksStatus =
+    /\b(update|status|progress|news|reply|response|heard|anything\s+from|where\s+are\s+we|chase|follow\s*up)\b/i.test(
+      normalized,
+    )
+  const whatAboutRef = /\bwhat\s+.{0,48}\b(referencing|reference|agency)\b/i.test(normalized)
+  return (mentionsRef && asksStatus) || whatAboutRef
+}
+
 /**
  * Maps natural-language property-management phrasing to internal tools and safety hints.
  */
@@ -259,6 +277,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
   const trimmed = userMessage.trim()
   const normalized = normalizeForRouting(trimmed)
   const wantsLeadQualification = /\bqualify\b/i.test(normalized) && /\bleads?\b/i.test(normalized)
+  const wantsReferencingStatusEarly = detectReferencingStatusQuestion(normalized)
   const scores = scoreMessage(normalized)
   const totalScore = Object.values(scores).reduce((a, b) => a + b, 0)
 
@@ -269,7 +288,23 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
       trimmed.length >= 10 &&
       trimmed.length <= 600 &&
       !isAffirmativeShort(trimmed) &&
-      !wantsOnboardingByPlainName
+      !wantsOnboardingByPlainName &&
+      !wantsReferencingStatusEarly
+
+    if (wantsReferencingStatusEarly && !wantsOnboardingByPlainName) {
+      return {
+        primaryIntent: "portfolio",
+        secondaryIntents: [],
+        confidence: 0.55,
+        recommendedTools: ["prepare_referencing", "list_tenants"],
+        confirmationRequired: false,
+        wantsLeadQualification,
+        wantsOnboardingByPlainName: false,
+        wantsReferencingStatus: true,
+        needsClarification: false,
+        clarificationQuestion: null,
+      }
+    }
 
     return {
       primaryIntent: wantsOnboardingByPlainName ? "onboarding" : "portfolio",
@@ -281,6 +316,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
         : false,
       wantsLeadQualification,
       wantsOnboardingByPlainName,
+      wantsReferencingStatus: false,
       needsClarification,
       clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
     }
@@ -334,6 +370,18 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     )
   }
 
+  const wantsReferencingStatus = detectReferencingStatusQuestion(normalized)
+  if (wantsReferencingStatus) {
+    recommendedTools = uniqueToolsOrdered(
+      [
+        "prepare_referencing",
+        "list_tenants",
+        ...recommendedTools.filter((t) => t !== "prepare_referencing" && t !== "list_tenants"),
+      ],
+      6,
+    )
+  }
+
   const confidence = Math.min(1, primaryScore / CONFIDENCE_NORMALIZER)
 
   const safetyIntent: CEOIntent = classifyCEOIntent(normalized)
@@ -345,7 +393,8 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     isPropertyRelated(normalized) &&
     trimmed.length >= 10 &&
     trimmed.length <= 600 &&
-    !isAffirmativeShort(trimmed)
+    !isAffirmativeShort(trimmed) &&
+    !wantsReferencingStatus
 
   const wantsOnboardingByPlainName =
     detectOnboardingByPlainName(normalized) &&
@@ -359,6 +408,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     confirmationRequired,
     wantsLeadQualification,
     wantsOnboardingByPlainName,
+    wantsReferencingStatus,
     needsClarification,
     clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
   }
@@ -382,8 +432,13 @@ function detectOnboardingByPlainName(normalized: string): boolean {
  */
 export function formatRouterHintForSystem(route: CEOIntentRoute): string {
   // Still inject mandatory tool hints (e.g. onboarding_for) even if the generic “pick a category” clarifier would otherwise hide routing.
-  if (route.needsClarification && !route.wantsOnboardingByPlainName) return ""
-  if (route.confidence === 0 && route.recommendedTools.length === 0 && !route.wantsOnboardingByPlainName) {
+  if (route.needsClarification && !route.wantsOnboardingByPlainName && !route.wantsReferencingStatus) return ""
+  if (
+    route.confidence === 0 &&
+    route.recommendedTools.length === 0 &&
+    !route.wantsOnboardingByPlainName &&
+    !route.wantsReferencingStatus
+  ) {
     return ""
   }
 
@@ -405,6 +460,12 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
   if (route.wantsOnboardingByPlainName) {
     lines.push(
       "- **Required (onboarding by name):** Call **start_tenant_onboarding** with **onboarding_for** set to the tenant’s **full name** taken from the user’s message (the name after “for”). Do **not** tell the user the system only accepts UUIDs. Do **not** ask them to list tenants or paste IDs before calling the tool. If they mentioned a street, city, or postcode, also set **onboarding_property_hint**. Only if the tool JSON returns **candidates** (multiple tenancies) should you ask which property — using addresses from **candidates**, not raw UUIDs.",
+    )
+  }
+
+  if (route.wantsReferencingStatus) {
+    lines.push(
+      "- **Required (referencing / agency status):** Call **prepare_referencing** this turn with **tenant_name** taken from the user’s message (e.g. “Alexis” / “Alexis Adeosun”) when they named someone; otherwise use **list_tenants** then **prepare_referencing** with the correct **tenancy_id**. Read **recent_inbound_mail** and **ceo_instruction** in the tool JSON — if they say inbound rows exist, you **must** summarize those previews and **must not** claim the agency has not responded or that there is no inbound mail.",
     )
   }
 

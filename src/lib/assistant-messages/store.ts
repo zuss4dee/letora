@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
+import type { PendingCEOAction } from "@/lib/agents/ceo/safety";
+import type { LetoraSuggestedAction } from "@/lib/agents/ceo/suggested-actions";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -9,9 +11,16 @@ export function isAssistantConversationId(value: string): boolean {
 
 export type AssistantChatRole = "user" | "assistant";
 
+export type AssistantMessageMetadata = {
+  suggestedActions?: LetoraSuggestedAction[];
+  /** When the assistant asked for confirmation, replay this on reload so "yes" still runs tools. */
+  pendingCeoAction?: PendingCEOAction;
+};
+
 export type AssistantChatMessage = {
   role: AssistantChatRole;
   content: string;
+  metadata?: AssistantMessageMetadata | null;
 };
 
 export type AssistantConversationListItem = {
@@ -128,7 +137,7 @@ export async function listAssistantMessagesForConversation(
 
   const { data, error } = await supabase
     .from("assistant_messages")
-    .select("role, content")
+    .select("role, content, metadata")
     .eq("conversation_id", conversationId)
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
@@ -137,11 +146,16 @@ export async function listAssistantMessagesForConversation(
   if (error || !data?.length) return [];
 
   const chronological = [...data].reverse();
-  return chronological.map((row) => ({
-    role: row.role === "assistant" ? "assistant" : "user",
-    content: row.content,
-  }));
+  return chronological.map((row) => {
+    const meta = row.metadata as AssistantMessageMetadata | null | undefined;
+    return {
+      role: row.role === "assistant" ? "assistant" : "user",
+      content: row.content as string,
+      metadata: meta && typeof meta === "object" ? meta : null,
+    };
+  });
 }
+
 
 async function trimExcessMessagesForConversation(
   conversationId: string,
@@ -169,6 +183,7 @@ export async function insertAssistantMessage(
   conversationId: string,
   role: AssistantChatRole,
   content: string,
+  metadata?: AssistantMessageMetadata | null,
 ): Promise<void> {
   const supabase = await createClient();
   const {
@@ -190,12 +205,17 @@ export async function insertAssistantMessage(
     userMessageCountBefore = count ?? 0;
   }
 
-  const { error } = await supabase.from("assistant_messages").insert({
+  const insertRow: Record<string, unknown> = {
     user_id: user.id,
     conversation_id: conversationId,
     role,
     content,
-  });
+  };
+  if (metadata && Object.keys(metadata).length > 0) {
+    insertRow.metadata = metadata;
+  }
+
+  const { error } = await supabase.from("assistant_messages").insert(insertRow);
 
   if (error) throw error;
 

@@ -72,4 +72,14 @@ describe("routeCEOIntent — tenant list phrasing", () => {
     expect(hint).toContain("onboarding_for");
     expect(hint).toContain("Do **not** tell the user the system only accepts UUIDs");
   });
+
+  it("routes referencing status questions to prepare_referencing (regex “references?” missed “referencing”)", () => {
+    const r = routeCEOIntent("What's the referencing update for Alexis?");
+    expect(r.wantsReferencingStatus).toBe(true);
+    expect(r.recommendedTools[0]).toBe("prepare_referencing");
+    expect(r.recommendedTools).toContain("list_tenants");
+    const hint = formatRouterHintForSystem(r);
+    expect(hint).toContain("prepare_referencing");
+    expect(hint).toContain("recent_inbound_mail");
+  });
 });

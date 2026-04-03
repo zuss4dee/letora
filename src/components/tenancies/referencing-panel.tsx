@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -23,6 +24,10 @@ type Props = {
   initialEvents: ReferencingEventRow[];
   referencingToken: string | null;
   referencingAgencyEmailOverride: string | null;
+  /** Default agency address from Settings (used when override is empty). */
+  defaultReferencingAgencyEmail: string | null;
+  /** True when Settings has a default referencing_agency_email (used if override is empty). */
+  hasDefaultReferencingAgencyEmail: boolean;
   lastOutboundAt: string | null;
   lastInboundAt: string | null;
   onboardingStatus: string;
@@ -43,6 +48,8 @@ export function ReferencingPanel({
   initialEvents,
   referencingToken,
   referencingAgencyEmailOverride,
+  defaultReferencingAgencyEmail,
+  hasDefaultReferencingAgencyEmail,
   lastOutboundAt,
   lastInboundAt,
   onboardingStatus,
@@ -51,6 +58,12 @@ export function ReferencingPanel({
   const [events, setEvents] = useState(initialEvents);
   const [override, setOverride] = useState(referencingAgencyEmailOverride ?? "");
   const [pending, startTransition] = useTransition();
+
+  const canSendHandoff =
+    hasDefaultReferencingAgencyEmail || override.trim().length > 0;
+
+  const handoffRecipientEmail =
+    override.trim() || (defaultReferencingAgencyEmail ?? "").trim() || null;
 
   async function refreshEvents() {
     const next = await getReferencingEvents(userId, tenancyId);
@@ -88,11 +101,30 @@ export function ReferencingPanel({
       <CardHeader className="border-b">
         <CardTitle className="text-sm font-medium">Referencing agency</CardTitle>
         <p className="text-sm font-normal text-muted-foreground">
-          Send tenant and property details to your referencing provider. Replies to your Letora inbound
-          address can advance onboarding when they include the LETORA_REF token.
+          Your provider runs referencing and credit checks (they may email the tenant with their own link or
+          process). Letora sends them a structured handoff with tenant and property details. Replies to your
+          Letora inbound address that include the <span className="font-mono text-xs">LETORA_REF</span> line
+          are logged here and may advance onboarding when the message looks like a clear pass or fail.
         </p>
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
+        {!canSendHandoff ? (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
+            <p>
+              Add a <strong>default agency email</strong> under{" "}
+              <span className="whitespace-nowrap">Settings → Email &amp; Automation</span> (Default referencing
+              agency), or enter an <strong>override for this tenancy</strong> below, before you can send a
+              handoff.
+            </p>
+            <Link
+              href="/dashboard/settings"
+              className="mt-2 inline-block font-medium text-foreground underline underline-offset-4"
+            >
+              Open Settings
+            </Link>
+          </div>
+        ) : null}
+
         <div className="grid gap-2 sm:max-w-md">
           <Label htmlFor="ref-override">Agency email override (this tenancy)</Label>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -144,14 +176,32 @@ export function ReferencingPanel({
           </div>
         </div>
 
+        {handoffRecipientEmail ? (
+          <div className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
+            <span className="font-medium text-foreground">Handoff is emailed to </span>
+            <span className="select-all break-all font-mono text-foreground">{handoffRecipientEmail}</span>
+            <span className="text-muted-foreground">
+              {" "}
+              (the referencing agency — not your landlord inbox unless it is the same address). If you do not see
+              it, check spam on that exact address or fix a typo in the override or under Settings → Email &amp;
+              Automation.
+            </span>
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={onSendHandoff} disabled={pending}>
+          <Button type="button" onClick={onSendHandoff} disabled={pending || !canSendHandoff}>
             {pending ? "Working…" : "Send referencing handoff"}
           </Button>
           <Button type="button" variant="outline" onClick={onMarkComplete} disabled={pending}>
             Mark referencing complete (manual)
           </Button>
         </div>
+        <p className="text-xs text-muted-foreground">
+          When you receive the agency&apos;s final outcome (e.g. pass / fail / guarantor required), use{" "}
+          <strong>Mark referencing complete</strong> if Letora hasn&apos;t updated automatically from inbound
+          email.
+        </p>
 
         {events.length > 0 ? (
           <div className="border-t pt-4">

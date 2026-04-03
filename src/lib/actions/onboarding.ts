@@ -120,6 +120,10 @@ export async function getTenancyOnboardingDetail(tenancyId: string): Promise<Ten
   };
 }
 
+/**
+ * Marks any **pending** onboarding task complete (landlord override). Includes email-type
+ * tasks: does not send email — use when work was done outside Letora.
+ */
 export async function completeManualOnboardingTask(taskId: string) {
   const supabase = await createClient();
   const {
@@ -135,14 +139,52 @@ export async function completeManualOnboardingTask(taskId: string) {
     .maybeSingle();
 
   if (fetchError || !task) return { ok: false as const, error: "Task not found" };
-  if (task.task_type !== "manual") return { ok: false as const, error: "Only manual tasks can be marked here" };
   if (task.status === "complete") return { ok: true as const };
+  if (task.status !== "pending") {
+    return { ok: false as const, error: "Only pending tasks can be marked complete here" };
+  }
 
   const { error: updateError } = await supabase
     .from("onboarding_tasks")
     .update({
       status: "complete",
       completed_at: new Date().toISOString(),
+    })
+    .eq("id", taskId)
+    .eq("user_id", user.id);
+
+  if (updateError) return { ok: false as const, error: updateError.message };
+
+  revalidatePath(`/dashboard/tenancies/${task.tenancy_id}`);
+  revalidatePath("/dashboard/tenancies");
+  return { ok: true as const };
+}
+
+/** Reverts a **complete** task to **pending** (e.g. user unchecked the box). */
+export async function revertOnboardingTaskToPending(taskId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, error: "Not authenticated" };
+
+  const { data: task, error: fetchError } = await supabase
+    .from("onboarding_tasks")
+    .select("id, tenancy_id, status")
+    .eq("id", taskId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (fetchError || !task) return { ok: false as const, error: "Task not found" };
+  if (task.status !== "complete") {
+    return { ok: false as const, error: "Only completed tasks can be reverted here" };
+  }
+
+  const { error: updateError } = await supabase
+    .from("onboarding_tasks")
+    .update({
+      status: "pending",
+      completed_at: null,
     })
     .eq("id", taskId)
     .eq("user_id", user.id);

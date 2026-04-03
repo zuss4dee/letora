@@ -10,6 +10,8 @@ export type SendEmailToolParams = {
   subject: string;
   body: string;
   agentType: EmailAgentType;
+  /** When true, send via Resend even if the matching auto_send_* flag is off (user already confirmed). */
+  forceSend?: boolean;
 };
 
 export type SendEmailToolResult = {
@@ -55,8 +57,11 @@ export function buildResendFromHeader(emailFromName: string | null | undefined):
 }
 
 /**
- * Central email path: always creates email_logs (draft first), then sends via Resend only if auto-send is on.
- * When auto-send is off, status stays `draft` for the Pending Email Drafts widget.
+ * Central email path: always creates email_logs (draft first), then sends via Resend when
+ * `forceSend` is true **or** the matching `auto_send_*` flag is on in user_settings.
+ * Callers that already have explicit user consent (e.g. tenancy “Send handoff”, CEO-confirmed tools)
+ * must pass `forceSend: true` so Resend runs even when the toggle is off. Otherwise the row stays
+ * `draft` for Pending Email Drafts and **no** Resend API call is made (nothing appears in Resend logs).
  */
 export async function sendEmailTool(
   supabase: SupabaseClient,
@@ -116,7 +121,8 @@ export async function sendEmailTool(
     auto_send_referencing_emails: false,
   };
 
-  if (!isAutoSendEnabled(row, params.agentType)) {
+  const allowSend = params.forceSend === true || isAutoSendEnabled(row, params.agentType);
+  if (!allowSend) {
     return {
       sent: false,
       emailLogId,
@@ -158,19 +164,20 @@ export async function sendEmailTool(
   }
 
   const resend = new Resend(apiKey);
-  const { error: sendError } = await resend.emails.send({
+  const sendResult = await resend.emails.send({
     from,
     to: params.to,
     subject: params.subject,
     text: params.body,
   });
 
-  if (sendError) {
+  if (sendResult.error) {
+    const errMsg = sendResult.error.message ?? "Resend rejected the send";
     await supabase
       .from("email_logs")
       .update({
         status: "failed",
-        error_message: sendError.message,
+        error_message: errMsg,
       })
       .eq("id", emailLogId)
       .eq("user_id", userId);
@@ -179,7 +186,27 @@ export async function sendEmailTool(
       sent: false,
       emailLogId,
       message: "Failed to send email",
-      error: sendError.message,
+      error: errMsg,
+    };
+  }
+
+  const resendMessageId = sendResult.data?.id?.trim();
+  if (!resendMessageId) {
+    const unexpected = "Resend returned no message id (unexpected response)";
+    await supabase
+      .from("email_logs")
+      .update({
+        status: "failed",
+        error_message: unexpected,
+      })
+      .eq("id", emailLogId)
+      .eq("user_id", userId);
+
+    return {
+      sent: false,
+      emailLogId,
+      message: "Email provider returned an unexpected response",
+      error: unexpected,
     };
   }
 
@@ -189,6 +216,7 @@ export async function sendEmailTool(
       status: "sent",
       sent_at: new Date().toISOString(),
       error_message: null,
+      resend_email_id: resendMessageId,
     })
     .eq("id", emailLogId)
     .eq("user_id", userId);

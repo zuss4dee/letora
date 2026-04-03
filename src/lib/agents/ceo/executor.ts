@@ -8,6 +8,7 @@ import { runLLM } from "@/lib/llm/router";
 import { sendEmailTool } from "@/lib/tools/send-email";
 import { labelPropertyRow, rankPropertySearch, type PropertySearchRow } from "@/lib/agents/ceo/search-properties";
 import { looksLikeUuid, resolveTenantProfileForAccount } from "@/lib/agents/ceo/resolve-tenant-profile";
+import { runReferencingHandoffForUser } from "@/lib/actions/referencing";
 import type { CEOToolName } from "./tools";
 import { normalizeCEOToolInput } from "./safety";
 
@@ -132,6 +133,8 @@ interface ToolCallArgs {
   /** From tool input (strings). */
   step?: string;
   decision?: string;
+  /** draft_contract — only when user explicitly forces */
+  override?: boolean | string;
 }
 
 function normalizePipelineStatus(value: unknown): string {
@@ -190,6 +193,159 @@ function parseBoolArg(v: unknown): boolean {
   if (v === false) return false;
   if (typeof v === "string") return v.toLowerCase() === "true";
   return false;
+}
+
+async function resolveTenancyIdForReferencingHandoff(
+  supabase: SupabaseClient,
+  userId: string,
+  args: ToolCallArgs,
+): Promise<{ ok: true; tenancyId: string } | { ok: false; response: string }> {
+  const tenancyIdArg = args.tenancy_id?.trim();
+  const tenantIdArg = args.tenant_id?.trim();
+  const tenantNameArg = args.tenant_name?.trim();
+
+  if (tenancyIdArg) {
+    const { data: tenancy, error: tErr } = await supabase
+      .from("tenancies")
+      .select(`id, properties!inner ( user_id )`)
+      .eq("id", tenancyIdArg)
+      .maybeSingle();
+    if (tErr || !tenancy) {
+      return { ok: false, response: JSON.stringify({ error: "Tenancy not found." }) };
+    }
+    const prop = tenancy.properties as unknown as { user_id: string };
+    if (prop.user_id !== userId) {
+      return { ok: false, response: JSON.stringify({ error: "Tenancy not found." }) };
+    }
+    return { ok: true, tenancyId: String(tenancy.id) };
+  }
+
+  if (!tenantIdArg && !tenantNameArg) {
+    return {
+      ok: false,
+      response: JSON.stringify({
+        error:
+          "Pass tenancy_id, or tenant_id (tenant profile UUID), or tenant_name to send the referencing handoff.",
+      }),
+    };
+  }
+
+  let resolvedTenantId: string | null = null;
+
+  if (tenantIdArg) {
+    if (!looksLikeUuid(tenantIdArg)) {
+      return {
+        ok: false,
+        response: JSON.stringify({
+          error: "tenant_id must be a tenant profile UUID from list_tenants. Use tenant_name for a name.",
+        }),
+      };
+    }
+    const { data: tp } = await supabase
+      .from("tenant_profiles")
+      .select("id")
+      .eq("id", tenantIdArg)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (!tp) {
+      return { ok: false, response: JSON.stringify({ error: "Tenant not found." }) };
+    }
+    resolvedTenantId = tp.id as string;
+  } else if (tenantNameArg) {
+    const tenantResolved = await resolveTenantProfileForAccount(supabase, userId, tenantNameArg);
+    if (!tenantResolved.ok) {
+      const body = tenantResolved.body;
+      if (Array.isArray(body.candidates)) {
+        return {
+          ok: false,
+          response: JSON.stringify({
+            error:
+              typeof body.error === "string"
+                ? body.error
+                : "Multiple tenants matched — ask which one or use tenant_id from list_tenants.",
+            code: "multiple_tenants",
+            candidates: body.candidates,
+          }),
+        };
+      }
+      return {
+        ok: false,
+        response: JSON.stringify({
+          error: typeof body.error === "string" ? body.error : "Could not resolve tenant.",
+        }),
+      };
+    }
+    resolvedTenantId = tenantResolved.tenantId;
+  }
+
+  if (!resolvedTenantId) {
+    return {
+      ok: false,
+      response: JSON.stringify({ error: "Could not resolve a tenant." }),
+    };
+  }
+
+  const { data: tenRows } = await supabase
+    .from("tenancies")
+    .select(`id, status, tenant_profiles ( full_name ), properties!inner ( user_id, address, city )`)
+    .eq("tenant_id", resolvedTenantId);
+
+  const owned = (tenRows ?? []).filter((r) => {
+    const p = r.properties as unknown as { user_id: string };
+    return p.user_id === userId;
+  });
+
+  if (owned.length === 0) {
+    return {
+      ok: false,
+      response: JSON.stringify({
+        error: "No tenancy found for this tenant on your account.",
+      }),
+    };
+  }
+
+  if (owned.length === 1) {
+    return { ok: true, tenancyId: String(owned[0]!.id) };
+  }
+
+  const poolForPick = owned.map((r) => ({
+    id: r.id as string,
+    status: r.status as string | null | undefined,
+    properties: r.properties,
+  })) as TenancyRowForOnboarding[];
+
+  const picked = pickTenancyForOnboarding(poolForPick, undefined);
+  if (picked.ok) {
+    return { ok: true, tenancyId: picked.tenancy_id };
+  }
+
+  const hrefFor = (id: string) => `/dashboard/tenancies/${id}`;
+  const candidates = owned.map((r) => {
+    const p = r.properties as unknown as { address: string | null; city: string | null };
+    const addr = [p.address, p.city].filter(Boolean).join(", ") || "Property";
+    const tr = r.tenant_profiles as unknown as
+      | { full_name: string | null }
+      | { full_name: string | null }[]
+      | null;
+    const tn = Array.isArray(tr) ? tr[0] : tr;
+    const name = tn?.full_name?.trim() || "Tenant";
+    const tid = String(r.id);
+    return {
+      tenancy_id: tid,
+      label: `${name} · ${addr.slice(0, 80)}`,
+      href: hrefFor(tid),
+    };
+  });
+
+  return {
+    ok: false,
+    response: JSON.stringify({
+      ok: false,
+      code: "multiple_tenancies",
+      message: "Multiple tenancies for this tenant — pick one.",
+      candidates,
+    }),
+  };
 }
 
 export async function executeCEOTool(
@@ -602,6 +758,188 @@ export async function executeCEOTool(
         tenant_id: tenantId,
         tenancy_id: newTenancyId,
         ...result,
+      });
+    }
+    case "send_referencing_handoff": {
+      const resolved = await resolveTenancyIdForReferencingHandoff(supabase, userId, args);
+      if (!resolved.ok) {
+        return resolved.response;
+      }
+      const refResult = await runReferencingHandoffForUser(resolved.tenancyId, userId, supabase, {
+        forceSend: true,
+      });
+      if (!refResult.ok) {
+        const errText = refResult.error;
+        const missingAgency =
+          /referencing agency email|set a referencing agency/i.test(errText) ||
+          errText.includes("Settings (Referencing)");
+        return JSON.stringify({
+          error: errText,
+          ...(missingAgency
+            ? {
+                code: "missing_agency_email" as const,
+                redirect_path: "/dashboard/settings?tab=email",
+              }
+            : {}),
+        });
+      }
+
+      const { data: labelRow } = await supabase
+        .from("tenancies")
+        .select(`tenant_profiles ( full_name ), properties!inner ( address, city )`)
+        .eq("id", resolved.tenancyId)
+        .maybeSingle();
+
+      let tenantNameForUi: string | null = null;
+      let propertyAddressForUi: string | null = null;
+      if (labelRow) {
+        const tp = labelRow.tenant_profiles as unknown as
+          | { full_name: string | null }
+          | { full_name: string | null }[]
+          | null;
+        const t = Array.isArray(tp) ? tp[0] : tp;
+        tenantNameForUi = t?.full_name?.trim() || null;
+        const pr = labelRow.properties as unknown as { address: string | null; city: string | null };
+        propertyAddressForUi = [pr.address, pr.city].filter(Boolean).join(", ") || null;
+      }
+
+      return JSON.stringify({
+        ok: true,
+        sent: refResult.sent,
+        message: refResult.message,
+        tenant_name: tenantNameForUi,
+        property_address: propertyAddressForUi,
+        tenancy_id: resolved.tenancyId,
+        email_log_id: refResult.emailLogId,
+        ceo_force_send: true,
+      });
+    }
+    case "prepare_referencing": {
+      const resolvedPrep = await resolveTenancyIdForReferencingHandoff(supabase, userId, args);
+      if (!resolvedPrep.ok) {
+        return resolvedPrep.response;
+      }
+      const prepTenancyId = resolvedPrep.tenancyId;
+
+      const { data: settings } = await supabase
+        .from("user_settings")
+        .select("referencing_agency_name, referencing_agency_email")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      const { data: tenancy, error: prepErr } = await supabase
+        .from("tenancies")
+        .select(
+          `
+          id,
+          onboarding_status,
+          referencing_agency_email_override,
+          referencing_last_outbound_at,
+          referencing_last_inbound_at,
+          properties!inner ( user_id ),
+          tenant_profiles ( full_name )
+        `,
+        )
+        .eq("id", prepTenancyId)
+        .maybeSingle();
+
+      if (prepErr || !tenancy) {
+        return JSON.stringify({ ok: false as const, error: "Tenancy not found." });
+      }
+
+      const prop = tenancy.properties as unknown as { user_id: string };
+      if (prop.user_id !== userId) {
+        return JSON.stringify({ ok: false as const, error: "Tenancy not found." });
+      }
+
+      const agencyEmail =
+        (tenancy.referencing_agency_email_override as string | null)?.trim() ||
+        (settings?.referencing_agency_email as string | null)?.trim() ||
+        "";
+
+      const tenancyRow = tenancy as {
+        onboarding_status?: string;
+        referencing_last_outbound_at?: string | null;
+        referencing_last_inbound_at?: string | null;
+      };
+      const onboardingStatus = String(tenancyRow.onboarding_status ?? "not_started");
+      const referencingComplete = onboardingStatus === "contract_sent" || onboardingStatus === "complete";
+      const outboundAt = tenancyRow.referencing_last_outbound_at ?? null;
+      const inboundAt = tenancyRow.referencing_last_inbound_at ?? null;
+      const handoffSent = Boolean(outboundAt && String(outboundAt).trim().length > 0);
+
+      const tenantRaw = tenancy.tenant_profiles as unknown as
+        | { full_name: string | null }
+        | { full_name: string | null }[]
+        | null;
+      const tenantRow = Array.isArray(tenantRaw) ? tenantRaw[0] : tenantRaw;
+      const tenantName = tenantRow?.full_name?.trim() || undefined;
+
+      const { data: taskRows } = await supabase
+        .from("onboarding_tasks")
+        .select("task_name, status")
+        .eq("tenancy_id", prepTenancyId)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true });
+
+      const tasks = (taskRows ?? []).map((t) => ({
+        task_name: String(t.task_name ?? ""),
+        status: String(t.status ?? ""),
+      }));
+      const tasksTotal = tasks.length;
+      const tasksComplete = tasks.filter((t) => t.status === "complete").length;
+
+      if (!agencyEmail) {
+        return JSON.stringify({
+          ok: false as const,
+          code: "missing_agency_email" as const,
+          redirect_path: "/dashboard/settings?tab=email",
+          message:
+            "Add a default referencing agency email under Settings → Email & Automation, or set an override on this tenancy.",
+        });
+      }
+
+      const agencyName = (settings?.referencing_agency_name as string | null)?.trim() || "your referencing agency";
+
+      const { data: inboundMailRows } = await supabase
+        .from("referencing_events")
+        .select("created_at, subject, body_preview, outcome")
+        .eq("user_id", userId)
+        .eq("tenancy_id", prepTenancyId)
+        .eq("direction", "inbound")
+        .order("created_at", { ascending: false })
+        .limit(8);
+
+      const recent_inbound_mail = (inboundMailRows ?? []).map((r) => ({
+        created_at: r.created_at ?? null,
+        subject: r.subject ?? null,
+        body_preview: r.body_preview ? String(r.body_preview).slice(0, 400) : null,
+        outcome: r.outcome ?? null,
+      }));
+
+      const inboundRowCount = recent_inbound_mail.length;
+      const latestPreview = recent_inbound_mail[0]?.body_preview ?? null;
+      const ceo_instruction =
+        inboundRowCount > 0
+          ? `Letora has ${inboundRowCount} inbound mail row(s) for this tenancy. Latest preview: ${String(latestPreview ?? "").slice(0, 220)}. Your reply MUST acknowledge this recorded activity — do not say the agency has not responded or that there is no inbound mail.`
+          : "No inbound referencing_events rows for this tenancy in Letora yet — if the user expects an agency email, say we have no logged inbound text for this case (webhook may have been ignored or no LETORA_REF in the reply).";
+
+      return JSON.stringify({
+        ok: true as const,
+        tenancy_id: prepTenancyId,
+        agency_email: agencyEmail,
+        agency_name: agencyName,
+        tenant_name: tenantName,
+        onboarding_status: onboardingStatus,
+        referencing_complete: referencingComplete,
+        referencing_last_outbound_at: outboundAt,
+        referencing_last_inbound_at: inboundAt,
+        handoff_sent: handoffSent,
+        recent_inbound_mail,
+        ceo_instruction,
+        tasks,
+        tasks_complete: tasksComplete,
+        tasks_total: tasksTotal,
       });
     }
     case "dispatch_maintenance_request": {
@@ -1093,7 +1431,7 @@ export async function executeCEOTool(
       let tenantQuery = supabase
         .from("tenant_profiles")
         .select(
-          "id, full_name, email, phone, tenancies(id, start_date, end_date, monthly_rent, deposit_amount, property_id, properties(name, address))",
+          "id, full_name, email, phone, tenancies(id, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, properties(name, address))",
         )
         .eq("user_id", userId);
       if (args.tenant_id) {
@@ -1116,6 +1454,7 @@ export async function executeCEOTool(
             monthly_rent?: number | string | null;
             deposit_amount?: number | string | null;
             property_id?: string | null;
+            onboarding_status?: string | null;
           }
         | undefined;
 
@@ -1123,6 +1462,18 @@ export async function executeCEOTool(
       if (!propertyId) {
         return JSON.stringify({
           error: "No active tenancy with a property linked to this tenant. Open Tenancies and link a property first.",
+        });
+      }
+
+      const onboardingStatus = String(tenancy?.onboarding_status ?? "not_started");
+      const blockedStatuses = ["not_started", "in_progress", "references"];
+      const overrideContract = parseBoolArg(args.override);
+      if (blockedStatuses.includes(onboardingStatus) && !overrideContract) {
+        return JSON.stringify({
+          error:
+            "Referencing must be completed before drafting a tenancy contract. Finish referencing (or mark it complete on the tenancy) first. If you still want a draft, ask explicitly to **force** or **override** referencing.",
+          code: "referencing_incomplete",
+          onboarding_status: onboardingStatus,
         });
       }
 
@@ -1182,6 +1533,182 @@ export async function executeCEOTool(
         contract_draft: result.text,
         saved: true,
         contract_id: inserted.id as string,
+      });
+    }
+    case "resolve_onboarding_navigation": {
+      const hrefFor = (id: string) => `/dashboard/tenancies/${id}`;
+
+      const tenancyIdArg = args.tenancy_id?.trim();
+      const tenantIdArg = args.tenant_id?.trim();
+      const tenantNameArg = args.tenant_name?.trim();
+
+      if (tenancyIdArg) {
+        const { data: tenancy, error: tErr } = await supabase
+          .from("tenancies")
+          .select(
+            `id, tenant_profiles ( full_name ), properties!inner ( user_id, address, city )`,
+          )
+          .eq("id", tenancyIdArg)
+          .maybeSingle();
+
+        if (tErr || !tenancy) {
+          return JSON.stringify({ ok: false, code: "not_found", message: "Tenancy not found." });
+        }
+        const prop = tenancy.properties as unknown as { user_id: string };
+        if (prop.user_id !== userId) {
+          return JSON.stringify({ ok: false, code: "not_found", message: "Tenancy not found." });
+        }
+        const tr = tenancy.tenant_profiles as unknown as
+          | { full_name: string | null }
+          | { full_name: string | null }[]
+          | null;
+        const tn = Array.isArray(tr) ? tr[0] : tr;
+        return JSON.stringify({
+          ok: true,
+          href: hrefFor(String(tenancy.id)),
+          tenancy_id: tenancy.id,
+          tenant_name: tn?.full_name?.trim() || null,
+        });
+      }
+
+      if (!tenantIdArg && !tenantNameArg) {
+        return JSON.stringify({
+          ok: false,
+          code: "needs_tenant",
+          message:
+            "Pass tenancy_id, tenant_id, or tenant_name — or ask the user which tenant they mean.",
+        });
+      }
+
+      let resolvedTenantId: string | null = null;
+
+      if (tenantIdArg) {
+        if (!looksLikeUuid(tenantIdArg)) {
+          return JSON.stringify({
+            ok: false,
+            code: "invalid_input",
+            message: "tenant_id must be a tenant profile UUID from list_tenants. Use tenant_name for a name.",
+          });
+        }
+        const { data: tp } = await supabase
+          .from("tenant_profiles")
+          .select("id")
+          .eq("id", tenantIdArg)
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (!tp) {
+          return JSON.stringify({ ok: false, code: "not_found", message: "Tenant not found." });
+        }
+        resolvedTenantId = tp.id as string;
+      } else if (tenantNameArg) {
+        const tenantResolved = await resolveTenantProfileForAccount(supabase, userId, tenantNameArg);
+        if (!tenantResolved.ok) {
+          const body = tenantResolved.body;
+          if (Array.isArray(body.candidates)) {
+            return JSON.stringify({
+              ok: false,
+              code: "multiple_tenants",
+              message:
+                typeof body.error === "string"
+                  ? body.error
+                  : "Multiple tenants matched — ask which one or use tenant_id from list_tenants.",
+              candidates: body.candidates,
+            });
+          }
+          return JSON.stringify({
+            ok: false,
+            code: "needs_tenant",
+            message: typeof body.error === "string" ? body.error : "Could not resolve tenant.",
+          });
+        }
+        resolvedTenantId = tenantResolved.tenantId;
+      }
+
+      if (!resolvedTenantId) {
+        return JSON.stringify({
+          ok: false,
+          code: "needs_tenant",
+          message: "Could not resolve a tenant.",
+        });
+      }
+
+      const { data: tenRows } = await supabase
+        .from("tenancies")
+        .select(`id, status, tenant_profiles ( full_name ), properties!inner ( user_id, address, city )`)
+        .eq("tenant_id", resolvedTenantId);
+
+      const owned = (tenRows ?? []).filter((r) => {
+        const p = r.properties as unknown as { user_id: string };
+        return p.user_id === userId;
+      });
+
+      if (owned.length === 0) {
+        return JSON.stringify({
+          ok: false,
+          code: "not_found",
+          message: "No tenancy found for this tenant on your account.",
+        });
+      }
+
+      if (owned.length === 1) {
+        const row = owned[0]!;
+        const tr = row.tenant_profiles as unknown as
+          | { full_name: string | null }
+          | { full_name: string | null }[]
+          | null;
+        const tn = Array.isArray(tr) ? tr[0] : tr;
+        return JSON.stringify({
+          ok: true,
+          href: hrefFor(String(row.id)),
+          tenancy_id: row.id,
+          tenant_name: tn?.full_name?.trim() || null,
+        });
+      }
+
+      const poolForPick = owned.map((r) => ({
+        id: r.id as string,
+        status: r.status as string | null | undefined,
+        properties: r.properties,
+      })) as TenancyRowForOnboarding[];
+
+      const picked = pickTenancyForOnboarding(poolForPick, undefined);
+      if (picked.ok) {
+        const row = owned.find((r) => r.id === picked.tenancy_id);
+        const tr = row?.tenant_profiles as unknown as
+          | { full_name: string | null }
+          | { full_name: string | null }[]
+          | null;
+        const tn = Array.isArray(tr) ? tr[0] : tr;
+        return JSON.stringify({
+          ok: true,
+          href: hrefFor(picked.tenancy_id),
+          tenancy_id: picked.tenancy_id,
+          tenant_name: tn?.full_name?.trim() || null,
+        });
+      }
+
+      const candidates = owned.map((r) => {
+        const p = r.properties as unknown as { address: string | null; city: string | null };
+        const addr = [p.address, p.city].filter(Boolean).join(", ") || "Property";
+        const tr = r.tenant_profiles as unknown as
+          | { full_name: string | null }
+          | { full_name: string | null }[]
+          | null;
+        const tn = Array.isArray(tr) ? tr[0] : tr;
+        const name = tn?.full_name?.trim() || "Tenant";
+        const tid = String(r.id);
+        return {
+          tenancy_id: tid,
+          label: `${name} · ${addr.slice(0, 80)}`,
+          href: hrefFor(tid),
+        };
+      });
+
+      return JSON.stringify({
+        ok: false,
+        code: "multiple_tenancies",
+        message: "Multiple tenancies for this tenant — pick one.",
+        candidates,
       });
     }
     case "list_tenants": {
