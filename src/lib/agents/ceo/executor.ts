@@ -104,6 +104,111 @@ function pickTenancyForOnboarding(
   };
 }
 
+type DraftContractTenancyBundle = {
+  tenantRow: {
+    id: string;
+    full_name: string | null;
+    email: string | null;
+    phone: string | null;
+  };
+  resolvedTenancyId: string;
+  tenancyData: {
+    start_date: string | null;
+    end_date: string | null;
+    monthly_rent: number | string | null;
+    deposit_amount: number | string | null;
+    property_id: string;
+    onboarding_status: string | null;
+  };
+  propertyLabel: string;
+};
+
+/** When the user gives a street (e.g. “101 Billionaires Row”) but the model omits tenant_name. */
+async function resolveDraftContractByPropertyHint(
+  supabase: SupabaseClient,
+  userId: string,
+  hint: string,
+  optionalTenantName: string | null,
+): Promise<{ ok: true; data: DraftContractTenancyBundle } | { ok: false; json: string }> {
+  const { data: tenRows } = await supabase
+    .from("tenancies")
+    .select(
+      `id, status, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, tenant_profiles ( id, full_name, email, phone ), properties!inner ( user_id, name, address, city )`,
+    )
+    .limit(500);
+
+  const owned = (tenRows ?? []).filter((r) => {
+    const p = r.properties as unknown as { user_id: string };
+    return p.user_id === userId;
+  });
+
+  let pool = owned.filter((r) => tenancyMatchesOnboardingHint(r as TenancyRowForOnboarding, hint));
+  if (optionalTenantName?.trim()) {
+    const frag = optionalTenantName.trim().toLowerCase();
+    const words = frag.split(/\s+/).filter((w) => w.length >= 2);
+    pool = pool.filter((r) => {
+      const tr = r.tenant_profiles as unknown as { full_name: string | null } | null | { full_name: string | null }[];
+      const tp = Array.isArray(tr) ? tr[0] : tr;
+      const fn = (tp?.full_name ?? "").toLowerCase();
+      return fn.includes(frag) || (words.length > 0 && words.every((w) => fn.includes(w)));
+    });
+  }
+
+  if (pool.length === 0) {
+    return {
+      ok: false,
+      json: JSON.stringify({
+        error:
+          "No tenancy matched that property hint. Try list_tenants or pass tenancy_id from the tenancy screen.",
+        code: "property_not_found",
+      }),
+    };
+  }
+  if (pool.length > 1) {
+    return {
+      ok: false,
+      json: JSON.stringify({
+        error:
+          "Multiple tenancies matched that property — pass tenant_name or tenancy_id from list_tenants.",
+        code: "ambiguous_tenancy",
+        candidates: pool.map((r) => mapTenancyCandidate(r as TenancyRowForOnboarding)),
+      }),
+    };
+  }
+
+  const chosen = pool[0]!;
+  const tr = chosen.tenant_profiles as unknown as
+    | { id: string; full_name: string | null; email: string | null; phone: string | null }
+    | { id: string; full_name: string | null; email: string | null; phone: string | null }[]
+    | null;
+  const tp = Array.isArray(tr) ? tr[0] : tr;
+  if (!tp?.id) {
+    return {
+      ok: false,
+      json: JSON.stringify({ error: "Tenancy has no tenant profile linked.", code: "invalid_tenancy" }),
+    };
+  }
+  const p = chosen.properties as unknown as { name: string | null; address: string | null; city: string | null };
+  const propertyLabel = [p.name, p.address, p.city].filter(Boolean).join(", ") || "Property";
+
+  return {
+    ok: true,
+    data: {
+      tenantRow: tp,
+      resolvedTenancyId: String(chosen.id),
+      tenancyData: {
+        start_date: chosen.start_date as string | null,
+        end_date: chosen.end_date as string | null,
+        monthly_rent: chosen.monthly_rent as number | string | null,
+        deposit_amount: chosen.deposit_amount as number | string | null,
+        property_id: String(chosen.property_id),
+        onboarding_status: chosen.onboarding_status as string | null,
+      },
+      propertyLabel,
+    },
+  };
+}
+
 const defaultSupabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
 interface ToolCallArgs {
@@ -1439,9 +1544,7 @@ export async function executeCEOTool(
         phone: string | null;
       };
 
-      let tenantRow: TenantRow;
-      let resolvedTenancyId: string;
-      let tenancyData: {
+      type TenancyDataShape = {
         start_date: string | null;
         end_date: string | null;
         monthly_rent: number | string | null;
@@ -1449,7 +1552,11 @@ export async function executeCEOTool(
         property_id: string;
         onboarding_status: string | null;
       };
-      let propertyLabel: string;
+
+      let tenantRow: TenantRow | undefined;
+      let resolvedTenancyId: string | undefined;
+      let tenancyData: TenancyDataShape | undefined;
+      let propertyLabel: string | undefined;
 
       if (tenancyIdArg) {
         const { data: row, error: rowErr } = await supabase
@@ -1502,91 +1609,125 @@ export async function executeCEOTool(
       } else {
         const tid = args.tenant_id?.trim();
         const tname = args.tenant_name?.trim();
-        if (!tid && !tname) {
+
+        let loadedFromProperty = false;
+
+        if (!tid && !tname && propertyHint) {
+          const pr = await resolveDraftContractByPropertyHint(supabase, userId, propertyHint, null);
+          if (!pr.ok) return pr.json;
+          tenantRow = pr.data.tenantRow;
+          resolvedTenancyId = pr.data.resolvedTenancyId;
+          tenancyData = pr.data.tenancyData;
+          propertyLabel = pr.data.propertyLabel;
+          loadedFromProperty = true;
+        } else if (!tid && !tname) {
           return JSON.stringify({
             error:
-              "Pass tenant_name, tenant_id (UUID from list_tenants), or tenancy_id (from onboarding resume / list_tenants).",
+              "Pass tenant_name, tenant_id (UUID from list_tenants), tenancy_id, or onboarding_property_hint (street or city).",
             code: "missing_tenant",
           });
         }
-        const raw = tid ?? tname ?? "";
-        const resolved = await resolveTenantProfileForAccount(supabase, userId, raw);
-        if (!resolved.ok) {
-          return JSON.stringify({
-            ...resolved.body,
-            code: Array.isArray(resolved.body.candidates) ? "multiple_tenants" : "tenant_not_found",
-          });
+
+        if (!loadedFromProperty) {
+          const raw = tid ?? tname ?? "";
+          const resolved = await resolveTenantProfileForAccount(supabase, userId, raw);
+          if (!resolved.ok) {
+            if (propertyHint) {
+              const pr = await resolveDraftContractByPropertyHint(supabase, userId, propertyHint, tname ?? null);
+              if (!pr.ok) return pr.json;
+              tenantRow = pr.data.tenantRow;
+              resolvedTenancyId = pr.data.resolvedTenancyId;
+              tenancyData = pr.data.tenancyData;
+              propertyLabel = pr.data.propertyLabel;
+              loadedFromProperty = true;
+            } else {
+              return JSON.stringify({
+                ...resolved.body,
+                code: Array.isArray(resolved.body.candidates) ? "multiple_tenants" : "tenant_not_found",
+              });
+            }
+          }
+
+          if (!loadedFromProperty && resolved.ok) {
+            const { data: tp } = await supabase
+              .from("tenant_profiles")
+              .select("id, full_name, email, phone")
+              .eq("id", resolved.tenantId)
+              .maybeSingle();
+
+            if (!tp) {
+              return JSON.stringify({
+                error: "Could not load tenant profile after resolve.",
+                code: "tenant_not_found",
+              });
+            }
+            tenantRow = tp as TenantRow;
+
+            const { data: tenRows } = await supabase
+              .from("tenancies")
+              .select(
+                `id, status, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, properties!inner ( user_id, name, address, city )`,
+              )
+              .eq("tenant_id", resolved.tenantId);
+
+            const owned = (tenRows ?? []).filter((r) => {
+              const p = r.properties as unknown as { user_id: string };
+              return p.user_id === userId;
+            });
+
+            if (owned.length === 0) {
+              return JSON.stringify({
+                error:
+                  "No tenancy with a property on your account for this tenant. Open Tenancies and link a property first.",
+                code: "no_tenancy",
+              });
+            }
+
+            const pool = owned.map((r) => ({
+              id: r.id as string,
+              status: r.status as string | null | undefined,
+              properties: r.properties,
+            })) as TenancyRowForOnboarding[];
+
+            const picked = pickTenancyForOnboarding(pool, propertyHint);
+            if (!picked.ok) {
+              return JSON.stringify({
+                error: picked.error,
+                code: "ambiguous_tenancy",
+                candidates: picked.candidates,
+              });
+            }
+
+            const chosen = owned.find((r) => String(r.id) === picked.tenancy_id);
+            if (!chosen) {
+              return JSON.stringify({ error: "Could not load the chosen tenancy.", code: "internal" });
+            }
+
+            const p = chosen.properties as unknown as {
+              name: string | null;
+              address: string | null;
+              city: string | null;
+            };
+            propertyLabel = [p.name, p.address, p.city].filter(Boolean).join(", ") || "Property";
+            resolvedTenancyId = String(chosen.id);
+            tenancyData = {
+              start_date: chosen.start_date as string | null,
+              end_date: chosen.end_date as string | null,
+              monthly_rent: chosen.monthly_rent as number | string | null,
+              deposit_amount: chosen.deposit_amount as number | string | null,
+              property_id: String(chosen.property_id),
+              onboarding_status: chosen.onboarding_status as string | null,
+            };
+          }
         }
+      }
 
-        const { data: tp } = await supabase
-          .from("tenant_profiles")
-          .select("id, full_name, email, phone")
-          .eq("id", resolved.tenantId)
-          .maybeSingle();
-
-        if (!tp) {
-          return JSON.stringify({
-            error: "Could not load tenant profile after resolve.",
-            code: "tenant_not_found",
-          });
-        }
-        tenantRow = tp as TenantRow;
-
-        const { data: tenRows } = await supabase
-          .from("tenancies")
-          .select(
-            `id, status, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, properties!inner ( user_id, name, address, city )`,
-          )
-          .eq("tenant_id", resolved.tenantId);
-
-        const owned = (tenRows ?? []).filter((r) => {
-          const p = r.properties as unknown as { user_id: string };
-          return p.user_id === userId;
+      if (!tenantRow || !tenancyData || !resolvedTenancyId || !propertyLabel) {
+        return JSON.stringify({
+          error:
+            "Could not resolve tenant or tenancy for this contract. Try list_tenants, pass tenancy_id, or give tenant name and/or a property hint (street or city).",
+          code: "resolve_failed",
         });
-
-        if (owned.length === 0) {
-          return JSON.stringify({
-            error:
-              "No tenancy with a property on your account for this tenant. Open Tenancies and link a property first.",
-            code: "no_tenancy",
-          });
-        }
-
-        const pool = owned.map((r) => ({
-          id: r.id as string,
-          status: r.status as string | null | undefined,
-          properties: r.properties,
-        })) as TenancyRowForOnboarding[];
-
-        const picked = pickTenancyForOnboarding(pool, propertyHint);
-        if (!picked.ok) {
-          return JSON.stringify({
-            error: picked.error,
-            code: "ambiguous_tenancy",
-            candidates: picked.candidates,
-          });
-        }
-
-        const chosen = owned.find((r) => String(r.id) === picked.tenancy_id);
-        if (!chosen) {
-          return JSON.stringify({ error: "Could not load the chosen tenancy.", code: "internal" });
-        }
-
-        const p = chosen.properties as unknown as {
-          name: string | null;
-          address: string | null;
-          city: string | null;
-        };
-        propertyLabel = [p.name, p.address, p.city].filter(Boolean).join(", ") || "Property";
-        resolvedTenancyId = String(chosen.id);
-        tenancyData = {
-          start_date: chosen.start_date as string | null,
-          end_date: chosen.end_date as string | null,
-          monthly_rent: chosen.monthly_rent as number | string | null,
-          deposit_amount: chosen.deposit_amount as number | string | null,
-          property_id: String(chosen.property_id),
-          onboarding_status: chosen.onboarding_status as string | null,
-        };
       }
 
       const onboardingStatus = String(tenancyData.onboarding_status ?? "not_started");

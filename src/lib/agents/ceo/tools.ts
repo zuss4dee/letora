@@ -320,7 +320,7 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
   {
     name: "draft_contract",
     description:
-      "Draft a tenancy (AST) for a tenant and save a draft row in Contracts (review in /dashboard/contracts). Prefer tenancy_id from list_tenants or start_tenant_onboarding resume when available; otherwise tenant_name or tenant_id (tenant profile UUID from list_tenants).",
+      "Draft a tenancy (AST) for a tenant and save a draft row in Contracts (review in /dashboard/contracts). Prefer tenancy_id from list_tenants or start_tenant_onboarding resume when available. Otherwise use tenant_name or tenant_id (tenant profile UUID from list_tenants). You may pass onboarding_property_hint alone (street or city substring) — the server resolves a unique tenancy on the account; combine with tenant_name when several tenancies could match.",
     input_schema: {
       type: "object",
       properties: {
@@ -340,7 +340,7 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
         onboarding_property_hint: {
           type: "string",
           description:
-            "Street or city when the tenant has multiple tenancies — narrows which property to use.",
+            "Street or city substring (e.g. “Billionaires Row”, postcode). Narrows when the tenant has multiple tenancies; can also resolve a unique tenancy when tenant_name is unknown if the hint matches one property on the account.",
         },
         override: {
           type: "boolean",

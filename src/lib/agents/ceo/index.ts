@@ -17,6 +17,7 @@ import {
   classifyCEOIntent,
   getLatestUserContent,
   isAffirmativeConfirmation,
+  normalizeCEOToolInput,
   pendingActionFromToolUseBlocks,
   stripCeoHexUuidsFromText,
   toolsRequireUserConfirmation,
@@ -36,6 +37,8 @@ import {
 } from "./intent-router";
 import {
   inferOnboardingForFromConversation,
+  inferPropertyAddressHintFromConversation,
+  inferTenantOrContractNameFromConversation,
   mergeDraftContractInput,
   mergeEnrichedOnboardingInput,
 } from "./enrich-onboarding-input";
@@ -514,7 +517,12 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
         call.name === "start_tenant_onboarding"
           ? mergeEnrichedOnboardingInput(call.input, inferredOnboardingName)
           : call.name === "draft_contract"
-            ? mergeDraftContractInput(call.input, inferredOnboardingName)
+            ? mergeDraftContractInput(
+                call.input,
+                inferTenantOrContractNameFromConversation(contextMessages),
+                inferPropertyAddressHintFromConversation(contextMessages),
+                null,
+              )
             : call.input;
       const raw = await executeCEOTool(call.name, input, userId, supabase);
       rawBatch.push({ name: call.name, raw });
@@ -606,9 +614,10 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
 
   /** Same pattern as referencing: prefetch resume JSON so the model cannot “invent” missing tenants. */
   let onboardingPrefetchRaw: string | null = null;
-  const inferredOnboardingName = inferOnboardingForFromConversation(contextMessages);
+  const inferredTenantName = inferTenantOrContractNameFromConversation(contextMessages);
+  const inferredPropertyHint = inferPropertyAddressHintFromConversation(contextMessages);
   const wantsOnboardingPrefetch =
-    Boolean(inferredOnboardingName) &&
+    Boolean(inferredTenantName) &&
     !route.wantsReferencingStatus &&
     (route.wantsContinueOnboarding ||
       route.wantsOnboardingByPlainName ||
@@ -618,14 +627,14 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
         latestUser,
       ));
 
-  if (wantsOnboardingPrefetch && inferredOnboardingName) {
+  if (wantsOnboardingPrefetch && inferredTenantName) {
     onboardingPrefetchRaw = await executeCEOTool(
       "start_tenant_onboarding",
-      { onboarding_for: inferredOnboardingName },
+      { onboarding_for: inferredTenantName },
       userId,
       supabase,
     );
-    effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n**Server-fetched onboarding (authoritative — your answer MUST match this JSON; never claim the tenant cannot be resolved by name):**\n${onboardingPrefetchRaw}\n\nYou MUST use **tenancy_id**, **pending_task_names**, and **referencing_complete** from this JSON. To draft a contract in chat, call **draft_contract** with **tenancy_id** when present, or **tenant_name** as **${inferredOnboardingName}**. **Do not** invent “backend issues”, “tenant profile not loading”, or “draft manually from /dashboard/contracts” unless a tool JSON returned a real **error** field.`;
+    effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n**Server-fetched onboarding (authoritative — your answer MUST match this JSON; never claim the tenant cannot be resolved by name):**\n${onboardingPrefetchRaw}\n\n**Mandatory:** The server may auto-fill **tenancy_id** on **draft_contract** from this JSON — you do not need UUIDs from the user. Use **tenancy_id**, **pending_task_names**, and **referencing_complete** from this JSON. To draft a contract in chat, call **draft_contract** (args can be empty if this block is present). Prefer **tenant_name** as **${inferredTenantName}** and **onboarding_property_hint** when the user gave a street (e.g. Billionaires Row). **Do not** invent “backend issues”, “tenant profile not loading”, or “draft manually from /dashboard/contracts” unless a tool JSON returned a real **error** field.`;
   }
 
   const intent = classifyCEOIntent(latestUser);
@@ -722,7 +731,16 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
     const executed = await Promise.all(
       toolUseBlocks.map(async (block) => {
         const toolName = block.name as CEOToolName;
-        const args = block.input as Record<string, string>;
+        const normalized = normalizeCEOToolInput(block.input) as Record<string, string>;
+        const args =
+          toolName === "draft_contract"
+            ? mergeDraftContractInput(
+                normalized,
+                inferredTenantName,
+                inferredPropertyHint,
+                onboardingPrefetchRaw,
+              )
+            : normalized;
         const result = await executeCEOTool(toolName, args, userId, supabase);
         if (toolName === "get_leads_summary") {
           authoritativeLeadsRaw = result;

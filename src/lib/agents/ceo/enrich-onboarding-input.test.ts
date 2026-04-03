@@ -60,7 +60,7 @@ describe("mergeEnrichedOnboardingInput", () => {
 
 describe("mergeDraftContractInput", () => {
   it("fills tenant_name when tenancy_id/tenant_id/tenant_name are empty", () => {
-    const out = mergeDraftContractInput({}, "Alexis Adeosun");
+    const out = mergeDraftContractInput({}, "Alexis Adeosun", null, null);
     expect(out.tenant_name).toBe("Alexis Adeosun");
   });
 
@@ -68,6 +68,8 @@ describe("mergeDraftContractInput", () => {
     const out = mergeDraftContractInput(
       { tenancy_id: "8d940bd9-309d-4e53-9a86-b057e221b268" },
       "Someone Else",
+      null,
+      null,
     );
     expect(out.tenant_name).toBeUndefined();
     expect(out.tenancy_id).toBe("8d940bd9-309d-4e53-9a86-b057e221b268");
