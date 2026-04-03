@@ -82,4 +82,19 @@ describe("routeCEOIntent — tenant list phrasing", () => {
     expect(hint).toContain("prepare_referencing");
     expect(hint).toContain("recent_inbound_mail");
   });
+
+  it("sets wantsContinueOnboarding for “continue onboarding” and prioritizes start_tenant_onboarding", () => {
+    const r = routeCEOIntent("continue onboarding for Alexis");
+    expect(r.wantsContinueOnboarding).toBe(true);
+    expect(r.recommendedTools[0]).toBe("start_tenant_onboarding");
+    const hint = formatRouterHintForSystem(r);
+    expect(hint).toContain("start_tenant_onboarding");
+    expect(hint).toContain("pending_task_names");
+  });
+
+  it("normalizes onbosrding typo so onboarding routing still works", () => {
+    const r = routeCEOIntent("continue onbosrding for Alexis");
+    expect(r.wantsContinueOnboarding).toBe(true);
+    expect(r.wantsOnboardingByPlainName).toBe(true);
+  });
 });

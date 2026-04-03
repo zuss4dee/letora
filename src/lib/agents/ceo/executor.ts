@@ -3,7 +3,7 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { runLeadQualifierAgent } from "@/lib/agents/lead-qualifier";
 import { runMaintenanceAgent } from "@/lib/agents/maintenance-agent";
 import { runRentChaserAgent } from "@/lib/agents/rent-chaser";
-import { runTenantOnboardingAgent } from "@/lib/agents/tenant-onboarding";
+import { getOnboardingChatSnapshotForTenancy, runTenantOnboardingAgent } from "@/lib/agents/tenant-onboarding";
 import { runLLM } from "@/lib/llm/router";
 import { sendEmailTool } from "@/lib/tools/send-email";
 import { labelPropertyRow, rankPropertySearch, type PropertySearchRow } from "@/lib/agents/ceo/search-properties";
@@ -1538,6 +1538,12 @@ export async function executeCEOTool(
     case "resolve_onboarding_navigation": {
       const hrefFor = (id: string) => `/dashboard/tenancies/${id}`;
 
+      const mergeOnboardingSnapshot = async (tenancyId: string, payload: Record<string, unknown>) => {
+        const snap = await getOnboardingChatSnapshotForTenancy(supabase, userId, tenancyId);
+        if (!snap) return JSON.stringify(payload);
+        return JSON.stringify({ ...payload, ...snap });
+      };
+
       const tenancyIdArg = args.tenancy_id?.trim();
       const tenantIdArg = args.tenant_id?.trim();
       const tenantNameArg = args.tenant_name?.trim();
@@ -1563,7 +1569,7 @@ export async function executeCEOTool(
           | { full_name: string | null }[]
           | null;
         const tn = Array.isArray(tr) ? tr[0] : tr;
-        return JSON.stringify({
+        return mergeOnboardingSnapshot(String(tenancy.id), {
           ok: true,
           href: hrefFor(String(tenancy.id)),
           tenancy_id: tenancy.id,
@@ -1657,7 +1663,7 @@ export async function executeCEOTool(
           | { full_name: string | null }[]
           | null;
         const tn = Array.isArray(tr) ? tr[0] : tr;
-        return JSON.stringify({
+        return mergeOnboardingSnapshot(String(row.id), {
           ok: true,
           href: hrefFor(String(row.id)),
           tenancy_id: row.id,
@@ -1679,7 +1685,7 @@ export async function executeCEOTool(
           | { full_name: string | null }[]
           | null;
         const tn = Array.isArray(tr) ? tr[0] : tr;
-        return JSON.stringify({
+        return mergeOnboardingSnapshot(picked.tenancy_id, {
           ok: true,
           href: hrefFor(picked.tenancy_id),
           tenancy_id: picked.tenancy_id,

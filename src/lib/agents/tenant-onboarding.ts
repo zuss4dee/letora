@@ -14,8 +14,20 @@ export type TenantOnboardingResult = {
   success: boolean;
   agentRunId: string | null;
   tasksCreated: number;
-  emailStatus: "sent" | "draft" | "failed";
+  emailStatus: "sent" | "draft" | "failed" | "skipped";
   message?: string;
+  /** Present when onboarding was already started — CEO should use tasks, not restart the agent. */
+  mode?: "resume";
+  tenancy_id?: string;
+  tenant_name?: string;
+  property_address?: string;
+  onboarding_status?: string;
+  referencing_complete?: boolean;
+  tasks?: Array<{ task_name: string; status: string }>;
+  tasks_complete?: number;
+  tasks_total?: number;
+  pending_task_names?: string[];
+  ceo_resume_hint?: string;
 };
 
 type TenancyContext = {
@@ -88,6 +100,186 @@ function buildWelcomeEmail(ctx: TenancyContext): { subject: string; body: string
   };
 }
 
+/** If a welcome email was actually sent (email_logs) but the task row stayed pending, mark it complete. */
+async function syncWelcomeEmailTaskIfSent(
+  supabase: SupabaseClient,
+  tenancyId: string,
+  userId: string,
+  tenantEmail: string | null,
+  sinceIso: string,
+): Promise<void> {
+  const email = tenantEmail?.trim();
+  if (!email) return;
+
+  const { data: pendingWelcome } = await supabase
+    .from("onboarding_tasks")
+    .select("id")
+    .eq("tenancy_id", tenancyId)
+    .eq("user_id", userId)
+    .eq("task_name", "Welcome email")
+    .eq("status", "pending")
+    .maybeSingle();
+
+  if (!pendingWelcome) return;
+
+  const { data: sent } = await supabase
+    .from("email_logs")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("agent_type", "onboarding")
+    .eq("status", "sent")
+    .ilike("to_email", email)
+    .gte("created_at", sinceIso)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!sent?.id) return;
+
+  const now = new Date().toISOString();
+  await supabase
+    .from("onboarding_tasks")
+    .update({
+      status: "complete",
+      completed_at: now,
+      email_log_id: sent.id,
+    })
+    .eq("tenancy_id", tenancyId)
+    .eq("user_id", userId)
+    .eq("task_name", "Welcome email")
+    .eq("status", "pending");
+}
+
+/**
+ * Live onboarding checklist + referencing flags for CEO tools (resume, navigation).
+ * Syncs welcome-email task from email_logs when appropriate so dashboard ticks match chat.
+ */
+export async function getOnboardingChatSnapshotForTenancy(
+  supabase: SupabaseClient,
+  userId: string,
+  tenancyId: string,
+): Promise<{
+  onboarding_status: string;
+  referencing_complete: boolean;
+  tasks: Array<{ task_name: string; status: string }>;
+  tasks_complete: number;
+  tasks_total: number;
+  pending_task_names: string[];
+  ceo_resume_hint: string;
+} | null> {
+  const { data: row, error } = await supabase
+    .from("tenancies")
+    .select(
+      `
+      id,
+      created_at,
+      onboarding_status,
+      properties!inner ( user_id ),
+      tenant_profiles ( full_name, email )
+    `,
+    )
+    .eq("id", tenancyId)
+    .maybeSingle();
+
+  if (error || !row) return null;
+
+  const propRaw = row.properties as unknown;
+  const property = (Array.isArray(propRaw) ? propRaw[0] : propRaw) as { user_id: string };
+  if (property.user_id !== userId) return null;
+
+  const tenRaw = row.tenant_profiles as unknown;
+  const tenant = (Array.isArray(tenRaw) ? tenRaw[0] : tenRaw) as {
+    full_name: string | null;
+    email: string | null;
+  } | null;
+
+  if (!tenant) return null;
+
+  const onboardingStatus = String((row as { onboarding_status?: string }).onboarding_status ?? "not_started");
+  const createdAt =
+    typeof (row as { created_at?: string }).created_at === "string" &&
+    (row as { created_at: string }).created_at.length > 0
+      ? (row as { created_at: string }).created_at
+      : new Date(0).toISOString();
+
+  await syncWelcomeEmailTaskIfSent(supabase, tenancyId, userId, tenant.email, createdAt);
+
+  const { data: taskRows } = await supabase
+    .from("onboarding_tasks")
+    .select("task_name, status")
+    .eq("tenancy_id", tenancyId)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: true });
+
+  const tasks = (taskRows ?? []).map((t) => ({
+    task_name: String(t.task_name ?? ""),
+    status: String(t.status ?? ""),
+  }));
+  const tasksTotal = tasks.length;
+  const tasksComplete = tasks.filter((t) => t.status === "complete").length;
+  const pending = tasks.filter((t) => t.status !== "complete").map((t) => t.task_name);
+
+  const referencingComplete = onboardingStatus === "contract_sent" || onboardingStatus === "complete";
+
+  const ceo_resume_hint = referencingComplete
+    ? "Referencing is already done (**referencing_complete**: true). Do **not** say the user must wait for the referencing agency. List **pending_task_names** and ask if they want help with the next items (e.g. draft contract with **draft_contract**, then move-in email when contract work is done)."
+    : "Summarize **pending_task_names** and offer help with the next steps.";
+
+  return {
+    onboarding_status: onboardingStatus,
+    referencing_complete: referencingComplete,
+    tasks,
+    tasks_complete: tasksComplete,
+    tasks_total: tasksTotal,
+    pending_task_names: pending,
+    ceo_resume_hint,
+  };
+}
+
+async function buildOnboardingResumeResult(
+  supabase: SupabaseClient,
+  tenancyId: string,
+  userId: string,
+  row: Record<string, unknown>,
+  tenant: { full_name: string | null; email: string | null },
+  propertyAddress: string,
+): Promise<TenantOnboardingResult> {
+  const snap = await getOnboardingChatSnapshotForTenancy(supabase, userId, tenancyId);
+  if (!snap) {
+    return {
+      success: false,
+      agentRunId: null,
+      tasksCreated: 0,
+      emailStatus: "failed",
+      message: "Could not load onboarding tasks",
+    };
+  }
+
+  const tenantName = tenant.full_name?.trim() || "Tenant";
+  const pendingLine = snap.pending_task_names.length > 0 ? snap.pending_task_names.join("; ") : "none";
+
+  return {
+    success: true,
+    mode: "resume",
+    agentRunId: null,
+    tasksCreated: 0,
+    emailStatus: "skipped",
+    tenancy_id: tenancyId,
+    tenant_name: tenantName,
+    property_address: propertyAddress,
+    onboarding_status: snap.onboarding_status,
+    referencing_complete: snap.referencing_complete,
+    tasks: snap.tasks,
+    tasks_complete: snap.tasks_complete,
+    tasks_total: snap.tasks_total,
+    pending_task_names: snap.pending_task_names,
+    message: snap.referencing_complete
+      ? `Onboarding in progress for **${tenantName}** at ${propertyAddress}. Referencing is complete on this tenancy. Remaining checklist: ${pendingLine}.`
+      : `Onboarding in progress for **${tenantName}** at ${propertyAddress}. Remaining checklist: ${pendingLine}.`,
+    ceo_resume_hint: snap.ceo_resume_hint,
+  };
+}
+
 export async function runTenantOnboardingAgent(
   tenancyId: string,
   userId: string,
@@ -114,6 +306,7 @@ export async function runTenantOnboardingAgent(
       monthly_rent,
       deposit_amount,
       onboarding_status,
+      created_at,
       properties!inner ( user_id, address ),
       tenant_profiles ( full_name, email, phone )
     `,
@@ -164,14 +357,18 @@ export async function runTenantOnboardingAgent(
   }
 
   const onboardingStatus = (row as { onboarding_status?: string }).onboarding_status ?? "not_started";
+  const propertyAddressEarly =
+    normalizePropertyAddressLabel(property.address?.trim() ?? "") || "the property";
+
   if (onboardingStatus !== "not_started") {
-    return {
-      success: false,
-      agentRunId: null,
-      tasksCreated: 0,
-      emailStatus: "failed",
-      message: "Onboarding already started or completed for this tenancy",
-    };
+    return buildOnboardingResumeResult(
+      supabase,
+      tenancyId,
+      userId,
+      row as Record<string, unknown>,
+      tenant,
+      propertyAddressEarly,
+    );
   }
 
   const startDateIso = row.start_date ?? new Date().toISOString().slice(0, 10);
@@ -387,21 +584,21 @@ export async function runTenantOnboardingAgent(
     {
       tenancy_id: tenancyId,
       user_id: userId,
-      task_name: "Send move-in instructions email",
-      task_type: "email",
-      status: "pending",
-      email_log_id: null,
-      due_date: moveInEmailDue,
-      completed_at: null,
-    },
-    {
-      tenancy_id: tenancyId,
-      user_id: userId,
       task_name: "Prepare tenancy agreement (contract not sent by agent)",
       task_type: "manual",
       status: "pending",
       email_log_id: null,
       due_date: null,
+      completed_at: null,
+    },
+    {
+      tenancy_id: tenancyId,
+      user_id: userId,
+      task_name: "Send move-in instructions email",
+      task_type: "email",
+      status: "pending",
+      email_log_id: null,
+      due_date: moveInEmailDue,
       completed_at: null,
     },
   ];

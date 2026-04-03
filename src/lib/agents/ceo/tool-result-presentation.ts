@@ -13,7 +13,7 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
   search_properties:
     "List matching properties with their **id** (UUID), human-readable label, and hint if multiple matches — tell the user to pick the right one before mutating tools. Never treat a unit number as a UUID.",
   start_tenant_onboarding:
-    "Confirm who onboarding started for, task count, and welcome email status (draft vs sent). **Letora has no tenant-facing portal.** Tenants are contacted by **email** only. Onboarding **tasks** in Letora are for the **landlord** (dashboard) to track — do not say tenants will see a checklist in a portal or app. If the tool returned candidates (multiple tenancies), ask for street/city — do not ask for raw UUIDs unless they prefer.",
+    "If **mode** is **resume**, onboarding is already running — follow **ceo_resume_hint**, list **pending_task_names**, and give **tasks_complete**/**tasks_total**. When **referencing_complete** is true, do **not** say the user must wait for the referencing agency (referencing is done or marked complete on the tenancy). End by asking if they want help with the next pending items (e.g. send move-in email, draft contract). For a fresh start (**success** with tasks created), confirm welcome email draft/sent and task count. **Letora has no tenant-facing portal.** Tenants are contacted by **email** only. Onboarding **tasks** are for the **landlord** (dashboard). If the tool returned candidates (multiple tenancies), ask for street/city.",
   send_referencing_handoff:
     "Read **sent** (boolean) and **message**. Use **tenant_name** / **property_address** when describing who the handoff was for. Do **not** quote **tenancy_id** in prose. If sent is true, confirm the email was sent to the agency. If sent is false, say what happened per **message** — never claim the email was sent unless sent is true.",
   prepare_referencing:
@@ -37,7 +37,7 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
   list_tenants:
     "Give the count and a short bullet list of names (and property if clear); avoid dumping the full table.",
   resolve_onboarding_navigation:
-    "If ok=true, give the user the open tenancy onboarding action (button in UI). If needs_tenant or multiple_tenants, ask which tenant or use chips. If multiple_tenancies, ask them to pick the right property. Do not paste raw JSON.",
+    "If ok=true, the JSON includes **pending_task_names**, **referencing_complete**, **tasks_complete**/**tasks_total** (same as resume). Summarize **only** those fields — do **not** invent a generic “welcome / move-in / contract” list. If **referencing_complete** is true, do **not** say referencing is still pending. Give the **Open onboarding** button (UI). If needs_tenant or multiple_tenants, ask which tenant or use chips. If multiple_tenancies, ask them to pick the right property. Do not paste raw JSON.",
 }
 
 /**
@@ -56,7 +56,7 @@ export function wrapToolResultForModel(toolName: CEOToolName, raw: string): stri
     toolName === "start_tenant_onboarding"
       ? [
           "",
-          "Mandatory for start_tenant_onboarding: never mention a tenant portal, tenant app, or tenant login in Letora. Communication with tenants is by email. Task lists are visible to the landlord in the dashboard.",
+          "Mandatory for start_tenant_onboarding: never mention a tenant portal, tenant app, or tenant login in Letora. Communication with tenants is by email. Task lists are visible to the landlord in the dashboard. If JSON has **mode: \"resume\"**, obey **ceo_resume_hint** — do not imply onboarding can be \"restarted\" or that referencing is still pending when **referencing_complete** is true.",
         ]
       : []
   const referencingHandoffExtra =

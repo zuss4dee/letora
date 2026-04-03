@@ -33,6 +33,10 @@ export type CEOIntentRoute = {
    * True when the user asks for referencing / agency reply status — router must recommend prepare_referencing.
    */
   wantsReferencingStatus: boolean
+  /**
+   * “Continue/resume onboarding” — prioritize **start_tenant_onboarding** (resume JSON) over generic copy / navigation-only.
+   */
+  wantsContinueOnboarding: boolean
   needsClarification: boolean
   clarificationQuestion: string | null
 }
@@ -254,6 +258,7 @@ function normalizeForRouting(text: string): string {
     .replace(/\bleadz\b/g, "leads")
     .replace(/\bproeprty\b/g, "property")
     .replace(/\bdashbord\b/g, "dashboard")
+    .replace(/\bonbosrding\b/g, "onboarding")
 }
 
 /** “Referencing update”, “agency reply”, etc. — must route to prepare_referencing (regex “references?” misses “referencing”). */
@@ -270,6 +275,11 @@ function detectReferencingStatusQuestion(normalized: string): boolean {
   return (mentionsRef && asksStatus) || whatAboutRef
 }
 
+/** “Continue onboarding”, “resume onboarding” — must load resume JSON, not dashboard-only navigation. */
+function detectContinueOnboardingResume(normalized: string): boolean {
+  return /\b(continue|resume|carry\s+on)\s+(?:with\s+)?(?:the\s+)?onboarding\b/i.test(normalized)
+}
+
 /**
  * Maps natural-language property-management phrasing to internal tools and safety hints.
  */
@@ -278,6 +288,9 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
   const normalized = normalizeForRouting(trimmed)
   const wantsLeadQualification = /\bqualify\b/i.test(normalized) && /\bleads?\b/i.test(normalized)
   const wantsReferencingStatusEarly = detectReferencingStatusQuestion(normalized)
+  const wantsContinueOnboarding =
+    detectContinueOnboardingResume(normalized) ||
+    (/\b(continue|resume)\b/i.test(normalized) && /\bonboarding\s+for\b/i.test(normalized))
   const scores = scoreMessage(normalized)
   const totalScore = Object.values(scores).reduce((a, b) => a + b, 0)
 
@@ -289,7 +302,8 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
       trimmed.length <= 600 &&
       !isAffirmativeShort(trimmed) &&
       !wantsOnboardingByPlainName &&
-      !wantsReferencingStatusEarly
+      !wantsReferencingStatusEarly &&
+      !wantsContinueOnboarding
 
     if (wantsReferencingStatusEarly && !wantsOnboardingByPlainName) {
       return {
@@ -301,22 +315,26 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
         wantsLeadQualification,
         wantsOnboardingByPlainName: false,
         wantsReferencingStatus: true,
+        wantsContinueOnboarding: false,
         needsClarification: false,
         clarificationQuestion: null,
       }
     }
 
     return {
-      primaryIntent: wantsOnboardingByPlainName ? "onboarding" : "portfolio",
+      primaryIntent: wantsOnboardingByPlainName || wantsContinueOnboarding ? "onboarding" : "portfolio",
       secondaryIntents: [],
-      confidence: wantsOnboardingByPlainName ? 0.45 : 0,
-      recommendedTools: wantsOnboardingByPlainName ? ["start_tenant_onboarding"] : [],
-      confirmationRequired: wantsOnboardingByPlainName
-        ? toolsRequireUserConfirmation(classifyCEOIntent(normalized), ["start_tenant_onboarding"])
-        : false,
+      confidence: wantsOnboardingByPlainName || wantsContinueOnboarding ? 0.45 : 0,
+      recommendedTools:
+        wantsOnboardingByPlainName || wantsContinueOnboarding ? ["start_tenant_onboarding"] : [],
+      confirmationRequired:
+        wantsOnboardingByPlainName || wantsContinueOnboarding
+          ? toolsRequireUserConfirmation(classifyCEOIntent(normalized), ["start_tenant_onboarding"])
+          : false,
       wantsLeadQualification,
       wantsOnboardingByPlainName,
       wantsReferencingStatus: false,
+      wantsContinueOnboarding,
       needsClarification,
       clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
     }
@@ -382,6 +400,16 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     )
   }
 
+  if (wantsContinueOnboarding) {
+    recommendedTools = uniqueToolsOrdered(
+      [
+        "start_tenant_onboarding",
+        ...recommendedTools.filter((t) => t !== "start_tenant_onboarding"),
+      ],
+      6,
+    )
+  }
+
   const confidence = Math.min(1, primaryScore / CONFIDENCE_NORMALIZER)
 
   const safetyIntent: CEOIntent = classifyCEOIntent(normalized)
@@ -394,7 +422,8 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     trimmed.length >= 10 &&
     trimmed.length <= 600 &&
     !isAffirmativeShort(trimmed) &&
-    !wantsReferencingStatus
+    !wantsReferencingStatus &&
+    !wantsContinueOnboarding
 
   const wantsOnboardingByPlainName =
     detectOnboardingByPlainName(normalized) &&
@@ -409,6 +438,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     wantsLeadQualification,
     wantsOnboardingByPlainName,
     wantsReferencingStatus,
+    wantsContinueOnboarding,
     needsClarification,
     clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
   }
@@ -432,12 +462,20 @@ function detectOnboardingByPlainName(normalized: string): boolean {
  */
 export function formatRouterHintForSystem(route: CEOIntentRoute): string {
   // Still inject mandatory tool hints (e.g. onboarding_for) even if the generic “pick a category” clarifier would otherwise hide routing.
-  if (route.needsClarification && !route.wantsOnboardingByPlainName && !route.wantsReferencingStatus) return ""
+  if (
+    route.needsClarification &&
+    !route.wantsOnboardingByPlainName &&
+    !route.wantsReferencingStatus &&
+    !route.wantsContinueOnboarding
+  ) {
+    return ""
+  }
   if (
     route.confidence === 0 &&
     route.recommendedTools.length === 0 &&
     !route.wantsOnboardingByPlainName &&
-    !route.wantsReferencingStatus
+    !route.wantsReferencingStatus &&
+    !route.wantsContinueOnboarding
   ) {
     return ""
   }
@@ -466,6 +504,12 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
   if (route.wantsReferencingStatus) {
     lines.push(
       "- **Required (referencing / agency status):** Call **prepare_referencing** this turn with **tenant_name** taken from the user’s message (e.g. “Alexis” / “Alexis Adeosun”) when they named someone; otherwise use **list_tenants** then **prepare_referencing** with the correct **tenancy_id**. Read **recent_inbound_mail** and **ceo_instruction** in the tool JSON — if they say inbound rows exist, you **must** summarize those previews and **must not** claim the agency has not responded or that there is no inbound mail.",
+    )
+  }
+
+  if (route.wantsContinueOnboarding) {
+    lines.push(
+      "- **Required (continue/resume onboarding):** Call **start_tenant_onboarding** with **onboarding_for** when they named a tenant; otherwise **list_tenants** then **start_tenant_onboarding**. Summarize **pending_task_names**, **tasks_complete**/**tasks_total**, and **referencing_complete** from that JSON (or from **resolve_onboarding_navigation** if you also used it) — do **not** invent a generic checklist. **resolve_onboarding_navigation** is for the **Open onboarding** button only; it is not a substitute for **start_tenant_onboarding** resume data.",
     )
   }
 
