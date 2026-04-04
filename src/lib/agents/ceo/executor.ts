@@ -118,9 +118,47 @@ async function fetchAccountPropertyCount(supabase: SupabaseClient, userId: strin
 
 type TenancyRowForOnboarding = {
   id: string;
+  property_id?: string | null;
   status?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  monthly_rent?: number | string | null;
+  deposit_amount?: number | string | null;
+  onboarding_status?: string | null;
+  tenant_profiles?: unknown;
   properties?: unknown;
 };
+
+/** When nested `properties` is missing, load labels by tenancy.property_id (no user_id filter on properties). */
+async function enrichTenancyRowsWithPropertyDetails(
+  supabase: SupabaseClient,
+  rows: TenancyRowForOnboarding[],
+): Promise<TenancyRowForOnboarding[]> {
+  const missing = rows.filter((r) => !unwrapTenancyProperty(r) && r.property_id);
+  if (missing.length === 0) return rows;
+  const uniqueIds = [...new Set(missing.map((r) => String(r.property_id)))];
+  const { data: props } = await supabase
+    .from("properties")
+    .select("id, name, address, city")
+    .in("id", uniqueIds);
+  const pm = new Map((props ?? []).map((p) => [String((p as { id: string }).id), p]));
+  return rows.map((r) => {
+    if (unwrapTenancyProperty(r)) return r;
+    const pid = r.property_id;
+    if (!pid) return r;
+    const p = pm.get(String(pid));
+    if (!p) return r;
+    const row = p as { name?: string | null; address?: string | null; city?: string | null };
+    return {
+      ...r,
+      properties: {
+        name: row.name ?? null,
+        address: row.address ?? null,
+        city: row.city ?? null,
+      },
+    };
+  });
+}
 
 function mapTenancyCandidate(r: TenancyRowForOnboarding) {
   const p = unwrapTenancyProperty(r);
@@ -396,15 +434,15 @@ async function resolveDraftContractByPropertyHint(
   const { data: propCountRows } = await supabase.from("properties").select("id").eq("user_id", userId);
   const accountPropertyCount = propCountRows?.length ?? 0;
 
-  /** Must filter by landlord in the query — a global `.limit(500)` can exclude this user's rows entirely. */
+  /** Scope by tenant profile ownership — do not filter properties by user_id (property row may not match). */
   const { data: tenRows } = await supabase
     .from("tenancies")
     .select(
-      `id, status, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, tenant_profiles ( id, full_name, email, phone ), properties!inner ( user_id, name, address, city )`,
+      `id, status, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, tenant_profiles!inner ( id, full_name, email, phone, user_id ), properties ( name, address, city )`,
     )
-    .eq("properties.user_id", userId);
+    .eq("tenant_profiles.user_id", userId);
 
-  const owned = tenRows ?? [];
+  const owned = await enrichTenancyRowsWithPropertyDetails(supabase, (tenRows ?? []) as TenancyRowForOnboarding[]);
 
   const mapped: PropertyRowForMatch[] = owned
     .map((r) => {
@@ -528,8 +566,31 @@ async function resolveDraftContractByPropertyHint(
       json: JSON.stringify({ error: "Tenancy has no tenant profile linked.", code: "invalid_tenancy" }),
     };
   }
-  const p = chosen.properties as unknown as { name: string | null; address: string | null; city: string | null };
-  const propertyLabel = [p.name, p.address, p.city].filter(Boolean).join(", ") || "Property";
+  const tenancyPid = chosen.property_id as string | null | undefined;
+  if (!tenancyPid) {
+    return {
+      ok: false,
+      json: JSON.stringify({ error: "Tenancy has no property linked.", code: "invalid_tenancy" }),
+    };
+  }
+  const { data: propertyRow, error: propertyError } = await supabase
+    .from("properties")
+    .select("id, address, postcode, city, property_type, bedrooms, bathrooms")
+    .eq("id", tenancyPid)
+    .single();
+  console.log("[draft_contract] property:", JSON.stringify({ data: propertyRow, error: propertyError }));
+  if (!propertyRow) {
+    return {
+      ok: false,
+      json: JSON.stringify({
+        success: false,
+        message: `Property not found for this tenancy (property_id: ${tenancyPid})`,
+        code: "not_found",
+      }),
+    };
+  }
+  const propertyLabel =
+    [propertyRow.address, propertyRow.city, propertyRow.postcode].filter(Boolean).join(", ") || "Property";
 
   return {
     ok: true,
@@ -1972,7 +2033,8 @@ export async function executeCEOTool(
 
         if (propErr || !propRow) {
           return JSON.stringify({
-            error: "Property linked to this tenancy could not be found.",
+            success: false,
+            message: `Property not found for this tenancy (property_id: ${tenancyPropertyId})`,
             code: "not_found",
           });
         }
@@ -2080,14 +2142,15 @@ export async function executeCEOTool(
             const { data: tenRows } = await supabase
               .from("tenancies")
               .select(
-                `id, status, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, properties!inner ( user_id, name, address, city )`,
+                `id, status, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, tenant_profiles!inner ( user_id ), properties ( name, address, city )`,
               )
-              .eq("tenant_id", resolved.tenantId);
+              .eq("tenant_id", resolved.tenantId)
+              .eq("tenant_profiles.user_id", userId);
 
-            const owned = (tenRows ?? []).filter((r) => {
-              const p = r.properties as unknown as { user_id: string };
-              return p.user_id === userId;
-            });
+            const owned = await enrichTenancyRowsWithPropertyDetails(
+              supabase,
+              (tenRows ?? []) as TenancyRowForOnboarding[],
+            );
 
             if (owned.length === 0) {
               /**
@@ -2212,12 +2275,29 @@ export async function executeCEOTool(
               return JSON.stringify({ error: "Could not load the chosen tenancy.", code: "internal" });
             }
 
-            const p = chosen.properties as unknown as {
-              name: string | null;
-              address: string | null;
-              city: string | null;
-            };
-            propertyLabel = [p.name, p.address, p.city].filter(Boolean).join(", ") || "Property";
+            const chosenPropertyId = chosen.property_id as string | null | undefined;
+            if (!chosenPropertyId) {
+              return JSON.stringify({
+                error: "This tenancy has no property linked.",
+                code: "invalid_tenancy",
+              });
+            }
+            const { data: chosenPropRow, error: chosenPropErr } = await supabase
+              .from("properties")
+              .select("id, address, postcode, city, property_type, bedrooms, bathrooms")
+              .eq("id", chosenPropertyId)
+              .single();
+            console.log("[draft_contract] property:", JSON.stringify({ data: chosenPropRow, error: chosenPropErr }));
+            if (!chosenPropRow) {
+              return JSON.stringify({
+                success: false,
+                message: `Property not found for this tenancy (property_id: ${chosenPropertyId})`,
+                code: "not_found",
+              });
+            }
+            propertyLabel =
+              [chosenPropRow.address, chosenPropRow.city, chosenPropRow.postcode].filter(Boolean).join(", ") ||
+              "Property";
             resolvedTenancyId = String(chosen.id);
             tenancyData = {
               start_date: chosen.start_date as string | null,
