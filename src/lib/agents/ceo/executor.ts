@@ -24,6 +24,11 @@ function formatTenantNameFromProfile(tenant: { full_name?: string | null } | nul
   return tenant?.full_name?.trim() || "Unknown tenant";
 }
 
+/** Strip trailing prepositions left over from natural-language tool args (e.g. "alexis at" → "alexis"). */
+function sanitizeTenantName(raw: string): string {
+  return raw.replace(/\s+(at|in|for|from|with|of)\s*$/i, "").trim();
+}
+
 const ONBOARDING_ORDER = [
   "not_started",
   "pending",
@@ -102,13 +107,12 @@ function normalizeTenancyRows(tenancies: unknown): {
 }
 
 function unwrapTenancyProperty(row: { properties?: unknown }): {
-  name?: string | null;
   address?: string | null;
   city?: string | null;
 } | null {
   const p = row.properties as unknown;
   const o = Array.isArray(p) ? p[0] : p;
-  return o && typeof o === "object" ? (o as { name?: string | null; address?: string | null; city?: string | null }) : null;
+  return o && typeof o === "object" ? (o as { address?: string | null; city?: string | null }) : null;
 }
 
 async function fetchAccountPropertyCount(supabase: SupabaseClient, userId: string): Promise<number> {
@@ -139,7 +143,7 @@ async function enrichTenancyRowsWithPropertyDetails(
   const uniqueIds = [...new Set(missing.map((r) => String(r.property_id)))];
   const { data: props } = await supabase
     .from("properties")
-    .select("id, name, address, city")
+    .select("id, address, city")
     .in("id", uniqueIds);
   const pm = new Map((props ?? []).map((p) => [String((p as { id: string }).id), p]));
   return rows.map((r) => {
@@ -148,11 +152,10 @@ async function enrichTenancyRowsWithPropertyDetails(
     if (!pid) return r;
     const p = pm.get(String(pid));
     if (!p) return r;
-    const row = p as { name?: string | null; address?: string | null; city?: string | null };
+    const row = p as { address?: string | null; city?: string | null };
     return {
       ...r,
       properties: {
-        name: row.name ?? null,
         address: row.address ?? null,
         city: row.city ?? null,
       },
@@ -165,7 +168,6 @@ function mapTenancyCandidate(r: TenancyRowForOnboarding) {
   return {
     tenancy_id: r.id,
     status: r.status ?? null,
-    name: p?.name ?? null,
     address: p?.address ?? null,
     city: p?.city ?? null,
   };
@@ -207,7 +209,7 @@ function pickTenancyForOnboarding(
       const row = rows.find((r) => String(r.id) === resolved.row.id);
       const p = row ? unwrapTenancyProperty(row) : null;
       const propertyLabel =
-        [p?.name, p?.address, p?.city].filter(Boolean).join(", ") || "your property";
+        [p?.address, p?.city].filter(Boolean).join(", ") || "your property";
       return {
         status: "fallback_confirm",
         tenancy_id: resolved.row.id,
@@ -269,13 +271,13 @@ async function resolveDraftContractByTenantAndPropertyWithoutTenancy(
   tenantNameFragment: string,
   accountPropertyCount: number,
 ): Promise<{ ok: true; data: DraftContractTenancyBundle } | { ok: false; json: string }> {
-  /** Loads this landlord’s properties only; hint matching is case-insensitive in `resolvePropertyRowsForDraftHint` (name + address + city), not DB `ilike`. */
-  const { data: propRows } = await supabase
+  /** Loads this landlord’s properties only; hint matching is case-insensitive in `resolvePropertyRowsForDraftHint` (address + city), not DB `ilike`. */
+  const { data: propRows, error: propFetchErr } = await supabase
     .from("properties")
-    .select("id, name, address, city, monthly_rent")
+    .select("id, address, city, monthly_rent")
     .eq("user_id", userId);
 
-  console.log("[property lookup] hint:", propertyHint.trim(), "userId:", userId, "results:", propRows?.length);
+  console.log("[property lookup] hint:", propertyHint.trim(), "userId:", userId, "results:", propRows?.length, "error:", propFetchErr?.message);
 
   const mapped: PropertyRowForMatch[] = (propRows ?? []).map((r) => ({
     id: String((r as { id: string }).id),
@@ -287,7 +289,7 @@ async function resolveDraftContractByTenantAndPropertyWithoutTenancy(
 
   if (resolved.kind === "matched_by_fallback") {
     const label =
-      [resolved.row.name, resolved.row.address, resolved.row.city].filter(Boolean).join(", ") || "your property";
+      [resolved.row.address, resolved.row.city].filter(Boolean).join(", ") || "your property";
     return {
       ok: false,
       json: JSON.stringify({
@@ -295,7 +297,6 @@ async function resolveDraftContractByTenantAndPropertyWithoutTenancy(
         message: `I found one property — ${label}. Is this the right one?`,
         property: {
           property_id: resolved.row.id,
-          name: resolved.row.name,
           address: resolved.row.address,
           city: resolved.row.city,
         },
@@ -312,7 +313,6 @@ async function resolveDraftContractByTenantAndPropertyWithoutTenancy(
         message: "I found a few possible properties — which one did you mean?",
         candidates: resolved.candidates.map((p) => ({
           property_id: p.id,
-          name: p.name,
           address: p.address,
           city: p.city,
         })),
@@ -337,7 +337,6 @@ async function resolveDraftContractByTenantAndPropertyWithoutTenancy(
   const prop = propRows?.find((r) => String((r as { id: string }).id) === matchedRow.id) as
     | {
         id: string;
-        name: string | null;
         address: string | null;
         city: string | null;
         monthly_rent: number | string | null;
@@ -405,7 +404,7 @@ async function resolveDraftContractByTenantAndPropertyWithoutTenancy(
     phone: string | null;
   };
   const mr = Number(prop.monthly_rent ?? 0) || 0;
-  const propertyLabel = [prop.name, prop.address, prop.city].filter(Boolean).join(", ") || "Property";
+  const propertyLabel = [prop.address, prop.city].filter(Boolean).join(", ") || "Property";
 
   return {
     ok: true,
@@ -439,7 +438,7 @@ async function resolveDraftContractByPropertyHint(
   const { data: tenRows } = await supabase
     .from("tenancies")
     .select(
-      `id, status, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, tenants!inner ( id, full_name, email, phone, user_id ), properties ( name, address, city )`,
+      `id, status, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, tenants!inner ( id, full_name, email, phone, user_id ), properties ( address, city )`,
     )
     .eq("tenants.user_id", userId);
 
@@ -461,7 +460,7 @@ async function resolveDraftContractByPropertyHint(
 
   if (resolved.kind === "matched_by_fallback") {
     const label =
-      [resolved.row.name, resolved.row.address, resolved.row.city].filter(Boolean).join(", ") || "your property";
+      [resolved.row.address, resolved.row.city].filter(Boolean).join(", ") || "your property";
     return {
       ok: false,
       json: JSON.stringify({
@@ -710,7 +709,7 @@ async function resolveTenancyIdForReferencingHandoff(
 ): Promise<{ ok: true; tenancyId: string } | { ok: false; response: string }> {
   const tenancyIdArg = args.tenancy_id?.trim();
   const tenantIdArg = args.tenant_id?.trim();
-  const tenantNameArg = args.tenant_name?.trim();
+  const tenantNameArg = args.tenant_name?.trim() ? sanitizeTenantName(args.tenant_name.trim()) : undefined;
 
   if (tenancyIdArg) {
     const { data: tenancy, error: tErr } = await supabase
@@ -945,7 +944,7 @@ export async function executeCEOTool(
       const statusFilter = args.status === "all" || !args.status ? null : args.status;
       let query = supabase
         .from("maintenance_requests")
-        .select("id, title, description, status, priority, created_at, property_id, properties(name)")
+        .select("id, title, description, status, priority, created_at, property_id, properties(address)")
         .eq("user_id", userId);
       if (statusFilter && statusFilter !== "all") {
         query = query.eq("status", statusFilter);
@@ -2079,7 +2078,7 @@ export async function executeCEOTool(
         ].filter(Boolean).join(", ") || "Property";
       } else {
         const tid = args.tenant_id?.trim();
-        const tname = args.tenant_name?.trim();
+        const tname = args.tenant_name?.trim() ? sanitizeTenantName(args.tenant_name.trim()) : undefined;
         console.log("[draft_contract] tenant query:", tname ?? tid ?? "(none)");
 
         let loadedFromProperty = false;
@@ -2142,7 +2141,7 @@ export async function executeCEOTool(
             const { data: tenRows } = await supabase
               .from("tenancies")
               .select(
-                `id, status, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, tenants!inner ( user_id ), properties ( name, address, city )`,
+                `id, status, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, tenants!inner ( user_id ), properties ( address, city )`,
               )
               .eq("tenant_id", resolved.tenantId)
               .eq("tenants.user_id", userId);
@@ -2158,9 +2157,9 @@ export async function executeCEOTool(
                * If the tenant has no linked tenancy but the address matches a property, draft like the dashboard.
                */
               if (propertyHint?.trim()) {
-                const { data: propRows } = await supabase
+                const { data: propRows, error: propFetchErr2 } = await supabase
                   .from("properties")
-                  .select("id, name, address, city, monthly_rent")
+                  .select("id, address, city, monthly_rent")
                   .eq("user_id", userId);
                 console.log(
                   "[property lookup] hint:",
@@ -2169,6 +2168,8 @@ export async function executeCEOTool(
                   userId,
                   "results:",
                   propRows?.length,
+                  "error:",
+                  propFetchErr2?.message,
                 );
                 const mapped: PropertyRowForMatch[] = (propRows ?? []).map((r) => ({
                   id: String((r as { id: string }).id),
@@ -2179,10 +2180,9 @@ export async function executeCEOTool(
                 if (pr.kind === "matched_by_fallback") {
                   return JSON.stringify({
                     code: "matched_by_fallback",
-                    message: `I found one property — ${[pr.row.name, pr.row.address, pr.row.city].filter(Boolean).join(", ") || "your property"}. Is this the right one?`,
+                    message: `I found one property — ${[pr.row.address, pr.row.city].filter(Boolean).join(", ") || "your property"}. Is this the right one?`,
                     property: {
                       property_id: pr.row.id,
-                      name: pr.row.name,
                       address: pr.row.address,
                       city: pr.row.city,
                     },
@@ -2195,7 +2195,6 @@ export async function executeCEOTool(
                     message: "I found a few possible properties — which one did you mean?",
                     candidates: pr.candidates.map((p) => ({
                       property_id: p.id,
-                      name: p.name,
                       address: p.address,
                       city: p.city,
                     })),
@@ -2212,7 +2211,6 @@ export async function executeCEOTool(
                 const prop = propRows?.find((r) => String((r as { id: string }).id) === pr.row.id) as
                   | {
                       id: string;
-                      name: string | null;
                       address: string | null;
                       city: string | null;
                       monthly_rent: number | string | null;
@@ -2233,7 +2231,7 @@ export async function executeCEOTool(
                   property_id: String(prop.id),
                   onboarding_status: "contract_sent",
                 };
-                propertyLabel = [prop.name, prop.address, prop.city].filter(Boolean).join(", ") || "Property";
+                propertyLabel = [prop.address, prop.city].filter(Boolean).join(", ") || "Property";
                 resolvedTenancyId = undefined;
               } else {
                 return JSON.stringify({
@@ -2454,7 +2452,7 @@ export async function executeCEOTool(
           let tenancyId = args.tenancy_id?.trim();
 
           if (!tenancyId && args.tenant_name?.trim()) {
-            const nameFragment = sanitizeIlikeNameFragment(args.tenant_name.trim());
+            const nameFragment = sanitizeIlikeNameFragment(sanitizeTenantName(args.tenant_name.trim()));
             const { data: tenantHits } = await supabase
               .from("tenants")
               .select("id, tenancies(id)")
@@ -2603,7 +2601,7 @@ export async function executeCEOTool(
     }
     case "get_contracts": {
       const tenancyIdArg = args.tenancy_id?.trim();
-      const tenantNameArg = args.tenant_name?.trim();
+      const tenantNameArg = args.tenant_name?.trim() ? sanitizeTenantName(args.tenant_name.trim()) : undefined;
 
       let query = supabase
         .from("contracts")
@@ -2686,7 +2684,7 @@ export async function executeCEOTool(
 
       const tenancyIdArg = args.tenancy_id?.trim();
       const tenantIdArg = args.tenant_id?.trim();
-      const tenantNameArg = args.tenant_name?.trim();
+      const tenantNameArg = args.tenant_name?.trim() ? sanitizeTenantName(args.tenant_name.trim()) : undefined;
 
       if (tenancyIdArg) {
         const { data: tenancy, error: tErr } = await supabase
