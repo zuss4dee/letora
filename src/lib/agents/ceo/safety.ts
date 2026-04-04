@@ -68,7 +68,7 @@ export function classifyCEOIntent(latestUserText: string): CEOIntent {
   }
 
   if (
-    /\b(how\s+many|how\s+much|list|show\s+me|what('s|s| is)|status|summary|overview|dashboard|breakdown|who\s+(has|is|are)|total|count|any\s+overdue|do\s+i\s+have|tell\s+me\s+about)\b/.test(
+    /\b(how\s+many|how\s+much|list|show\s+me|what('s|s| is)|status|summary|overview|dashboard|breakdown|who\s+(has|is|are)|total|count|any\s+overdue|do\s+i\s+have|tell\s+me\s+about|where\s+is\s+\S+\s+(a\s+)?tenant)\b/.test(
       t,
     )
   ) {

@@ -97,4 +97,17 @@ describe("routeCEOIntent — tenant list phrasing", () => {
     expect(r.wantsContinueOnboarding).toBe(true);
     expect(r.wantsOnboardingByPlainName).toBe(true);
   });
+
+  it("routes 'where is Alexis a tenant' to tenants intent with list_tenants", () => {
+    const r = routeCEOIntent("where is Alexis a tenant?");
+    expect(r.primaryIntent).toBe("tenants");
+    expect(r.recommendedTools).toContain("list_tenants");
+    expect(r.needsClarification).toBe(false);
+  });
+
+  it("routes 'which property is Alexis a tenant at' to tenants intent", () => {
+    const r = routeCEOIntent("which property is Alexis a tenant at?");
+    expect(r.primaryIntent).toBe("tenants");
+    expect(r.recommendedTools).toContain("list_tenants");
+  });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Menu, MessageSquarePlus, PanelLeft, Send } from "lucide-react";
+import { ExternalLink, Loader2, Menu, MessageSquarePlus, PanelLeft, Send } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -17,6 +17,12 @@ import {
   type LeadQualifyEmbedPayloadV1,
 } from "@/lib/assistant/lead-qualify-embed";
 import { cn } from "@/lib/utils";
+import {
+  autonomousDelay,
+  AUTONOMOUS_FOLLOWUP_DELAY_MS,
+  isAutonomousContinuationSignal,
+  MAX_AUTONOMOUS_FOLLOWUPS,
+} from "./autonomous-continuation";
 
 type ChatRole = "user" | "assistant";
 
@@ -26,6 +32,8 @@ export interface ChatMessage {
   suggestedActions?: LetoraSuggestedAction[];
   /** Present when assistant is waiting for Reply yes (persisted in DB metadata on refresh). */
   pendingCeoAction?: PendingCEOAction;
+  /** UI-only flag — marks "please wait" messages with transitional styling. */
+  isTransitional?: boolean;
 }
 
 function formatQualifyOutcomeRaw(raw: string): string {
@@ -184,10 +192,19 @@ function SuggestedActionChips({
   );
 }
 
+const CONTRACT_ID_PATTERN =
+  /(?:contract\s*(?:id|ID)[:\s]+|\/dashboard\/contracts\/)([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
+
+function extractContractId(text: string): string | null {
+  const m = CONTRACT_ID_PATTERN.exec(text);
+  return m?.[1] ?? null;
+}
+
 function MessageBubble({
   role,
   content,
   suggestedActions,
+  isTransitional,
   onPickSuggestedMessage,
 }: ChatMessage & { onPickSuggestedMessage?: (text: string) => void }) {
   const isUser = role === "user";
@@ -212,12 +229,28 @@ function MessageBubble({
           isUser
             ? "border-transparent bg-primary text-primary-foreground"
             : "border-border bg-muted/60 text-foreground dark:bg-muted/40",
+          isTransitional && !isUser && "animate-pulse border-primary/30 opacity-60",
         )}
       >
         <p className="whitespace-pre-wrap break-words">{content}</p>
         {role === "assistant" && suggestedActions && suggestedActions.length > 0 && onPickSuggestedMessage ? (
           <SuggestedActionChips actions={suggestedActions} onMessagePick={onPickSuggestedMessage} />
         ) : null}
+        {role === "assistant" && (() => {
+          const cid = extractContractId(content);
+          if (!cid) return null;
+          return (
+            <div className="mt-2">
+              <Link
+                href={`/dashboard/contracts/${cid}`}
+                className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
+              >
+                <ExternalLink className="size-3.5" aria-hidden />
+                Review Contract
+              </Link>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );
@@ -453,13 +486,89 @@ export function AssistantChat({
     }
   }
 
+  type ProcessedChatResult = {
+    kind: string;
+    replyText: string;
+    message: ChatMessage;
+    /** True when the chain must stop (confirmation needs user input, lead qualify has interactive UI). */
+    stopChain: boolean;
+  };
+
+  async function processChatResult(
+    result: Awaited<ReturnType<typeof postChatRequest>>,
+  ): Promise<ProcessedChatResult> {
+    switch (result.kind) {
+      case "clarification":
+        return {
+          kind: result.kind,
+          replyText: result.message,
+          message: { role: "assistant", content: result.message },
+          stopChain: false,
+        };
+      case "lead_qualify":
+        return {
+          kind: result.kind,
+          replyText: result.message,
+          message: { role: "assistant", content: result.message },
+          stopChain: true,
+        };
+      case "confirmation":
+        setPendingAction(result.pendingAction);
+        return {
+          kind: result.kind,
+          replyText: result.message,
+          message: {
+            role: "assistant",
+            content: result.message,
+            pendingCeoAction: result.pendingAction,
+          },
+          stopChain: true,
+        };
+      case "suggested_actions":
+        return {
+          kind: result.kind,
+          replyText: result.message,
+          message: {
+            role: "assistant",
+            content: result.message,
+            suggestedActions: result.suggestedActions,
+          },
+          stopChain: false,
+        };
+      case "stream": {
+        let text = "";
+        await result.consume((chunk) => {
+          text += chunk;
+          setAssistantStream({ kind: "streaming", text });
+        });
+        return {
+          kind: result.kind,
+          replyText: text,
+          message: { role: "assistant", content: text },
+          stopChain: false,
+        };
+      }
+    }
+  }
+
+  function markLastAssistantAsTransitional(thread: ChatMessage[]): ChatMessage[] {
+    const updated = [...thread];
+    for (let i = updated.length - 1; i >= 0; i--) {
+      if (updated[i].role === "assistant") {
+        updated[i] = { ...updated[i], isTransitional: true };
+        break;
+      }
+    }
+    return updated;
+  }
+
   async function sendMessage() {
     const trimmed = input.trim();
     if (!trimmed || loading) return;
 
     const userMessage: ChatMessage = { role: "user", content: trimmed };
-    const nextThread: ChatMessage[] = [...messages, userMessage];
-    setMessages(nextThread);
+    let currentThread: ChatMessage[] = [...messages, userMessage];
+    setMessages(currentThread);
     setInput("");
     setError(null);
     setLoading(true);
@@ -477,63 +586,53 @@ export function AssistantChat({
       }
     }
 
-    let accumulated = "";
-
     try {
-      const result = await postChatRequest(activeConversationId, nextThread, {
+      const result = await postChatRequest(activeConversationId, currentThread, {
         confirmedExecution,
         pendingAction: actionPayload,
       });
 
-      if (result.kind === "clarification") {
-        setMessages((prev) => [...prev, { role: "assistant", content: result.message }]);
-        router.refresh();
-        return;
-      }
+      const processed = await processChatResult(result);
+      currentThread = [...currentThread, processed.message];
+      setMessages([...currentThread]);
 
-      if (result.kind === "lead_qualify") {
-        setMessages((prev) => [...prev, { role: "assistant", content: result.message }]);
-        router.refresh();
-        return;
-      }
-
-      if (result.kind === "confirmation") {
-        setPendingAction(result.pendingAction);
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: result.message,
-            pendingCeoAction: result.pendingAction,
-          },
-        ]);
-        router.refresh();
-        return;
-      }
-
-      if (result.kind === "suggested_actions") {
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: result.message,
-            suggestedActions: result.suggestedActions,
-          },
-        ]);
-        router.refresh();
-        return;
-      }
-
-      await result.consume((chunk) => {
-        accumulated += chunk;
-        setAssistantStream({ kind: "streaming", text: accumulated });
-      });
-
-      setMessages((prev) => [...prev, { role: "assistant", content: accumulated }]);
-
-      if (confirmedExecution) {
+      if (confirmedExecution && processed.kind === "stream") {
         setPendingAction(null);
       }
+
+      let followUpCount = 0;
+      let lastReplyText = processed.replyText;
+      let chainStopped = processed.stopChain;
+
+      while (
+        !chainStopped &&
+        isAutonomousContinuationSignal(lastReplyText) &&
+        followUpCount < MAX_AUTONOMOUS_FOLLOWUPS
+      ) {
+        followUpCount++;
+        currentThread = markLastAssistantAsTransitional(currentThread);
+        setMessages([...currentThread]);
+
+        await autonomousDelay(AUTONOMOUS_FOLLOWUP_DELAY_MS);
+        setAssistantStream({ kind: "thinking" });
+
+        try {
+          const followUp = await postChatRequest(activeConversationId, currentThread);
+          const followUpProcessed = await processChatResult(followUp);
+          currentThread = [...currentThread, followUpProcessed.message];
+          setMessages([...currentThread]);
+          lastReplyText = followUpProcessed.replyText;
+          chainStopped = followUpProcessed.stopChain;
+        } catch {
+          currentThread = [
+            ...currentThread,
+            { role: "assistant", content: "Something went wrong fetching that. Please try again." },
+          ];
+          setMessages([...currentThread]);
+          break;
+        }
+      }
+
       router.refresh();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Something went wrong.";
@@ -627,6 +726,7 @@ export function AssistantChat({
                       role={m.role}
                       content={m.content}
                       suggestedActions={m.suggestedActions}
+                      isTransitional={m.isTransitional}
                       onPickSuggestedMessage={(text) => setInput(text)}
                     />
                   ))}

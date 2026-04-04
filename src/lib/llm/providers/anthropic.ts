@@ -12,8 +12,9 @@ export async function runAnthropic(
 ): Promise<LLMResponse> {
   const systemMessage = messages.find((m) => m.role === "system")?.content ?? ""
   const conversation = messages.filter((m) => m.role !== "system")
+  const effectiveModel = model || process.env.ANTHROPIC_CEO_MODEL?.trim() || "claude-haiku-4-5"
   const response = await client.messages.create({
-    model,
+    model: effectiveModel,
     max_tokens: maxTokens,
     system: systemMessage,
     messages: conversation.map((m) => ({

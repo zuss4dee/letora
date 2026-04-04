@@ -6,6 +6,8 @@ import { isAffirmativeConfirmation } from "@/lib/agents/ceo/safety";
  */
 export function normalizeUserTextForInference(text: string): string {
   let t = text.replace(/\s+/g, " ").trim();
+  t = t.replace(/\*+/g, " ");
+  t = t.replace(/\s+/g, " ").trim();
   // Adjacent-key slips for "the" (e.g. "draft ghe contract")
   t = t.replace(/\bghe\b/gi, "the");
   t = t.replace(/\bteh\b/gi, "the");
@@ -67,8 +69,30 @@ const NAME_STOPWORDS = new Set(
   ),
 );
 
-/** "for Alexis Adeosun", "about Jane Smith" */
-function extractNameAfterForOrAbout(text: string): string | null {
+/** First word of a two-token "name" is not a person (e.g. "Tenant Alexis" from "Tenant Alexis Adeosun"). */
+const NAME_LEADING_NON_PERSON = new Set(["tenant", "the", "a", "an", "mr", "mrs", "miss", "ms", "dr"]);
+
+/** Second token is a street type — reject "Billionaires Row" when extracting a person name. */
+const STREET_SECOND_TOKEN = new Set([
+  "row",
+  "road",
+  "street",
+  "lane",
+  "avenue",
+  "way",
+  "close",
+  "drive",
+  "gardens",
+  "london",
+  "mews",
+  "court",
+  "place",
+  "hill",
+  "park",
+]);
+
+/** "for Jane Smith", "tenant Jane Smith" — two Title-case tokens (minimum). */
+function extractStrictNameAfterForOrAbout(text: string): string | null {
   const t = normalizeUserTextForInference(text).replace(/\s+/g, " ").trim();
   const patterns = [
     /\b(?:for|about)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b/,
@@ -86,6 +110,20 @@ function extractNameAfterForOrAbout(text: string): string | null {
   return null;
 }
 
+/** "draft the contract for alexis" — lowercase / single given name. */
+function extractLooseNameAfterForOrAbout(text: string): string | null {
+  const t = normalizeUserTextForInference(text).replace(/\s+/g, " ").trim();
+  const loose = /\b(?:for|about)\s+([A-Za-z][A-Za-z'\-]*(?:\s+[A-Za-z][A-Za-z'\-]*)*)\b/;
+  const lm = loose.exec(t);
+  if (lm?.[1]) {
+    const n = lm[1].trim().replace(/[.,;:!?]+$/g, "");
+    const first = n.split(/\s+/)[0]?.toLowerCase() ?? "";
+    if (NAME_STOPWORDS.has(first)) return null;
+    if (n.length >= 3 && n.length <= 80) return n;
+  }
+  return null;
+}
+
 /** "Alexis Adeosun" in assistant headings (last plausible match). */
 function extractCapitalizedFullNameFromAssistant(text: string): string | null {
   const m = /\b([A-Z][a-z]{2,20}\s+[A-Z][a-z]{2,20})\b/g;
@@ -97,10 +135,22 @@ function extractCapitalizedFullNameFromAssistant(text: string): string | null {
     const a = parts[0]?.toLowerCase() ?? "";
     const b = parts[1]?.toLowerCase() ?? "";
     if (NAME_STOPWORDS.has(a) || NAME_STOPWORDS.has(b)) continue;
+    if (NAME_LEADING_NON_PERSON.has(a)) continue;
+    if (STREET_SECOND_TOKEN.has(b)) continue;
     if (/\b(letora|assistant|united|kingdom|dashboard|tenancy|contract)\b/i.test(n)) continue;
     best = n;
   }
   return best;
+}
+
+/** Newest assistant message first: first "Firstname Lastname" wins (matches DB full_name better than "alexis" alone). */
+function lastAssistantFullName(messages: readonly { role: string; content: string }[]): string | null {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role !== "assistant") continue;
+    const name = extractCapitalizedFullNameFromAssistant(normalizeUserTextForInference(messages[i].content));
+    if (name) return name;
+  }
+  return null;
 }
 
 /**
@@ -113,27 +163,51 @@ export function inferTenantOrContractNameFromConversation(
   const fromOnboarding = inferOnboardingForFromConversation(messages);
   if (fromOnboarding) return fromOnboarding;
 
+  const assistantFull = lastAssistantFullName(messages);
+
   const userMsgs = messages.filter((m) => m.role === "user");
   for (let i = userMsgs.length - 1; i >= 0; i--) {
     const text = normalizeUserTextForInference(userMsgs[i].content);
     if (isAffirmativeConfirmation(text)) continue;
-    const name = extractNameAfterForOrAbout(text);
-    if (name) return name;
+    const strict = extractStrictNameAfterForOrAbout(text);
+    if (strict) return strict;
   }
   for (let i = userMsgs.length - 1; i >= 0; i--) {
-    const name = extractNameAfterForOrAbout(normalizeUserTextForInference(userMsgs[i].content));
-    if (name) return name;
+    const text = normalizeUserTextForInference(userMsgs[i].content);
+    if (isAffirmativeConfirmation(text)) continue;
+    const loose = extractLooseNameAfterForOrAbout(text);
+    if (loose) {
+      if (assistantFull) {
+        const first = assistantFull.split(/\s+/)[0]?.toLowerCase() ?? "";
+        if (first === loose.toLowerCase()) return assistantFull;
+      }
+      return loose;
+    }
+  }
+  for (let i = userMsgs.length - 1; i >= 0; i--) {
+    const text = normalizeUserTextForInference(userMsgs[i].content);
+    if (isAffirmativeConfirmation(text)) continue;
+    const strict = extractStrictNameAfterForOrAbout(normalizeUserTextForInference(userMsgs[i].content));
+    if (strict) return strict;
+  }
+  for (let i = userMsgs.length - 1; i >= 0; i--) {
+    const loose = extractLooseNameAfterForOrAbout(normalizeUserTextForInference(userMsgs[i].content));
+    if (loose) {
+      if (assistantFull) {
+        const first = assistantFull.split(/\s+/)[0]?.toLowerCase() ?? "";
+        if (first === loose.toLowerCase()) return assistantFull;
+      }
+      return loose;
+    }
   }
 
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].role !== "assistant") continue;
-    const name = extractCapitalizedFullNameFromAssistant(normalizeUserTextForInference(messages[i].content));
-    if (name) return name;
-  }
-  return null;
+  return assistantFull;
 }
 
-/** UK-style address fragments: "101 Billionaires Row", "for 101 ..." */
+const UK_STREET_SUFFIXES =
+  /\b(row|road|street|lane|avenue|way|close|drive|gardens?|crescent|terrace|place|court|grove|park|mews|square|hill|rise|walk|green|circle|london)\b/i;
+
+/** UK-style address fragments: "101 Billionaires Row", "for 101 ...", or bare "billionaires row" */
 export function extractPropertyAddressHintFromText(text: string): string | null {
   const t = normalizeUserTextForInference(text)
     .replace(/\*+/g, " ")
@@ -144,6 +218,7 @@ export function extractPropertyAddressHintFromText(text: string): string | null 
     /\bit\s+is\s+for\s+(\d{1,4}\s+[A-Za-z][A-Za-z\s'.-]{4,100})\b/i,
     /\b(\d{1,4}\s+[A-Za-z][A-Za-z\s'.-]{3,80}(?:row|road|street|lane|avenue|way|close|drive|gardens?|london))\b/i,
     /\b(\d{1,4}\s+billionaires\s+row)\b/i,
+    /\b(?:for|at)\s+([A-Za-z][A-Za-z\s'.-]{3,80}(?:row|road|street|lane|avenue|way|close|drive|gardens?|crescent|terrace|place|court|grove|park|mews|square|hill|rise|london))\b/i,
   ];
   for (const re of patterns) {
     const m = re.exec(t);
@@ -151,6 +226,34 @@ export function extractPropertyAddressHintFromText(text: string): string | null 
       const s = m[1].trim().replace(/[.,;:!?]+$/g, "");
       if (s.length >= 6 && s.length <= 120) return s;
     }
+  }
+  /** Freeform lines e.g. "101 Billionaires Row London · L1 56AA" (bullet/dot separators). */
+  if (/\d{1,4}\s+[A-Za-z]/.test(t) && UK_STREET_SUFFIXES.test(t)) {
+    const cleaned = t.replace(/[·•]/g, " ").replace(/\s+/g, " ").trim();
+    if (cleaned.length >= 10 && cleaned.length <= 120) return cleaned;
+  }
+  /** Bare address-like string without a house number: "billionaires row", "oxford street" */
+  if (UK_STREET_SUFFIXES.test(t) && /[A-Za-z]{3,}/.test(t)) {
+    const cleaned = t.replace(/[·•]/g, " ").replace(/\s+/g, " ").trim();
+    if (cleaned.length >= 6 && cleaned.length <= 120) return cleaned;
+  }
+  return null;
+}
+
+/** User messages only — safe to merge with tenant_name without stale assistant-only addresses. */
+export function inferPropertyAddressHintFromUserMessagesOnly(
+  messages: readonly { role: string; content: string }[],
+): string | null {
+  const userMsgs = messages.filter((m) => m.role === "user");
+  for (let i = userMsgs.length - 1; i >= 0; i--) {
+    const text = normalizeUserTextForInference(userMsgs[i].content);
+    if (isAffirmativeConfirmation(text)) continue;
+    const h = extractPropertyAddressHintFromText(text);
+    if (h) return h;
+  }
+  for (let i = userMsgs.length - 1; i >= 0; i--) {
+    const h = extractPropertyAddressHintFromText(normalizeUserTextForInference(userMsgs[i].content));
+    if (h) return h;
   }
   return null;
 }
@@ -220,6 +323,7 @@ export function mergeDraftContractInput(
   inferredName: string | null,
   inferredPropertyHint: string | null,
   onboardingPrefetchRaw: string | null,
+  inferredPropertyHintFromUserOnly: string | null = null,
 ): Record<string, string> {
   const out = { ...input };
 
@@ -244,15 +348,12 @@ export function mergeDraftContractInput(
   }
 
   if (out.tenancy_id?.trim()) {
-    if (!out.onboarding_property_hint?.trim() && inferredPropertyHint) {
-      out.onboarding_property_hint = inferredPropertyHint;
-    }
     return out;
   }
 
   if (out.tenant_id?.trim() || out.tenant_name?.trim()) {
-    if (!out.onboarding_property_hint?.trim() && inferredPropertyHint) {
-      out.onboarding_property_hint = inferredPropertyHint;
+    if (!out.onboarding_property_hint?.trim() && inferredPropertyHintFromUserOnly?.trim()) {
+      out.onboarding_property_hint = inferredPropertyHintFromUserOnly.trim();
     }
     return out;
   }
@@ -260,10 +361,65 @@ export function mergeDraftContractInput(
   if (inferredName) {
     out.tenant_name = inferredName;
   }
-  if (!out.onboarding_property_hint?.trim() && inferredPropertyHint) {
+  /** Property-only resolution: conversation hint (user + assistant). */
+  if (!out.tenant_name?.trim() && !out.onboarding_property_hint?.trim() && inferredPropertyHint) {
     out.onboarding_property_hint = inferredPropertyHint;
   }
+  /** User-typed address while tenant_name is inferred — merges e.g. "101 … London" with "alexis" → full name. */
+  if (out.tenant_name?.trim() && !out.onboarding_property_hint?.trim() && inferredPropertyHintFromUserOnly?.trim()) {
+    out.onboarding_property_hint = inferredPropertyHintFromUserOnly.trim();
+  }
   return out;
+}
+
+/**
+ * Drop a model-supplied **tenancy_id** when it is not backed by onboarding prefetch but we can
+ * still resolve via tenant name / property hints from merge + inference (avoids hallucinated UUIDs
+ * on short replies like "ok").
+ */
+export function scrubDraftContractTenancyIdForMerge(
+  input: Record<string, string>,
+  onboardingPrefetchRaw: string | null,
+  inferredTenantName: string | null,
+  inferredPropertyHint: string | null,
+  inferredPropertyHintFromUserOnly: string | null,
+): Record<string, string> {
+  const tid = input.tenancy_id?.trim();
+  if (!tid) return input;
+
+  let prefetchTid: string | undefined;
+  try {
+    if (onboardingPrefetchRaw) {
+      const o = JSON.parse(onboardingPrefetchRaw) as {
+        tenancy_id?: string;
+        success?: boolean;
+        mode?: string;
+      };
+      if (
+        typeof o.tenancy_id === "string" &&
+        o.tenancy_id.length > 0 &&
+        (o.success === true || o.mode === "resume")
+      ) {
+        prefetchTid = o.tenancy_id;
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+
+  if (prefetchTid && prefetchTid === tid) return input;
+
+  const hasAlternativeResolution =
+    Boolean(inferredTenantName?.trim()) ||
+    Boolean(inferredPropertyHint?.trim()) ||
+    Boolean(inferredPropertyHintFromUserOnly?.trim()) ||
+    Boolean(input.tenant_name?.trim()) ||
+    Boolean(input.onboarding_property_hint?.trim());
+
+  if (!hasAlternativeResolution) return input;
+
+  const { tenancy_id: _removed, ...rest } = input;
+  return rest;
 }
 
 /**

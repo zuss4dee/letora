@@ -188,6 +188,8 @@ const ROUTE_PATTERNS: ReadonlyArray<{
   { id: "tenants", weight: 1.8, re: /\b(active\s+tenants?|tenant\s+list|which\s+tenants?|all\s+tenants?)\b/i },
   { id: "tenants", weight: 1.6, re: /\b(who\s+are\s+(my\s+|the\s+)?tenants?|tenants?\s+in\s+the\s+system)\b/i },
   { id: "tenants", weight: 1.5, re: /\b(list\s+tenants|all\s+tenants)\b/i },
+  { id: "tenants", weight: 2.0, re: /\bwhere\s+is\s+\S+\s+(a\s+)?tenant\b/i },
+  { id: "tenants", weight: 1.8, re: /\bwhich\s+property\s+is\s+\S+\s+(a\s+)?tenant\s+at\b/i },
 ]
 
 function isPropertyRelated(text: string): boolean {

@@ -29,21 +29,21 @@ export async function resolveTenantProfileForAccount(
     return { ok: false, body: { error: "tenant_id is empty." } };
   }
 
-  const { data: byId, error: idErr } = await supabase
-    .from("tenant_profiles")
-    .select("id, full_name")
-    .eq("id", t)
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (idErr) {
-    return { ok: false, body: { error: `Could not load tenant: ${idErr.message}` } };
-  }
-  if (byId) {
-    return { ok: true, tenantId: byId.id, full_name: byId.full_name, resolved_via: "id" };
-  }
-
   if (looksLikeUuid(t)) {
+    const { data: byId, error: idErr } = await supabase
+      .from("tenant_profiles")
+      .select("id, full_name")
+      .eq("id", t)
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (idErr) {
+      return { ok: false, body: { error: `Could not load tenant: ${idErr.message}` } };
+    }
+    if (byId) {
+      return { ok: true, tenantId: byId.id, full_name: byId.full_name, resolved_via: "id" };
+    }
+
     return {
       ok: false,
       body: {

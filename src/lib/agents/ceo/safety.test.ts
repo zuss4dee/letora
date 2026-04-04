@@ -45,6 +45,11 @@ describe("CEO safety confirmation gating", () => {
     const intent = classifyCEOIntent("what's the next thing to do?");
     expect(toolsRequireUserConfirmation(intent, ["draft_contract"])).toBe(false);
   });
+
+  it("classifies 'where is X a tenant' as read_only so it does not trigger draft_contract", () => {
+    expect(classifyCEOIntent("where is Alexis a tenant?")).toBe("read_only");
+    expect(classifyCEOIntent("where is john a tenant")).toBe("read_only");
+  });
 });
 
 describe("normalizeCEOToolInput", () => {

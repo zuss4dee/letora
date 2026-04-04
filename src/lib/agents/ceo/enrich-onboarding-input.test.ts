@@ -6,9 +6,12 @@ import {
   extractPropertyAddressHintFromText,
   inferOnboardingForFromConversation,
   inferPropertyAddressHintFromConversation,
+  inferPropertyAddressHintFromUserMessagesOnly,
+  inferTenantOrContractNameFromConversation,
   mergeDraftContractInput,
   mergeEnrichedOnboardingInput,
   normalizeUserTextForInference,
+  scrubDraftContractTenancyIdForMerge,
   userRequestsDraftContractInMessage,
 } from "./enrich-onboarding-input";
 
@@ -59,6 +62,38 @@ describe("extractPropertyAddressHintFromText", () => {
       "billionaires",
     );
   });
+
+  it("parses freeform address with middle dot separator", () => {
+    const h = extractPropertyAddressHintFromText("101 Billionaires Row London · L1 56AA");
+    expect(h?.toLowerCase()).toContain("billionaires");
+  });
+});
+
+describe("inferTenantOrContractNameFromConversation", () => {
+  it("extracts a lowercase given name from draft the contract for alexis", () => {
+    const name = inferTenantOrContractNameFromConversation([
+      { role: "user", content: "draft the contract for alexis" },
+    ]);
+    expect(name).toBe("alexis");
+  });
+
+  it("expands for alexis to assistant full name when first names match", () => {
+    const name = inferTenantOrContractNameFromConversation([
+      { role: "assistant", content: "Draft contract for Alexis Adeosun at 101 Billionaires Row." },
+      { role: "user", content: "draft the contract for alexis" },
+    ]);
+    expect(name).toBe("Alexis Adeosun");
+  });
+});
+
+describe("inferPropertyAddressHintFromUserMessagesOnly", () => {
+  it("extracts freeform UK address lines with postcode", () => {
+    const h = inferPropertyAddressHintFromUserMessagesOnly([
+      { role: "user", content: "101 Billionaires Row London · L1 56AA" },
+    ]);
+    expect(h?.toLowerCase()).toContain("billionaires");
+    expect(h?.toLowerCase()).toContain("london");
+  });
 });
 
 describe("inferPropertyAddressHintFromConversation", () => {
@@ -99,14 +134,27 @@ describe("mergeEnrichedOnboardingInput", () => {
 
 describe("mergeDraftContractInput", () => {
   it("fills tenant_name when tenancy_id/tenant_id/tenant_name are empty", () => {
-    const out = mergeDraftContractInput({}, "Alexis Adeosun", null, null);
+    const out = mergeDraftContractInput({}, "Alexis Adeosun", null, null, null);
     expect(out.tenant_name).toBe("Alexis Adeosun");
+  });
+
+  it("does not attach inferred property hint when tenant_name is inferred (avoids stale assistant address)", () => {
+    const out = mergeDraftContractInput({}, "Alexis Adeosun", "101 Billionaires Row", null, null);
+    expect(out.tenant_name).toBe("Alexis Adeosun");
+    expect(out.onboarding_property_hint).toBeUndefined();
+  });
+
+  it("attaches user-only address hint when tenant_name is inferred", () => {
+    const out = mergeDraftContractInput({}, "Alexis Adeosun", null, null, "101 Row London");
+    expect(out.tenant_name).toBe("Alexis Adeosun");
+    expect(out.onboarding_property_hint).toBe("101 Row London");
   });
 
   it("does not override tenancy_id", () => {
     const out = mergeDraftContractInput(
       { tenancy_id: "8d940bd9-309d-4e53-9a86-b057e221b268" },
       "Someone Else",
+      null,
       null,
       null,
     );
@@ -119,8 +167,43 @@ describe("mergeDraftContractInput", () => {
       mode: "resume",
       tenancy_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     });
-    const out = mergeDraftContractInput({}, null, null, raw);
+    const out = mergeDraftContractInput({}, null, null, raw, null);
     expect(out.tenancy_id).toBe("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
+  });
+
+  it("scrubs unverified tenancy_id when inference can resolve by name", () => {
+    const out = mergeDraftContractInput(
+      scrubDraftContractTenancyIdForMerge(
+        { tenancy_id: "00000000-0000-0000-0000-000000000001" },
+        null,
+        "Alexis Adeosun",
+        null,
+        null,
+      ),
+      "Alexis Adeosun",
+      null,
+      null,
+      null,
+    );
+    expect(out.tenancy_id).toBeUndefined();
+    expect(out.tenant_name).toBe("Alexis Adeosun");
+  });
+
+  it("does not scrub tenancy_id when there is no alternative resolution context", () => {
+    const out = mergeDraftContractInput(
+      scrubDraftContractTenancyIdForMerge(
+        { tenancy_id: "00000000-0000-0000-0000-000000000001" },
+        null,
+        null,
+        null,
+        null,
+      ),
+      null,
+      null,
+      null,
+      null,
+    );
+    expect(out.tenancy_id).toBe("00000000-0000-0000-0000-000000000001");
   });
 });
 
