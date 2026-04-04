@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Letora - Property Management Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#e6e1df",
+                        "surface-container-high": "#2b2a28",
+                        "surface-container-low": "#1d1b1a",
+                        "tertiary": "#c8c6c4",
+                        "on-primary-container": "#97e6ec",
+                        "on-tertiary-fixed": "#1b1c1a",
+                        "surface-container-highest": "#363433",
+                        "on-secondary-fixed-variant": "#673c29",
+                        "on-secondary-container": "#e3a78f",
+                        "on-surface-variant": "#bec8c9",
+                        "inverse-primary": "#01696f",
+                        "surface-container-lowest": "#0f0e0d",
+                        "on-background": "#e6e1df",
+                        "secondary": "#f7b8a0",
+                        "secondary-fixed": "#ffdbcd",
+                        "surface-tint": "#85d3da",
+                        "surface": "#141312",
+                        "tertiary-fixed": "#e5e2df",
+                        "surface-dim": "#141312",
+                        "tertiary-fixed-dim": "#c8c6c4",
+                        "background": "#141312",
+                        "surface-bright": "#3b3937",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#321204",
+                        "primary": "#85d3da",
+                        "inverse-on-surface": "#32302f",
+                        "outline": "#889393",
+                        "on-tertiary-container": "#dad8d5",
+                        "on-primary-fixed-variant": "#004f54",
+                        "on-tertiary": "#30302f",
+                        "on-primary-fixed": "#002022",
+                        "secondary-container": "#673c29",
+                        "on-surface": "#e6e1df",
+                        "primary-fixed": "#a1f0f6",
+                        "on-tertiary-fixed-variant": "#474745",
+                        "on-error": "#690005",
+                        "surface-variant": "#363433",
+                        "primary-container": "#01696f",
+                        "error-container": "#93000a",
+                        "on-primary": "#00363a",
+                        "tertiary-container": "#5f5e5c",
+                        "secondary-fixed-dim": "#f7b8a0",
+                        "surface-container": "#211f1e",
+                        "on-secondary": "#4c2615",
+                        "primary-fixed-dim": "#85d3da",
+                        "outline-variant": "#3f4949"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #0f0e0d; color: #e6e1df; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24; }
+        .hero-gradient {
+            background: radial-gradient(circle at top center, #3d1a0a 0%, #0f0e0d 70%);
+        }
+    </style>
+</head>
+<body class="flex min-h-screen">
+<!-- SideNavBar (220px Narrow Navigation) -->
+<aside class="flex flex-col py-8 w-[220px] fixed h-full z-50 bg-[#0f0e0d] backdrop-blur-xl font-['Inter'] antialiased tracking-tight text-sm">
+<div class="px-6 mb-10 flex flex-col gap-1">
+<span class="text-xl font-bold tracking-tighter text-[#cdccca]">Letora</span>
+<span class="text-[10px] uppercase tracking-[0.1em] text-[#797876]">Property Management</span>
+</div>
+<nav class="flex-1 flex flex-col">
+<!-- Active: Dashboard -->
+<a class="text-[#cdccca] border-l-2 border-[#01696f] bg-[#161513] px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca] opacity-90" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined text-[20px]">groups</span>
+<span>Tenants</span>
+</a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined text-[20px]">domain</span>
+<span>Properties</span>
+</a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined text-[20px]">description</span>
+<span>Contracts</span>
+</a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined text-[20px]">mail</span>
+<span>Emails</span>
+</a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+<span>Assistant</span>
+</a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined text-[20px]">history</span>
+<span>Activity</span>
+</a>
+</nav>
+<div class="mt-auto px-4 flex flex-col gap-2">
+<button class="flex items-center gap-3 px-4 py-2 text-[#797876] hover:text-[#cdccca] transition-colors">
+<span class="material-symbols-outlined text-[20px]">help</span>
+<span>Help</span>
+</button>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+<span>User Profile</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 ml-[220px] relative min-h-screen hero-gradient">
+<div class="max-w-[1100px] mx-auto pt-24 pb-20 px-12">
+<!-- Hero Greeting Section -->
+<section class="text-center mb-12">
+<p class="text-[#797876] text-sm tracking-wide mb-2">Hi, Damilare 👋</p>
+<h1 class="text-5xl font-extrabold tracking-tight text-[#cdccca] mb-10">What needs your attention?</h1>
+<!-- Minimal Prompt Input Bar -->
+<div class="relative max-w-2xl mx-auto group">
+<div class="absolute inset-y-0 left-6 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-[#01696f]">smart_toy</span>
+</div>
+<input class="w-full bg-surface-container-highest/30 backdrop-blur-md border border-outline-variant/20 rounded-xl py-5 pl-16 pr-16 focus:ring-1 focus:ring-[#01696f] focus:border-[#01696f] outline-none text-[#cdccca] placeholder-[#797876] transition-all" placeholder="Ask the Letora assistant or search for a property..." type="text"/>
+<div class="absolute inset-y-0 right-4 flex items-center">
+<button class="p-2 text-[#01696f] hover:opacity-80">
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Quick-action Pills -->
+<div class="flex justify-center gap-3 mt-6">
+<button class="bg-surface-container-low border border-outline-variant/20 px-4 py-1.5 rounded-full text-xs font-medium text-[#cdccca] hover:border-[#01696f]/50 transition-colors">Chase rent</button>
+<button class="bg-surface-container-low border border-outline-variant/20 px-4 py-1.5 rounded-full text-xs font-medium text-[#cdccca] hover:border-[#01696f]/50 transition-colors">Draft contract</button>
+<button class="bg-surface-container-low border border-outline-variant/20 px-4 py-1.5 rounded-full text-xs font-medium text-[#cdccca] hover:border-[#01696f]/50 transition-colors">Send referencing</button>
+</div>
+</section>
+<!-- Stat Cards Row -->
+<section class="grid grid-cols-4 gap-4 mb-20">
+<div class="bg-[#161513] border border-outline-variant/10 p-6 rounded-xl hover:border-outline-variant/30 transition-all">
+<p class="text-[#797876] text-[10px] uppercase tracking-widest mb-4">Active Tenants</p>
+<p class="text-3xl font-bold text-[#cdccca]">142</p>
+<div class="mt-2 text-[#01696f] text-xs flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">trending_up</span> +3% this month
+                    </div>
+</div>
+<div class="bg-[#161513] border border-outline-variant/10 p-6 rounded-xl hover:border-outline-variant/30 transition-all">
+<p class="text-[#797876] text-[10px] uppercase tracking-widest mb-4">Contracts Pending</p>
+<p class="text-3xl font-bold text-[#cdccca]">18</p>
+<div class="mt-2 text-secondary text-xs flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">schedule</span> 4 urgent
+                    </div>
+</div>
+<div class="bg-[#161513] border border-outline-variant/10 p-6 rounded-xl hover:border-outline-variant/30 transition-all">
+<p class="text-[#797876] text-[10px] uppercase tracking-widest mb-4">Rent Due</p>
+<p class="text-3xl font-bold text-[#cdccca]">£12,450</p>
+<div class="mt-2 text-[#797876] text-xs">Due by end of week</div>
+</div>
+<div class="bg-[#161513] border border-outline-variant/10 p-6 rounded-xl hover:border-outline-variant/30 transition-all">
+<p class="text-[#797876] text-[10px] uppercase tracking-widest mb-4">Maintenance Open</p>
+<p class="text-3xl font-bold text-[#cdccca]">7</p>
+<div class="mt-2 text-primary text-xs flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">error</span> 2 High priority
+                    </div>
+</div>
+</section>
+<!-- Onboarding Pipeline Section -->
+<section class="mt-12 bg-surface-container-low/40 border border-outline-variant/5 p-8 rounded-2xl">
+<div class="flex justify-between items-center mb-10">
+<div>
+<h3 class="text-lg font-bold text-[#cdccca]">Onboarding Pipeline</h3>
+<p class="text-sm text-[#797876]">6 active tenants in the funnel</p>
+</div>
+<button class="text-[#01696f] text-sm font-semibold hover:underline">View All Pipelines</button>
+</div>
+<!-- Horizontal Progress Stepper -->
+<div class="relative">
+<div class="absolute top-[18px] left-0 w-full h-[2px] bg-outline-variant/20 z-0"></div>
+<div class="flex justify-between relative z-10">
+<!-- Step 1: Completed -->
+<div class="flex flex-col items-center text-center w-1/6">
+<span class="text-[10px] font-bold text-[#797876] uppercase tracking-tighter mb-4">Add Tenant</span>
+<div class="w-9 h-9 rounded-full bg-[#01696f] flex items-center justify-center text-on-primary-container shadow-lg shadow-[#01696f]/20">
+<span class="material-symbols-outlined text-xl">check</span>
+</div>
+</div>
+<!-- Step 2: Completed -->
+<div class="flex flex-col items-center text-center w-1/6">
+<span class="text-[10px] font-bold text-[#797876] uppercase tracking-tighter mb-4">Referencing</span>
+<div class="w-9 h-9 rounded-full bg-[#01696f] flex items-center justify-center text-on-primary-container shadow-lg shadow-[#01696f]/20">
+<span class="material-symbols-outlined text-xl">check</span>
+</div>
+</div>
+<!-- Step 3: Current -->
+<div class="flex flex-col items-center text-center w-1/6">
+<span class="text-[10px] font-bold text-[#cdccca] uppercase tracking-tighter mb-4">Contract Draft</span>
+<div class="w-9 h-9 rounded-full bg-[#01696f] ring-4 ring-[#01696f]/10 flex items-center justify-center text-on-primary-container">
+<span class="text-sm font-bold">03</span>
+</div>
+<span class="mt-3 text-[10px] text-[#01696f] font-bold">3 Tenants here</span>
+</div>
+<!-- Step 4: Future -->
+<div class="flex flex-col items-center text-center w-1/6">
+<span class="text-[10px] font-bold text-[#797876] uppercase tracking-tighter mb-4">Contract Sent</span>
+<div class="w-9 h-9 rounded-full bg-surface-container-highest border border-outline-variant/30 flex items-center justify-center text-[#797876]">
+<span class="text-sm font-bold">04</span>
+</div>
+</div>
+<!-- Step 5: Future -->
+<div class="flex flex-col items-center text-center w-1/6">
+<span class="text-[10px] font-bold text-[#797876] uppercase tracking-tighter mb-4">Signed</span>
+<div class="w-9 h-9 rounded-full bg-surface-container-highest border border-outline-variant/30 flex items-center justify-center text-[#797876]">
+<span class="text-sm font-bold">05</span>
+</div>
+</div>
+<!-- Step 6: Future -->
+<div class="flex flex-col items-center text-center w-1/6">
+<span class="text-[10px] font-bold text-[#797876] uppercase tracking-tighter mb-4">Active</span>
+<div class="w-9 h-9 rounded-full bg-surface-container-highest border border-outline-variant/30 flex items-center justify-center text-[#797876]">
+<span class="text-sm font-bold">06</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Secondary Canvas Section (Split Layout) -->
+<section class="grid grid-cols-5 gap-10 mt-20">
+<div class="col-span-3">
+<h4 class="text-[#cdccca] font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-[#01696f]">calendar_today</span>
+                        Upcoming Viewings
+                    </h4>
+<div class="space-y-4">
+<div class="bg-[#161513] p-4 rounded-xl flex items-center gap-4 hover:bg-surface-bright/5 transition-all">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest overflow-hidden">
+<img class="w-full h-full object-cover grayscale opacity-50" data-alt="luxury modern apartment interior with large windows and minimalist furniture at dusk" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCGkb2QlEt9ma4ddXlNOBvwUpfdww0z7B8dk__K-QVFGTJiTCBGaJL4afvB7JfgBNAnoe3IJPEYUIbgXNWU6MS1Vwb8JmRWXH1s1MoVfIcf3rkHQE5zo1XpbZ9VrkbDEzjS494SZqgFUQ94WEZZMOTRk6IFFPMNWbsaquG3saB2UMAJDz1dHi2Ln1Lmz6x1pOjZuBWnpk76ZDB7ct1fZ9Nn27O2W8F8MRo0hcQz3H6CY9MnTjvhJ5Nu09izVaCHuvQt7bI2ZHyMPFmo"/>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-[#cdccca]">The Pinnacle, Apt 402</p>
+<p class="text-xs text-[#797876]">Sarah Jenkins • 14:30 Today</p>
+</div>
+<button class="text-[#01696f] material-symbols-outlined">more_vert</button>
+</div>
+<div class="bg-[#161513] p-4 rounded-xl flex items-center gap-4 hover:bg-surface-bright/5 transition-all">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest overflow-hidden">
+<img class="w-full h-full object-cover grayscale opacity-50" data-alt="exterior of a contemporary suburban house with stone accents and elegant night lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIsTLrUKUhYPdw1rcqyMtCqGY8pAb87yExY5QQu6AzftsfyeitAd-vIucEO44gPFV1xpgw6c9cBsRmAdjF9mfM_4-SVXfHZgu6phz3hJEVXre23u_OZ_njqy5d_dSamby3X6FFPKQhyfSxIv216OVq561I9Tij18fRO36MpzsIN-brShCkpletpdrdIs-Vb3XscwnyOfID07G1UxBNYuI20GeEnpr3cQLwuj6YAQpDt0MwjhgQURu0XfGxf3BICzFreYLNvzUYHq4r"/>
+</div>
+<div class="flex-1">
+<p class="text-sm font-semibold text-[#cdccca]">64 Greenway Terrace</p>
+<p class="text-xs text-[#797876]">Michael Ross • 10:00 Tomorrow</p>
+</div>
+<button class="text-[#01696f] material-symbols-outlined">more_vert</button>
+</div>
+</div>
+</div>
+<div class="col-span-2">
+<h4 class="text-[#cdccca] font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-[#01696f]">bolt</span>
+                        Recent Activity
+                    </h4>
+<div class="border-l border-outline-variant/20 ml-3 pl-6 space-y-8">
+<div class="relative">
+<div class="absolute -left-[31px] top-1 w-2 h-2 rounded-full bg-[#01696f]"></div>
+<p class="text-xs text-[#cdccca]">Referencing complete for <span class="font-bold">John Doe</span></p>
+<p class="text-[10px] text-[#797876]">2 hours ago</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[31px] top-1 w-2 h-2 rounded-full bg-[#797876]"></div>
+<p class="text-xs text-[#cdccca]">Maintenance request: <span class="font-bold">Leaking tap</span></p>
+<p class="text-[10px] text-[#797876]">5 hours ago</p>
+</div>
+<div class="relative">
+<div class="absolute -left-[31px] top-1 w-2 h-2 rounded-full bg-[#01696f]"></div>
+<p class="text-xs text-[#cdccca]">Rent payment received: <span class="font-bold">£1,200</span></p>
+<p class="text-[10px] text-[#797876]">Yesterday</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+</body></html>

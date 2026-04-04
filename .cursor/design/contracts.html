@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #141312;
+            color: #e6e1df;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#e6e1df",
+                        "surface-container-high": "#2b2a28",
+                        "surface-container-low": "#1d1b1a",
+                        "tertiary": "#c8c6c4",
+                        "on-primary-container": "#97e6ec",
+                        "on-tertiary-fixed": "#1b1c1a",
+                        "surface-container-highest": "#363433",
+                        "on-secondary-fixed-variant": "#673c29",
+                        "on-secondary-container": "#e3a78f",
+                        "on-surface-variant": "#bec8c9",
+                        "inverse-primary": "#01696f",
+                        "surface-container-lowest": "#0f0e0d",
+                        "on-background": "#e6e1df",
+                        "secondary": "#f7b8a0",
+                        "secondary-fixed": "#ffdbcd",
+                        "surface-tint": "#85d3da",
+                        "surface": "#141312",
+                        "tertiary-fixed": "#e5e2df",
+                        "surface-dim": "#141312",
+                        "tertiary-fixed-dim": "#c8c6c4",
+                        "background": "#141312",
+                        "surface-bright": "#3b3937",
+                        "error": "#ffb4ab",
+                        "on-secondary-fixed": "#321204",
+                        "primary": "#85d3da",
+                        "inverse-on-surface": "#32302f",
+                        "outline": "#889393",
+                        "on-tertiary-container": "#dad8d5",
+                        "on-primary-fixed-variant": "#004f54",
+                        "on-tertiary": "#30302f",
+                        "on-primary-fixed": "#002022",
+                        "secondary-container": "#673c29",
+                        "on-surface": "#e6e1df",
+                        "primary-fixed": "#a1f0f6",
+                        "on-tertiary-fixed-variant": "#474745",
+                        "on-error": "#690005",
+                        "surface-variant": "#363433",
+                        "primary-container": "#01696f",
+                        "error-container": "#93000a",
+                        "on-primary": "#00363a",
+                        "tertiary-container": "#5f5e5c",
+                        "secondary-fixed-dim": "#f7b8a0",
+                        "surface-container": "#211f1e",
+                        "on-secondary": "#4c2615",
+                        "primary-fixed-dim": "#85d3da",
+                        "outline-variant": "#3f4949"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-background text-on-surface antialiased overflow-hidden">
+<div class="flex h-screen overflow-hidden">
+<!-- SideNavBar from JSON -->
+<aside class="bg-[#0f0e0d] backdrop-blur-xl flex flex-col py-8 w-[220px] fixed h-full z-50 font-['Inter'] antialiased tracking-tight text-sm">
+<div class="px-6 mb-10 flex items-center gap-3">
+<div class="w-8 h-8 bg-primary-container rounded flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container text-lg">domain</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tighter text-[#cdccca]">Letora</h1>
+<p class="text-[10px] uppercase tracking-widest text-outline">Property Management</p>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined" data-icon="groups">groups</span>
+<span>Tenants</span>
+</a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined" data-icon="domain">domain</span>
+<span>Properties</span>
+</a>
+<!-- Active Item: Contracts -->
+<a class="text-[#cdccca] border-l-2 border-[#01696f] bg-[#161513] px-4 py-2 flex items-center gap-3 transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span>Contracts</span>
+</a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined" data-icon="mail">mail</span>
+<span>Emails</span>
+</a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined" data-icon="smart_toy">smart_toy</span>
+<span>Assistant</span>
+</a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span>Activity</span>
+</a>
+</nav>
+<div class="px-4 mt-auto pt-8 border-t border-outline-variant/10">
+<a class="text-[#797876] px-4 py-2 flex items-center gap-3 transition-all hover:text-[#cdccca] mb-4" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span>Help</span>
+</a>
+<div class="flex items-center gap-3 px-4 py-3 bg-[#161513] rounded-lg">
+<img alt="User Profile" class="w-8 h-8 rounded-full border border-outline-variant/20" data-alt="close-up portrait of a professional property manager in a sleek dark blazer with a focused expression" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAE38DJc0LFIJSnOxZBCVsV7jHFgTUUQSF4HwC8qSI4ySt-CgxmE0YGPfPLo_diRLD1CvXD7yokHHDwZJ4SFWtCxIeRtFTCfcXyInZ-NM0MdS9J71hOM8MuypC9u1vwI0DpBw1hOoq7FMr0mySFTzbcOwkPlSnHwgDUb6-9UBPy_JgWQLmDQyW8Wnx71Ue1eIquQkBgRv99WJ-H4iqUkU_8yuejLMFdzyhmc-m4axpt7pQ6sAKwb10kpatFuCFkTABEOKaWcMgLb8CX"/>
+<div class="overflow-hidden">
+<p class="text-xs font-medium text-[#cdccca] truncate">User Profile</p>
+<p class="text-[10px] text-outline truncate">Premium Admin</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 ml-[220px] bg-[#141312] min-h-screen overflow-y-auto">
+<!-- Header Section -->
+<div class="max-w-7xl mx-auto px-10 pt-16 pb-8">
+<div class="flex flex-col gap-1 mb-12">
+<h2 class="text-[2.75rem] font-bold tracking-[-0.04em] text-[#cdccca]">Contracts</h2>
+<p class="text-sm text-[#797876] tracking-tight">Manage tenancy agreements and document workflows.</p>
+</div>
+<!-- Filter Tabs -->
+<div class="flex items-center gap-8 mb-10 border-b border-outline-variant/10">
+<button class="pb-4 text-sm font-medium text-[#cdccca] border-b-2 border-primary relative">
+                        All
+                    </button>
+<button class="pb-4 text-sm font-medium text-[#797876] hover:text-[#cdccca] transition-colors">
+                        Draft
+                    </button>
+<button class="pb-4 text-sm font-medium text-[#797876] hover:text-[#cdccca] transition-colors">
+                        Sent
+                    </button>
+<button class="pb-4 text-sm font-medium text-[#797876] hover:text-[#cdccca] transition-colors flex items-center gap-2">
+                        Pending Signature
+                        <span class="px-1.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold">3</span>
+</button>
+<button class="pb-4 text-sm font-medium text-[#797876] hover:text-[#cdccca] transition-colors">
+                        Signed
+                    </button>
+<button class="pb-4 text-sm font-medium text-[#797876] hover:text-[#cdccca] transition-colors">
+                        Active
+                    </button>
+<div class="ml-auto pb-4">
+<button class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-primary hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined text-sm">add</span>
+                            New Contract
+                        </button>
+</div>
+</div>
+<!-- Table Content -->
+<div class="bg-[#161513] rounded-xl overflow-hidden border border-outline-variant/10">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-[#1d1b1a]/50">
+<th class="px-8 py-5 text-[10px] uppercase tracking-widest text-[#797876] font-bold">Tenant</th>
+<th class="px-8 py-5 text-[10px] uppercase tracking-widest text-[#797876] font-bold">Property</th>
+<th class="px-8 py-5 text-[10px] uppercase tracking-widest text-[#797876] font-bold">Status</th>
+<th class="px-8 py-5 text-[10px] uppercase tracking-widest text-[#797876] font-bold">Date Created</th>
+<th class="px-8 py-5 text-[10px] uppercase tracking-widest text-[#797876] font-bold text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/5">
+<!-- Row 1: Active -->
+<tr class="group hover:bg-[#211f1e] transition-colors">
+<td class="px-8 py-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-xs font-bold text-primary">AM</div>
+<div>
+<p class="text-sm font-medium text-[#cdccca]">Alexander Mitchell</p>
+<p class="text-xs text-[#797876]">amitchell@example.com</p>
+</div>
+</div>
+</td>
+<td class="px-8 py-6">
+<p class="text-sm text-[#cdccca]">128 Kensington High St.</p>
+<p class="text-xs text-[#797876]">Flat 4B · London</p>
+</td>
+<td class="px-8 py-6">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-primary-container/20 text-primary text-[10px] font-bold uppercase tracking-wide">
+                                        Active
+                                    </span>
+</td>
+<td class="px-8 py-6 text-sm text-[#797876]">Oct 12, 2023</td>
+<td class="px-8 py-6 text-right">
+<div class="flex justify-end gap-4">
+<button class="text-xs font-bold text-[#cdccca] hover:text-primary transition-colors">View</button>
+<button class="text-xs font-bold text-[#797876] hover:text-primary transition-colors">Send</button>
+</div>
+</td>
+</tr>
+<!-- Row 2: Pending Signature -->
+<tr class="group hover:bg-[#211f1e] transition-colors">
+<td class="px-8 py-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-xs font-bold text-secondary">SC</div>
+<div>
+<p class="text-sm font-medium text-[#cdccca]">Sophia Chen</p>
+<p class="text-xs text-[#797876]">schen.design@web.com</p>
+</div>
+</div>
+</td>
+<td class="px-8 py-6">
+<p class="text-sm text-[#cdccca]">The Pinnacle South</p>
+<p class="text-xs text-[#797876]">Suite 902 · Manchester</p>
+</td>
+<td class="px-8 py-6">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-secondary-container/20 text-secondary text-[10px] font-bold uppercase tracking-wide">
+                                        Pending Signature
+                                    </span>
+</td>
+<td class="px-8 py-6 text-sm text-[#797876]">Nov 05, 2023</td>
+<td class="px-8 py-6 text-right">
+<div class="flex justify-end gap-4">
+<button class="text-xs font-bold text-[#cdccca] hover:text-primary transition-colors">View</button>
+<button class="text-xs font-bold text-primary hover:underline transition-colors">Remind</button>
+</div>
+</td>
+</tr>
+<!-- Row 3: Draft -->
+<tr class="group hover:bg-[#211f1e] transition-colors">
+<td class="px-8 py-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-xs font-bold text-tertiary">JL</div>
+<div>
+<p class="text-sm font-medium text-[#cdccca]">Julian Lawrence</p>
+<p class="text-xs text-[#797876]">j.lawrence@studio.io</p>
+</div>
+</div>
+</td>
+<td class="px-8 py-6">
+<p class="text-sm text-[#cdccca]">Riverside Meadows</p>
+<p class="text-xs text-[#797876]">House 12 · Bath</p>
+</td>
+<td class="px-8 py-6">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-surface-container-highest text-[#797876] text-[10px] font-bold uppercase tracking-wide border border-outline-variant/10">
+                                        Draft
+                                    </span>
+</td>
+<td class="px-8 py-6 text-sm text-[#797876]">Nov 18, 2023</td>
+<td class="px-8 py-6 text-right">
+<div class="flex justify-end gap-4">
+<button class="text-xs font-bold text-[#cdccca] hover:text-primary transition-colors">Edit</button>
+<button class="text-xs font-bold text-primary hover:underline transition-colors">Send</button>
+</div>
+</td>
+</tr>
+<!-- Row 4: Sent -->
+<tr class="group hover:bg-[#211f1e] transition-colors">
+<td class="px-8 py-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-xs font-bold text-primary-fixed">ER</div>
+<div>
+<p class="text-sm font-medium text-[#cdccca]">Elena Rossi</p>
+<p class="text-xs text-[#797876]">erossi_arch@italy.net</p>
+</div>
+</div>
+</td>
+<td class="px-8 py-6">
+<p class="text-sm text-[#cdccca]">Old Town Square</p>
+<p class="text-xs text-[#797876]">Unit A1 · Edinburgh</p>
+</td>
+<td class="px-8 py-6">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-primary-fixed/10 text-primary-fixed text-[10px] font-bold uppercase tracking-wide">
+                                        Sent
+                                    </span>
+</td>
+<td class="px-8 py-6 text-sm text-[#797876]">Nov 15, 2023</td>
+<td class="px-8 py-6 text-right">
+<div class="flex justify-end gap-4">
+<button class="text-xs font-bold text-[#cdccca] hover:text-primary transition-colors">View</button>
+<button class="text-xs font-bold text-[#797876] hover:text-primary transition-colors">Resend</button>
+</div>
+</td>
+</tr>
+<!-- Row 5: Signed -->
+<tr class="group hover:bg-[#211f1e] transition-colors">
+<td class="px-8 py-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-xs font-bold text-on-secondary-container">MT</div>
+<div>
+<p class="text-sm font-medium text-[#cdccca]">Marcus Thorne</p>
+<p class="text-xs text-[#797876]">mthorne@logistics.com</p>
+</div>
+</div>
+</td>
+<td class="px-8 py-6">
+<p class="text-sm text-[#cdccca]">Industrial Park Lofts</p>
+<p class="text-xs text-[#797876]">Loft 304 · Leeds</p>
+</td>
+<td class="px-8 py-6">
+<span class="inline-flex items-center px-2 py-0.5 rounded bg-on-secondary-container/10 text-[#e3a78f] text-[10px] font-bold uppercase tracking-wide">
+                                        Signed
+                                    </span>
+</td>
+<td class="px-8 py-6 text-sm text-[#797876]">Nov 10, 2023</td>
+<td class="px-8 py-6 text-right">
+<div class="flex justify-end gap-4">
+<button class="text-xs font-bold text-[#cdccca] hover:text-primary transition-colors">Download</button>
+<button class="text-xs font-bold text-primary hover:underline transition-colors">Activate</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination/Status Summary -->
+<div class="mt-8 flex items-center justify-between px-2">
+<p class="text-xs text-[#797876]">Showing <span class="text-[#cdccca] font-medium">5</span> of <span class="text-[#cdccca] font-medium">42</span> active contracts</p>
+<div class="flex items-center gap-2">
+<button class="w-8 h-8 rounded border border-outline-variant/20 flex items-center justify-center text-[#797876] hover:bg-surface-container transition-colors disabled:opacity-30" disabled="">
+<span class="material-symbols-outlined text-sm">chevron_left</span>
+</button>
+<button class="w-8 h-8 rounded bg-primary-container text-on-primary-container flex items-center justify-center text-xs font-bold">1</button>
+<button class="w-8 h-8 rounded border border-outline-variant/20 flex items-center justify-center text-[#797876] hover:bg-surface-container hover:text-[#cdccca] transition-colors text-xs font-bold">2</button>
+<button class="w-8 h-8 rounded border border-outline-variant/20 flex items-center justify-center text-[#797876] hover:bg-surface-container hover:text-[#cdccca] transition-colors text-xs font-bold">3</button>
+<button class="w-8 h-8 rounded border border-outline-variant/20 flex items-center justify-center text-[#797876] hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Quick Action Floating Bar -->
+<div class="fixed bottom-10 left-1/2 -translate-x-1/2 bg-surface-container-highest/80 backdrop-blur-xl border border-outline-variant/20 rounded-xl px-6 py-4 shadow-2xl flex items-center gap-8 z-40">
+<div class="flex items-center gap-3 pr-8 border-r border-outline-variant/20">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<p class="text-xs font-medium text-[#cdccca]">3 Pending Signatures</p>
+</div>
+<div class="flex gap-4">
+<button class="text-[10px] font-bold uppercase tracking-wider text-[#797876] hover:text-[#cdccca] transition-colors">Export CSV</button>
+<button class="text-[10px] font-bold uppercase tracking-wider text-[#797876] hover:text-[#cdccca] transition-colors">Bulk Remind</button>
+<button class="text-[10px] font-bold uppercase tracking-wider text-primary">New Agreement</button>
+</div>
+</div>
+</main>
+</div>
+</body></html>

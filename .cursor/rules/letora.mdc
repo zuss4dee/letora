@@ -2,6 +2,35 @@
 alwaysApply: true
 ---
 
+## Design Reference
+Read @design-reference.md before making any UI changes.
+Read @DESIGN.md for Letora's specific design system (The Nocturnal Architect).
+
+## UI-only changes (default for styling/layout)
+- **Do not** modify logic in `src/lib/**`, `src/app/api/**`, or any server actions (`src/lib/actions/**`).
+- **Do not** remove or change existing data fetches, hooks, or function calls (including `useEffect` bodies and dependency arrays) unless the user explicitly asks for behavior changes.
+- **Only** change JSX structure and Tailwind `className` values (plus purely presentational `aria-*` when improving accessibility).
+- **Preserve** every `onClick`, `onSubmit`, `action={}`, `href={}`, and **`data` / callback prop** exactly as-is.
+
+## UI rebuild — allowed paths (strict)
+**May edit (presentation only):**
+- `src/app/(dashboard)/**/*.tsx` — page and layout files only
+- `src/components/ui/**`
+- `src/components/dashboard/**`
+- `src/app/globals.css` (and `tailwind.config.ts` / `tailwind.config.js` if present)
+
+**Do not edit for UI work:**
+- `src/lib/agents/**`, `src/lib/actions/**`, `src/lib/llm/**`, `src/lib/supabase/**`
+- `src/app/api/**`, `supabase/migrations/**`
+- Any file whose path or name ties to agent execution: `executor`, `runLLM`, `runCEO`, `tools`, `system-prompt` (e.g. `system-prompt.ts`)
+
+## Rewire rule (pages)
+1. Keep existing data fetching (`async` server components, `useEffect`, SWR, etc.) **exactly** as-is.
+2. Change only JSX structure and Tailwind `className` values.
+3. Do not remove props, hooks, or data loads.
+4. Do not change server action imports or call signatures.
+5. Preserve `onClick`, `onSubmit`, `action={}`, `href={}`, and data/callback props; restyle controls only.
+
 # Letora — Property Operating System
 
 ## Product Overview

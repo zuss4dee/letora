@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Letora AI Assistant</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-error-container": "#ffdad6",
+                    "inverse-surface": "#e6e1df",
+                    "surface-container-high": "#2b2a28",
+                    "surface-container-low": "#1d1b1a",
+                    "tertiary": "#c8c6c4",
+                    "on-primary-container": "#97e6ec",
+                    "on-tertiary-fixed": "#1b1c1a",
+                    "surface-container-highest": "#363433",
+                    "on-secondary-fixed-variant": "#673c29",
+                    "on-secondary-container": "#e3a78f",
+                    "on-surface-variant": "#bec8c9",
+                    "inverse-primary": "#01696f",
+                    "surface-container-lowest": "#0f0e0d",
+                    "on-background": "#e6e1df",
+                    "secondary": "#f7b8a0",
+                    "secondary-fixed": "#ffdbcd",
+                    "surface-tint": "#85d3da",
+                    "surface": "#141312",
+                    "tertiary-fixed": "#e5e2df",
+                    "surface-dim": "#141312",
+                    "tertiary-fixed-dim": "#c8c6c4",
+                    "background": "#141312",
+                    "surface-bright": "#3b3937",
+                    "error": "#ffb4ab",
+                    "on-secondary-fixed": "#321204",
+                    "primary": "#85d3da",
+                    "inverse-on-surface": "#32302f",
+                    "outline": "#889393",
+                    "on-tertiary-container": "#dad8d5",
+                    "on-primary-fixed-variant": "#004f54",
+                    "on-tertiary": "#30302f",
+                    "on-primary-fixed": "#002022",
+                    "secondary-container": "#673c29",
+                    "on-surface": "#e6e1df",
+                    "primary-fixed": "#a1f0f6",
+                    "on-tertiary-fixed-variant": "#474745",
+                    "on-error": "#690005",
+                    "surface-variant": "#363433",
+                    "primary-container": "#01696f",
+                    "error-container": "#93000a",
+                    "on-primary": "#00363a",
+                    "tertiary-container": "#5f5e5c",
+                    "secondary-fixed-dim": "#f7b8a0",
+                    "surface-container": "#211f1e",
+                    "on-secondary": "#4c2615",
+                    "primary-fixed-dim": "#85d3da",
+                    "outline-variant": "#3f4949"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "fontFamily": {
+                    "headline": ["Inter"],
+                    "body": ["Inter"],
+                    "label": ["Inter"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-[#0f0e0d] text-[#cdccca] antialiased min-h-screen flex overflow-hidden">
+<!-- SideNavBar (Authority: JSON & Design System) -->
+<aside class="flex flex-col py-8 w-[220px] fixed h-full z-50 bg-[#0f0e0d] backdrop-blur-xl font-['Inter'] antialiased tracking-tight text-sm">
+<div class="px-6 mb-12">
+<h1 class="text-xl font-bold tracking-tighter text-[#cdccca]">Letora</h1>
+<p class="text-[10px] uppercase tracking-[0.1em] text-[#797876] mt-1">Property Management</p>
+</div>
+<nav class="flex-1 space-y-1">
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="dashboard">dashboard</span>
+                Dashboard
+            </a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="groups">groups</span>
+                Tenants
+            </a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="domain">domain</span>
+                Properties
+            </a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="description">description</span>
+                Contracts
+            </a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="mail">mail</span>
+                Emails
+            </a>
+<a class="text-[#cdccca] border-l-2 border-[#01696f] bg-[#161513] px-4 py-2 flex items-center gap-3 transition-all" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="smart_toy">smart_toy</span>
+                Assistant
+            </a>
+<a class="text-[#797876] border-l-2 border-transparent px-4 py-2 flex items-center gap-3 transition-all hover:bg-[#161513] hover:text-[#cdccca]" href="#">
+<span class="material-symbols-outlined text-[20px]" data-icon="history">history</span>
+                Activity
+            </a>
+</nav>
+<div class="mt-auto px-4 space-y-4">
+<button class="w-full text-left text-[#797876] px-4 py-2 flex items-center gap-3 hover:text-[#cdccca] transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="help">help</span>
+                Help
+            </button>
+<div class="flex items-center gap-3 px-4 py-2">
+<div class="w-8 h-8 rounded-full bg-[#211f1e] flex items-center justify-center overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Portrait of a professional property agent in dark minimalist attire with subtle lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBxyAKgo_jzzFrvLS5uwnWgiWYjJE3-_bxzIAaG1Y4ugS5-ni0iLRYXhS8MCS6msPYRlFN93F_rnk3zrZp6iGxIjRz4yx0aHJDyurHKea2RaYAct4uWI7YpsCKAu7-it7zbu_mirCFT1FfQBV9LOokaHNeJzWxwHV-zrm9rwNtBTS7yxFxo7b9P31f-AQGx9pYhQ5q3q0xlJ1kNvL8RaKzmeyj1dqbmcTW9KFmcNFKStA1xuUtahoqJ9I_IhJAJJUpNQCnNdbamJP9"/>
+</div>
+<span class="text-[#cdccca] font-medium text-xs">User Profile</span>
+</div>
+</div>
+</aside>
+<!-- Main Canvas Area -->
+<main class="ml-[220px] flex-1 flex h-screen bg-[#141312]">
+<!-- Chat Column (65%) -->
+<section class="w-[65%] flex flex-col border-r border-outline-variant/10 relative">
+<!-- Chat Header -->
+<header class="h-16 px-8 flex items-center justify-between bg-surface-dim/80 backdrop-blur-md sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<h2 class="text-lg font-semibold tracking-tight text-on-surface">Intelligence Session</h2>
+<span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-[10px] font-bold tracking-widest uppercase">Live</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-on-surface" data-icon="search">search</span>
+<span class="material-symbols-outlined text-on-surface-variant cursor-pointer hover:text-on-surface" data-icon="more_vert">more_vert</span>
+</div>
+</header>
+<!-- Conversation Area -->
+<div class="flex-1 overflow-y-auto p-8 space-y-12 scrollbar-hide">
+<!-- AI Message -->
+<div class="flex flex-col gap-3 max-w-2xl">
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold tracking-widest uppercase text-primary">Letora</span>
+<span class="text-[10px] text-on-surface-variant">10:24 AM</span>
+</div>
+<div class="bg-surface-container rounded-xl p-5 text-on-surface leading-relaxed text-sm border border-outline-variant/20">
+                        I've analyzed the onboarding progress for Julian Thorne. The contract signature is still pending. Would you like me to send a follow-up reminder or trigger the automated verification of their deposit receipt?
+                    </div>
+</div>
+<!-- User Message -->
+<div class="flex flex-col gap-3 max-w-2xl ml-auto items-end">
+<div class="flex items-center gap-2">
+<span class="text-[10px] text-on-surface-variant">10:25 AM</span>
+<span class="text-[10px] font-bold tracking-widest uppercase text-on-surface">Agent</span>
+</div>
+<div class="bg-primary-container text-on-primary-container rounded-xl p-5 leading-relaxed text-sm">
+                        Check the deposit receipt first. If it's verified, then send the contract reminder with the updated moving date we discussed.
+                    </div>
+</div>
+<!-- AI Thinking State -->
+<div class="flex flex-col gap-3 max-w-2xl">
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold tracking-widest uppercase text-primary">Letora</span>
+</div>
+<div class="flex items-center gap-4 text-on-surface-variant italic text-sm">
+<div class="flex space-x-1">
+<div class="w-1.5 h-1.5 bg-primary/40 rounded-full animate-pulse"></div>
+<div class="w-1.5 h-1.5 bg-primary/60 rounded-full animate-pulse delay-75"></div>
+<div class="w-1.5 h-1.5 bg-primary rounded-full animate-pulse delay-150"></div>
+</div>
+                        Verifying bank statement and deposit matching...
+                    </div>
+</div>
+</div>
+<!-- Input Bar -->
+<div class="p-8">
+<div class="relative bg-surface-container-highest rounded-xl border border-outline-variant/30 transition-all focus-within:border-primary/50 group shadow-lg shadow-black/20">
+<textarea class="w-full bg-transparent border-none focus:ring-0 text-on-surface text-sm p-5 pr-16 resize-none placeholder-on-surface-variant/50" placeholder="Ask Letora to manage properties or tenants..." rows="2"></textarea>
+<div class="absolute bottom-4 right-4 flex items-center gap-3">
+<button class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-on-primary-container hover:opacity-90 transition-opacity">
+<span class="material-symbols-outlined text-lg" data-icon="send">send</span>
+</button>
+</div>
+</div>
+<div class="mt-4 flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+<button class="px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container text-[11px] font-medium text-on-surface-variant hover:border-primary/40 hover:text-on-surface whitespace-nowrap">Generate Lease</button>
+<button class="px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container text-[11px] font-medium text-on-surface-variant hover:border-primary/40 hover:text-on-surface whitespace-nowrap">Review Deposit</button>
+<button class="px-3 py-1.5 rounded-full border border-outline-variant/20 bg-surface-container text-[11px] font-medium text-on-surface-variant hover:border-primary/40 hover:text-on-surface whitespace-nowrap">Update Rent Ledger</button>
+</div>
+</div>
+</section>
+<!-- Context Panel (35%) -->
+<aside class="w-[35%] bg-surface-container-low p-8 flex flex-col gap-10 overflow-y-auto scrollbar-hide">
+<div class="space-y-6">
+<h3 class="text-[10px] font-bold tracking-[0.2em] uppercase text-on-surface-variant">Tenant Context</h3>
+<!-- Tenant Card -->
+<div class="bg-surface p-6 rounded-xl border border-outline-variant/10 shadow-sm">
+<div class="flex items-center gap-4 mb-6">
+<img class="w-14 h-14 rounded-full object-cover grayscale" data-alt="Close-up professional headshot of a young male tenant with focused expression against neutral dark studio background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBR9OUthpofGHgx8aXw3HmdjqTatlBVOcQCHnG-XOOL7ihgLy20z7cm8s9r4e4de0TBVmsyxzOxi4QQsLz964hLnvjdJOnkgbnXpJiEUIHnMBHSWIN94fLnpzzzDSDZUjTiqLUcBY7lHuZOmp4gphHyvBf1qB__Gti2p_zkFpGSX4W7zl_odBoHRJ6yQU7RYUdQi2gMDI7qAPpzmz7EmDY2BndPHCtYjkhRMGC2qBIqpXuRi0BCkSlwPbvLmSXZOnBvDRCeZsFqw10"/>
+<div>
+<h4 class="text-on-surface font-semibold text-base">Julian Thorne</h4>
+<p class="text-on-surface-variant text-xs">Apt 4B, Obsidian Heights</p>
+</div>
+</div>
+<div class="space-y-4">
+<div class="space-y-2">
+<div class="flex justify-between text-[11px] uppercase tracking-wider">
+<span class="text-on-surface-variant">Onboarding Progress</span>
+<span class="text-primary font-bold">75%</span>
+</div>
+<div class="h-1 bg-outline-variant/20 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[75%] rounded-full"></div>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-3 pt-4">
+<button class="px-4 py-2.5 rounded bg-surface-container-high border border-outline-variant/10 text-[11px] font-semibold text-on-surface hover:bg-surface-bright transition-colors">
+                                View Contract
+                            </button>
+<button class="px-4 py-2.5 rounded bg-surface-container-high border border-outline-variant/10 text-[11px] font-semibold text-on-surface hover:bg-surface-bright transition-colors">
+                                View Profile
+                            </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Actions -->
+<div class="space-y-6">
+<h3 class="text-[10px] font-bold tracking-[0.2em] uppercase text-on-surface-variant">Recent Actions</h3>
+<div class="space-y-4">
+<!-- Action 1 -->
+<div class="flex items-start gap-4 p-4 rounded-lg bg-surface/40 border border-outline-variant/5">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]" data-icon="account_balance">account_balance</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-semibold text-on-surface">Deposit Verification</span>
+<span class="px-2 py-0.5 rounded bg-primary/20 text-primary text-[9px] font-bold uppercase tracking-tighter">Success</span>
+</div>
+<p class="text-[10px] text-on-surface-variant">Verified £2,400 transfer from HSBC</p>
+<p class="text-[9px] text-on-surface-variant/50 mt-2">2 minutes ago</p>
+</div>
+</div>
+<!-- Action 2 -->
+<div class="flex items-start gap-4 p-4 rounded-lg bg-surface/40 border border-outline-variant/5">
+<div class="w-8 h-8 rounded-full bg-tertiary-container flex items-center justify-center text-tertiary">
+<span class="material-symbols-outlined text-[18px]" data-icon="history_edu">history_edu</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-semibold text-on-surface">Inventory Check</span>
+<span class="px-2 py-0.5 rounded bg-on-surface-variant/10 text-on-surface-variant text-[9px] font-bold uppercase tracking-tighter">Skipped</span>
+</div>
+<p class="text-[10px] text-on-surface-variant">Action deferred by agent oversight</p>
+<p class="text-[9px] text-on-surface-variant/50 mt-2">15 minutes ago</p>
+</div>
+</div>
+<!-- Action 3 -->
+<div class="flex items-start gap-4 p-4 rounded-lg bg-surface/40 border border-outline-variant/5">
+<div class="w-8 h-8 rounded-full bg-error-container/20 flex items-center justify-center text-error">
+<span class="material-symbols-outlined text-[18px]" data-icon="mail">mail</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-center mb-1">
+<span class="text-xs font-semibold text-on-surface">Email Dispatch</span>
+<span class="px-2 py-0.5 rounded bg-error-container text-on-error-container text-[9px] font-bold uppercase tracking-tighter">Failed</span>
+</div>
+<p class="text-[10px] text-on-surface-variant">SMTP timeout on hello@thorne.me</p>
+<p class="text-[9px] text-on-surface-variant/50 mt-2">1 hour ago</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Insights Section -->
+<div class="mt-auto p-6 rounded-xl bg-primary-container/10 border border-primary/20">
+<div class="flex items-center gap-3 mb-3">
+<span class="material-symbols-outlined text-primary" data-icon="auto_awesome">auto_awesome</span>
+<span class="text-xs font-bold uppercase tracking-widest text-primary">Intelligence Insight</span>
+</div>
+<p class="text-xs leading-relaxed text-on-primary-container">
+                    Tenant retention probability is high (92%). Recommended action: Offer 24-month lease lock-in.
+                </p>
+</div>
+</aside>
+</main>
+</body></html>

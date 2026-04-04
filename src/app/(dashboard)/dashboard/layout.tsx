@@ -1,8 +1,8 @@
 import type { CSSProperties, ReactNode } from "react";
 
-import { AppSidebar } from "@/components/app-sidebar";
+import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { ReferencingInboundRealtimeListener } from "@/components/referencing-inbound-realtime-listener";
-import { SiteHeader } from "@/components/site-header";
+import { SiteHeader } from "@/components/dashboard/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { createClient } from "@/lib/supabase/server";

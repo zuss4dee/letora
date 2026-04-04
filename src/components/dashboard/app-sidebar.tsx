@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useRouter } from "next/navigation"
 
-import { NavMain } from "@/components/nav-main"
+import { NavMain } from "@/components/dashboard/nav-main"
 import {
   Sidebar,
   SidebarContent,
