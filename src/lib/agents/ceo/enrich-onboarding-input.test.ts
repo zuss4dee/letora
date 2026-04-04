@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  draftContractMergeHasResolvableArgs,
   extractOnboardingNameFromUserText,
   extractPropertyAddressHintFromText,
   inferOnboardingForFromConversation,
@@ -8,6 +9,7 @@ import {
   mergeDraftContractInput,
   mergeEnrichedOnboardingInput,
   normalizeUserTextForInference,
+  userRequestsDraftContractInMessage,
 } from "./enrich-onboarding-input";
 
 describe("normalizeUserTextForInference", () => {
@@ -119,5 +121,26 @@ describe("mergeDraftContractInput", () => {
     });
     const out = mergeDraftContractInput({}, null, null, raw);
     expect(out.tenancy_id).toBe("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
+  });
+});
+
+describe("userRequestsDraftContractInMessage", () => {
+  it("matches common phrasing", () => {
+    expect(userRequestsDraftContractInMessage("draft the contract")).toBe(true);
+    expect(userRequestsDraftContractInMessage("Please prepare the tenancy contract")).toBe(true);
+    expect(userRequestsDraftContractInMessage("write a contract for them")).toBe(true);
+  });
+
+  it("does not match unrelated draft wording", () => {
+    expect(userRequestsDraftContractInMessage("draft an email to the tenant")).toBe(false);
+  });
+});
+
+describe("draftContractMergeHasResolvableArgs", () => {
+  it("is true when any resolver field is present", () => {
+    expect(draftContractMergeHasResolvableArgs({ tenancy_id: "x" })).toBe(true);
+    expect(draftContractMergeHasResolvableArgs({ tenant_name: "Jane" })).toBe(true);
+    expect(draftContractMergeHasResolvableArgs({ onboarding_property_hint: "101 High St" })).toBe(true);
+    expect(draftContractMergeHasResolvableArgs({})).toBe(false);
   });
 });

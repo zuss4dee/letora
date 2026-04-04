@@ -265,3 +265,29 @@ export function mergeDraftContractInput(
   }
   return out;
 }
+
+/**
+ * True when merged **draft_contract** args are enough for the executor to attempt resolution
+ * (tenancy_id, tenant id/name, or property hint alone per executor rules).
+ */
+export function draftContractMergeHasResolvableArgs(merged: Record<string, string>): boolean {
+  return Boolean(
+    merged.tenancy_id?.trim() ||
+      merged.tenant_id?.trim() ||
+      merged.tenant_name?.trim() ||
+      merged.onboarding_property_hint?.trim(),
+  );
+}
+
+/**
+ * True when the user is clearly asking to draft a tenancy contract in chat (not e.g. “draft an email”).
+ */
+export function userRequestsDraftContractInMessage(text: string): boolean {
+  const t = normalizeUserTextForInference(text).replace(/\s+/g, " ").trim().toLowerCase();
+  if (t.length < 6) return false;
+  return (
+    /\b(draft|prepare|write)\s+(?:a\s+)?(?:new\s+)?(?:the\s+)?(?:tenancy\s+)?contract\b/i.test(t) ||
+    /\bcreate\s+(?:a\s+)?(?:draft\s+)?(?:tenancy\s+)?contract\b/i.test(t) ||
+    /\b(?:need|want)\s+(?:a\s+)?(?:new\s+)?(?:tenancy\s+)?contract\s+(?:draft|written|done)\b/i.test(t)
+  );
+}

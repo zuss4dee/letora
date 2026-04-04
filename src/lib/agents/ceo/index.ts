@@ -36,11 +36,13 @@ import {
   type CEOIntentRoute,
 } from "./intent-router";
 import {
+  draftContractMergeHasResolvableArgs,
   inferOnboardingForFromConversation,
   inferPropertyAddressHintFromConversation,
   inferTenantOrContractNameFromConversation,
   mergeDraftContractInput,
   mergeEnrichedOnboardingInput,
+  userRequestsDraftContractInMessage,
 } from "./enrich-onboarding-input";
 import {
   buildCeoFailureThrottleKey,
@@ -839,6 +841,91 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
   let lastToolBatch: { name: CEOToolName; raw: string }[] = [];
   /** Latest **draft_contract** JSON in this agent loop (survives later turns that overwrite **lastToolBatch**). */
   let lastDraftContractRaw: string | null = null;
+
+  /**
+   * When the user clearly asks to draft a contract and we can resolve args from prefetch + chat,
+   * run **draft_contract** server-side and summarize in one text-only turn. Stops the model from
+   * end_turn-ing with dashboard/“technical barrier” copy without calling the tool (which triggered
+   * correctDraftContractHallucinationReply’s meta-message).
+   */
+  const mergedDraftArgs = mergeDraftContractInput(
+    {},
+    inferredTenantName,
+    inferredPropertyHint,
+    onboardingPrefetchRaw,
+  );
+  const shouldAutoRunDraftContract =
+    intent === "draft_suggest" &&
+    userRequestsDraftContractInMessage(latestUser) &&
+    route.recommendedTools.includes("draft_contract") &&
+    draftContractMergeHasResolvableArgs(mergedDraftArgs);
+
+  if (shouldAutoRunDraftContract) {
+    const draftRaw = await executeCEOTool("draft_contract", mergedDraftArgs, userId, supabase);
+    let code: string | undefined;
+    try {
+      const p = JSON.parse(draftRaw) as { code?: string };
+      code = typeof p.code === "string" ? p.code : undefined;
+    } catch {
+      /* ignore */
+    }
+    const allowShortCircuit = code !== "missing_tenant";
+    if (allowShortCircuit) {
+      lastToolBatch = [{ name: "draft_contract", raw: draftRaw }];
+      lastDraftContractRaw = draftRaw;
+      const draftSummarySystem = `${effectiveSystemPrompt}\n\n**Server already ran draft_contract for this user message. Tool JSON (authoritative — your reply MUST follow this data only):**\n${draftRaw}\n\n**Mandatory:** Summarize the outcome in natural language. If **saved** is true, confirm the draft was saved and point to Dashboard → Contracts. If **error** and **code** are present, quote them briefly. **Never** claim the tool did not run, that chat cannot draft, or that the dashboard is the only path unless the **error** text says so. Do not call tools.`;
+
+      try {
+        const draftSummaryResp = await anthropic.messages.create({
+          model: ANTHROPIC_CEO_MODEL,
+          max_tokens: 2048,
+          system: draftSummarySystem,
+          messages: conversation,
+        });
+        return completeWithSuggestedActions(
+          extractFinalText(draftSummaryResp),
+          lastToolBatch,
+          authoritativeLeadsRaw,
+          referencingPrefetchRaw,
+          referencingInboundDigest,
+          onboardingPrefetchRaw,
+          lastDraftContractRaw,
+        );
+      } catch (anthropicError) {
+        await runAdminFailureAlert({
+          stage: "anthropic_loop",
+          error: anthropicError,
+          userId,
+        });
+        try {
+          const reply = await runGeminiFallback({
+            systemPrompt: draftSummarySystem,
+            conversation,
+          });
+          return completeWithSuggestedActions(
+            reply,
+            lastToolBatch,
+            authoritativeLeadsRaw,
+            referencingPrefetchRaw,
+            referencingInboundDigest,
+            onboardingPrefetchRaw,
+            lastDraftContractRaw,
+          );
+        } catch (geminiError) {
+          console.error("[ceo] gemini fallback failure", {
+            stage: "draft_contract_auto_summary",
+            userId,
+            error: toErrorMessage(geminiError),
+          });
+          throw new Error(
+            `AI services are temporarily unavailable. Primary and fallback models failed. Anthropic: ${toErrorMessage(
+              anthropicError,
+            )}; Gemini: ${toErrorMessage(geminiError)}`,
+          );
+        }
+      }
+    }
+  }
 
   for (let i = 0; i < 5; i++) {
     let response: Message;
