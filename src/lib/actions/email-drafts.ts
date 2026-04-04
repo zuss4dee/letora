@@ -32,7 +32,7 @@ export async function getAllEmailDrafts(userId: string): Promise<EmailDraftTable
     .from("email_drafts")
     .select(`
       id, subject, body, status, created_at,
-      tenants:tenant_profiles ( full_name )
+      tenants ( full_name )
     `)
     .eq("user_id", userId)
     .order("created_at", { ascending: false })

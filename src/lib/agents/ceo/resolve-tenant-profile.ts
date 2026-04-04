@@ -16,7 +16,7 @@ export type ResolveTenantResult =
   | { ok: false; body: Record<string, unknown> };
 
 /**
- * Resolve tenant profile id from a tool argument: exact UUID first, then a single
+ * Resolve tenant id from a tool argument: exact UUID first, then a single
  * ilike match on full_name (same idea as draft_contract).
  */
 export async function resolveTenantProfileForAccount(
@@ -31,7 +31,7 @@ export async function resolveTenantProfileForAccount(
 
   if (looksLikeUuid(t)) {
     const { data: byId, error: idErr } = await supabase
-      .from("tenant_profiles")
+      .from("tenants")
       .select("id, full_name")
       .eq("id", t)
       .eq("user_id", userId)
@@ -41,9 +41,11 @@ export async function resolveTenantProfileForAccount(
       return { ok: false, body: { error: `Could not load tenant: ${idErr.message}` } };
     }
     if (byId) {
+      console.log("[tenant lookup] table: tenants, query:", t, "result count:", 1);
       return { ok: true, tenantId: byId.id, full_name: byId.full_name, resolved_via: "id" };
     }
 
+    console.log("[tenant lookup] table: tenants, query:", t, "result count:", 0);
     return {
       ok: false,
       body: {
@@ -67,34 +69,35 @@ export async function resolveTenantProfileForAccount(
 
   const words = fragment.split(/\s+/).filter((w) => w.length >= 2);
 
-  let { data: rows, error: nameErr } = await supabase
-    .from("tenant_profiles")
+  let { data, error: nameErr } = await supabase
+    .from("tenants")
     .select("id, full_name")
     .eq("user_id", userId)
     .ilike("full_name", `%${fragment}%`)
     .limit(8);
 
-  if (nameErr) {
-    return { ok: false, body: { error: `Could not search tenants: ${nameErr.message}` } };
-  }
+  console.log("[tenant lookup] table: tenants, query:", t, "result count:", data?.length);
 
   /** If the full phrase is missing (e.g. extra punctuation in DB) but each word matches one profile. */
-  if ((!rows?.length) && words.length >= 2) {
-    let q = supabase.from("tenant_profiles").select("id, full_name").eq("user_id", userId);
+  if ((!data?.length) && words.length >= 2) {
+    let q = supabase.from("tenants").select("id, full_name").eq("user_id", userId);
     for (const w of words) {
       q = q.ilike("full_name", `%${w}%`);
     }
     const second = await q.limit(8);
-    rows = second.data;
+    data = second.data;
     if (second.error) {
       nameErr = second.error;
+    }
+    if (data?.length) {
+      console.log("[tenant lookup] table: tenants, query:", t, "result count (word match):", data.length);
     }
   }
 
   if (nameErr) {
     return { ok: false, body: { error: `Could not search tenants: ${nameErr.message}` } };
   }
-  if (!rows?.length) {
+  if (!data?.length) {
     return {
       ok: false,
       body: {
@@ -104,21 +107,21 @@ export async function resolveTenantProfileForAccount(
       },
     };
   }
-  if (rows.length > 1) {
+  if (data.length > 1) {
     return {
       ok: false,
       body: {
         error:
           "Multiple tenants matched that name — pass the exact tenant_id UUID from list_tenants.",
-        candidates: rows.map((r) => ({ id: r.id, full_name: r.full_name })),
+        candidates: data.map((r) => ({ id: r.id, full_name: r.full_name })),
       },
     };
   }
 
   return {
     ok: true,
-    tenantId: rows[0].id,
-    full_name: rows[0].full_name,
+    tenantId: data[0].id,
+    full_name: data[0].full_name,
     resolved_via: "name",
   };
 }

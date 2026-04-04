@@ -60,7 +60,7 @@ export async function getTenancies(userId: string): Promise<TenancyRow[]> {
   const { data, error } = await supabase
     .from("tenancies")
     .select(
-      "id,property_id,tenant_id,start_date,end_date,move_in_date,monthly_rent,deposit_amount,status,properties!inner(address,user_id),tenant_profiles(full_name)",
+      "id,property_id,tenant_id,start_date,end_date,move_in_date,monthly_rent,deposit_amount,status,properties!inner(address,user_id),tenants(full_name)",
     )
     .eq("properties.user_id", userId)
     .order("created_at", { ascending: false });
@@ -69,7 +69,7 @@ export async function getTenancies(userId: string): Promise<TenancyRow[]> {
 
   return (data ?? []).map((row) => {
     const property = Array.isArray(row.properties) ? row.properties[0] : row.properties;
-    const tenant = Array.isArray(row.tenant_profiles) ? row.tenant_profiles[0] : row.tenant_profiles;
+    const tenant = Array.isArray(row.tenants) ? row.tenants[0] : row.tenants;
     return {
     id: row.id,
     propertyId: row.property_id ?? null,
@@ -194,7 +194,7 @@ export async function getThisMonthPayments(userId: string): Promise<RentPaymentR
   const { data, error } = await supabase
     .from("rent_payments")
     .select(
-      "id,tenancy_id,due_date,amount_due,amount_paid,status,tenancies!inner(properties!inner(address,user_id),tenant_profiles(full_name))",
+      "id,tenancy_id,due_date,amount_due,amount_paid,status,tenancies!inner(properties!inner(address,user_id),tenants(full_name))",
     )
     .eq("tenancies.properties.user_id", userId)
     .gte("due_date", startDate)
@@ -211,9 +211,9 @@ export async function getThisMonthPayments(userId: string): Promise<RentPaymentR
         : tenancy.properties
       : null;
     const tenant = tenancy
-      ? Array.isArray(tenancy.tenant_profiles)
-        ? tenancy.tenant_profiles[0]
-        : tenancy.tenant_profiles
+      ? Array.isArray(tenancy.tenants)
+        ? tenancy.tenants[0]
+        : tenancy.tenants
       : null;
     return {
     id: row.id,

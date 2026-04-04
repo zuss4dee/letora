@@ -37,7 +37,7 @@ export default async function SignContractPage({
 
   const [{ data: tenant }, { data: property }] = await Promise.all([
     supabase
-      .from("tenant_profiles")
+      .from("tenants")
       .select("full_name")
       .eq("id", contract.tenant_id)
       .single(),

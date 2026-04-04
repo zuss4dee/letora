@@ -85,7 +85,7 @@ export async function POST(
       .maybeSingle();
 
     const { data: tenant } = await supabase
-      .from("tenant_profiles")
+      .from("tenants")
       .select("full_name")
       .eq("id", contract.tenant_id)
       .single();

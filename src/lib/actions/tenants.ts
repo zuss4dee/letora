@@ -21,7 +21,7 @@ export async function getTenants(userId: string): Promise<TenantRow[]> {
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("tenant_profiles")
+    .from("tenants")
     .select(
       "id,full_name,email,phone,right_to_rent_status,created_at,tenancies(status,properties(address))",
     )
@@ -83,7 +83,7 @@ export async function getTenantById(userId: string, tenantId: string): Promise<T
   const supabase = await createClient();
 
   const { data, error } = await supabase
-    .from("tenant_profiles")
+    .from("tenants")
     .select(
       "id,full_name,email,phone,date_of_birth,right_to_rent_status,created_at,tenancies(id,status,start_date,property_id,properties(address))",
     )
@@ -168,7 +168,7 @@ export async function getTenantProfilesForContracts(): Promise<TenantPickListIte
   if (tenantIds.length === 0) return [];
 
   const { data: profiles, error: profErr } = await supabase
-    .from("tenant_profiles")
+    .from("tenants")
     .select("id,full_name,email")
     .in("id", tenantIds)
     .order("full_name", { ascending: true });
@@ -195,7 +195,7 @@ export async function addTenant(formData: unknown) {
 
   const values = parsed.data;
 
-  const { error } = await supabase.from("tenant_profiles").insert({
+  const { error } = await supabase.from("tenants").insert({
     id: crypto.randomUUID(),
     user_id: user.id,
     full_name: values.fullName,
@@ -227,7 +227,7 @@ export async function updateTenant(tenantId: string, formData: unknown) {
     values.dateOfBirth && values.dateOfBirth.trim().length > 0 ? values.dateOfBirth.trim() : null;
 
   const { error } = await supabase
-    .from("tenant_profiles")
+    .from("tenants")
     .update({
       full_name: values.fullName,
       email: values.email,

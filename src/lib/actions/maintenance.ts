@@ -14,7 +14,7 @@ type TenancyJoinRow = {
     address: string | null;
     user_id?: string;
   } | null;
-  tenant_profiles: { full_name: string | null; email?: string | null } | null;
+  tenants: { full_name: string | null; email?: string | null } | null;
 };
 
 function unwrapTenancy(row: { tenancies?: unknown }): TenancyJoinRow | null {
@@ -73,7 +73,7 @@ export async function getMaintenanceRequests(userId: string): Promise<{
   const { data, error } = await supabase
     .from("maintenance_requests")
     .select(
-      "id,tenancy_id,description,priority,status,created_at,resolved_at,contractor_name,contractor_email,ai_triage_category,ai_triage_summary,tenancies!inner(property_id,tenant_id,properties!inner(address,user_id),tenant_profiles(full_name))",
+      "id,tenancy_id,description,priority,status,created_at,resolved_at,contractor_name,contractor_email,ai_triage_category,ai_triage_summary,tenancies!inner(property_id,tenant_id,properties!inner(address,user_id),tenants(full_name))",
     )
     .eq("tenancies.properties.user_id", userId)
     .order("created_at", { ascending: false });
@@ -87,10 +87,10 @@ export async function getMaintenanceRequests(userId: string): Promise<{
         ? tenancy.properties[0]
         : tenancy.properties
       : null;
-    const tenant = tenancy?.tenant_profiles
-      ? Array.isArray(tenancy.tenant_profiles)
-        ? tenancy.tenant_profiles[0]
-        : tenancy.tenant_profiles
+    const tenant = tenancy?.tenants
+      ? Array.isArray(tenancy.tenants)
+        ? tenancy.tenants[0]
+        : tenancy.tenants
       : null;
     const desc = row.description as string | null;
     return {
@@ -127,7 +127,7 @@ export async function getMaintenanceRequestDetail(
   const { data: row, error } = await supabase
     .from("maintenance_requests")
     .select(
-      "id,tenancy_id,description,priority,status,created_at,updated_at,resolved_at,contractor_name,contractor_email,ai_triage_category,ai_triage_summary,tenant_acknowledged_at,landlord_notified_at,tenancies!inner(property_id,tenant_id,properties!inner(address,user_id),tenant_profiles(full_name,email))",
+      "id,tenancy_id,description,priority,status,created_at,updated_at,resolved_at,contractor_name,contractor_email,ai_triage_category,ai_triage_summary,tenant_acknowledged_at,landlord_notified_at,tenancies!inner(property_id,tenant_id,properties!inner(address,user_id),tenants(full_name,email))",
     )
     .eq("id", requestId)
     .maybeSingle();
@@ -142,10 +142,10 @@ export async function getMaintenanceRequestDetail(
     : null;
   if (!property || property.user_id !== userId) return null;
 
-  const tenant = tenancy?.tenant_profiles
-    ? Array.isArray(tenancy.tenant_profiles)
-      ? tenancy.tenant_profiles[0]
-      : tenancy.tenant_profiles
+  const tenant = tenancy?.tenants
+    ? Array.isArray(tenancy.tenants)
+      ? tenancy.tenants[0]
+      : tenancy.tenants
     : null;
 
   const { data: runs } = await supabase

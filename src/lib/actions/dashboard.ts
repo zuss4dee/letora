@@ -136,7 +136,7 @@ export async function getThisMonthsRentPayments(
   const { data, error } = await supabase
     .from("rent_payments")
     .select(
-      "due_date,amount_due,status,tenancies!inner(properties!inner(address,user_id),tenant_profiles(full_name))",
+      "due_date,amount_due,status,tenancies!inner(properties!inner(address,user_id),tenants(full_name))",
     )
     .eq("tenancies.properties.user_id", userId)
     .gte("due_date", startDate)
@@ -149,14 +149,14 @@ export async function getThisMonthsRentPayments(
     const tenancy = (row as unknown as { tenancies?: unknown }).tenancies as
       | {
           properties?: { address?: string | null } | null;
-          tenant_profiles?: { full_name?: string | null } | null;
+          tenants?: { full_name?: string | null } | null;
         }
       | null
       | undefined;
 
     return {
       propertyAddress: normalizePropertyAddressLabel(tenancy?.properties?.address ?? "") || null,
-      tenantFullName: tenancy?.tenant_profiles?.full_name ?? null,
+      tenantFullName: tenancy?.tenants?.full_name ?? null,
       dueDate: row.due_date ?? null,
       amountDue:
         row.amount_due == null

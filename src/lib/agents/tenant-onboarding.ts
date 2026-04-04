@@ -175,7 +175,7 @@ export async function getOnboardingChatSnapshotForTenancy(
       created_at,
       onboarding_status,
       properties!inner ( user_id ),
-      tenant_profiles ( full_name, email )
+      tenants ( full_name, email )
     `,
     )
     .eq("id", tenancyId)
@@ -187,7 +187,7 @@ export async function getOnboardingChatSnapshotForTenancy(
   const property = (Array.isArray(propRaw) ? propRaw[0] : propRaw) as { user_id: string };
   if (property.user_id !== userId) return null;
 
-  const tenRaw = row.tenant_profiles as unknown;
+  const tenRaw = row.tenants as unknown;
   const tenant = (Array.isArray(tenRaw) ? tenRaw[0] : tenRaw) as {
     full_name: string | null;
     email: string | null;
@@ -308,7 +308,7 @@ export async function runTenantOnboardingAgent(
       onboarding_status,
       created_at,
       properties!inner ( user_id, address ),
-      tenant_profiles ( full_name, email, phone )
+      tenants ( full_name, email, phone )
     `,
     )
     .eq("id", tenancyId)
@@ -329,7 +329,7 @@ export async function runTenantOnboardingAgent(
     user_id: string;
     address: string | null;
   };
-  const tenRaw = row.tenant_profiles as unknown;
+  const tenRaw = row.tenants as unknown;
   const tenant = (Array.isArray(tenRaw) ? tenRaw[0] : tenRaw) as {
     full_name: string | null;
     email: string | null;

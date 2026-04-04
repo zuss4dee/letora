@@ -76,7 +76,7 @@ export default async function DashboardPage() {
     ] = await Promise.all([
       supabase.from("properties").select("id", { count: "exact", head: true }).eq("user_id", userId),
       supabase
-        .from("tenant_profiles")
+        .from("tenants")
         .select("id", { count: "exact", head: true })
         .eq("user_id", userId),
       getMonthlyRentFromActiveTenancies(userId),

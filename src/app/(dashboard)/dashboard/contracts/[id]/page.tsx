@@ -72,7 +72,7 @@ export default async function ContractDetailPage({
 
   const [{ data: tenant }, { data: property }] = await Promise.all([
     contract.tenant_id
-      ? supabase.from("tenant_profiles").select("full_name, email").eq("id", contract.tenant_id).maybeSingle()
+      ? supabase.from("tenants").select("full_name, email").eq("id", contract.tenant_id).maybeSingle()
       : Promise.resolve({ data: null as { full_name: string | null; email: string | null } | null }),
     contract.property_id
       ? supabase.from("properties").select("address, city").eq("id", contract.property_id).maybeSingle()

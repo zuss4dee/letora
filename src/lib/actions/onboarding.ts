@@ -49,7 +49,7 @@ export async function getTenancyOnboardingDetail(tenancyId: string): Promise<Ten
       referencing_last_outbound_at,
       referencing_last_inbound_at,
       properties!inner ( address, user_id ),
-      tenant_profiles ( full_name )
+      tenants ( full_name )
     `,
     )
     .eq("id", tenancyId)
@@ -60,7 +60,7 @@ export async function getTenancyOnboardingDetail(tenancyId: string): Promise<Ten
   const property = row.properties as unknown as { address: string | null; user_id: string };
   if (property.user_id !== user.id) return null;
 
-  const tenantRaw = row.tenant_profiles as unknown as { full_name: string | null } | null | { full_name: string | null }[];
+  const tenantRaw = row.tenants as unknown as { full_name: string | null } | null | { full_name: string | null }[];
   const tenant = Array.isArray(tenantRaw) ? tenantRaw[0] : tenantRaw;
   const onboardingStatus = (row as { onboarding_status?: string }).onboarding_status ?? "not_started";
 

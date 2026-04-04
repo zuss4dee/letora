@@ -149,7 +149,7 @@ describe("resolvePropertyRowsForDraftHint", () => {
     }
   });
 
-  it("pass 2: unique substring match on combined haystack", () => {
+  it("pass 1 or 2: unique substring match (address in address column hits pass 1 first)", () => {
     const rows = [
       row("a", null, "10 Alpha Street", "Leeds"),
       row("b", null, "99 Beta Road", "Manchester"),
@@ -157,7 +157,7 @@ describe("resolvePropertyRowsForDraftHint", () => {
     const res = resolvePropertyRowsForDraftHint(rows, "10 Alpha Street Leeds", 2);
     expect(res.kind).toBe("matched");
     if (res.kind === "matched") {
-      expect(res.pass).toBe(2);
+      expect(res.pass).toBe(1);
       expect(res.row.id).toBe("a");
     }
   });

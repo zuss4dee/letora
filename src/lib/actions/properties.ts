@@ -89,14 +89,14 @@ export async function getTenanciesForProperty(
 
   const { data, error } = await supabase
     .from("tenancies")
-    .select("id, status, start_date, tenant_profiles(full_name)")
+    .select("id, status, start_date, tenants(full_name)")
     .eq("property_id", propertyId)
     .order("start_date", { ascending: false });
 
   if (error || !data) return [];
 
   return data.map((row) => {
-    const tp = row.tenant_profiles as { full_name?: string | null } | null;
+    const tp = row.tenants as { full_name?: string | null } | null;
     return {
       id: row.id as string,
       status: (row.status as string | null) ?? null,

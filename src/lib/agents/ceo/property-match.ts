@@ -5,7 +5,7 @@
 
 export type PropertyRowForMatch = {
   id: string;
-  name: string | null;
+  name?: string | null;
   address: string | null;
   city: string | null;
 };
@@ -86,9 +86,9 @@ export function stripUkPostcodesForTokenMatch(s: string): string {
     .trim();
 }
 
-/** Pass 1 — bidirectional substring: stored **name** inside hint OR hint inside name. */
+/** Pass 1 — bidirectional substring: stored **address** (or legacy name) inside hint OR hint inside that string. */
 export function pass1PropertyNameInHint(row: PropertyRowForMatch, hint: string): boolean {
-  const raw = row.name?.trim();
+  const raw = row.address?.trim() || row.name?.trim();
   if (!raw) return false;
   const nameNorm = normalizePropertyHintForMatch(raw);
   if (nameNorm.length < 2) return false;

@@ -242,7 +242,7 @@ export async function runMaintenanceAgent(
         property_id,
         tenant_id,
         properties!inner ( id, user_id, address ),
-        tenant_profiles ( id, full_name, email )
+        tenants ( id, full_name, email )
       )
     `,
     )
@@ -265,7 +265,7 @@ export async function runMaintenanceAgent(
     property_id: string | null;
     tenant_id: string | null;
     properties: unknown;
-    tenant_profiles: unknown;
+    tenants: unknown;
   } | null;
 
   const propRaw = tenancy?.properties;
@@ -273,7 +273,7 @@ export async function runMaintenanceAgent(
     user_id: string;
     address: string | null;
   } | null;
-  const tenRaw = tenancy?.tenant_profiles;
+  const tenRaw = tenancy?.tenants;
   const tenant = (Array.isArray(tenRaw) ? tenRaw[0] : tenRaw) as {
     full_name?: string | null;
     first_name?: string | null;

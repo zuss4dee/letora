@@ -46,7 +46,7 @@ export async function GET() {
       .select("id,address")
       .in("id", propertyIds.length ? propertyIds : ["none"]),
     supabase
-      .from("tenant_profiles")
+      .from("tenants")
       .select("id,full_name,email")
       .in("id", tenantIds.length ? tenantIds : ["none"]),
   ]);

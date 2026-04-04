@@ -76,7 +76,7 @@ export async function runContractDrafterAgent(
 
   // Fetch tenant separately
   const { data: tenant } = await supabase
-    .from("tenant_profiles")
+    .from("tenants")
     .select("id, full_name, email")
     .eq("id", contract.tenant_id)
     .single<{ id: string; full_name: string | null; email: string | null }>();

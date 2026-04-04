@@ -61,7 +61,7 @@ src/
 
 ## Database Tables
 - properties
-- tenant_profiles
+- tenants
 - tenancies
 - rent_payments
 - maintenance_requests

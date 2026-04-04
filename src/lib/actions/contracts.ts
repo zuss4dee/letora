@@ -67,7 +67,7 @@ export async function getContracts(): Promise<ContractListRow[]> {
       ? supabase.from("properties").select("id, address").in("id", propertyIds)
       : Promise.resolve({ data: [] as { id: string; address: string | null }[] | null }),
     tenantIds.length > 0
-      ? supabase.from("tenant_profiles").select("id, full_name, email").in("id", tenantIds)
+      ? supabase.from("tenants").select("id, full_name, email").in("id", tenantIds)
       : Promise.resolve({
           data: [] as {
             id: string;
@@ -124,7 +124,7 @@ export async function getContractDetail(contractId: string): Promise<ContractLis
       : Promise.resolve({ data: null as { address: string | null } | null }),
     c.tenant_id
       ? supabase
-          .from("tenant_profiles")
+          .from("tenants")
           .select("full_name, email")
           .eq("id", c.tenant_id)
           .maybeSingle()
@@ -189,7 +189,7 @@ export async function addContract(data: {
   }
 
   const { data: tenant, error: tenErr } = await supabase
-    .from("tenant_profiles")
+    .from("tenants")
     .select("user_id")
     .eq("id", parsed.data.tenantId)
     .maybeSingle();

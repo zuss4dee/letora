@@ -70,7 +70,7 @@ export async function runReferencingHandoffForUser(
       referencing_token,
       referencing_agency_email_override,
       properties!inner ( address, city, postcode, user_id ),
-      tenant_profiles ( full_name, email, phone )
+      tenants ( full_name, email, phone )
     `,
     )
     .eq("id", tenancyId)
@@ -86,7 +86,7 @@ export async function runReferencingHandoffForUser(
   };
   if (prop.user_id !== userId) return { ok: false, error: "Not found" };
 
-  const tenantRaw = tenancy.tenant_profiles as unknown as
+  const tenantRaw = tenancy.tenants as unknown as
     | { full_name: string | null; email: string | null; phone: string | null }
     | { full_name: string | null; email: string | null; phone: string | null }[]
     | null;

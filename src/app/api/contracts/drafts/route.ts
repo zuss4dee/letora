@@ -23,7 +23,7 @@ export async function GET() {
     const propertyIds = contracts.map((c) => c.property_id).filter(Boolean);
 
     const { data: tenants } = await supabase
-      .from("tenant_profiles")
+      .from("tenants")
       .select("id, full_name")
       .in("id", tenantIds.length ? tenantIds : ["none"]);
 
