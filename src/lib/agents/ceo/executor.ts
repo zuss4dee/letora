@@ -2573,6 +2573,15 @@ export async function executeCEOTool(
           .eq("user_id", userId);
 
         if (tenancyId) {
+          const sentAt = new Date().toISOString();
+          await supabase
+            .from("onboarding_tasks")
+            .update({ status: "complete", completed_at: sentAt })
+            .eq("tenancy_id", tenancyId)
+            .eq("user_id", userId)
+            .eq("task_name", "Prepare tenancy agreement (contract not sent by agent)")
+            .eq("status", "pending");
+
           await supabase
             .from("tenancies")
             .update({ onboarding_status: "contract_sent" })
@@ -2592,6 +2601,131 @@ export async function executeCEOTool(
         return JSON.stringify(sendResult);
       } catch (err: unknown) {
         console.error("[send_contract] exception:", err);
+        return JSON.stringify({
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+          code: "internal_error",
+        });
+      }
+    }
+    case "send_move_in_email": {
+      try {
+        let resolvedTenancyId = args.tenancy_id?.trim();
+
+        if (!resolvedTenancyId && args.tenant_name?.trim()) {
+          const nameFragment = sanitizeIlikeNameFragment(sanitizeTenantName(args.tenant_name.trim()));
+          const { data: tenantHits } = await supabase
+            .from("tenants")
+            .select("id, tenancies(id)")
+            .ilike("full_name", `%${nameFragment}%`)
+            .eq("user_id", userId)
+            .limit(1);
+
+          const firstHit = tenantHits?.[0];
+          if (firstHit) {
+            const tenancyRows = normalizeTenancyRows(firstHit.tenancies);
+            if (tenancyRows.length === 1 && tenancyRows[0].id) {
+              resolvedTenancyId = String(tenancyRows[0].id);
+            }
+          }
+        }
+
+        if (!resolvedTenancyId) {
+          return JSON.stringify({
+            success: false,
+            message: "Pass tenancy_id or tenant_name that resolves to a single tenancy.",
+          });
+        }
+
+        const { data: tenancyRow, error: tenancyErr } = await supabase
+          .from("tenancies")
+          .select("id, tenant_id, property_id")
+          .eq("id", resolvedTenancyId)
+          .maybeSingle();
+
+        if (tenancyErr || !tenancyRow) {
+          return JSON.stringify({ success: false, message: "Tenancy not found." });
+        }
+
+        const { data: propertyRow } = await supabase
+          .from("properties")
+          .select("id, user_id, address, city")
+          .eq("id", tenancyRow.property_id as string)
+          .maybeSingle();
+
+        if (!propertyRow || (propertyRow as { user_id: string }).user_id !== userId) {
+          return JSON.stringify({ success: false, message: "Tenancy not found or not on your account." });
+        }
+
+        const { data: tenantRow } = await supabase
+          .from("tenants")
+          .select("id, full_name, email")
+          .eq("id", tenancyRow.tenant_id as string)
+          .maybeSingle();
+
+        const tenantEmail = tenantRow?.email?.trim();
+        if (!tenantEmail) {
+          return JSON.stringify({ success: false, message: "Tenant email is missing — cannot send move-in instructions." });
+        }
+
+        const tenantDisplay = tenantRow?.full_name?.trim() || "Tenant";
+        const propertyAddr = [
+          (propertyRow as { address?: string | null }).address,
+          (propertyRow as { city?: string | null }).city,
+        ]
+          .filter(Boolean)
+          .join(", ");
+
+        const emailResult = await sendEmailTool(supabase, userId, null, {
+          to: tenantEmail,
+          toName: tenantDisplay,
+          subject: `Move-in instructions — ${propertyAddr || "your tenancy"}`,
+          body: [
+            `Hi ${tenantDisplay},`,
+            "",
+            `Here are your move-in instructions for ${propertyAddr || "the property"}.`,
+            "",
+            "Your landlord will share keys, meter readings, and any building rules separately if needed.",
+            "",
+            "If you have questions before move-in day, reply to this email.",
+            "",
+            "Kind regards,",
+            "Letora",
+          ].join("\n"),
+          agentType: "onboarding",
+          forceSend: true,
+        });
+
+        if (!emailResult.sent) {
+          const failResult = {
+            success: false,
+            message: emailResult.message,
+            error: emailResult.error ?? null,
+            email_log_id: emailResult.emailLogId || null,
+          };
+          void logAgentActivity(supabase, userId, "send_move_in_email", args as Record<string, unknown>, failResult, false);
+          return JSON.stringify(failResult);
+        }
+
+        const completedAt = new Date().toISOString();
+        await supabase
+          .from("onboarding_tasks")
+          .update({ status: "complete", completed_at: completedAt })
+          .eq("tenancy_id", resolvedTenancyId)
+          .eq("user_id", userId)
+          .eq("task_name", "Send move-in instructions email")
+          .eq("status", "pending");
+
+        const okResult = {
+          success: true,
+          message: `Move-in instructions sent to ${tenantDisplay} at ${tenantEmail}.`,
+          email_log_id: emailResult.emailLogId,
+          tenancy_id: resolvedTenancyId,
+        };
+        void logAgentActivity(supabase, userId, "send_move_in_email", args as Record<string, unknown>, okResult, true);
+        return JSON.stringify(okResult);
+      } catch (err: unknown) {
+        console.error("[send_move_in_email] exception:", err);
         return JSON.stringify({
           success: false,
           error: err instanceof Error ? err.message : String(err),

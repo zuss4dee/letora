@@ -67,11 +67,11 @@ function toolsForIntent(id: CEOPropertyIntentId): CEOToolName[] {
     case "leads":
       return ["get_leads_summary"]
     case "onboarding":
-      return ["start_tenant_onboarding"]
+      return ["start_tenant_onboarding", "send_move_in_email"]
     case "listing_generation":
       return ["generate_property_listing"]
     case "contracts":
-      return ["draft_contract"]
+      return ["draft_contract", "send_contract", "send_move_in_email", "get_contracts"]
     case "portfolio":
       return ["get_dashboard_summary", "get_rent_status"]
     case "tenants":

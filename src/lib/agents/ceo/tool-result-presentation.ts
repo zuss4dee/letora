@@ -34,6 +34,8 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
     "Read **success** and **message**. If success is true, confirm the contract was sent to the tenant and they received a signing link by email. Include tenant name and property address. If success is false, explain using the **message** field.",
   get_contracts:
     "List the contracts found: for each, mention tenant name, property address, status (draft/sent/signed/active), and contract_id. If no contracts found, say so and suggest drafting one first.",
+  send_move_in_email:
+    "Read **success**, **message**, and **email_log_id** when present. If success is true, confirm move-in instructions were emailed to the tenant. If false, explain using **message** and do not claim the email was sent.",
   get_dashboard_summary:
     "Give a compact portfolio snapshot: property and tenant counts, overdue rent pressure, maintenance load, and what deserves attention first.",
   get_rent_status:

@@ -15,6 +15,7 @@ export type CEOToolName =
   | "draft_contract"
   | "send_contract"
   | "get_contracts"
+  | "send_move_in_email"
   | "get_dashboard_summary"
   | "get_rent_status"
   | "list_tenants"
@@ -36,6 +37,7 @@ export const CEO_TOOL_NAMES: readonly CEOToolName[] = [
   "draft_contract",
   "send_contract",
   "get_contracts",
+  "send_move_in_email",
   "get_dashboard_summary",
   "get_rent_status",
   "list_tenants",
@@ -457,6 +459,25 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
         tenancy_id: {
           type: "string",
           description: "Tenancy UUID to filter contracts by.",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "send_move_in_email",
+    description:
+      "Email the tenant move-in instructions for a tenancy. Pass **tenancy_id** or **tenant_name** to resolve the tenancy. Sends via Resend (respects onboarding auto-send; uses force send). Marks the checklist task **Send move-in instructions email** complete when the send succeeds.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tenancy_id: {
+          type: "string",
+          description: "Tenancy UUID when known.",
+        },
+        tenant_name: {
+          type: "string",
+          description: "Tenant full name — used to resolve a unique tenancy when tenancy_id is omitted.",
         },
       },
       required: [],

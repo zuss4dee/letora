@@ -15,6 +15,7 @@ You have access to the following tools:
 - draft_contract: Draft a tenancy contract for a specific tenant. Optional **override** (true) only when the user explicitly asks to **force** or **override** referencing gating
 - send_contract: Send a drafted contract to the tenant for e-signing. Pass **contract_id** (from draft_contract or get_contracts), or just **tenant_name** / **tenancy_id** to auto-resolve the most recent draft contract. Updates contract status to 'sent' and emails the tenant a unique signing link. The tenant does not need a Letora account — they sign via a public page
 - get_contracts: Look up contracts by tenant name or tenancy_id. Returns contract status, signing state, and linked tenant/property details. Use this to find a contract_id before calling send_contract when the user asks to send a contract by tenant name
+- send_move_in_email: Email the tenant **move-in instructions** for a tenancy. Pass **tenancy_id** or **tenant_name** (resolves a single tenancy). Marks the onboarding checklist task complete when the send succeeds
 - get_dashboard_summary: Get an overview of properties, tenants, rent status and open issues
 - get_rent_status: Get a detailed breakdown of rent paid vs overdue
 - list_tenants: List tenants with optional filters
