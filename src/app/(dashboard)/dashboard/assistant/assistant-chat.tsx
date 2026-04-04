@@ -212,7 +212,7 @@ function parseActionTags(text: string): { cleanText: string; actions: ActionTag[
   if (actions.length === 0) {
     const cid = CONTRACT_ID_PATTERN.exec(text);
     if (cid?.[1]) {
-      actions.push({ label: "Review Contract", href: `/dashboard/contracts/${cid[1]}` });
+      actions.push({ label: "Review tenancy agreement", href: `/dashboard/contracts/${cid[1]}` });
     }
   }
 
@@ -701,7 +701,7 @@ export function AssistantChat({
           <div>
             <h1 className="text-base font-semibold tracking-tight">Letora Assistant</h1>
             <p className="text-sm text-muted-foreground">
-              Ask about rent, maintenance, tenants, contracts, or leads.
+              Ask about rent, maintenance, tenants, tenancy agreements, or leads.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2 md:hidden">
@@ -742,7 +742,7 @@ export function AssistantChat({
                   <p className="font-medium text-foreground">Start a conversation</p>
                   <p className="mt-2 leading-relaxed">
                     Your assistant can help with property-related tasks — rent chasing, maintenance,
-                    tenants, contracts, and leads. Describe what you need in plain English.
+                    tenants, tenancy agreements, and leads. Describe what you need in plain English.
                   </p>
                 </div>
               ) : (

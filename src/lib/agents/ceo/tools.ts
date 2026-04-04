@@ -368,13 +368,22 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "get_rent_status",
-    description: "Get a detailed breakdown of rent payments — who has paid, who is overdue, and total amounts.",
+    description:
+      "Rent Tracker rows for the month **plus** authoritative tenancy records: monthly_rent, start_date, move_in_date, tenancy status, inferred rent due day from start_date, and earliest payment row. Pass **tenant_name** and/or **tenancy_id** when the user asks about a specific tenant’s rent, amount, first payment, due date, or schedule — answers must use **tenancies** from this JSON, not chat memory.",
     input_schema: {
       type: "object",
       properties: {
         month: {
           type: "string",
           description: "Month in YYYY-MM format. Defaults to current month.",
+        },
+        tenancy_id: {
+          type: "string",
+          description: "Scope to one tenancy UUID when known.",
+        },
+        tenant_name: {
+          type: "string",
+          description: "Resolve the tenancy by tenant full name (same account).",
         },
       },
       required: [],

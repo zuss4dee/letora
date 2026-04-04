@@ -445,11 +445,11 @@ function correctDraftContractHallucinationReply(
           : "Referencing may still be in progress. Finish that before the tenancy agreement, unless you want to force a draft.";
         const pendingLine = pending ? `Outstanding tasks: ${pending}` : "";
         return [
-          `${name} is already on your Letora account, so a tenancy contract can be drafted from this chat.`,
+          `${name} is already on your Letora account, so a tenancy agreement can be drafted from this chat.`,
           refLine,
           pendingLine,
           "",
-          "Ask me to draft the contract again when you want to continue.",
+          "Ask me to draft the tenancy agreement again when you want to continue.",
         ]
           .filter((line) => line.length > 0)
           .join("\n");
@@ -478,8 +478,8 @@ function correctDraftContractHallucinationReply(
     if (!bad && /\b(saved|draft\s+was|successfully)\b/i.test(reply)) return reply;
     if (bad || /\b(failed|unable|cannot|barrier|dashboard\s+only|limitation)\b/i.test(reply)) {
       return [
-        `A tenancy contract draft was saved for ${p.tenant_name?.trim() || "the tenant"}.`,
-        "Open the Contracts page in the app to review or edit it.",
+        `A tenancy agreement draft was saved for ${p.tenant_name?.trim() || "the tenant"}.`,
+        "Open **Contracts** in the app to review or edit it.",
         "",
         "If something still looks wrong, say what you expected and we can adjust.",
       ].join("\n");
@@ -501,7 +501,7 @@ function correctDraftContractHallucinationReply(
         typeof p.tenant_name === "string" && p.tenant_name.trim() !== ""
           ? `I found the tenant **${p.tenant_name.trim()}** in your account but couldn't match a property.`
           : "I couldn't match a property on your account.";
-      return `${tenantPart}\nWhich property should this contract be for? You can say the address or ask me to list your properties.`;
+      return `${tenantPart}\nWhich property should this tenancy agreement be for? You can say the address or ask me to list your properties.`;
     }
 
     if (bad || /\b(must\s+go|dashboard|manually|only\s+way|bypass|unable\s+to)\b/i.test(reply)) {
@@ -513,7 +513,7 @@ function correctDraftContractHallucinationReply(
         code === "referencing_incomplete"
           ? " Finish referencing first, or ask to override only if you want to force a draft."
           : " Check the tenant name and address, or ask for a list of tenants to pick the right person.";
-      return `The contract draft did not go through. ${errText}.${tenantLine}${tail}`;
+      return `The tenancy agreement draft did not go through. ${errText}.${tenantLine}${tail}`;
     }
   }
 
@@ -532,7 +532,7 @@ function correctOnboardingHallucinationReply(
   const trim = reply.trim();
   if (
     /^The \*\*draft_contract\*\* tool returned this/m.test(trim) ||
-    /^A tenancy contract draft was \*\*saved\*\*/m.test(trim) ||
+    /^A tenancy (?:agreement|contract) draft was \*\*saved\*\*/m.test(trim) ||
     /^No \*\*draft_contract\*\* tool ran/m.test(trim) ||
     /^\*\*[^\n]+\*\* is on file with a \*\*tenancy_id\*\*/m.test(trim)
   ) {
@@ -580,7 +580,7 @@ function correctOnboardingHallucinationReply(
       refDone ? "Referencing is complete for this tenancy." : "Referencing may still be in progress. Finish that before the tenancy agreement, unless you want to force a draft.",
       pending !== "—" ? `Outstanding tasks: ${pending}` : "",
       "",
-      "You can ask me to draft the tenancy contract in this chat when you are ready.",
+      "You can ask me to draft the tenancy agreement in this chat when you are ready.",
     ]
       .filter((line) => line.length > 0)
       .join("\n");
@@ -866,7 +866,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
       userId,
       supabase,
     );
-    effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n**Server-fetched onboarding (authoritative — your answer MUST match this JSON; never claim the tenant cannot be resolved by name):**\n${onboardingPrefetchRaw}\n\n**Mandatory:** The server may auto-fill **tenancy_id** on **draft_contract** from this JSON — you do not need UUIDs from the user. Use **tenancy_id**, **pending_task_names**, and **referencing_complete** from this JSON. To draft a contract in chat, call **draft_contract** (args can be empty if this block is present). Prefer **tenant_name** as **${inferredTenantName}** and **onboarding_property_hint** when the user gave a street (e.g. Billionaires Row). **Do not** invent “backend issues”, “tenant profile not loading”, or “draft manually from /dashboard/contracts” unless a tool JSON returned a real **error** field.`;
+    effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n**Server-fetched onboarding (authoritative — your answer MUST match this JSON; never claim the tenant cannot be resolved by name):**\n${onboardingPrefetchRaw}\n\n**Mandatory:** The server may auto-fill **tenancy_id** on **draft_contract** from this JSON — you do not need UUIDs from the user. Use **tenancy_id**, **pending_task_names**, and **referencing_complete** from this JSON. To draft a **tenancy agreement** in chat, call **draft_contract** (args can be empty if this block is present). Prefer **tenant_name** as **${inferredTenantName}** and **onboarding_property_hint** when the user gave a street (e.g. Billionaires Row). **Do not** invent “backend issues”, “tenant profile not loading”, or “draft manually from /dashboard/contracts” unless a tool JSON returned a real **error** field.`;
   }
 
   if (isPropertyAddressFollowUp && inferredPropertyHintFromUser) {

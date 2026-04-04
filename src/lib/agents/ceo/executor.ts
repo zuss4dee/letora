@@ -29,6 +29,14 @@ function sanitizeTenantName(raw: string): string {
   return raw.replace(/\s+(at|in|for|from|with|of)\s*$/i, "").trim();
 }
 
+/** Day-of-month (1–31) for recurring rent, inferred from tenancy start_date. */
+function rentDueDayOfMonthFromStartDate(startDate: string | null | undefined): number | null {
+  if (!startDate) return null;
+  const d = new Date(`${String(startDate).trim()}T12:00:00.000Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.getUTCDate();
+}
+
 const ONBOARDING_ORDER = [
   "not_started",
   "pending",
@@ -884,21 +892,200 @@ export async function executeCEOTool(
       });
     }
     case "get_rent_status": {
-      const month = args.month ?? new Date().toISOString().slice(0, 7);
+      const month = args.month?.trim() ?? new Date().toISOString().slice(0, 7);
+      const tenancyIdArg = args.tenancy_id?.trim();
+      const tenantNameArg = args.tenant_name?.trim() ? sanitizeTenantName(args.tenant_name.trim()) : undefined;
+
       const { data: payments } = await supabase
         .from("rent_payments")
-        .select("id, amount, status, due_date, tenant_id, tenants(full_name, email)")
+        .select(
+          "id, amount, status, due_date, tenant_id, tenancy_id, property_id, tenants(full_name, email)",
+        )
         .eq("user_id", userId)
         .gte("due_date", `${month}-01`)
         .lte("due_date", `${month}-31`);
+
+      let tenantIdFilter: string[] | null = null;
+      let noTenancyMatch = false;
+      if (tenantNameArg && !tenancyIdArg) {
+        const frag = sanitizeIlikeNameFragment(tenantNameArg);
+        if (frag) {
+          const { data: nameHits } = await supabase
+            .from("tenants")
+            .select("id")
+            .eq("user_id", userId)
+            .ilike("full_name", `%${frag}%`);
+          tenantIdFilter = [...new Set((nameHits ?? []).map((r) => r.id as string))];
+          if (tenantIdFilter.length === 0) {
+            noTenancyMatch = true;
+          }
+        }
+      }
+
+      let tenRows: Record<string, unknown>[] | null = null;
+      if (noTenancyMatch) {
+        tenRows = [];
+      } else {
+        let tenancyQuery = supabase
+          .from("tenancies")
+          .select(
+            `
+          id,
+          tenant_id,
+          property_id,
+          start_date,
+          end_date,
+          move_in_date,
+          monthly_rent,
+          deposit_amount,
+          status,
+          tenants!inner ( id, full_name ),
+          properties!inner ( address, city, user_id )
+        `,
+          )
+          .eq("properties.user_id", userId);
+
+        if (tenancyIdArg) {
+          tenancyQuery = tenancyQuery.eq("id", tenancyIdArg);
+        } else if (tenantIdFilter && tenantIdFilter.length === 1) {
+          tenancyQuery = tenancyQuery.eq("tenant_id", tenantIdFilter[0]);
+        } else if (tenantIdFilter && tenantIdFilter.length > 1) {
+          tenancyQuery = tenancyQuery.in("tenant_id", tenantIdFilter);
+        }
+
+        const { data } = await tenancyQuery.order("created_at", { ascending: false });
+        tenRows = data ?? [];
+      }
+
+      type TenancySnap = {
+        tenancy_id: string;
+        tenant_name: string | null;
+        property_address: string | null;
+        monthly_rent: number | null;
+        start_date: string | null;
+        end_date: string | null;
+        move_in_date: string | null;
+        tenancy_status: string | null;
+        rent_due_day_of_month: number | null;
+        rent_schedule_hint: string | null;
+        first_payment_record: {
+          id: string;
+          due_date: string | null;
+          amount: number | null;
+          status: string | null;
+        } | null;
+      };
+
+      const tenancies: TenancySnap[] = [];
+
+      for (const row of tenRows ?? []) {
+        const traw = row.tenants as unknown;
+        const t = Array.isArray(traw) ? traw[0] : traw;
+        const tenantName =
+          t && typeof t === "object" && "full_name" in t
+            ? String((t as { full_name?: string | null }).full_name ?? "").trim() || null
+            : null;
+
+        const praw = row.properties as unknown;
+        const p = Array.isArray(praw) ? praw[0] : praw;
+        const addr =
+          p && typeof p === "object" && "address" in p
+            ? [
+                String((p as { address?: string | null }).address ?? "").trim(),
+                String((p as { city?: string | null }).city ?? "").trim(),
+              ]
+                .filter(Boolean)
+                .join(", ") || null
+            : null;
+
+        const startDate = (row as { start_date?: string | null }).start_date ?? null;
+        const dueDay = rentDueDayOfMonthFromStartDate(startDate);
+        const tid = String((row as { id: string }).id);
+
+        let firstPayment: TenancySnap["first_payment_record"] = null;
+        const { data: fp } = await supabase
+          .from("rent_payments")
+          .select("id, due_date, amount, status")
+          .eq("user_id", userId)
+          .eq("tenancy_id", tid)
+          .order("due_date", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+
+        const mapFp = (raw: Record<string, unknown>): TenancySnap["first_payment_record"] => ({
+          id: raw.id as string,
+          due_date: (raw.due_date as string | null | undefined) ?? null,
+          amount:
+            raw.amount == null ? null : Number(raw.amount as number | string),
+          status: String((raw.status as string | null | undefined) ?? ""),
+        });
+
+        if (fp) {
+          firstPayment = mapFp(fp as Record<string, unknown>);
+        } else {
+          const tId = (row as { tenant_id?: string | null }).tenant_id;
+          const pId = (row as { property_id?: string | null }).property_id;
+          if (tId && pId) {
+            const { data: fpAlt } = await supabase
+              .from("rent_payments")
+              .select("id, due_date, amount, status")
+              .eq("user_id", userId)
+              .eq("tenant_id", tId)
+              .eq("property_id", pId)
+              .order("due_date", { ascending: true })
+              .limit(1)
+              .maybeSingle();
+            if (fpAlt) {
+              firstPayment = mapFp(fpAlt as Record<string, unknown>);
+            }
+          }
+        }
+
+        const mr = (row as { monthly_rent?: number | string | null }).monthly_rent;
+        tenancies.push({
+          tenancy_id: tid,
+          tenant_name: tenantName,
+          property_address: addr,
+          monthly_rent: mr == null ? null : Number(mr),
+          start_date: startDate,
+          end_date: (row as { end_date?: string | null }).end_date ?? null,
+          move_in_date: (row as { move_in_date?: string | null }).move_in_date ?? null,
+          tenancy_status: (row as { status?: string | null }).status ?? null,
+          rent_due_day_of_month: dueDay,
+          rent_schedule_hint:
+            dueDay != null
+              ? `Recurring rent is typically due on day ${dueDay} of each month (from tenancy start date in Letora).`
+              : startDate
+                ? null
+                : "Tenancy start date is not set in Letora — add it on the tenancy page for a full schedule.",
+          first_payment_record: firstPayment,
+        });
+      }
+
+      let ambiguity_note: string | null = null;
+      if (tenantNameArg && !tenancyIdArg && tenancies.length > 1) {
+        ambiguity_note =
+          "Multiple tenancy rows match that tenant name — ask which property or pass tenancy_id from list_tenants.";
+      }
+      if (tenantNameArg && !tenancyIdArg && tenancies.length === 0) {
+        ambiguity_note =
+          "No tenancy row found for that tenant on your account. They can confirm details on the tenancy page.";
+      }
+
+      const payList = payments ?? [];
       return JSON.stringify({
         month,
-        payments: payments ?? [],
-        paid: payments?.filter((p) => p.status === "paid").length ?? 0,
-        overdue: payments?.filter((p) => p.status === "overdue").length ?? 0,
-        total_expected: payments?.reduce((sum, p) => sum + Number(p.amount ?? 0), 0) ?? 0,
-        total_collected:
-          payments?.filter((p) => p.status === "paid").reduce((sum, p) => sum + Number(p.amount ?? 0), 0) ?? 0,
+        payments: payList,
+        paid: payList.filter((p) => p.status === "paid").length,
+        overdue: payList.filter((p) => p.status === "overdue").length,
+        total_expected: payList.reduce((sum, p) => sum + Number(p.amount ?? 0), 0),
+        total_collected: payList
+          .filter((p) => p.status === "paid")
+          .reduce((sum, p) => sum + Number(p.amount ?? 0), 0),
+        tenancies,
+        ...(ambiguity_note ? { ambiguity_note } : {}),
+        authoritative_tenancy_note:
+          "Answer rent amount, first payment, due day, and schedule from **tenancies** when present. Do not claim missing tenancy start date or monthly rent when **tenancies** includes start_date or monthly_rent.",
       });
     }
     case "chase_rent": {
