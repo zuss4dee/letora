@@ -30,21 +30,46 @@ function normalizeTenancyRows(tenancies: unknown): {
   return [];
 }
 
-function unwrapTenancyProperty(row: { properties?: unknown }): { address?: string | null; city?: string | null } | null {
+function unwrapTenancyProperty(row: { properties?: unknown }): {
+  name?: string | null;
+  address?: string | null;
+  city?: string | null;
+} | null {
   const p = row.properties as unknown;
   const o = Array.isArray(p) ? p[0] : p;
-  return o && typeof o === "object" ? (o as { address?: string | null; city?: string | null }) : null;
+  return o && typeof o === "object" ? (o as { name?: string | null; address?: string | null; city?: string | null }) : null;
+}
+
+function normalizeAddressSearchString(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/['\u2019]/g, "")
+    .replace(/[.,#'"]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function tenancyMatchesOnboardingHint(row: { properties?: unknown }, hint: string): boolean {
   const p = unwrapTenancyProperty(row);
   if (!p) return false;
-  const h = hint.toLowerCase().trim();
-  if (!h) return false;
-  const addr = (p.address ?? "").toLowerCase();
-  const city = (p.city ?? "").toLowerCase();
-  const words = h.split(/\s+/).filter((w) => w.length > 1);
-  return addr.includes(h) || city.includes(h) || words.some((w) => addr.includes(w) || city.includes(w));
+  const hRaw = hint.toLowerCase().trim();
+  if (!hRaw) return false;
+  const hay = normalizeAddressSearchString([p.name ?? "", p.address ?? "", p.city ?? ""].filter(Boolean).join(" "));
+  const h = normalizeAddressSearchString(hRaw);
+  if (!hay || !h) return false;
+  if (hay.includes(h)) return true;
+  const tokens = h.split(/\s+/).filter((w) => w.length > 0);
+  const significant = tokens.filter((w) => w.length >= 2 || /^\d{2,}$/.test(w));
+  if (significant.length === 0) return false;
+  return significant.every((w) => hay.includes(w));
+}
+
+/** Same matching as a tenancy row, for standalone `properties` rows (dashboard-style contract). */
+function propertyRecordMatchesHint(
+  row: { name?: string | null; address?: string | null; city?: string | null },
+  hint: string,
+): boolean {
+  return tenancyMatchesOnboardingHint({ properties: row }, hint);
 }
 
 type TenancyRowForOnboarding = {
@@ -58,6 +83,7 @@ function mapTenancyCandidate(r: TenancyRowForOnboarding) {
   return {
     tenancy_id: r.id,
     status: r.status ?? null,
+    name: p?.name ?? null,
     address: p?.address ?? null,
     city: p?.city ?? null,
   };
@@ -130,28 +156,43 @@ async function resolveDraftContractByPropertyHint(
   hint: string,
   optionalTenantName: string | null,
 ): Promise<{ ok: true; data: DraftContractTenancyBundle } | { ok: false; json: string }> {
+  /** Must filter by landlord in the query — a global `.limit(500)` can exclude this user's rows entirely. */
   const { data: tenRows } = await supabase
     .from("tenancies")
     .select(
       `id, status, start_date, end_date, monthly_rent, deposit_amount, property_id, onboarding_status, tenant_profiles ( id, full_name, email, phone ), properties!inner ( user_id, name, address, city )`,
     )
-    .limit(500);
+    .eq("properties.user_id", userId);
 
-  const owned = (tenRows ?? []).filter((r) => {
-    const p = r.properties as unknown as { user_id: string };
-    return p.user_id === userId;
-  });
+  const owned = tenRows ?? [];
 
-  let pool = owned.filter((r) => tenancyMatchesOnboardingHint(r as TenancyRowForOnboarding, hint));
+  const hintPool = owned.filter((r) => tenancyMatchesOnboardingHint(r as TenancyRowForOnboarding, hint));
+  let pool = hintPool;
   if (optionalTenantName?.trim()) {
     const frag = optionalTenantName.trim().toLowerCase();
     const words = frag.split(/\s+/).filter((w) => w.length >= 2);
-    pool = pool.filter((r) => {
+    const nameFiltered = pool.filter((r) => {
       const tr = r.tenant_profiles as unknown as { full_name: string | null } | null | { full_name: string | null }[];
       const tp = Array.isArray(tr) ? tr[0] : tr;
       const fn = (tp?.full_name ?? "").toLowerCase();
       return fn.includes(frag) || (words.length > 0 && words.every((w) => fn.includes(w)));
     });
+    if (nameFiltered.length > 0) {
+      pool = nameFiltered;
+    } else if (hintPool.length === 1) {
+      // Single tenancy at this address — use it even if inferred/model name did not match DB spelling.
+      pool = hintPool;
+    } else if (hintPool.length > 1) {
+      return {
+        ok: false,
+        json: JSON.stringify({
+          error:
+            "That address matched more than one tenancy — say which tenant (full name) or pick from the list.",
+          code: "tenant_name_mismatch",
+          candidates: hintPool.map((r) => mapTenancyCandidate(r as TenancyRowForOnboarding)),
+        }),
+      };
+    }
   }
 
   if (pool.length === 0) {
@@ -1676,13 +1717,69 @@ export async function executeCEOTool(
             });
 
             if (owned.length === 0) {
-              return JSON.stringify({
-                error:
-                  "No tenancy with a property on your account for this tenant. Open Tenancies and link a property first.",
-                code: "no_tenancy",
-              });
+              /**
+               * Dashboard “New contract” only needs tenant + property — no `tenancies` row.
+               * If the tenant has no linked tenancy but the address matches exactly one property, draft like the dashboard.
+               */
+              if (propertyHint?.trim()) {
+                const { data: propRows } = await supabase
+                  .from("properties")
+                  .select("id, name, address, city, monthly_rent")
+                  .eq("user_id", userId);
+                const matched = (propRows ?? []).filter((r) =>
+                  propertyRecordMatchesHint(
+                    r as { name?: string | null; address?: string | null; city?: string | null },
+                    propertyHint.trim(),
+                  ),
+                );
+                if (matched.length === 1) {
+                  const prop = matched[0] as {
+                    id: string;
+                    name: string | null;
+                    address: string | null;
+                    city: string | null;
+                    monthly_rent: number | string | null;
+                  };
+                  const mr = Number(prop.monthly_rent ?? 0) || 0;
+                  tenancyData = {
+                    start_date: null,
+                    end_date: null,
+                    monthly_rent: prop.monthly_rent,
+                    deposit_amount: mr > 0 ? mr : null,
+                    property_id: String(prop.id),
+                    onboarding_status: "contract_sent",
+                  };
+                  propertyLabel = [prop.name, prop.address, prop.city].filter(Boolean).join(", ") || "Property";
+                  resolvedTenancyId = undefined;
+                } else if (matched.length > 1) {
+                  return JSON.stringify({
+                    error:
+                      "That address matches more than one property — add a more specific street fragment or pick the property in the dashboard.",
+                    code: "ambiguous_property",
+                    candidates: matched.map((p) => ({
+                      property_id: (p as { id: string }).id,
+                      name: (p as { name?: string | null }).name ?? null,
+                      address: (p as { address?: string | null }).address ?? null,
+                      city: (p as { city?: string | null }).city ?? null,
+                    })),
+                  });
+                } else {
+                  return JSON.stringify({
+                    error:
+                      "No tenancy linked this tenant to a property, and no property on your account matched that address hint. Check the property address in Settings or create/link a tenancy.",
+                    code: "no_tenancy",
+                  });
+                }
+              } else {
+                return JSON.stringify({
+                  error:
+                    "No tenancy with a property on your account for this tenant. Add onboarding_property_hint (street) if the tenant should match a specific property, or link a tenancy first.",
+                  code: "no_tenancy",
+                });
+              }
             }
 
+            if (owned.length > 0) {
             const pool = owned.map((r) => ({
               id: r.id as string,
               status: r.status as string | null | undefined,
@@ -1718,11 +1815,12 @@ export async function executeCEOTool(
               property_id: String(chosen.property_id),
               onboarding_status: chosen.onboarding_status as string | null,
             };
+            }
           }
         }
       }
 
-      if (!tenantRow || !tenancyData || !resolvedTenancyId || !propertyLabel) {
+      if (!tenantRow || !tenancyData || !propertyLabel) {
         return JSON.stringify({
           error:
             "Could not resolve tenant or tenancy for this contract. Try list_tenants, pass tenancy_id, or give tenant name and/or a property hint (street or city).",
@@ -1743,7 +1841,7 @@ export async function executeCEOTool(
 
       const tenantPayload = {
         tenant: tenantRow,
-        tenancy_id: resolvedTenancyId,
+        tenancy_id: resolvedTenancyId ?? null,
         property: propertyLabel,
         onboarding_status: onboardingStatus,
       };
@@ -1818,7 +1916,7 @@ export async function executeCEOTool(
         contract_draft: result.text,
         saved: true,
         contract_id: inserted.id as string,
-        tenancy_id: resolvedTenancyId,
+        ...(resolvedTenancyId ? { tenancy_id: resolvedTenancyId } : {}),
       });
     }
     case "resolve_onboarding_navigation": {

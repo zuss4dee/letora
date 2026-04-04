@@ -2,10 +2,25 @@ import { looksLikeUuid } from "@/lib/agents/ceo/resolve-tenant-profile";
 import { isAffirmativeConfirmation } from "@/lib/agents/ceo/safety";
 
 /**
+ * Light typo fixes for inference only (mobile / fast typing). Does not change stored user text.
+ */
+export function normalizeUserTextForInference(text: string): string {
+  let t = text.replace(/\s+/g, " ").trim();
+  // Adjacent-key slips for "the" (e.g. "draft ghe contract")
+  t = t.replace(/\bghe\b/gi, "the");
+  t = t.replace(/\bteh\b/gi, "the");
+  t = t.replace(/\bhte\b/gi, "the");
+  t = t.replace(/\bthw\b/gi, "the");
+  t = t.replace(/\bfhe\b/gi, "the");
+  t = t.replace(/\bcontrct\b/gi, "contract");
+  return t;
+}
+
+/**
  * Extract a tenant full name from natural language, e.g. "start onboarding for Alexis Adeosun".
  */
 export function extractOnboardingNameFromUserText(text: string): string | null {
-  const t = text.replace(/\s+/g, " ").trim();
+  const t = normalizeUserTextForInference(text).replace(/\s+/g, " ").trim();
   if (t.length < 8) return null;
 
   const patterns: RegExp[] = [
@@ -34,13 +49,13 @@ export function inferOnboardingForFromConversation(
 ): string | null {
   const userMsgs = messages.filter((m) => m.role === "user");
   for (let i = userMsgs.length - 1; i >= 0; i--) {
-    const text = userMsgs[i].content;
+    const text = normalizeUserTextForInference(userMsgs[i].content);
     if (isAffirmativeConfirmation(text)) continue;
     const name = extractOnboardingNameFromUserText(text);
     if (name) return name;
   }
   for (let i = userMsgs.length - 1; i >= 0; i--) {
-    const name = extractOnboardingNameFromUserText(userMsgs[i].content);
+    const name = extractOnboardingNameFromUserText(normalizeUserTextForInference(userMsgs[i].content));
     if (name) return name;
   }
   return null;
@@ -54,7 +69,7 @@ const NAME_STOPWORDS = new Set(
 
 /** "for Alexis Adeosun", "about Jane Smith" */
 function extractNameAfterForOrAbout(text: string): string | null {
-  const t = text.replace(/\s+/g, " ").trim();
+  const t = normalizeUserTextForInference(text).replace(/\s+/g, " ").trim();
   const patterns = [
     /\b(?:for|about)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b/,
     /\b(?:tenant|named?)\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\b/,
@@ -100,19 +115,19 @@ export function inferTenantOrContractNameFromConversation(
 
   const userMsgs = messages.filter((m) => m.role === "user");
   for (let i = userMsgs.length - 1; i >= 0; i--) {
-    const text = userMsgs[i].content;
+    const text = normalizeUserTextForInference(userMsgs[i].content);
     if (isAffirmativeConfirmation(text)) continue;
     const name = extractNameAfterForOrAbout(text);
     if (name) return name;
   }
   for (let i = userMsgs.length - 1; i >= 0; i--) {
-    const name = extractNameAfterForOrAbout(userMsgs[i].content);
+    const name = extractNameAfterForOrAbout(normalizeUserTextForInference(userMsgs[i].content));
     if (name) return name;
   }
 
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i].role !== "assistant") continue;
-    const name = extractCapitalizedFullNameFromAssistant(messages[i].content);
+    const name = extractCapitalizedFullNameFromAssistant(normalizeUserTextForInference(messages[i].content));
     if (name) return name;
   }
   return null;
@@ -120,9 +135,13 @@ export function inferTenantOrContractNameFromConversation(
 
 /** UK-style address fragments: "101 Billionaires Row", "for 101 ..." */
 export function extractPropertyAddressHintFromText(text: string): string | null {
-  const t = text.replace(/\s+/g, " ").trim();
+  const t = normalizeUserTextForInference(text)
+    .replace(/\*+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   const patterns = [
     /\b(?:for|at)\s+(\d{1,4}\s+[A-Za-z][A-Za-z\s'.-]{4,100})\b/i,
+    /\bit\s+is\s+for\s+(\d{1,4}\s+[A-Za-z][A-Za-z\s'.-]{4,100})\b/i,
     /\b(\d{1,4}\s+[A-Za-z][A-Za-z\s'.-]{3,80}(?:row|road|street|lane|avenue|way|close|drive|gardens?|london))\b/i,
     /\b(\d{1,4}\s+billionaires\s+row)\b/i,
   ];
@@ -141,13 +160,19 @@ export function inferPropertyAddressHintFromConversation(
 ): string | null {
   const userMsgs = messages.filter((m) => m.role === "user");
   for (let i = userMsgs.length - 1; i >= 0; i--) {
-    const text = userMsgs[i].content;
+    const text = normalizeUserTextForInference(userMsgs[i].content);
     if (isAffirmativeConfirmation(text)) continue;
     const h = extractPropertyAddressHintFromText(text);
     if (h) return h;
   }
   for (let i = userMsgs.length - 1; i >= 0; i--) {
-    const h = extractPropertyAddressHintFromText(userMsgs[i].content);
+    const h = extractPropertyAddressHintFromText(normalizeUserTextForInference(userMsgs[i].content));
+    if (h) return h;
+  }
+  // Assistant often repeats the property line (e.g. after onboarding resume) — reuse for draft_contract hints.
+  for (let i = messages.length - 1; i >= 0; i--) {
+    if (messages[i].role !== "assistant") continue;
+    const h = extractPropertyAddressHintFromText(normalizeUserTextForInference(messages[i].content));
     if (h) return h;
   }
   return null;
@@ -205,7 +230,11 @@ export function mergeDraftContractInput(
         success?: boolean;
         mode?: string;
       };
-      if (o.success === true && typeof o.tenancy_id === "string" && o.tenancy_id.length > 0) {
+      if (
+        typeof o.tenancy_id === "string" &&
+        o.tenancy_id.length > 0 &&
+        (o.success === true || o.mode === "resume")
+      ) {
         out.tenancy_id = o.tenancy_id;
         return out;
       }

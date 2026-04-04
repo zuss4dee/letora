@@ -2,10 +2,23 @@ import { describe, expect, it } from "vitest";
 
 import {
   extractOnboardingNameFromUserText,
+  extractPropertyAddressHintFromText,
   inferOnboardingForFromConversation,
+  inferPropertyAddressHintFromConversation,
   mergeDraftContractInput,
   mergeEnrichedOnboardingInput,
+  normalizeUserTextForInference,
 } from "./enrich-onboarding-input";
+
+describe("normalizeUserTextForInference", () => {
+  it("fixes common the-typos so routing and extraction still work", () => {
+    expect(normalizeUserTextForInference("draft ghe contract now")).toBe("draft the contract now");
+  });
+
+  it("fixes contrct → contract", () => {
+    expect(normalizeUserTextForInference("draft the contrct now")).toBe("draft the contract now");
+  });
+});
 
 describe("extractOnboardingNameFromUserText", () => {
   it("parses start onboarding for Full Name", () => {
@@ -34,6 +47,30 @@ describe("inferOnboardingForFromConversation", () => {
       { role: "user", content: "yes" },
     ]);
     expect(name).toBe("Alexis Adeosun");
+  });
+});
+
+describe("extractPropertyAddressHintFromText", () => {
+  it("parses it is for 101 … row", () => {
+    expect(extractPropertyAddressHintFromText("yes it is for 101 billionaires row")).toMatch(/101/i);
+    expect(extractPropertyAddressHintFromText("yes it is for 101 billionaires row")?.toLowerCase()).toContain(
+      "billionaires",
+    );
+  });
+});
+
+describe("inferPropertyAddressHintFromConversation", () => {
+  it("finds address from assistant message when user only says draft the contract", () => {
+    const h = inferPropertyAddressHintFromConversation([
+      { role: "user", content: "start onboarding for Alexis Adeosun" },
+      {
+        role: "assistant",
+        content: "Onboarding at **101 Billionaires Row** — reply yes to continue.",
+      },
+      { role: "user", content: "draft ghe contract now?" },
+    ]);
+    expect(h).toMatch(/101/i);
+    expect(h?.toLowerCase()).toContain("billionaires");
   });
 });
 
@@ -73,5 +110,14 @@ describe("mergeDraftContractInput", () => {
     );
     expect(out.tenant_name).toBeUndefined();
     expect(out.tenancy_id).toBe("8d940bd9-309d-4e53-9a86-b057e221b268");
+  });
+
+  it("injects tenancy_id from resume prefetch when mode is resume", () => {
+    const raw = JSON.stringify({
+      mode: "resume",
+      tenancy_id: "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    });
+    const out = mergeDraftContractInput({}, null, null, raw);
+    expect(out.tenancy_id).toBe("a1b2c3d4-e5f6-7890-abcd-ef1234567890");
   });
 });

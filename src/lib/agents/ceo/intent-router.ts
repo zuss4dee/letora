@@ -165,6 +165,11 @@ const ROUTE_PATTERNS: ReadonlyArray<{
     re: /\b(contracts?|tenancy\s+docs?|draft\s+paperwork|ast|tenancy\s+agreement|lease\s+doc)\b/i,
   },
   {
+    id: "contracts",
+    weight: 2.4,
+    re: /\bdraft\s+(\S+\s+)?contract\b/i,
+  },
+  {
     id: "portfolio",
     weight: 2.2,
     re: /\b(what\s+needs\s+my\s+attention|what'?s\s+going\s+on|portfolio|big\s+picture|summary|dashboard|today|this\s+week|everything\s+ok|catch\s+me\s+up)\b/i,
@@ -247,6 +252,8 @@ const CONFIDENCE_NORMALIZER = 6
 function normalizeForRouting(text: string): string {
   const t = text.toLowerCase()
   return t
+    .replace(/\bghe\b/g, "the")
+    .replace(/\bteh\b/g, "the")
     .replace(/\btenats\b/g, "tenants")
     .replace(/\btenent(s)?\b/g, "tenant$1")
     .replace(/\btennant(s)?\b/g, "tenant$1")
@@ -255,6 +262,7 @@ function normalizeForRouting(text: string): string {
     .replace(/\bmaintenence\b/g, "maintenance")
     .replace(/\bmaintainance\b/g, "maintenance")
     .replace(/\bcontrcat(s)?\b/g, "contract$1")
+    .replace(/\bcontrct\b/g, "contract")
     .replace(/\bleadz\b/g, "leads")
     .replace(/\bproeprty\b/g, "property")
     .replace(/\bdashbord\b/g, "dashboard")

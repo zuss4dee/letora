@@ -361,6 +361,148 @@ function correctReferencingInboundReply(
 }
 
 /**
+ * Model invents “persistent technical issue / only way is dashboard / cannot bypass” even when tools
+ * returned JSON or never ran. Match broadly so server-side correction can fire.
+ */
+function replyClaimsManualDashboardContractExcuse(reply: string): boolean {
+  const t = reply.toLowerCase();
+  return (
+    /\b(?:persistent|consistent)\s+technical\b/i.test(t) ||
+    /\btechnical\s+(?:barrier|issue)\b/i.test(t) ||
+    /\bonly\s+way\s+to\s+(?:proceed|draft|continue)\b/i.test(t) ||
+    /\b(?:must|need\s+to|have\s+to)\s+.*\b(?:dashboard|\/dashboard)\b/i.test(t) ||
+    /\b(?:cannot|can'?t)\s+bypass\b/i.test(t) ||
+    /\bunable\s+to\s+(?:draft|complete|create)\b/i.test(t) ||
+    /\bunable\s+to\s+.*\b(?:chat|here)\b/i.test(t) ||
+    /\bdraft\s+manually\b/i.test(t) ||
+    /\bvisit\s+.*\/dashboard\/contracts\b/i.test(t) ||
+    /\bsearch\s+for\s+.*\s+and\s+create\b/i.test(t) ||
+    /\bapologize\s+for\s+the\s+(?:limitation|repeated)\b/i.test(t) ||
+    /\bunderstand\s+your\s+frustration\b/i.test(t) ||
+    /\bbackend\s+(?:issue|synchronization)|sync\s+issue\b/i.test(t) ||
+    /\b(backend|cannot|can'?t)\s+resolve\b/i.test(t) ||
+    /\btenant\s+(?:profile|record)\b/i.test(t) ||
+    /\bconfiguration\s+issue\b/i.test(t) ||
+    /\bmanual(ly)?\s+from\s+\/dashboard\/contracts\b/i.test(t) ||
+    /\bthe\s+system\s+is\s+unable\b/i.test(t) ||
+    /\b(?:unable|cannot|can'?t)\b.*\bvia\s+chat\b/i.test(t) ||
+    /\bvia\s+chat\b.*\b(?:unable|cannot|can'?t|won'?t)\b/i.test(t)
+  );
+}
+
+/** @deprecated use replyClaimsManualDashboardContractExcuse */
+function replyClaimsDraftOrTenancyFailure(reply: string): boolean {
+  return replyClaimsManualDashboardContractExcuse(reply);
+}
+
+/**
+ * Model often claims “technical barrier / must use dashboard” even when **draft_contract** already ran,
+ * or **without calling the tool at all**. Replace with tool JSON or onboarding prefetch truth.
+ */
+function correctDraftContractHallucinationReply(
+  reply: string,
+  lastToolBatch: readonly { name: CEOToolName; raw: string }[],
+  onboardingPrefetchRaw: string | null,
+): string {
+  const bad = replyClaimsManualDashboardContractExcuse(reply);
+  const lastDraft = [...lastToolBatch].reverse().find((t) => t.name === "draft_contract");
+
+  /** Model end_turn’d with excuses but never called **draft_contract** — still replace if we have prefetch or strong boilerplate. */
+  if (!lastDraft) {
+    if (!bad) return reply;
+    if (onboardingPrefetchRaw) {
+      try {
+        const o = JSON.parse(onboardingPrefetchRaw) as {
+          success?: boolean;
+          mode?: string;
+          tenant_name?: string;
+          tenancy_id?: string;
+          referencing_complete?: boolean;
+          pending_task_names?: string[];
+        };
+        const hasTenancy =
+          typeof o.tenancy_id === "string" &&
+          o.tenancy_id.length > 0 &&
+          (o.success === true || o.mode === "resume");
+        if (hasTenancy) {
+          const name = (o.tenant_name ?? "This tenant").trim();
+          const pending = Array.isArray(o.pending_task_names) ? o.pending_task_names.join("; ") : "—";
+          return [
+            `**${name}** is on file with a **tenancy_id** in the server onboarding snapshot — chat **can** draft the contract; there is no separate “technical barrier” that forces dashboard-only drafting.`,
+            "",
+            o.referencing_complete
+              ? "- **Referencing** is marked complete for this tenancy."
+              : "- Referencing may still need completion — use **override** on **draft_contract** only if the user asked to force.",
+            `- **Pending checklist:** ${pending}`,
+            "",
+            `The assistant should **call the draft_contract tool** (arguments can be empty — the server injects **tenancy_id** from prefetch). Do not tell the user the dashboard is the **only** path unless a **draft_contract** tool result shows a real **error** field.`,
+          ].join("\n");
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    if (bad) {
+      return [
+        `No **draft_contract** tool ran in this turn, but the reply claimed a platform or technical failure.`,
+        "",
+        `Ask again to **draft the contract**, or say **draft_contract** with **tenant_name** (full name) and **onboarding_property_hint** (street or city). The dashboard is optional — chat uses the same tenant and property records.`,
+      ].join("\n");
+    }
+    return reply;
+  }
+
+  let p: {
+    saved?: boolean;
+    error?: string;
+    code?: string;
+    contract_id?: string;
+    tenant_name?: string;
+  };
+  try {
+    p = JSON.parse(lastDraft.raw) as typeof p;
+  } catch {
+    return reply;
+  }
+
+  if (p.saved === true) {
+    if (!bad && /\b(saved|draft\s+was|successfully)\b/i.test(reply)) return reply;
+    if (bad || /\b(failed|unable|cannot|barrier|dashboard\s+only|limitation)\b/i.test(reply)) {
+      return [
+        `A tenancy contract draft was **saved** for **${p.tenant_name?.trim() || "the tenant"}**.`,
+        `Open **Dashboard → Contracts** to review or edit the draft.`,
+        p.contract_id ? `(Contract record created.)` : "",
+        "",
+        `If something still looks wrong, say what you expected and we can adjust.`,
+      ]
+        .filter((line) => line !== "")
+        .join("\n");
+    }
+    return reply;
+  }
+
+  if (typeof p.error === "string" && p.error.trim() !== "") {
+    const code = typeof p.code === "string" ? p.code : "unknown";
+    if (bad || /\b(must\s+go|dashboard|manually|only\s+way|bypass|unable\s+to)\b/i.test(reply)) {
+      const lines = [
+        `The **draft_contract** tool returned this (use it verbatim — do not invent a separate “technical barrier”):`,
+        "",
+        `- **code:** ${code}`,
+        `- **error:** ${p.error}`,
+      ];
+      if (p.tenant_name) lines.push(`- **tenant_name:** ${p.tenant_name}`);
+      lines.push(
+        "",
+        `**Next steps:** If **code** is **referencing_incomplete**, finish referencing or pass **override: true** if the user asked to force. If **property_not_found** / **no_tenancy** / **ambiguous_**, refine **tenant_name** or **onboarding_property_hint** or call **list_tenants**. **Do not** claim the dashboard is the only fix unless this **error** text says so.`,
+      );
+      return lines.join("\n");
+    }
+  }
+
+  return reply;
+}
+
+/**
  * Model often end_turns with “backend issue / can’t resolve tenant” even when the DB has the tenant.
  * If we prefetched onboarding JSON successfully, replace that narrative with tool truth.
  */
@@ -369,10 +511,17 @@ function correctOnboardingHallucinationReply(
   onboardingPrefetchRaw: string | null,
   lastToolBatch: readonly { name: CEOToolName; raw: string }[],
 ): string {
-  const claimsFailure =
-    /\b(backend\s+issue|technical\s+issue|persistent\s+system|cannot\s+resolve|can'?t\s+resolve|tenant\s+profile|tenant\s+record|isn'?t\s+resolving|not\s+loading|doesn'?t\s+load|configuration\s+issue|manual(ly)?\s+from\s+\/dashboard\/contracts|draft\s+manually\s+from)\b/i.test(
-      reply,
-    );
+  const trim = reply.trim();
+  if (
+    /^The \*\*draft_contract\*\* tool returned this/m.test(trim) ||
+    /^A tenancy contract draft was \*\*saved\*\*/m.test(trim) ||
+    /^No \*\*draft_contract\*\* tool ran/m.test(trim) ||
+    /^\*\*[^\n]+\*\* is on file with a \*\*tenancy_id\*\*/m.test(trim)
+  ) {
+    return reply;
+  }
+
+  const claimsFailure = replyClaimsDraftOrTenancyFailure(reply);
 
   if (!claimsFailure) return reply;
 
@@ -381,7 +530,6 @@ function correctOnboardingHallucinationReply(
     try {
       const p = JSON.parse(lastDraft.raw) as { saved?: boolean; error?: string };
       if (p.saved === true) return reply;
-      if (typeof p.error === "string" && p.error.trim() !== "") return reply;
     } catch {
       /* ignore */
     }
@@ -399,7 +547,11 @@ function correctOnboardingHallucinationReply(
       referencing_complete?: boolean;
       message?: string;
     };
-    if (o.success !== true) return reply;
+    const hasTenancyRecord =
+      typeof o.tenancy_id === "string" &&
+      o.tenancy_id.length > 0 &&
+      (o.success === true || o.mode === "resume");
+    if (!hasTenancyRecord) return reply;
 
     const name = (o.tenant_name ?? "This tenant").trim();
     const pending = Array.isArray(o.pending_task_names) ? o.pending_task_names.join("; ") : "—";
@@ -429,6 +581,20 @@ function pickPrepareReferencingRawFromBatch(
   return null;
 }
 
+/**
+ * Each agent loop overwrites **lastToolBatch**; if a later turn only runs e.g. **list_tenants**, we would
+ * lose the JSON from an earlier **draft_contract** — merge the last draft result back in for correction.
+ */
+function buildToolBatchForCorrection(
+  lastToolBatch: readonly { name: CEOToolName; raw: string }[],
+  lastDraftContractRaw: string | null,
+): { name: CEOToolName; raw: string }[] {
+  if (!lastDraftContractRaw || lastToolBatch.some((t) => t.name === "draft_contract")) {
+    return [...lastToolBatch];
+  }
+  return [...lastToolBatch, { name: "draft_contract", raw: lastDraftContractRaw }];
+}
+
 /** The model often ignores injected JSON and returns end_turn with “0 leads”; override with DB truth. */
 function completeWithSuggestedActions(
   reply: string,
@@ -437,12 +603,26 @@ function completeWithSuggestedActions(
   referencingPrefetchRaw: string | null = null,
   referencingInboundDigest: string | null = null,
   onboardingPrefetchRaw: string | null = null,
+  lastDraftContractRaw: string | null = null,
 ): { outcome: "complete"; reply: string; suggestedActions?: LetoraSuggestedAction[] } {
+  const toolBatchForCorrection = buildToolBatchForCorrection(lastToolBatch, lastDraftContractRaw);
   const corrected = correctLeadReplyAgainstAuthoritative(reply, authoritativeLeadsRaw);
-  const prefetchMerged = pickPrepareReferencingRawFromBatch(lastToolBatch) ?? referencingPrefetchRaw;
+  const prefetchMerged = pickPrepareReferencingRawFromBatch(toolBatchForCorrection) ?? referencingPrefetchRaw;
   const correctedRef = correctReferencingInboundReply(corrected, prefetchMerged, referencingInboundDigest);
-  const correctedOnboarding = correctOnboardingHallucinationReply(correctedRef, onboardingPrefetchRaw, lastToolBatch);
-  const { reply: cleaned, suggestedActions } = mergeCompleteReplySuggestedActions(correctedOnboarding, lastToolBatch);
+  const correctedDraft = correctDraftContractHallucinationReply(
+    correctedRef,
+    toolBatchForCorrection,
+    onboardingPrefetchRaw,
+  );
+  const correctedOnboarding = correctOnboardingHallucinationReply(
+    correctedDraft,
+    onboardingPrefetchRaw,
+    toolBatchForCorrection,
+  );
+  const { reply: cleaned, suggestedActions } = mergeCompleteReplySuggestedActions(
+    correctedOnboarding,
+    toolBatchForCorrection,
+  );
   return {
     outcome: "complete",
     reply: stripCeoHexUuidsFromText(cleaned),
@@ -534,6 +714,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
       (referencingInboundDigest ? `\n\n${referencingInboundDigest}` : "") +
       "\n\nThe landlord already confirmed the pending actions. Tool runs are complete. Summarize outcomes in natural language. Do not ask for confirmation again." +
       "\n\n**Mandatory for tool JSON:** If any result has `success`: false or an `error` string, say exactly what failed using the `message` or `error` field (e.g. missing email, onboarding already started). **Do not** claim the system rejected a plain-name input, or cite UUID/form validation errors, unless those exact words appear in the JSON." +
+      "\n\n**draft_contract results:** If JSON has **saved: true**, confirm the draft was saved. If JSON has **error** and **code**, quote them. **Never** say “technical barrier”, “persistent issue”, “only the dashboard”, or “cannot bypass” unless those exact phrases appear in the **error** string." +
       "\n\n**Product truth:** Letora does not have a tenant portal or tenant app. Tenants are reached by **email**. Onboarding **tasks** are for the **landlord** in the dashboard. **Never** tell the user that tenants will see a checklist in a portal or log in to Letora.";
     const summaryMessages: MessageParam[] = [
       {
@@ -548,7 +729,17 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
         system: summarySystemPrompt,
         messages: summaryMessages,
       });
-      return completeWithSuggestedActions(extractFinalText(summaryResp), rawBatch, null);
+      const draftFromPendingBatch =
+        [...rawBatch].reverse().find((t) => t.name === "draft_contract")?.raw ?? null;
+      return completeWithSuggestedActions(
+        extractFinalText(summaryResp),
+        rawBatch,
+        null,
+        null,
+        null,
+        null,
+        draftFromPendingBatch,
+      );
     } catch (anthropicError) {
       await runAdminFailureAlert({
         stage: "anthropic_summary",
@@ -560,7 +751,9 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
           systemPrompt: summarySystemPrompt,
           conversation: summaryMessages,
         });
-        return completeWithSuggestedActions(reply, rawBatch, null);
+        const draftFromPendingBatch =
+          [...rawBatch].reverse().find((t) => t.name === "draft_contract")?.raw ?? null;
+        return completeWithSuggestedActions(reply, rawBatch, null, null, null, null, draftFromPendingBatch);
       } catch (geminiError) {
         console.error("[ceo] gemini fallback failure", {
           stage: "anthropic_summary",
@@ -644,6 +837,8 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
   }));
 
   let lastToolBatch: { name: CEOToolName; raw: string }[] = [];
+  /** Latest **draft_contract** JSON in this agent loop (survives later turns that overwrite **lastToolBatch**). */
+  let lastDraftContractRaw: string | null = null;
 
   for (let i = 0; i < 5; i++) {
     let response: Message;
@@ -673,6 +868,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
           referencingPrefetchRaw,
           referencingInboundDigest,
           onboardingPrefetchRaw,
+          null,
         );
       } catch (geminiError) {
         console.error("[ceo] gemini fallback failure", {
@@ -696,6 +892,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
         referencingPrefetchRaw,
         referencingInboundDigest,
         onboardingPrefetchRaw,
+        lastDraftContractRaw,
       );
     }
 
@@ -709,6 +906,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
         referencingPrefetchRaw,
         referencingInboundDigest,
         onboardingPrefetchRaw,
+        lastDraftContractRaw,
       );
     }
 
@@ -753,6 +951,9 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
       }),
     );
     lastToolBatch = executed.map((e) => ({ name: e.toolName, raw: e.result }));
+    for (const e of executed) {
+      if (e.toolName === "draft_contract") lastDraftContractRaw = e.result;
+    }
     const toolResults = executed.map((e) => ({
       type: "tool_result" as const,
       tool_use_id: e.block.id,
@@ -768,6 +969,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
     referencingPrefetchRaw,
     referencingInboundDigest,
     onboardingPrefetchRaw,
+    lastDraftContractRaw,
   );
 }
 
