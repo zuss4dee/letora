@@ -30,6 +30,10 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
     "State clearly whether the applicant was approved or rejected and that the lead record was updated.",
   draft_contract:
     "Read **saved**, **contract_id**, **property_match**, **message**, **error**, and **code**. If **code** is **llm_error** or **save_failed**, repeat the **error** string in plain language — do **not** blame “tenant record resolution”, “backend configuration”, “synchronization”, or “sync” unless those exact words appear in **error**. If **code** is **matched_by_fallback**, ask if the property in **message** is the right one. If **code** is **ambiguous_match**, list **candidates** and ask which address they mean. If **code** is **no_property_match**, use **message** in plain language. If **code** is **ambiguous_tenancy**, **multiple_tenants**, or **tenant_name_mismatch**, list **candidates** and ask the user to pick — do **not** say the tenancy does not exist at that address. If **saved** is true, confirm the draft was saved and mention the Contracts page in the app. **tenancy_id** may be omitted when the draft matched tenant + property without a separate tenancy row. Do not paste internal instructions, “Next steps”, or raw URLs. Do not paste the full contract unless asked.",
+  send_contract:
+    "Read **success** and **message**. If success is true, confirm the contract was sent to the tenant and they received a signing link by email. Include tenant name and property address. If success is false, explain using the **message** field.",
+  get_contracts:
+    "List the contracts found: for each, mention tenant name, property address, status (draft/sent/signed/active), and contract_id. If no contracts found, say so and suggest drafting one first.",
   get_dashboard_summary:
     "Give a compact portfolio snapshot: property and tenant counts, overdue rent pressure, maintenance load, and what deserves attention first.",
   get_rent_status:

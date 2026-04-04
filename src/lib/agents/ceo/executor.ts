@@ -24,6 +24,69 @@ function formatTenantNameFromProfile(tenant: { full_name?: string | null } | nul
   return tenant?.full_name?.trim() || "Unknown tenant";
 }
 
+const ONBOARDING_ORDER = [
+  "not_started",
+  "pending",
+  "in_progress",
+  "references",
+  "referencing_requested",
+  "contract_draft",
+  "contract_sent",
+  "pending_signature",
+  "signed",
+  "complete",
+  "active",
+] as const;
+
+export function isStepAlreadyDone(currentStatus: string, stepStatus: string): boolean {
+  const currentIdx = ONBOARDING_ORDER.indexOf(currentStatus as typeof ONBOARDING_ORDER[number]);
+  const stepIdx = ONBOARDING_ORDER.indexOf(stepStatus as typeof ONBOARDING_ORDER[number]);
+  if (currentIdx === -1 || stepIdx === -1) return false;
+  return currentIdx >= stepIdx;
+}
+
+async function logAgentActivity(
+  supabase: SupabaseClient,
+  userId: string,
+  toolName: string,
+  toolArgs: Record<string, unknown>,
+  result: Record<string, unknown>,
+  success: boolean,
+) {
+  const { error } = await supabase.from("agent_activity").insert({
+    user_id: userId,
+    tool_name: toolName,
+    args: toolArgs,
+    result,
+    success,
+    created_at: new Date().toISOString(),
+  });
+  if (error) console.error("[agent_activity] log failed:", error);
+}
+
+async function saveEmailDraft(
+  supabase: SupabaseClient,
+  userId: string,
+  params: {
+    subject: string;
+    body: string;
+    tenantId?: string | null;
+    tenancyId?: string | null;
+    status?: string;
+  },
+) {
+  console.log("[email insert] user_id:", userId, "table: email_drafts");
+  const { error } = await supabase.from("email_drafts").insert({
+    user_id: userId,
+    subject: params.subject,
+    body: params.body,
+    tenant_id: params.tenantId ?? null,
+    tenancy_id: params.tenancyId ?? null,
+    status: params.status ?? "draft",
+  });
+  if (error) console.error("[email_drafts] insert failed:", error);
+}
+
 function normalizeTenancyRows(tenancies: unknown): {
   id?: string | null;
   property_id?: string | null;
@@ -517,6 +580,8 @@ interface ToolCallArgs {
   decision?: string;
   /** draft_contract — only when user explicitly forces */
   override?: boolean | string;
+  /** send_contract */
+  contract_id?: string;
 }
 
 function normalizePipelineStatus(value: unknown): string {
@@ -791,9 +856,17 @@ export async function executeCEOTool(
           results: [],
         });
       }
+
+      for (const r of results) {
+        void saveEmailDraft(supabase, userId, {
+          subject: r.emailSubject,
+          body: r.emailBody,
+        });
+      }
+
       return JSON.stringify({
         month,
-        message: `Processed ${results.length} rent chase run(s). Drafts are saved to email logs; sends follow your auto-send settings.`,
+        message: `Processed ${results.length} rent chase run(s). Drafts are saved; sends follow your auto-send settings.`,
         chased: results.length,
         results: results.map((r) => ({
           tenant_name: r.tenantName,
@@ -1151,6 +1224,22 @@ export async function executeCEOTool(
       if (!resolved.ok) {
         return resolved.response;
       }
+
+      const { data: refTenancyStatus } = await supabase
+        .from("tenancies")
+        .select("onboarding_status")
+        .eq("id", resolved.tenancyId)
+        .single();
+      const refCurrentStatus = String(refTenancyStatus?.onboarding_status ?? "not_started");
+      if (isStepAlreadyDone(refCurrentStatus, "referencing_requested")) {
+        return JSON.stringify({
+          success: false,
+          already_done: true,
+          message: `Referencing was already requested for this tenancy (status: ${refCurrentStatus}). Skipping.`,
+          onboarding_status: refCurrentStatus,
+        });
+      }
+
       const refResult = await runReferencingHandoffForUser(resolved.tenancyId, userId, supabase, {
         forceSend: true,
       });
@@ -1391,6 +1480,11 @@ export async function executeCEOTool(
             `Issue details:`,
             fullDescription,
           ].join("\n"),
+        });
+
+        void saveEmailDraft(supabase, userId, {
+          subject: `Maintenance dispatch: ${args.issue_title?.trim() || "New issue"}`,
+          body: fullDescription,
         });
 
         await supabase
@@ -1724,6 +1818,7 @@ export async function executeCEOTool(
       });
 
       const body = draft.text.trim();
+      void saveEmailDraft(supabase, userId, { subject, body });
       const emailResult = await sendEmailTool(supabase, userId, null, {
         to: toEmail,
         toName: leadName,
@@ -2156,6 +2251,15 @@ export async function executeCEOTool(
         });
       }
 
+      if (isStepAlreadyDone(onboardingStatus, "contract_sent") && !overrideContract) {
+        return JSON.stringify({
+          success: false,
+          already_done: true,
+          message: `A contract has already been drafted and sent for this tenancy (status: ${onboardingStatus}). If you want a new draft, ask to **override** or **force** it.`,
+          onboarding_status: onboardingStatus,
+        });
+      }
+
       const tenantPayload = {
         tenant: tenantRow,
         tenancy_id: resolvedTenancyId && resolvedTenancyId.length > 0 ? resolvedTenancyId : null,
@@ -2206,6 +2310,7 @@ export async function executeCEOTool(
           user_id: userId,
           tenant_id: tenantRow.id,
           property_id: tenancyData.property_id,
+          tenancy_id: resolvedTenancyId || null,
           contract_type: "AST",
           start_date: defaultStart,
           end_date: defaultEnd,
@@ -2243,15 +2348,246 @@ export async function executeCEOTool(
         ...(resolvedTenancyId && resolvedTenancyId.length > 0 ? { tenancy_id: resolvedTenancyId } : {}),
       });
       console.log("[draft_contract] returning:", successResult);
+      void logAgentActivity(supabase, userId, "draft_contract", args as Record<string, unknown>, { contract_id: contractId, saved: true }, true);
       return successResult;
       } catch (err: unknown) {
         console.error("[draft_contract] exception:", err);
+        void logAgentActivity(supabase, userId, "draft_contract", args as Record<string, unknown>, { error: String(err) }, false);
         return JSON.stringify({
           saved: false,
           error: err instanceof Error ? err.message : String(err),
           code: "internal_error",
         });
       }
+    }
+    case "send_contract": {
+      try {
+        let contractId = args.contract_id?.trim();
+
+        if (!contractId) {
+          let tenancyId = args.tenancy_id?.trim();
+
+          if (!tenancyId && args.tenant_name?.trim()) {
+            const nameFragment = sanitizeIlikeNameFragment(args.tenant_name.trim());
+            const { data: tenantHits } = await supabase
+              .from("tenant_profiles")
+              .select("id, tenancies(id)")
+              .ilike("full_name", `%${nameFragment}%`)
+              .eq("user_id", userId)
+              .limit(1);
+
+            const firstHit = tenantHits?.[0];
+            if (firstHit) {
+              const tenancyRows = normalizeTenancyRows(firstHit.tenancies);
+              if (tenancyRows.length === 1 && tenancyRows[0].id) {
+                tenancyId = String(tenancyRows[0].id);
+              }
+            }
+          }
+
+          if (tenancyId) {
+            const { data: latestContract } = await supabase
+              .from("contracts")
+              .select("id, status")
+              .eq("tenancy_id", tenancyId)
+              .eq("user_id", userId)
+              .eq("status", "draft")
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            contractId = (latestContract?.id as string) ?? undefined;
+          }
+        }
+
+        if (!contractId) {
+          return JSON.stringify({
+            success: false,
+            message: "No draft contract found for this tenant. Please draft a contract first using draft_contract.",
+          });
+        }
+
+        const { data: contract, error: contractErr } = await supabase
+          .from("contracts")
+          .select("id, signing_token, status, tenant_id, property_id, tenancy_id, special_clauses")
+          .eq("id", contractId)
+          .eq("user_id", userId)
+          .single();
+
+        if (contractErr || !contract) {
+          return JSON.stringify({ success: false, message: "Contract not found or not owned by you" });
+        }
+
+        if (contract.status !== "draft") {
+          return JSON.stringify({
+            success: false,
+            message: `Contract is already in "${contract.status}" status — it can only be sent from "draft"`,
+          });
+        }
+
+        const tenancyId = args.tenancy_id?.trim() || (contract.tenancy_id as string | null);
+
+        const [{ data: tenant }, { data: property }] = await Promise.all([
+          supabase
+            .from("tenant_profiles")
+            .select("id, full_name, email")
+            .eq("id", contract.tenant_id)
+            .single(),
+          supabase
+            .from("properties")
+            .select("id, address, city")
+            .eq("id", contract.property_id)
+            .single(),
+        ]);
+
+        if (!tenant?.email) {
+          return JSON.stringify({ success: false, message: "Tenant email is missing — cannot send contract" });
+        }
+        if (!property) {
+          return JSON.stringify({ success: false, message: "Property linked to this contract could not be found" });
+        }
+
+        const signingToken = contract.signing_token as string;
+        const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/+$/, "");
+        const signingUrl = `${appUrl}/sign/${signingToken}`;
+        const tenantName = tenant.full_name?.trim() || "Tenant";
+        const propertyAddr = [property.address, property.city].filter(Boolean).join(", ");
+
+        await sendEmailTool(supabase, userId, null, {
+          to: tenant.email,
+          toName: tenantName,
+          subject: `Your tenancy agreement for ${propertyAddr} — please sign`,
+          body: [
+            `Hi ${tenantName},`,
+            "",
+            `Your landlord has prepared a tenancy agreement for ${propertyAddr}.`,
+            "",
+            "Please review and sign it by visiting the link below:",
+            signingUrl,
+            "",
+            "This link is unique to you. Do not share it.",
+            "",
+            "Kind regards,",
+            "Letora",
+          ].join("\n"),
+          agentType: "onboarding",
+          forceSend: true,
+        });
+
+        void saveEmailDraft(supabase, userId, {
+          subject: `Your tenancy agreement for ${propertyAddr} — please sign`,
+          body: `Contract signing link sent to ${tenantName} at ${tenant.email}`,
+          tenantId: contract.tenant_id as string,
+          tenancyId: tenancyId ?? undefined,
+          status: "sent",
+        });
+
+        await supabase
+          .from("contracts")
+          .update({ status: "sent", sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+          .eq("id", contractId)
+          .eq("user_id", userId);
+
+        if (tenancyId) {
+          await supabase
+            .from("tenancies")
+            .update({ onboarding_status: "contract_sent" })
+            .eq("id", tenancyId);
+        }
+
+        const sendResult = {
+          success: true,
+          message: `Contract sent to ${tenantName} at ${tenant.email}. They can sign at the link in their email.`,
+          signing_url: signingUrl,
+          contract_id: contractId,
+          tenant_name: tenantName,
+          property_address: propertyAddr,
+        };
+
+        void logAgentActivity(supabase, userId, "send_contract", args as Record<string, unknown>, sendResult, true);
+        return JSON.stringify(sendResult);
+      } catch (err: unknown) {
+        console.error("[send_contract] exception:", err);
+        return JSON.stringify({
+          success: false,
+          error: err instanceof Error ? err.message : String(err),
+          code: "internal_error",
+        });
+      }
+    }
+    case "get_contracts": {
+      const tenancyIdArg = args.tenancy_id?.trim();
+      const tenantNameArg = args.tenant_name?.trim();
+
+      let query = supabase
+        .from("contracts")
+        .select(`
+          id, status, created_at, tenancy_id, tenant_id, property_id,
+          tenant_signed_at, landlord_signed_at
+        `)
+        .eq("user_id", userId);
+
+      if (tenancyIdArg) {
+        query = query.eq("tenancy_id", tenancyIdArg);
+      }
+
+      const { data: contracts, error: contractsErr } = await query.order("created_at", { ascending: false }).limit(20);
+
+      if (contractsErr || !contracts?.length) {
+        return JSON.stringify({ success: false, message: "No contracts found.", contracts: [] });
+      }
+
+      let filtered = contracts;
+      if (tenantNameArg && !tenancyIdArg) {
+        const tenantIds = [...new Set(contracts.map((c) => c.tenant_id).filter((id): id is string => Boolean(id)))];
+        if (tenantIds.length > 0) {
+          const nameFragment = sanitizeIlikeNameFragment(tenantNameArg);
+          const { data: matchingTenants } = await supabase
+            .from("tenant_profiles")
+            .select("id")
+            .in("id", tenantIds)
+            .ilike("full_name", `%${nameFragment}%`);
+          const matchSet = new Set((matchingTenants ?? []).map((t) => t.id as string));
+          filtered = contracts.filter((c) => c.tenant_id && matchSet.has(c.tenant_id as string));
+        }
+      }
+
+      if (filtered.length === 0) {
+        return JSON.stringify({ success: false, message: "No contracts found for that tenant.", contracts: [] });
+      }
+
+      const tenantIds = [...new Set(filtered.map((c) => c.tenant_id).filter((id): id is string => Boolean(id)))];
+      const propertyIds = [...new Set(filtered.map((c) => c.property_id).filter((id): id is string => Boolean(id)))];
+
+      const [{ data: tenants }, { data: properties }] = await Promise.all([
+        tenantIds.length > 0
+          ? supabase.from("tenant_profiles").select("id, full_name, email").in("id", tenantIds)
+          : Promise.resolve({ data: [] as { id: string; full_name: string | null; email: string | null }[] }),
+        propertyIds.length > 0
+          ? supabase.from("properties").select("id, address, city").in("id", propertyIds)
+          : Promise.resolve({ data: [] as { id: string; address: string | null; city: string | null }[] }),
+      ]);
+
+      const tenantMap = new Map((tenants ?? []).map((t) => [t.id, t]));
+      const propMap = new Map((properties ?? []).map((p) => [p.id, p]));
+
+      const result = filtered.map((c) => {
+        const t = c.tenant_id ? tenantMap.get(c.tenant_id as string) : undefined;
+        const p = c.property_id ? propMap.get(c.property_id as string) : undefined;
+        return {
+          contract_id: c.id,
+          status: c.status,
+          created_at: c.created_at,
+          tenancy_id: c.tenancy_id,
+          tenant_name: t?.full_name ?? null,
+          tenant_email: t?.email ?? null,
+          property_address: [p?.address, p?.city].filter(Boolean).join(", ") || null,
+          tenant_signed: Boolean(c.tenant_signed_at),
+          landlord_signed: Boolean(c.landlord_signed_at),
+        };
+      });
+
+      return JSON.stringify({ success: true, total: result.length, contracts: result });
     }
     case "resolve_onboarding_navigation": {
       const hrefFor = (id: string) => `/dashboard/tenancies/${id}`;

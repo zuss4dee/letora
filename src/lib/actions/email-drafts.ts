@@ -17,6 +17,70 @@ export type EmailDraftRow = {
   created_at: string;
 };
 
+export type EmailDraftTableRow = {
+  id: string;
+  subject: string;
+  body: string;
+  status: string;
+  created_at: string;
+  tenant_name: string | null;
+};
+
+export async function getAllEmailDrafts(userId: string): Promise<EmailDraftTableRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("email_drafts")
+    .select(`
+      id, subject, body, status, created_at,
+      tenants:tenant_profiles ( full_name )
+    `)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  console.log("[emails page] drafts:", data?.length, "error:", error?.message);
+
+  if (error) {
+    console.warn("[getAllEmailDrafts]", error.message);
+    return [];
+  }
+
+  return (data ?? []).map((row) => {
+    const raw = row.tenants as unknown;
+    let tenantName: string | null = null;
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      tenantName = (raw as { full_name?: string | null }).full_name ?? null;
+    } else if (Array.isArray(raw) && raw.length > 0) {
+      tenantName = (raw[0] as { full_name?: string | null }).full_name ?? null;
+    }
+    return {
+      id: row.id as string,
+      subject: row.subject as string,
+      body: row.body as string,
+      status: row.status as string,
+      created_at: row.created_at as string,
+      tenant_name: tenantName,
+    };
+  });
+}
+
+/** @deprecated Use getAllEmailDrafts for the /dashboard/emails page. This reads from email_logs (send infrastructure). */
+export async function getAllEmailLogs(userId: string): Promise<EmailDraftRow[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("email_logs")
+    .select("id,to_name,to_email,subject,body,agent_type,status,created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) {
+    console.warn("[getAllEmailLogs]", error.message);
+    return [];
+  }
+  return (data ?? []) as EmailDraftRow[];
+}
+
 export async function getPendingEmailDrafts(userId: string): Promise<EmailDraftRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -111,8 +175,8 @@ export type ReviewEmailDraftResult = {
 };
 
 /**
- * Loads a draft for the review modal. Ownership is enforced via `email_logs.user_id`
- * (same row as pending drafts; there is no separate `email_drafts` table).
+ * Loads a draft from `email_logs` for the review modal (send infrastructure).
+ * For AI-generated drafts visible on /dashboard/emails, see `getAllEmailDrafts`.
  */
 export async function reviewEmailDraft(draftId: string): Promise<ReviewEmailDraftResult> {
   const supabase = await createClient();

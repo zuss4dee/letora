@@ -1,6 +1,6 @@
 "use client";
 
-import { ExternalLink, Loader2, Menu, MessageSquarePlus, PanelLeft, Send } from "lucide-react";
+import { Loader2, Menu, MessageSquarePlus, PanelLeft, Send } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -192,12 +192,49 @@ function SuggestedActionChips({
   );
 }
 
+interface ActionTag {
+  label: string;
+  href: string;
+}
+
+const ACTION_TAG_REGEX = /<action\s+type="navigate"\s+label="([^"]+)"\s+href="([^"]+)"\s*\/>/g;
+
 const CONTRACT_ID_PATTERN =
   /(?:contract\s*(?:id|ID)[:\s]+|\/dashboard\/contracts\/)([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
 
-function extractContractId(text: string): string | null {
-  const m = CONTRACT_ID_PATTERN.exec(text);
-  return m?.[1] ?? null;
+function parseActionTags(text: string): { cleanText: string; actions: ActionTag[] } {
+  const actions: ActionTag[] = [];
+  const cleanText = text.replace(ACTION_TAG_REGEX, (_match, label: string, href: string) => {
+    actions.push({ label, href });
+    return "";
+  }).trim();
+
+  if (actions.length === 0) {
+    const cid = CONTRACT_ID_PATTERN.exec(text);
+    if (cid?.[1]) {
+      actions.push({ label: "Review Contract", href: `/dashboard/contracts/${cid[1]}` });
+    }
+  }
+
+  return { cleanText, actions };
+}
+
+function NavigationButtons({ actions }: { actions: ActionTag[] }) {
+  if (actions.length === 0) return null;
+  return (
+    <div className="mt-3 flex flex-wrap gap-2">
+      {actions.map((a) => (
+        <Link
+          key={a.href}
+          href={a.href}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+        >
+          {a.label}
+          <span aria-hidden>→</span>
+        </Link>
+      ))}
+    </div>
+  );
 }
 
 function MessageBubble({
@@ -221,6 +258,10 @@ function MessageBubble({
       );
     }
   }
+  const { cleanText, actions: navActions } = role === "assistant"
+    ? parseActionTags(content)
+    : { cleanText: content, actions: [] as ActionTag[] };
+
   return (
     <div className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}>
       <div
@@ -232,25 +273,11 @@ function MessageBubble({
           isTransitional && !isUser && "animate-pulse border-primary/30 opacity-60",
         )}
       >
-        <p className="whitespace-pre-wrap break-words">{content}</p>
+        <p className="whitespace-pre-wrap break-words">{cleanText}</p>
         {role === "assistant" && suggestedActions && suggestedActions.length > 0 && onPickSuggestedMessage ? (
           <SuggestedActionChips actions={suggestedActions} onMessagePick={onPickSuggestedMessage} />
         ) : null}
-        {role === "assistant" && (() => {
-          const cid = extractContractId(content);
-          if (!cid) return null;
-          return (
-            <div className="mt-2">
-              <Link
-                href={`/dashboard/contracts/${cid}`}
-                className="inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"
-              >
-                <ExternalLink className="size-3.5" aria-hidden />
-                Review Contract
-              </Link>
-            </div>
-          );
-        })()}
+        {role === "assistant" ? <NavigationButtons actions={navActions} /> : null}
       </div>
     </div>
   );

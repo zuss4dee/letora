@@ -13,6 +13,8 @@ export type CEOToolName =
   | "nurture_lead"
   | "decide_lead_application"
   | "draft_contract"
+  | "send_contract"
+  | "get_contracts"
   | "get_dashboard_summary"
   | "get_rent_status"
   | "list_tenants"
@@ -32,6 +34,8 @@ export const CEO_TOOL_NAMES: readonly CEOToolName[] = [
   "nurture_lead",
   "decide_lead_application",
   "draft_contract",
+  "send_contract",
+  "get_contracts",
   "get_dashboard_summary",
   "get_rent_status",
   "list_tenants",
@@ -411,6 +415,48 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
         tenant_name: {
           type: "string",
           description: "Tenant full name — resolves to tenant profile then tenancy (same as other tools).",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "send_contract",
+    description:
+      "Send a drafted contract to the tenant for signing via email. Updates the contract status to 'sent' and the tenancy onboarding_status to 'contract_sent'. Returns a unique signing URL for the tenant. If contract_id is not provided, auto-resolves the most recent draft contract for the given tenant_name or tenancy_id.",
+    input_schema: {
+      type: "object",
+      properties: {
+        contract_id: {
+          type: "string",
+          description: "The UUID of the contract to send. If omitted, the most recent draft contract for the tenant/tenancy is used.",
+        },
+        tenancy_id: {
+          type: "string",
+          description: "The UUID of the tenancy linked to this contract.",
+        },
+        tenant_name: {
+          type: "string",
+          description: "Tenant full name — used to auto-resolve the contract when contract_id is not provided.",
+        },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "get_contracts",
+    description:
+      "Look up contracts for a tenant by name or tenancy_id. Returns contract status, signing state, and linked tenant/property details. Use this to find a contract_id before calling send_contract.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tenant_name: {
+          type: "string",
+          description: "Full or partial tenant name to search contracts for.",
+        },
+        tenancy_id: {
+          type: "string",
+          description: "Tenancy UUID to filter contracts by.",
         },
       },
       required: [],

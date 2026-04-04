@@ -14,6 +14,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import {
+  Activity,
   Bot,
   Building2,
   CircleDollarSign,
@@ -22,6 +23,7 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
+  Mail,
   MessageSquare,
   Settings,
   UserPlus,
@@ -69,6 +71,11 @@ const data = {
       icon: <FileText />,
     },
     {
+      title: "Emails",
+      url: "/dashboard/emails",
+      icon: <Mail />,
+    },
+    {
       title: "Leads",
       url: "/dashboard/leads",
       icon: <UserPlus />,
@@ -77,6 +84,11 @@ const data = {
       title: "Agents",
       url: "/dashboard/agents",
       icon: <Bot />,
+    },
+    {
+      title: "Activity",
+      url: "/dashboard/activity",
+      icon: <Activity />,
     },
     {
       title: "Assistant",
