@@ -34,6 +34,7 @@ export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 
 import { AgentSettingsForm } from "@/components/settings/agent-settings-form";
+import { DeleteAccountCard } from "@/components/settings/delete-account-card";
 import { getUserSettings } from "@/lib/actions/user-settings";
 import { createClient } from "@/lib/supabase/server";
 import { type UserSettingsInput } from "@/lib/validations/user-settings";
@@ -90,6 +91,7 @@ export default async function SettingsPage() {
           >
             <AgentSettingsForm initialValues={initialValues} userId={user?.id ?? ""} />
           </Suspense>
+          {user?.id ? <DeleteAccountCard /> : null}
         </div>
       </div>
     </div>
