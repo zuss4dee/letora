@@ -24,7 +24,7 @@ function rowToPayload(l: LeadRow): LeadQualifyRowPayload {
   const qualificationStatus = l.qualified_status ?? null;
   const pipeline = norm(l.status);
   const qs = norm(l.qualified_status);
-  let eligibleForAiQualify = pipeline === "new" && qs === "pending";
+  const eligibleForAiQualify = pipeline === "new" && qs === "pending";
   let ineligibleReason: string | null = null;
   if (!eligibleForAiQualify) {
     if (qs !== "pending") {
