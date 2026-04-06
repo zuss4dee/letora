@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Controller, useForm, type Resolver } from "react-hook-form";
 
 import { addContract } from "@/lib/actions/contracts";
@@ -71,16 +71,13 @@ export function AddContractDialog({
     defaultValues,
   });
 
-  const prevOpenRef = useRef(false);
-
-  /** Only reset when the dialog opens, not when parent re-renders with new list references while open. */
-  useEffect(() => {
-    if (open && !prevOpenRef.current) {
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (next) {
       setSubmitError(null);
       form.reset(defaultValues);
     }
-    prevOpenRef.current = open;
-  }, [open, defaultValues, form]);
+  }
 
   async function onSubmit(values: AddContractInput) {
     setSubmitError(null);
@@ -111,7 +108,7 @@ export function AddContractDialog({
   const { errors } = form.formState;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button
           className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
