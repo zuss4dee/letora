@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
  */
 export function AuthLayoutCanvas({ children }: { children: ReactNode }) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0d0c0b] text-[#e7e5e4]">
+    <div className="relative min-h-screen overflow-hidden bg-[#0d0c0b] text-foreground">
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_60%_at_50%_-18%,rgba(61,26,10,0.52),transparent_58%)]"
         aria-hidden

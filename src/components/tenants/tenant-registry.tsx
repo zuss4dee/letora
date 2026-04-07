@@ -137,10 +137,10 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
     <div className="relative min-h-0 flex-1 bg-[#0E0E0E]">
       <div className="mx-auto w-full max-w-6xl px-6 pb-28 pt-2 md:px-12">
         <header className="mb-12 max-w-6xl">
-          <h1 className="font-headline mb-2 text-4xl font-extralight tracking-tight text-[#C9C6C5] sm:text-5xl">
+          <h1 className="font-headline mb-2 text-4xl font-extralight tracking-tight text-foreground sm:text-5xl">
             Tenant Registry
           </h1>
-          <p className="max-w-xl font-[family-name:var(--font-inter)] font-light tracking-wide text-[#ACABAA]">
+          <p className="max-w-xl font-[family-name:var(--font-inter)] font-light tracking-wide text-muted-foreground">
             Curating the residency lifecycle across your premium portfolio with clinical precision and oversight.
           </p>
         </header>
@@ -160,8 +160,8 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
                   className={cn(
                     "relative py-2 font-[family-name:var(--font-inter)] text-sm tracking-wider transition-colors",
                     active
-                      ? "font-semibold text-[#C9C6C5]"
-                      : "font-medium text-[#ACABAA] hover:text-[#BD9952]",
+                      ? "font-semibold text-foreground"
+                      : "font-medium text-muted-foreground hover:text-[#BD9952]",
                   )}
                 >
                   {t.label}
@@ -174,15 +174,15 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
           </div>
           <div className="flex w-full shrink-0 justify-end gap-12 md:w-auto">
             <div className="text-right">
-              <p className="mb-1 font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-[#ACABAA]">
+              <p className="mb-1 font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
                 Total active
               </p>
-              <p className="font-headline text-2xl font-light text-[#C9C6C5]">
+              <p className="font-headline text-2xl font-light text-foreground">
                 {totalActive.toLocaleString("en-GB")}
               </p>
             </div>
             <div className="border-l border-[#484848]/20 pl-12 text-right">
-              <p className="mb-1 font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-[#ACABAA]">
+              <p className="mb-1 font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
                 Pending review
               </p>
               <p className="font-headline text-2xl font-light text-[#BD9952]">
@@ -197,19 +197,19 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="bg-[#1F2020]">
-                  <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-[#ACABAA]">
+                  <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
                     Tenant name
                   </th>
-                  <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-[#ACABAA]">
+                  <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
                     Property
                   </th>
-                  <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-[#ACABAA]">
+                  <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
                     Lease term
                   </th>
-                  <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-[#ACABAA]">
+                  <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
                     Rent status
                   </th>
-                  <th className="px-8 py-5 text-right font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-[#ACABAA]">
+                  <th className="px-8 py-5 text-right font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
                     Action
                   </th>
                 </tr>
@@ -219,7 +219,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
                   <tr>
                     <td
                       colSpan={5}
-                      className="px-8 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]"
+                      className="px-8 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground"
                     >
                       No tenants in this view yet.
                     </td>
@@ -236,28 +236,28 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
                             {initials(row.fullName)}
                           </div>
                           <div>
-                            <p className="font-[family-name:var(--font-inter)] text-sm font-semibold text-[#C9C6C5]">
+                            <p className="font-[family-name:var(--font-inter)] text-sm font-semibold text-foreground">
                               {row.fullName ?? "—"}
                             </p>
-                            <p className="font-[family-name:var(--font-inter)] text-xs font-light text-[#ACABAA]">
+                            <p className="font-[family-name:var(--font-inter)] text-xs font-light text-muted-foreground">
                               {row.email ?? "—"}
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-8 py-6">
-                        <p className="font-[family-name:var(--font-inter)] text-sm text-[#E7E5E4]">
+                        <p className="font-[family-name:var(--font-inter)] text-sm text-foreground">
                           {row.propertyLine1 ?? row.propertyAddress ?? "—"}
                         </p>
-                        <p className="font-[family-name:var(--font-inter)] text-[11px] tracking-wide text-[#ACABAA]">
+                        <p className="font-[family-name:var(--font-inter)] text-[11px] tracking-wide text-muted-foreground">
                           {row.propertySubtitle ?? "—"}
                         </p>
                       </td>
                       <td className="px-8 py-6">
-                        <p className="font-[family-name:var(--font-inter)] text-sm text-[#E7E5E4]">
+                        <p className="font-[family-name:var(--font-inter)] text-sm text-foreground">
                           {leaseTermLine(row.leaseStartDate, row.leaseEndDate)}
                         </p>
-                        <p className="font-[family-name:var(--font-inter)] text-[11px] tracking-wide text-[#ACABAA]">
+                        <p className="font-[family-name:var(--font-inter)] text-[11px] tracking-wide text-muted-foreground">
                           {leaseDurationLabel(row.leaseMonths)}
                         </p>
                       </td>
@@ -267,7 +267,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
                       <td className="px-8 py-6 text-right">
                         <Link
                           href={`/dashboard/tenants/${row.id}`}
-                          className="font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-widest text-[#ACABAA] transition-colors hover:text-[#BD9952]"
+                          className="font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-[#BD9952]"
                         >
                           Quick view
                         </Link>
@@ -281,7 +281,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
         </div>
 
         <div className="mt-8 flex max-w-6xl items-center justify-between gap-4">
-          <p className="font-[family-name:var(--font-inter)] text-[11px] uppercase tracking-widest text-[#ACABAA]">
+          <p className="font-[family-name:var(--font-inter)] text-[11px] uppercase tracking-widest text-muted-foreground">
             {filtered.length === 0
               ? "No accounts in this view"
               : `Showing ${sliceStart + 1}-${Math.min(sliceStart + PAGE_SIZE, filtered.length)} of ${filtered.length.toLocaleString("en-GB")} premium accounts`}
@@ -291,7 +291,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
               type="button"
               disabled={safePage <= 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="border border-[#484848]/20 p-2 text-[#C9C6C5] transition-colors hover:bg-[#1F2020] disabled:pointer-events-none disabled:opacity-30"
+              className="border border-[#484848]/20 p-2 text-foreground transition-colors hover:bg-[#1F2020] disabled:pointer-events-none disabled:opacity-30"
               aria-label="Previous page"
             >
               <ChevronLeft className="size-[18px]" aria-hidden />
@@ -300,7 +300,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
               type="button"
               disabled={safePage >= pageCount - 1}
               onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-              className="border border-[#484848]/20 p-2 text-[#C9C6C5] transition-colors hover:bg-[#1F2020] disabled:pointer-events-none disabled:opacity-30"
+              className="border border-[#484848]/20 p-2 text-foreground transition-colors hover:bg-[#1F2020] disabled:pointer-events-none disabled:opacity-30"
               aria-label="Next page"
             >
               <ChevronRight className="size-[18px]" aria-hidden />

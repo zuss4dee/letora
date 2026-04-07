@@ -15,10 +15,10 @@ export function SettingsAgentActivityCard() {
             <Bot className="size-4 stroke-[1.25]" aria-hidden />
           </div>
           <div>
-            <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.12em] text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
               Agent activity
             </p>
-            <p className="mt-0.5 font-[family-name:var(--font-inter)] text-sm text-[#C9C6C5]">
+            <p className="mt-0.5 font-[family-name:var(--font-inter)] text-sm text-foreground">
               View recent runs from Rent Chaser, Lead Qualifier, and Contract Drafter.
             </p>
           </div>

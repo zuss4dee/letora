@@ -70,7 +70,7 @@ function NavSection({
 }) {
   return (
     <div className="mb-4">
-      <span className="mb-2 block px-4 font-[family-name:var(--font-inter)] text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-[#ACABAA]">
+      <span className="mb-2 block px-4 font-[family-name:var(--font-inter)] text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
         {label}
       </span>
       <ul className="space-y-1">
@@ -84,8 +84,8 @@ function NavSection({
                 className={cn(
                   "flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-300",
                   active
-                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-[#C9C6C5]"
-                    : "border-l-2 border-transparent text-[#ACABAA] hover:bg-[#1F2020] hover:text-[#C9C6C5]",
+                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-foreground"
+                    : "border-l-2 border-transparent text-muted-foreground hover:bg-[#1F2020] hover:text-foreground",
                 )}
               >
                 <Icon className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
@@ -168,16 +168,16 @@ export function AppSidebar({
     >
       <SidebarHeader className="gap-0 px-4 pb-8 pt-8">
         <Link href="/dashboard" className="block px-2">
-          <span className="font-headline text-lg font-light tracking-[0.2em] text-[#C9C6C5]">
+          <span className="font-headline text-lg font-light tracking-[0.2em] text-foreground">
             LETORA
           </span>
-          <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#ACABAA]">
+          <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
             Architectural Management
           </p>
         </Link>
         <Link
           href="/dashboard/properties"
-          className="mt-6 flex items-center gap-2 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-[#BD9952] transition-colors hover:text-[#C9C6C5]"
+          className="mt-6 flex items-center gap-2 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-[#BD9952] transition-colors hover:text-foreground"
         >
           <PlusCircle className="size-4 stroke-[1.25]" aria-hidden />
           Add a property
@@ -195,7 +195,7 @@ export function AppSidebar({
           type="button"
           onClick={() => setFooterOpen((o) => !o)}
           className={cn(
-            "flex w-full items-center justify-between gap-2 rounded-sm px-2 py-2 text-left font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-[#ACABAA] transition-colors hover:bg-[#1F2020] hover:text-[#C9C6C5]",
+            "flex w-full items-center justify-between gap-2 rounded-sm px-2 py-2 text-left font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-[#1F2020] hover:text-foreground",
             footerOpen && "mb-2",
           )}
           aria-expanded={footerOpen}
@@ -218,7 +218,7 @@ export function AppSidebar({
             <div className={cn("flex flex-col gap-0", !footerOpen && "pointer-events-none")}>
               <Link
                 href="/dashboard"
-                className="mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-[#ACABAA] transition-colors hover:bg-[#1F2020] hover:text-[#C9C6C5]"
+                className="mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:bg-[#1F2020] hover:text-foreground"
               >
                 <HelpCircle className="size-5 stroke-[1.25]" aria-hidden />
                 Help
@@ -228,8 +228,8 @@ export function AppSidebar({
                 className={cn(
                   "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-300",
                   isActivePath(pathname, "/dashboard/activity")
-                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-[#C9C6C5]"
-                    : "border-l-2 border-transparent text-[#ACABAA] hover:bg-[#1F2020] hover:text-[#C9C6C5]",
+                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-foreground"
+                    : "border-l-2 border-transparent text-muted-foreground hover:bg-[#1F2020] hover:text-foreground",
                 )}
               >
                 <History className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
@@ -240,8 +240,8 @@ export function AppSidebar({
                 className={cn(
                   "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-300",
                   settingsNavActive
-                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-[#C9C6C5]"
-                    : "border-l-2 border-transparent text-[#ACABAA] hover:bg-[#1F2020] hover:text-[#C9C6C5]",
+                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-foreground"
+                    : "border-l-2 border-transparent text-muted-foreground hover:bg-[#1F2020] hover:text-foreground",
                 )}
               >
                 <Settings className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
@@ -252,8 +252,8 @@ export function AppSidebar({
                 className={cn(
                   "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-300",
                   billingNavActive
-                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-[#C9C6C5]"
-                    : "border-l-2 border-transparent text-[#ACABAA] hover:bg-[#1F2020] hover:text-[#C9C6C5]",
+                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-foreground"
+                    : "border-l-2 border-transparent text-muted-foreground hover:bg-[#1F2020] hover:text-foreground",
                 )}
               >
                 <CreditCard className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
@@ -261,21 +261,21 @@ export function AppSidebar({
               </Link>
               <SidebarAgentActivityButton />
               <div className="flex items-center gap-3 px-4 py-2">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#1F2020] font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase text-[#C9C6C5]">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#1F2020] font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase text-foreground">
                   {(userEmail?.[0] ?? "?").toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-[#C9C6C5]">
+                  <p className="truncate font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-foreground">
                     Profile
                   </p>
-                  <p className="truncate font-[family-name:var(--font-inter)] text-[0.65rem] text-[#ACABAA]">
+                  <p className="truncate font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">
                     {userEmail ?? "—"}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-[#ACABAA] transition-colors hover:bg-[#1F2020] hover:text-[#C9C6C5]"
+                  className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-[#1F2020] hover:text-foreground"
                   aria-label="Log out"
                 >
                   <LogOut className="size-4 stroke-[1.25]" />

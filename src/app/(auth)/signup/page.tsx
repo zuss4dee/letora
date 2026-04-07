@@ -78,8 +78,8 @@ export default function SignupPage() {
         <AuthBrandMark />
 
         <div className="space-y-1 text-center">
-          <h2 className="font-headline text-lg font-light tracking-tight text-[#E7E5E4]">Create your account</h2>
-          <p className="font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
+          <h2 className="font-headline text-lg font-light tracking-tight text-foreground">Create your account</h2>
+          <p className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
             Set up your workspace and start managing your portfolio.
           </p>
         </div>
@@ -90,8 +90,8 @@ export default function SignupPage() {
 
         {emailConfirmationSent ? (
           <div className="space-y-4 rounded-xl border border-[rgb(72_72_72_/0.18)] bg-[#0e0e0e]/60 px-5 py-6 text-left backdrop-blur-sm">
-            <p className="font-headline text-base font-light text-[#E7E5E4]">Check your email</p>
-            <p className="font-[family-name:var(--font-inter)] text-sm leading-relaxed text-[#ACABAA]">
+            <p className="font-headline text-base font-light text-foreground">Check your email</p>
+            <p className="font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground">
               We sent you a confirmation link. Once confirmed, you can{" "}
               <Link href="/login" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
                 sign in
@@ -102,7 +102,7 @@ export default function SignupPage() {
         ) : (
           <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
             <div className="space-y-2">
-              <Label htmlFor="fullName" className="font-[family-name:var(--font-inter)] text-xs font-medium text-[#ACABAA]">
+              <Label htmlFor="fullName" className="font-[family-name:var(--font-inter)] text-xs font-medium text-muted-foreground">
                 Full name
               </Label>
               <Input
@@ -119,7 +119,7 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="font-[family-name:var(--font-inter)] text-xs font-medium text-[#ACABAA]">
+              <Label htmlFor="email" className="font-[family-name:var(--font-inter)] text-xs font-medium text-muted-foreground">
                 Email
               </Label>
               <Input
@@ -137,7 +137,7 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="font-[family-name:var(--font-inter)] text-xs font-medium text-[#ACABAA]">
+              <Label htmlFor="password" className="font-[family-name:var(--font-inter)] text-xs font-medium text-muted-foreground">
                 Password
               </Label>
               <Input
@@ -155,7 +155,7 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="font-[family-name:var(--font-inter)] text-xs font-medium text-[#ACABAA]">
+              <Label htmlFor="confirmPassword" className="font-[family-name:var(--font-inter)] text-xs font-medium text-muted-foreground">
                 Confirm password
               </Label>
               <Input
@@ -184,9 +184,9 @@ export default function SignupPage() {
           </form>
         )}
 
-        <p className="text-center font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">
+        <p className="text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-[#E7E5E4] underline-offset-4 transition-colors hover:text-[#BD9952] hover:underline">
+          <Link href="/login" className="font-medium text-foreground underline-offset-4 transition-colors hover:text-[#BD9952] hover:underline">
             Sign in
           </Link>
         </p>

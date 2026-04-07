@@ -42,14 +42,14 @@ export function EmailDraftViewButton({
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent
           side="right"
-          className="flex w-[min(100%,36rem)] flex-col overflow-y-auto border-[#484848]/20 bg-[#0E0E0E] text-[#E7E5E4]"
+          className="flex w-[min(100%,36rem)] flex-col overflow-y-auto border-[#484848]/20 bg-[#0E0E0E] text-foreground"
         >
           <SheetHeader>
-            <SheetTitle className="text-base text-[#C9C6C5]">{subject}</SheetTitle>
+            <SheetTitle className="text-base text-foreground">{subject}</SheetTitle>
           </SheetHeader>
           <div className="mt-4">
             <div className="rounded-sm border border-[#484848]/20 bg-[#131313] p-4">
-              <pre className="whitespace-pre-wrap break-words font-[family-name:var(--font-inter)] text-sm leading-relaxed text-[#ACABAA]">
+              <pre className="whitespace-pre-wrap break-words font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground">
                 {body}
               </pre>
             </div>

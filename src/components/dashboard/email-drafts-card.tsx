@@ -71,12 +71,12 @@ export function EmailDraftsCard({
         className={className}
       >
         <CardHeader className={className ? "border-b border-[#484848]/15" : "border-b"}>
-          <CardTitle className={className ? "font-headline text-[#C9C6C5]" : undefined}>
+          <CardTitle className={className ? "font-headline text-foreground" : undefined}>
             Pending Email Drafts
           </CardTitle>
           <p
             className={
-              className ? "text-sm font-normal text-[#ACABAA]" : "text-sm font-normal text-muted-foreground"
+              className ? "text-sm font-normal text-muted-foreground" : "text-sm font-normal text-muted-foreground"
             }
           >
             Review and send messages when auto-send is off, or before they go out.

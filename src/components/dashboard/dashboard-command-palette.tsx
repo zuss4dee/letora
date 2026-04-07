@@ -79,7 +79,7 @@ function CommandPaletteDialog({
             <Mail className="size-4 text-[#BD9952]" aria-hidden />
             <span>Run Rent Chaser</span>
             {isRentRunning ? (
-              <span className="ml-auto font-[family-name:var(--font-inter)] text-[0.65rem] text-[#ACABAA]">
+              <span className="ml-auto font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">
                 Running…
               </span>
             ) : null}
@@ -94,7 +94,7 @@ function CommandPaletteDialog({
             <Users className="size-4 text-[#BD9952]" aria-hidden />
             <span>Run Lead Qualifier</span>
             {isLeadRunning ? (
-              <span className="ml-auto font-[family-name:var(--font-inter)] text-[0.65rem] text-[#ACABAA]">
+              <span className="ml-auto font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">
                 Running…
               </span>
             ) : null}
@@ -109,7 +109,7 @@ function CommandPaletteDialog({
             <FileText className="size-4 text-[#BD9952]" aria-hidden />
             <span>Run Contract Drafter</span>
             {isContractRunning ? (
-              <span className="ml-auto font-[family-name:var(--font-inter)] text-[0.65rem] text-[#ACABAA]">
+              <span className="ml-auto font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">
                 Running…
               </span>
             ) : null}
@@ -120,7 +120,7 @@ function CommandPaletteDialog({
               onOpenChange(false);
             }}
           >
-            <Bot className="size-4 text-[#ACABAA]" aria-hidden />
+            <Bot className="size-4 text-muted-foreground" aria-hidden />
             <span>Open agent activity log</span>
           </CommandItem>
         </CommandGroup>

@@ -74,17 +74,17 @@ export default async function TenancyDetailPage({ params }: { params: Promise<{ 
           <div className="max-w-3xl space-y-3">
             <Link
               href="/dashboard/tenancies"
-              className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-sm font-medium text-[#ACABAA] transition-colors hover:text-[#BD9952]"
+              className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-sm font-medium text-muted-foreground transition-colors hover:text-[#BD9952]"
             >
               <span aria-hidden>←</span> Tenancies
             </Link>
             <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
               Tenancy
             </p>
-            <h1 className="font-headline text-3xl font-extralight tracking-[-0.04em] text-[#E7E5E4] md:text-[2.15rem] md:leading-tight">
+            <h1 className="font-headline text-3xl font-extralight tracking-[-0.04em] text-foreground md:text-[2.15rem] md:leading-tight">
               {detail.propertyAddress ?? "Property"}
             </h1>
-            <p className="font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
               {detail.tenantName ?? "Tenant"} · Dates, financials, referencing, and onboarding in one place.
             </p>
           </div>
@@ -110,37 +110,37 @@ export default async function TenancyDetailPage({ params }: { params: Promise<{ 
         <section className="grid gap-3 px-4 sm:grid-cols-2 lg:grid-cols-3 lg:px-6">
           <div className={TENANCY_STAT_TILE}>
             <div className={TENANCY_LABEL}>Start date</div>
-            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-[#E7E5E4]">
+            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-foreground">
               {startDate ?? "—"}
             </div>
           </div>
           <div className={TENANCY_STAT_TILE}>
             <div className={TENANCY_LABEL}>End date</div>
-            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-[#E7E5E4]">
+            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-foreground">
               {endDate ?? "—"}
             </div>
           </div>
           <div className={TENANCY_STAT_TILE}>
             <div className={TENANCY_LABEL}>Move-in date</div>
-            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-[#E7E5E4]">
+            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-foreground">
               {moveInDate ?? "—"}
             </div>
           </div>
           <div className={TENANCY_STAT_TILE}>
             <div className={TENANCY_LABEL}>Status</div>
-            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium capitalize text-[#E7E5E4]">
+            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium capitalize text-foreground">
               {tenancyStatus ?? "—"}
             </div>
           </div>
           <div className={TENANCY_STAT_TILE}>
             <div className={TENANCY_LABEL}>Monthly rent</div>
-            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-[#E7E5E4]">
+            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-foreground">
               {monthlyRent != null && Number.isFinite(monthlyRent) ? gbp.format(monthlyRent) : "—"}
             </div>
           </div>
           <div className={TENANCY_STAT_TILE}>
             <div className={TENANCY_LABEL}>Deposit</div>
-            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-[#E7E5E4]">
+            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-foreground">
               {deposit != null && Number.isFinite(deposit) ? gbp.format(deposit) : "—"}
             </div>
           </div>

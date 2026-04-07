@@ -69,7 +69,7 @@ function LoginForm() {
 
         <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)}>
           <div className="space-y-2">
-            <Label htmlFor="email" className="font-[family-name:var(--font-inter)] text-xs font-medium text-[#ACABAA]">
+            <Label htmlFor="email" className="font-[family-name:var(--font-inter)] text-xs font-medium text-muted-foreground">
               Email
             </Label>
             <Input
@@ -88,7 +88,7 @@ function LoginForm() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <Label htmlFor="password" className="font-[family-name:var(--font-inter)] text-xs font-medium text-[#ACABAA]">
+              <Label htmlFor="password" className="font-[family-name:var(--font-inter)] text-xs font-medium text-muted-foreground">
                 Password
               </Label>
               <Link
@@ -134,9 +134,9 @@ function LoginForm() {
             </span>
             <div className="h-px flex-1 bg-[rgb(72_72_72_/0.25)]" />
           </div>
-          <p className="text-center font-[family-name:var(--font-inter)] text-sm font-normal text-[#ACABAA]">
+          <p className="text-center font-[family-name:var(--font-inter)] text-sm font-normal text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="font-medium text-[#E7E5E4] underline-offset-4 transition-colors hover:text-[#BD9952] hover:underline">
+            <Link href="/signup" className="font-medium text-foreground underline-offset-4 transition-colors hover:text-[#BD9952] hover:underline">
               Sign up
             </Link>
           </p>
@@ -150,7 +150,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-[560px] w-full max-w-[1080px] items-center justify-center font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">
+        <main className="flex min-h-[560px] w-full max-w-[1080px] items-center justify-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
           Loading…
         </main>
       }

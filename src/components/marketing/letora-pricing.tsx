@@ -73,14 +73,14 @@ function PricingCta({
         "group inline-flex w-full items-center justify-center gap-2 rounded-full py-3 pl-5 pr-4 text-sm font-semibold transition-all",
         highlighted
           ? "bg-gradient-to-br from-[#FFEABB] to-[#FFC800] text-[#3e2e00] shadow-[0_0_32px_-8px_rgba(255,234,187,0.4)] hover:shadow-[0_0_40px_-6px_rgba(255,234,187,0.55)]"
-          : "border border-[#4F4632]/35 bg-[#1a1a1a] text-[#E2E2E2] hover:border-[#4F4632]/55 hover:bg-[#222]",
+          : "border border-[#4F4632]/35 bg-[#1a1a1a] text-foreground hover:border-[#4F4632]/55 hover:bg-[#222]",
       )}
     >
       <span>{children}</span>
       <ArrowUpRight
         className={cn(
           "size-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5",
-          highlighted ? "text-[#3e2e00]" : "text-[#d2c5ab]",
+          highlighted ? "text-[#3e2e00]" : "text-foreground/90",
         )}
         aria-hidden
       />
@@ -108,15 +108,15 @@ export function LetoraPricingSection() {
           </p>
           <h2
             id="pricing-heading"
-            className="mt-4 font-headline text-4xl font-bold tracking-[-0.04em] text-[#E2E2E2] md:text-5xl lg:text-6xl"
+            className="mt-4 font-headline text-4xl font-bold tracking-[-0.04em] text-foreground md:text-5xl lg:text-6xl"
           >
             Plans that scale with your portfolio
           </h2>
-          <p className="mx-auto mt-5 max-w-xl font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-[#d2c5ab] md:text-lg">
+          <p className="mx-auto mt-5 max-w-xl font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-foreground/90 md:text-lg">
             Value tracks how many properties you run and how much of the workspace you use. Self-serve plans bill in
             GBP monthly through Stripe. Prices exclude VAT where applicable.
           </p>
-          <p className="mt-6 font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">
+          <p className="mt-6 font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
             <Link
               href="/signup"
               className="inline-flex items-center gap-1 font-medium text-[#FFEABB] underline-offset-4 hover:underline"
@@ -146,8 +146,8 @@ export function LetoraPricingSection() {
                     </span>
                   ) : null}
                 </div>
-                <h3 className="font-headline text-xl font-semibold tracking-[-0.03em] text-[#E2E2E2]">{plan.name}</h3>
-                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-[#d2c5ab]/90">
+                <h3 className="font-headline text-xl font-semibold tracking-[-0.03em] text-foreground">{plan.name}</h3>
+                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-foreground/90">
                   {plan.tagline}
                 </p>
               </div>
@@ -156,7 +156,7 @@ export function LetoraPricingSection() {
                 {plan.features.map((f) => (
                   <li
                     key={f}
-                    className="flex gap-3 font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-[#E2E2E2]/90"
+                    className="flex gap-3 font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-foreground/90"
                   >
                     <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#FFEABB]/12 text-[#FFEABB]">
                       <Check className="size-3" strokeWidth={2.5} aria-hidden />
@@ -168,7 +168,7 @@ export function LetoraPricingSection() {
 
               <div className="mt-5 min-h-[2.75rem]">
                 {plan.footnote ? (
-                  <p className="font-[family-name:var(--font-inter)] text-xs italic leading-relaxed text-[#ACABAA]/90">
+                  <p className="font-[family-name:var(--font-inter)] text-xs italic leading-relaxed text-muted-foreground/90">
                     {plan.footnote}
                   </p>
                 ) : null}
@@ -176,11 +176,11 @@ export function LetoraPricingSection() {
 
               <div className="mt-auto border-t border-[#4F4632]/15 pt-6">
                 <div className="flex flex-wrap items-baseline gap-1.5">
-                  <span className="font-headline text-3xl font-bold tabular-nums tracking-tight text-[#E2E2E2]">
+                  <span className="font-headline text-3xl font-bold tabular-nums tracking-tight text-foreground">
                     {plan.price}
                   </span>
                   {plan.priceSuffix ? (
-                    <span className="font-[family-name:var(--font-inter)] text-sm font-medium text-[#ACABAA]">
+                    <span className="font-[family-name:var(--font-inter)] text-sm font-medium text-muted-foreground">
                       {plan.priceSuffix}
                     </span>
                   ) : null}
@@ -197,7 +197,7 @@ export function LetoraPricingSection() {
 
         <p className="mx-auto mt-12 max-w-2xl text-center font-[family-name:var(--font-inter)] text-xs leading-relaxed text-[#6b6a69]">
           Need to change plan or payment method after signup? Open{" "}
-          <span className="text-[#ACABAA]">Billing</span> in Settings while signed in. Enterprise buyers can start from
+          <span className="text-muted-foreground">Billing</span> in Settings while signed in. Enterprise buyers can start from
           signup and we will follow up on larger requirements.
         </p>
       </div>

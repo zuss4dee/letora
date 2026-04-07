@@ -62,8 +62,8 @@ export function AssistantConversationList({
                   : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"),
               variant === "inline" &&
                 (active
-                  ? "border border-[#BD9952]/35 bg-[#BD9952]/10 font-medium text-[#E7E5E4]"
-                  : "border border-transparent text-[#ACABAA] hover:border-[#484848]/40 hover:bg-[#1a1a1a] hover:text-[#E7E5E4]"),
+                  ? "border border-[#BD9952]/35 bg-[#BD9952]/10 font-medium text-foreground"
+                  : "border border-transparent text-muted-foreground hover:border-[#484848]/40 hover:bg-[#1a1a1a] hover:text-foreground"),
             )}
           >
             <span className={cn("line-clamp-2 block", variant === "inline" && "font-headline")}>

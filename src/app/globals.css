@@ -86,34 +86,36 @@
 .dark {
   /* Letora — Architectural Monolith (see DESIGN.md) */
   --background: #0e0e0e;
-  --foreground: #e7e5e4;
+  /* High-contrast body copy on charcoal — near-white for readability */
+  --foreground: #fafafa;
   --card: #1f2020;
-  --card-foreground: #e7e5e4;
+  --card-foreground: #fafafa;
   --popover: #131313;
-  --popover-foreground: #e7e5e4;
-  --primary: #c9c6c5;
-  --primary-foreground: #414040;
+  --popover-foreground: #fafafa;
+  --primary: #e4e2e1;
+  --primary-foreground: #2a2828;
   --secondary: #bd9952;
   --secondary-foreground: #2c1e00;
   --muted: #131313;
-  --muted-foreground: #acabaa;
+  /* Secondary / helper text — still clearly readable on #0e0e0e */
+  --muted-foreground: #c4c4c4;
   --accent: #2c2c2c;
-  --accent-foreground: #e7e5e4;
+  --accent-foreground: #fafafa;
   --destructive: #bb5551;
   --border: rgb(72 72 72 / 0.15);
   --input: rgb(72 72 72 / 0.15);
   --ring: #bd9952;
   --chart-1: #bd9952;
-  --chart-2: #acabaa;
+  --chart-2: #c4c4c4;
   --chart-3: #474646;
   --chart-4: #1f2020;
   --chart-5: #131313;
   --sidebar: #0e0e0e;
-  --sidebar-foreground: #e7e5e4;
+  --sidebar-foreground: #fafafa;
   --sidebar-primary: #bd9952;
   --sidebar-primary-foreground: #2c1e00;
   --sidebar-accent: #2c2c2c;
-  --sidebar-accent-foreground: #c9c6c5;
+  --sidebar-accent-foreground: #e8e6e5;
   --sidebar-border: rgb(72 72 72 / 0.15);
   --sidebar-ring: #bd9952;
   --radius: 0.125rem;

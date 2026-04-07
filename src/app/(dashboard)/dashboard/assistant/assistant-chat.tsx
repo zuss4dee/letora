@@ -675,7 +675,7 @@ export function AssistantChat({
           type="button"
           variant="outline"
           size="sm"
-          className="flex-1 border-[#484848]/35 bg-[#131313]/60 text-[#E7E5E4] hover:bg-[#1F2020]"
+          className="flex-1 border-[#484848]/35 bg-[#131313]/60 text-foreground hover:bg-[#1F2020]"
           onClick={() => createNewChat()}
         >
           <MessageSquarePlus className="mr-1 size-4" aria-hidden />
@@ -696,10 +696,10 @@ export function AssistantChat({
       <div className="flex shrink-0 flex-col gap-1 border-b border-[#484848]/25 bg-[#0E0E0E]/30 px-4 py-4 backdrop-blur-sm lg:px-6">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h1 className="font-headline text-base font-medium tracking-tight text-[#E7E5E4]">
+            <h1 className="font-headline text-base font-medium tracking-tight text-foreground">
               Letora Assistant
             </h1>
-            <p className="font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
               Rent, maintenance, tenants, agreements, or leads.
             </p>
           </div>
@@ -721,7 +721,7 @@ export function AssistantChat({
                 className="flex w-[min(100%,20rem)] flex-col gap-0 border-[#484848]/25 bg-[#0E0E0E]/95 p-0 backdrop-blur-xl"
               >
                 <SheetHeader className="border-b border-[#484848]/20 px-4 py-3 text-left">
-                  <SheetTitle className="font-headline text-base text-[#E7E5E4]">Conversations</SheetTitle>
+                  <SheetTitle className="font-headline text-base text-foreground">Conversations</SheetTitle>
                 </SheetHeader>
                 {sidebar}
               </SheetContent>
@@ -746,7 +746,7 @@ export function AssistantChat({
         </aside>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="hidden border-b border-[#484848]/20 px-4 py-2 font-[family-name:var(--font-inter)] text-xs text-[#ACABAA] md:block lg:px-6">
+          <div className="hidden border-b border-[#484848]/20 px-4 py-2 font-[family-name:var(--font-inter)] text-xs text-muted-foreground md:block lg:px-6">
             <span className="inline-flex items-center gap-1">
               <PanelLeft className="size-3.5 opacity-70" aria-hidden />
               Chat history on the left; menu on mobile.
@@ -755,8 +755,8 @@ export function AssistantChat({
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6">
               {showEmptyPlaceholder ? (
-                <div className="mx-auto max-w-2xl rounded-xl border border-dashed border-[#484848]/35 bg-[#131313]/30 p-6 text-center text-sm text-[#ACABAA] backdrop-blur-sm">
-                  <p className="font-headline font-medium text-[#E7E5E4]">Start a conversation</p>
+                <div className="mx-auto max-w-2xl rounded-xl border border-dashed border-[#484848]/35 bg-[#131313]/30 p-6 text-center text-sm text-muted-foreground backdrop-blur-sm">
+                  <p className="font-headline font-medium text-foreground">Start a conversation</p>
                   <p className="mt-2 leading-relaxed">
                     Your assistant can help with property-related tasks: rent chasing, maintenance,
                     tenants, tenancy agreements, and leads. Describe what you need in plain English.
@@ -811,7 +811,7 @@ export function AssistantChat({
                   placeholder="Message Letora Assistant…"
                   rows={2}
                   disabled={loading}
-                  className="min-h-[44px] min-w-0 flex-1 resize-none border-[#484848]/30 bg-[#131313]/50 text-[#E7E5E4] placeholder:text-[#484848] sm:min-h-[52px]"
+                  className="min-h-[44px] min-w-0 flex-1 resize-none border-[#484848]/30 bg-[#131313]/50 text-foreground placeholder:text-[#484848] sm:min-h-[52px]"
                   aria-label="Message"
                 />
                 <Button

@@ -30,7 +30,7 @@ function QuickChip({ icon, label, description, onClick, busy }: ChipProps) {
         {busy ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : icon}
         {label}
       </span>
-      <span className="font-[family-name:var(--font-inter)] text-xs leading-snug text-[#ACABAA]">
+      <span className="font-[family-name:var(--font-inter)] text-xs leading-snug text-muted-foreground">
         {description}
       </span>
     </button>
@@ -50,7 +50,7 @@ export function AgentQuickActions() {
 
   return (
     <div className="mt-10 w-full max-w-4xl">
-      <p className="mb-4 font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-[0.14em] text-[#ACABAA]">
+      <p className="mb-4 font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-[0.14em] text-muted-foreground">
         Quick actions
       </p>
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
@@ -79,7 +79,7 @@ export function AgentQuickActions() {
       <button
         type="button"
         onClick={openAgentRuns}
-        className="mt-4 w-full font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-[0.12em] text-[#ACABAA] underline-offset-4 transition-colors hover:text-[#BD9952] hover:underline sm:text-center"
+        className="mt-4 w-full font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-[0.12em] text-muted-foreground underline-offset-4 transition-colors hover:text-[#BD9952] hover:underline sm:text-center"
       >
         View agent activity log
       </button>

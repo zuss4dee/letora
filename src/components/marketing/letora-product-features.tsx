@@ -51,11 +51,11 @@ export function LetoraProductFeaturesSection() {
           </p>
           <h2
             id="features-heading"
-            className="mt-4 font-headline text-4xl font-bold tracking-[-0.04em] text-[#E2E2E2] md:text-5xl"
+            className="mt-4 font-headline text-4xl font-bold tracking-[-0.04em] text-foreground md:text-5xl"
           >
             Inside the platform
           </h2>
-          <p className="mx-auto mt-5 max-w-xl font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-[#d2c5ab] md:text-lg">
+          <p className="mx-auto mt-5 max-w-xl font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-foreground/90 md:text-lg">
             Real screens from the Letora workspace: editorial dark UI, gold accents, and data you can act on.
           </p>
         </div>
@@ -78,10 +78,10 @@ export function LetoraProductFeaturesSection() {
                   <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
                     {item.kicker}
                   </p>
-                  <h3 className="font-headline text-3xl font-light tracking-[-0.03em] text-[#E2E2E2] md:text-4xl">
+                  <h3 className="font-headline text-3xl font-light tracking-[-0.03em] text-foreground md:text-4xl">
                     {item.title}
                   </h3>
-                  <p className="font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-[#ACABAA] md:text-[1.05rem]">
+                  <p className="font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-muted-foreground md:text-[1.05rem]">
                     {item.body}
                   </p>
                   <Link

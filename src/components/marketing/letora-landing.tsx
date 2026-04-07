@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowDown, ArrowRight } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { MarketingHeader } from "@/components/marketing/marketing-header";
 import { LetoraProductFeaturesSection } from "@/components/marketing/letora-product-features";
 import { LetoraPricingSection } from "@/components/marketing/letora-pricing";
 
@@ -40,32 +41,9 @@ function JewelryButton({
   );
 }
 
-function NavLink({
-  href,
-  children,
-  active,
-}: {
-  href: string;
-  children: ReactNode;
-  active?: boolean;
-}) {
-  return (
-    <a
-      href={href}
-      className={cn(
-        "font-[family-name:var(--font-inter)] text-xs font-semibold tracking-tight transition-opacity md:text-[0.8125rem] xl:text-sm",
-        active ? "text-[#FFEABB] opacity-100" : "text-[#E2E2E2]/80 hover:opacity-100",
-        "whitespace-nowrap",
-      )}
-    >
-      {children}
-    </a>
-  );
-}
-
 export function LetoraLanding() {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#131313] text-[#E2E2E2] selection:bg-[#FFEABB]/35 selection:text-[#1a1200]">
+    <div className="min-h-screen overflow-x-hidden bg-[#131313] text-foreground selection:bg-[#FFEABB]/35 selection:text-[#1a1200]">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-[#FFEABB] focus:px-4 focus:py-2 focus:text-[#3e2e00]"
@@ -73,44 +51,11 @@ export function LetoraLanding() {
         Skip to content
       </a>
 
-      <nav
-        className="fixed left-0 top-0 z-50 flex h-16 w-full min-w-0 items-center justify-between gap-3 border-b border-[#4F4632]/10 bg-[#131313]/70 px-4 backdrop-blur-md sm:px-6 md:px-8 lg:px-16 xl:px-24"
-        aria-label="Primary"
-      >
-        <Link href="/" className="group flex min-w-0 shrink-0 flex-col leading-none">
-          <span className="font-headline text-lg font-semibold tracking-[-0.04em] text-[#E2E2E2] transition-colors group-hover:text-white sm:text-xl">
-            Letora
-          </span>
-          <span className="mt-0.5 hidden font-[family-name:var(--font-inter)] text-[0.55rem] font-medium uppercase tracking-[0.28em] text-[#d2c5ab]/70 sm:block">
-            Property OS
-          </span>
-        </Link>
-        <div className="hidden min-w-0 flex-1 items-center justify-center gap-x-2 md:flex md:gap-x-3 lg:gap-x-5 xl:gap-x-8">
-          <NavLink href="/" active>
-            Home
-          </NavLink>
-          <NavLink href="#lead-intelligence">Leads</NavLink>
-          <NavLink href="#rent-chasing">Rent</NavLink>
-          <NavLink href="#ai-operations">Workspace</NavLink>
-          <NavLink href="#features">Features</NavLink>
-          <NavLink href="#pricing">Pricing</NavLink>
-        </div>
-        <div className="flex shrink-0 items-center gap-2 sm:gap-4 md:gap-6">
-          <Link
-            href="/login"
-            className="font-[family-name:var(--font-inter)] text-sm font-semibold tracking-tight text-[#FFEABB] transition-opacity hover:opacity-80"
-          >
-            Log in
-          </Link>
-          <JewelryButton href="/signup" size="md" className="!px-4 !py-2 text-xs sm:!px-6 sm:!py-2.5 sm:text-sm">
-            Get started
-          </JewelryButton>
-        </div>
-      </nav>
+      <MarketingHeader />
 
       <main id="main">
         {/* Hero */}
-        <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-16 text-center">
+        <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 pt-[calc(3.75rem+env(safe-area-inset-top,0px)+1.25rem)] text-center sm:pt-[calc(4rem+env(safe-area-inset-top,0px)+1.5rem)]">
           <div className="pointer-events-none absolute inset-0 z-0 opacity-100">
             <div className="absolute left-1/2 top-[42%] h-[130%] w-[130%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(ellipse_55%_45%_at_50%_50%,rgba(226,226,226,0.07)_0%,transparent_62%)]" />
             <div className="absolute left-1/2 top-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(circle_at_center,rgba(100,118,132,0.045)_0%,transparent_58%)]" />
@@ -120,11 +65,11 @@ export function LetoraLanding() {
               <span className="block bg-gradient-to-br from-[#FFEABB] via-[#FFEABB] to-[#FFC800] bg-clip-text font-headline text-6xl font-extrabold leading-[0.92] tracking-[-0.04em] text-transparent md:text-8xl lg:text-9xl">
                 Letora
               </span>
-              <span className="block font-headline text-3xl font-light leading-tight tracking-[-0.03em] text-[#E2E2E2] md:text-5xl lg:text-6xl">
+              <span className="block font-headline text-3xl font-light leading-tight tracking-[-0.03em] text-foreground md:text-5xl lg:text-6xl">
                 Property Operating System
               </span>
             </h1>
-            <p className="mx-auto max-w-xl font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-[#d2c5ab] md:text-xl">
+            <p className="mx-auto max-w-xl font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-foreground/90 md:text-xl">
               One calm surface for UK landlords: leads, rent, tenancies, and maintenance. You approve what goes
               out.
             </p>
@@ -136,7 +81,7 @@ export function LetoraLanding() {
           </div>
           <a
             href="#lead-intelligence"
-            className="absolute bottom-10 left-1/2 flex -translate-x-1/2 flex-col items-center gap-3 text-[#E2E2E2]/40 transition-colors hover:text-[#FFEABB]/80"
+            className="absolute bottom-10 left-1/2 flex -translate-x-1/2 flex-col items-center gap-3 text-foreground/40 transition-colors hover:text-[#FFEABB]/80"
           >
             <span className="font-[family-name:var(--font-inter)] text-[0.65rem] font-light uppercase tracking-[0.3em]">
               Discover more
@@ -155,12 +100,12 @@ export function LetoraLanding() {
               <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-[#FFEABB]">
                 Adaptive AI
               </span>
-              <h2 className="font-headline text-5xl font-bold leading-[0.9] tracking-[-0.04em] text-[#E2E2E2] md:text-7xl">
+              <h2 className="font-headline text-5xl font-bold leading-[0.9] tracking-[-0.04em] text-foreground md:text-7xl">
                 Lead
                 <br />
                 Intelligence
               </h2>
-              <p className="max-w-md font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-[#d2c5ab] md:text-xl">
+              <p className="max-w-md font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-foreground/90 md:text-xl">
                 See intent before the first reply. Letora scores and qualifies leads from your pipeline so
                 your team spends time on tenancies that convert, not on noise.
               </p>
@@ -198,13 +143,13 @@ export function LetoraLanding() {
               <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-[#FFEABB]">
                 Efficiency
               </span>
-              <h2 className="font-headline text-5xl font-bold leading-[0.9] tracking-[-0.04em] text-[#E2E2E2] md:text-7xl">
+              <h2 className="font-headline text-5xl font-bold leading-[0.9] tracking-[-0.04em] text-foreground md:text-7xl">
                 Automated
                 <br />
                 Rent chasing
               </h2>
               <div className="flex justify-end">
-                <p className="max-w-md font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-[#d2c5ab] md:text-xl">
+                <p className="max-w-md font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-foreground/90 md:text-xl">
                   Stop chasing spreadsheets. Rent Chaser sends firm, professional follow-ups on your schedule,
                   with drafts you can approve before anything goes out.
                 </p>
@@ -230,8 +175,8 @@ export function LetoraLanding() {
                         <span className="text-sm text-[#FFEABB]">£</span>
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-[#E2E2E2]">Pending remittance</div>
-                        <div className="font-[family-name:var(--font-inter)] text-[10px] text-[#d2c5ab]/70">
+                        <div className="text-xs font-bold text-foreground">Pending remittance</div>
+                        <div className="font-[family-name:var(--font-inter)] text-[10px] text-muted-foreground">
                           Unit 402 · £2,450.00
                         </div>
                       </div>
@@ -246,8 +191,8 @@ export function LetoraLanding() {
                         <span className="text-xs text-[#c5c5d8]">✓</span>
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-[#E2E2E2]">Settled</div>
-                        <div className="font-[family-name:var(--font-inter)] text-[10px] text-[#d2c5ab]/70">
+                        <div className="text-xs font-bold text-foreground">Settled</div>
+                        <div className="font-[family-name:var(--font-inter)] text-[10px] text-muted-foreground">
                           Unit 115 · £1,800.00
                         </div>
                       </div>
@@ -272,12 +217,12 @@ export function LetoraLanding() {
               <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-[#FFEABB]">
                 Core engine
               </span>
-              <h2 className="font-headline text-5xl font-bold leading-none tracking-[-0.04em] text-[#E2E2E2] md:text-7xl lg:text-8xl">
+              <h2 className="font-headline text-5xl font-bold leading-none tracking-[-0.04em] text-foreground md:text-7xl lg:text-8xl">
                 AI-first
                 <br />
                 Operations
               </h2>
-              <p className="mx-auto max-w-2xl pt-4 font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-[#d2c5ab] md:text-2xl">
+              <p className="mx-auto max-w-2xl pt-4 font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-foreground/90 md:text-2xl">
                 Not another add-on chatbot. Letora is an operator layer across email, tenancies, maintenance,
                 and contracts, with a single place to see what needs attention today.
               </p>
@@ -308,29 +253,29 @@ export function LetoraLanding() {
 
             <div className="grid grid-cols-1 gap-12 pt-8 text-left md:grid-cols-3 md:gap-10">
               <div className="space-y-3">
-                <div className="font-headline text-3xl font-bold tracking-tighter text-[#E2E2E2]">99.9%</div>
-                <div className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#d2c5ab]/60">
+                <div className="font-headline text-3xl font-bold tracking-tighter text-foreground">99.9%</div>
+                <div className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground/80">
                   Uptime target
                 </div>
-                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#d2c5ab]">
+                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-foreground/90">
                   Infrastructure built for always-on property operations, not demo-day uptime.
                 </p>
               </div>
               <div className="space-y-3">
-                <div className="font-headline text-3xl font-bold tracking-tighter text-[#E2E2E2]">&lt;15s</div>
-                <div className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#d2c5ab]/60">
+                <div className="font-headline text-3xl font-bold tracking-tighter text-foreground">&lt;15s</div>
+                <div className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground/80">
                   Typical reply path
                 </div>
-                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#d2c5ab]">
+                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-foreground/90">
                   Drafts and agent responses surface fast enough to feel like a live desk, without the desk.
                 </p>
               </div>
               <div className="space-y-3">
-                <div className="font-headline text-3xl font-bold tracking-tighter text-[#E2E2E2]">∞</div>
-                <div className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#d2c5ab]/60">
+                <div className="font-headline text-3xl font-bold tracking-tighter text-foreground">∞</div>
+                <div className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground/80">
                   Portfolio scale
                 </div>
-                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#d2c5ab]">
+                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-foreground/90">
                   From a handful of doors to a growing portfolio: same surface, same discipline.
                 </p>
               </div>
@@ -351,19 +296,19 @@ export function LetoraLanding() {
         {/* Footer */}
         <footer className="flex flex-col items-center justify-between gap-10 border-t border-[#4F4632]/10 bg-[#131313] px-6 py-16 md:flex-row md:px-12 lg:px-24">
           <div className="flex flex-col items-center gap-2 md:items-start">
-            <span className="font-headline text-xl font-semibold tracking-[-0.04em] text-[#E2E2E2]">Letora</span>
-            <p className="font-[family-name:var(--font-inter)] text-[10px] font-light uppercase tracking-[0.2em] text-[#E2E2E2]/40">
+            <span className="font-headline text-xl font-semibold tracking-[-0.04em] text-foreground">Letora</span>
+            <p className="font-[family-name:var(--font-inter)] text-[10px] font-light uppercase tracking-[0.2em] text-foreground/40">
               © {new Date().getFullYear()} Letora. All rights reserved.
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-8 md:gap-10">
-            <span className="font-[family-name:var(--font-inter)] text-sm font-light uppercase tracking-widest text-[#E2E2E2]/40">
+            <span className="font-[family-name:var(--font-inter)] text-sm font-light uppercase tracking-widest text-foreground/40">
               About
             </span>
-            <span className="font-[family-name:var(--font-inter)] text-sm font-light uppercase tracking-widest text-[#E2E2E2]/40">
+            <span className="font-[family-name:var(--font-inter)] text-sm font-light uppercase tracking-widest text-foreground/40">
               Privacy
             </span>
-            <span className="font-[family-name:var(--font-inter)] text-sm font-light uppercase tracking-widest text-[#E2E2E2]/40">
+            <span className="font-[family-name:var(--font-inter)] text-sm font-light uppercase tracking-widest text-foreground/40">
               Terms
             </span>
           </div>

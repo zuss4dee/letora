@@ -139,7 +139,7 @@ function StatusBadge({ kind }: { kind: PaymentUi }) {
   const styles: Record<PaymentUi, string> = {
     paid: "border-emerald-500/40 text-[#afefdd]",
     arrears: "border-[#BB5551]/50 text-[#ee7d77]",
-    pending: "border-[#484848]/50 text-[#ACABAA]",
+    pending: "border-[#484848]/50 text-muted-foreground",
   };
   const labels: Record<PaymentUi, string> = {
     paid: "PAID",
@@ -250,10 +250,10 @@ export function TenanciesRegistry({
       <div className="relative mx-auto w-full max-w-7xl flex-1 px-6 pb-24 pt-6 md:px-12 md:pt-8">
         <header className="flex flex-col gap-6 border-b border-[#484848]/15 pb-8 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="font-headline text-3xl font-extralight tracking-tight text-[#E7E5E4] md:text-4xl">
+            <h1 className="font-headline text-3xl font-extralight tracking-tight text-foreground md:text-4xl">
               Tenancies
             </h1>
-            <p className="mt-2 max-w-xl font-[family-name:var(--font-inter)] text-sm leading-relaxed text-[#ACABAA]">
+            <p className="mt-2 max-w-xl font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground">
               Manage onboarding, payments, and arrears for your premium portfolio across 12 jurisdictions.
             </p>
           </div>
@@ -275,27 +275,27 @@ export function TenanciesRegistry({
 
         <section className="mb-10 grid grid-cols-2 gap-6 border-b border-[#484848]/10 py-10 md:grid-cols-4 md:gap-10">
           <div className="rounded-sm border border-[#484848]/15 bg-[#131313]/80 p-4 backdrop-blur-sm">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Total active
             </p>
             <p className="font-headline mt-2 text-2xl font-extralight tabular-nums text-[#BD9952]">
               {kpis.totalActive}
             </p>
-            <p className="mt-1 font-[family-name:var(--font-inter)] text-[10px] text-[#767575]">
+            <p className="mt-1 font-[family-name:var(--font-inter)] text-[10px] text-muted-foreground">
               +4% this month
             </p>
           </div>
           <div className="rounded-sm border border-[#484848]/15 bg-[#131313]/80 p-4 backdrop-blur-sm">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Collection rate
             </p>
-            <p className="font-headline mt-2 text-2xl font-extralight tabular-nums text-[#E7E5E4]">
+            <p className="font-headline mt-2 text-2xl font-extralight tabular-nums text-foreground">
               {kpis.collectionRate.toFixed(1)}%
             </p>
             <p
               className={cn(
                 "mt-1 font-[family-name:var(--font-inter)] text-[10px]",
-                kpis.arrearsFlagged > 0 ? "text-[#ee7d77]" : "text-[#767575]",
+                kpis.arrearsFlagged > 0 ? "text-[#ee7d77]" : "text-muted-foreground",
               )}
             >
               {kpis.arrearsFlagged > 0
@@ -304,24 +304,24 @@ export function TenanciesRegistry({
             </p>
           </div>
           <div className="rounded-sm border border-[#484848]/15 bg-[#131313]/80 p-4 backdrop-blur-sm">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Monthly revenue
             </p>
             <p className="font-headline mt-2 text-2xl font-extralight tabular-nums text-[#BD9952]">
               {gbp.format(kpis.monthlyRevenue)}
             </p>
-            <p className="mt-1 font-[family-name:var(--font-inter)] text-[10px] text-[#767575]">
+            <p className="mt-1 font-[family-name:var(--font-inter)] text-[10px] text-muted-foreground">
               Forecast: £{forecastK}k
             </p>
           </div>
           <div className="rounded-sm border border-[#484848]/15 bg-[#131313]/80 p-4 backdrop-blur-sm">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Onboarding
             </p>
-            <p className="font-headline mt-2 text-2xl font-extralight tabular-nums text-[#E7E5E4]">
+            <p className="font-headline mt-2 text-2xl font-extralight tabular-nums text-foreground">
               {kpis.pendingOnboarding}
             </p>
-            <p className="mt-1 font-[family-name:var(--font-inter)] text-[10px] text-[#767575]">
+            <p className="mt-1 font-[family-name:var(--font-inter)] text-[10px] text-muted-foreground">
               {kpis.readySigning > 0 ? `${kpis.readySigning} ready for signing` : "Pipeline clear"}
             </p>
           </div>
@@ -331,7 +331,7 @@ export function TenanciesRegistry({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[880px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-[#484848]/15 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.18em] text-[#767575]">
+                <tr className="border-b border-[#484848]/15 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.18em] text-muted-foreground">
                   <th className="px-4 py-4 font-medium">Tenant</th>
                   <th className="px-4 py-4 font-medium">Property</th>
                   <th className="px-4 py-4 font-medium">Monthly rent</th>
@@ -346,7 +346,7 @@ export function TenanciesRegistry({
                   <tr>
                     <td
                       colSpan={7}
-                      className="px-4 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]"
+                      className="px-4 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground"
                     >
                       No tenancies yet. Create your first tenancy to populate this registry.
                     </td>
@@ -381,24 +381,24 @@ export function TenanciesRegistry({
                               {initials(t.tenantFullName)}
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate font-medium text-[#E7E5E4]">
+                              <p className="truncate font-medium text-foreground">
                                 {t.tenantFullName ?? "—"}
                               </p>
-                              <p className="font-mono text-[0.65rem] text-[#767575]">
+                              <p className="font-mono text-[0.65rem] text-muted-foreground">
                                 {tenantRefId(t.id, t.tenantFullName)}
                               </p>
                             </div>
                           </div>
                         </td>
                         <td className="max-w-[220px] px-4 py-4">
-                          <p className="truncate text-sm text-[#C9C6C5]">{line1}</p>
+                          <p className="truncate text-sm text-foreground">{line1}</p>
                           {line2 ? (
-                            <p className="truncate font-[family-name:var(--font-inter)] text-xs text-[#767575]">
+                            <p className="truncate font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
                               {line2}
                             </p>
                           ) : null}
                         </td>
-                        <td className="whitespace-nowrap px-4 py-4 font-headline text-sm font-light tabular-nums text-[#E7E5E4]">
+                        <td className="whitespace-nowrap px-4 py-4 font-headline text-sm font-light tabular-nums text-foreground">
                           {gbp.format(amount)}
                         </td>
                         <td className="px-4 py-4">
@@ -412,7 +412,7 @@ export function TenanciesRegistry({
                                 style={{ width: `${ob.pct}%` }}
                               />
                             </div>
-                            <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-wider text-[#ACABAA]">
+                            <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-wider text-muted-foreground">
                               {ob.label}
                             </span>
                           </div>
@@ -439,7 +439,7 @@ export function TenanciesRegistry({
                                   rentPaymentId={payment?.id}
                                   defaultAmountPaid={defaultPay}
                                   triggerLabel="Pay"
-                                  triggerClassName="border-[#484848]/40 bg-transparent text-[10px] uppercase tracking-widest text-[#C9C6C5] hover:border-[#BD9952]/50 hover:text-[#BD9952]"
+                                  triggerClassName="border-[#484848]/40 bg-transparent text-[10px] uppercase tracking-widest text-foreground hover:border-[#BD9952]/50 hover:text-[#BD9952]"
                                 />
                                 <EditTenancyDialog
                                   tenancyId={t.id}
@@ -453,7 +453,7 @@ export function TenanciesRegistry({
                                     status: t.status,
                                   }}
                                   triggerLabel="Edit"
-                                  triggerClassName="border-[#484848]/40 bg-transparent text-[10px] uppercase tracking-widest text-[#C9C6C5] hover:border-[#BD9952]/50 hover:text-[#BD9952]"
+                                  triggerClassName="border-[#484848]/40 bg-transparent text-[10px] uppercase tracking-widest text-foreground hover:border-[#BD9952]/50 hover:text-[#BD9952]"
                                 />
                               </>
                             ) : null}
@@ -468,7 +468,7 @@ export function TenanciesRegistry({
           </div>
 
           <div className="flex flex-col gap-4 border-t border-[#484848]/15 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#767575]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Displaying {displayFrom} to {displayTo} of {total} tenancies
             </p>
             <div className="flex items-center gap-2">
@@ -477,7 +477,7 @@ export function TenanciesRegistry({
                 aria-label="Previous page"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-sm border border-[#484848]/30 p-1.5 text-[#ACABAA] transition hover:border-[#BD9952]/40 hover:text-[#BD9952] disabled:opacity-30"
+                className="rounded-sm border border-[#484848]/30 p-1.5 text-muted-foreground transition hover:border-[#BD9952]/40 hover:text-[#BD9952] disabled:opacity-30"
               >
                 <ChevronLeft className="size-4" />
               </button>
@@ -491,7 +491,7 @@ export function TenanciesRegistry({
                       "min-w-9 px-2 py-1 font-[family-name:var(--font-inter)] text-xs tabular-nums transition",
                       n === safePage
                         ? "border-b-2 border-[#BD9952] text-[#BD9952]"
-                        : "text-[#767575] hover:text-[#C9C6C5]",
+                        : "text-muted-foreground hover:text-foreground",
                     )}
                   >
                     {String(n).padStart(2, "0")}
@@ -503,7 +503,7 @@ export function TenanciesRegistry({
                 aria-label="Next page"
                 disabled={safePage >= pageCount}
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="rounded-sm border border-[#484848]/30 p-1.5 text-[#ACABAA] transition hover:border-[#BD9952]/40 hover:text-[#BD9952] disabled:opacity-30"
+                className="rounded-sm border border-[#484848]/30 p-1.5 text-muted-foreground transition hover:border-[#BD9952]/40 hover:text-[#BD9952] disabled:opacity-30"
               >
                 <ChevronRight className="size-4" />
               </button>

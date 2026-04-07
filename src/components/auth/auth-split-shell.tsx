@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 /** Shared input chrome for auth flows: ghost border, gold focus ring. */
 export const authInputClassName =
-  "h-11 rounded-md border border-[rgb(72_72_72_/0.28)] bg-[#0e0e0e]/85 px-4 text-[#E7E5E4] shadow-none placeholder:text-[#6b6a69] transition-colors focus-visible:border-[#BD9952]/45 focus-visible:ring-1 focus-visible:ring-[#BD9952]/25";
+  "h-11 rounded-md border border-[rgb(72_72_72_/0.28)] bg-[#0e0e0e]/85 px-4 text-foreground shadow-none placeholder:text-[#6b6a69] transition-colors focus-visible:border-[#BD9952]/45 focus-visible:ring-1 focus-visible:ring-[#BD9952]/25";
 
 export const authPrimaryButtonClassName =
   "h-11 w-full rounded-md bg-[#BD9952] text-[13px] font-medium text-[#2c1e00] shadow-none transition-colors hover:bg-[#c9a660]";

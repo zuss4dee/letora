@@ -67,7 +67,7 @@ function StatusPill({ status }: { status: string | null }) {
   }
   if (s === "draft") {
     return (
-      <span className="inline-flex items-center rounded border border-[#3f4949]/30 bg-[#363433] px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-[#797876]">
+      <span className="inline-flex items-center rounded border border-[#3f4949]/30 bg-[#363433] px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
         Draft
       </span>
     );
@@ -97,9 +97,9 @@ function RowActions({ c }: { c: ContractListRow }) {
   const s = (c.status ?? "draft").toLowerCase();
   const detail = `/dashboard/contracts/${c.id}`;
   const bold =
-    "font-[family-name:var(--font-inter)] text-xs font-bold text-[#cdccca] transition-colors hover:text-[#85d3da]";
+    "font-[family-name:var(--font-inter)] text-xs font-bold text-foreground transition-colors hover:text-[#85d3da]";
   const muted =
-    "font-[family-name:var(--font-inter)] text-xs font-bold text-[#797876] transition-colors hover:text-[#85d3da]";
+    "font-[family-name:var(--font-inter)] text-xs font-bold text-muted-foreground transition-colors hover:text-[#85d3da]";
   const primary =
     "font-[family-name:var(--font-inter)] text-xs font-bold text-[#85d3da] underline-offset-4 hover:underline";
 
@@ -231,10 +231,10 @@ export function ContractsRegistry({
     <div className="min-h-0 flex-1 bg-[#141312]">
       <div className="mx-auto max-w-7xl px-6 pb-36 pt-8 md:px-10 md:pt-16">
         <div className="mb-12 flex flex-col gap-1">
-          <h1 className="font-[family-name:var(--font-inter)] text-[2.75rem] font-bold tracking-[-0.04em] text-[#cdccca]">
+          <h1 className="font-[family-name:var(--font-inter)] text-[2.75rem] font-bold tracking-[-0.04em] text-foreground">
             Contracts
           </h1>
-          <p className="font-[family-name:var(--font-inter)] text-sm tracking-tight text-[#797876]">
+          <p className="font-[family-name:var(--font-inter)] text-sm tracking-tight text-muted-foreground">
             Manage tenancy agreements and document workflows.
           </p>
         </div>
@@ -256,7 +256,7 @@ export function ContractsRegistry({
                 }}
                 className={cn(
                   "relative flex items-center gap-2 pb-4 font-[family-name:var(--font-inter)] text-sm font-medium transition-colors",
-                  active ? "text-[#cdccca]" : "text-[#797876] hover:text-[#cdccca]",
+                  active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {t.label}
@@ -297,19 +297,19 @@ export function ContractsRegistry({
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="bg-[#1d1b1a]/50">
-                <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-[#797876]">
+                <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Tenant
                 </th>
-                <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-[#797876]">
+                <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Property
                 </th>
-                <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-[#797876]">
+                <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Status
                 </th>
-                <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-[#797876]">
+                <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Date created
                 </th>
-                <th className="px-8 py-5 text-right font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-[#797876]">
+                <th className="px-8 py-5 text-right font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Actions
                 </th>
               </tr>
@@ -319,7 +319,7 @@ export function ContractsRegistry({
                 <tr>
                   <td
                     colSpan={5}
-                    className="px-8 py-14 text-center font-[family-name:var(--font-inter)] text-sm text-[#797876]"
+                    className="px-8 py-14 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground"
                   >
                     No contracts in this view.
                   </td>
@@ -333,27 +333,27 @@ export function ContractsRegistry({
                           {initials(c.tenantName)}
                         </div>
                         <div>
-                          <p className="font-[family-name:var(--font-inter)] text-sm font-medium text-[#cdccca]">
+                          <p className="font-[family-name:var(--font-inter)] text-sm font-medium text-foreground">
                             {c.tenantName ?? "—"}
                           </p>
-                          <p className="font-[family-name:var(--font-inter)] text-xs text-[#797876]">
+                          <p className="font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
                             {c.tenantEmail ?? "—"}
                           </p>
                         </div>
                       </div>
                     </td>
                     <td className="px-8 py-6">
-                      <p className="font-[family-name:var(--font-inter)] text-sm text-[#cdccca]">
+                      <p className="font-[family-name:var(--font-inter)] text-sm text-foreground">
                         {c.propertyLine1 ?? c.propertyAddress ?? "—"}
                       </p>
-                      <p className="font-[family-name:var(--font-inter)] text-xs text-[#797876]">
+                      <p className="font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
                         {c.propertySubline ?? "—"}
                       </p>
                     </td>
                     <td className="px-8 py-6">
                       <StatusPill status={c.status} />
                     </td>
-                    <td className="px-8 py-6 font-[family-name:var(--font-inter)] text-sm text-[#797876]">
+                    <td className="px-8 py-6 font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
                       {formatCreated(c.createdAt)}
                     </td>
                     <td className="px-8 py-6 text-right">
@@ -367,19 +367,19 @@ export function ContractsRegistry({
         </div>
 
         <div className="mt-8 flex flex-col items-stretch justify-between gap-4 px-2 sm:flex-row sm:items-center">
-          <p className="font-[family-name:var(--font-inter)] text-xs text-[#797876]">
+          <p className="font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
             Showing{" "}
-            <span className="font-medium text-[#cdccca]">
+            <span className="font-medium text-foreground">
               {filtered.length === 0 ? 0 : sliceStart + 1}-{Math.min(sliceStart + PAGE_SIZE, filtered.length)}
             </span>{" "}
-            of <span className="font-medium text-[#cdccca]">{filtered.length}</span> {tabLabel} contracts
+            of <span className="font-medium text-foreground">{filtered.length}</span> {tabLabel} contracts
           </p>
           <div className="flex items-center gap-3">
             <button
               type="button"
               disabled={safePage <= 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="flex size-8 items-center justify-center rounded border border-[#3f4949]/20 text-[#797876] transition-colors hover:bg-[#211f1e] disabled:opacity-30"
+              className="flex size-8 items-center justify-center rounded border border-[#3f4949]/20 text-muted-foreground transition-colors hover:bg-[#211f1e] disabled:opacity-30"
               aria-label="Previous page"
             >
               <ChevronLeft className="size-4" />
@@ -394,14 +394,14 @@ export function ContractsRegistry({
                     "flex size-8 items-center justify-center rounded text-xs font-bold transition-colors",
                     i === safePage
                       ? "bg-[#01696f] text-[#97e6ec]"
-                      : "border border-[#3f4949]/20 text-[#797876] hover:bg-[#211f1e] hover:text-[#cdccca]",
+                      : "border border-[#3f4949]/20 text-muted-foreground hover:bg-[#211f1e] hover:text-foreground",
                   )}
                 >
                   {i + 1}
                 </button>
               ))
             ) : (
-              <span className="font-[family-name:var(--font-inter)] text-xs text-[#797876]">
+              <span className="font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
                 Page {safePage + 1} of {pageCount}
               </span>
             )}
@@ -409,7 +409,7 @@ export function ContractsRegistry({
               type="button"
               disabled={safePage >= pageCount - 1}
               onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-              className="flex size-8 items-center justify-center rounded border border-[#3f4949]/20 text-[#797876] transition-colors hover:bg-[#211f1e] disabled:opacity-30"
+              className="flex size-8 items-center justify-center rounded border border-[#3f4949]/20 text-muted-foreground transition-colors hover:bg-[#211f1e] disabled:opacity-30"
               aria-label="Next page"
             >
               <ChevronRight className="size-4" />
@@ -421,7 +421,7 @@ export function ContractsRegistry({
       <div className="fixed bottom-10 left-1/2 z-40 flex -translate-x-1/2 items-center gap-6 rounded-xl border border-[#3f4949]/20 bg-[#363433]/80 px-6 py-4 shadow-2xl backdrop-blur-xl md:gap-8">
         <div className="flex items-center gap-3 border-r border-[#3f4949]/20 pr-6">
           <div className="size-2 rounded-full bg-[#f7b8a0]" aria-hidden />
-          <p className="font-[family-name:var(--font-inter)] text-xs font-medium text-[#cdccca]">
+          <p className="font-[family-name:var(--font-inter)] text-xs font-medium text-foreground">
             {pendingSigCount} Pending Signature{pendingSigCount === 1 ? "" : "s"}
           </p>
         </div>
@@ -432,14 +432,14 @@ export function ContractsRegistry({
               downloadCsv(contracts);
               toast.success("Exported CSV.");
             }}
-            className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wider text-[#797876] transition-colors hover:text-[#cdccca]"
+            className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
           >
             Export CSV
           </button>
           <button
             type="button"
             onClick={() => toast.info("Bulk reminders will be available in a future update.")}
-            className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wider text-[#797876] transition-colors hover:text-[#cdccca]"
+            className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground"
           >
             Bulk remind
           </button>

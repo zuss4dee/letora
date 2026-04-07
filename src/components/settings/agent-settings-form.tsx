@@ -36,7 +36,7 @@ import { Textarea } from "@/components/ui/textarea";
 const SETTINGS_CARD =
   "gap-0 border-0 bg-gradient-to-b from-[#1c1b1a]/95 to-[#141312]/98 py-0 shadow-[0_24px_48px_rgba(0,0,0,0.35)] backdrop-blur-md ring-1 ring-[rgb(72_72_72_/0.08)]";
 const SETTINGS_HEADER = "border-0 bg-[#1a1918]/50 px-6 pb-5 pt-7 sm:px-8";
-const SETTINGS_TITLE = "font-headline text-lg font-light tracking-tight text-[#E7E5E4]";
+const SETTINGS_TITLE = "font-headline text-lg font-light tracking-tight text-foreground";
 const SETTINGS_CONTENT = "space-y-4 px-6 pb-8 pt-2 sm:px-8";
 const SETTINGS_SWITCH_ROW =
   "flex items-center justify-between gap-4 rounded-lg bg-[#0e0e0e]/45 px-3 py-3.5 ring-1 ring-[rgb(72_72_72_/0.06)]";
@@ -159,13 +159,13 @@ export function AgentSettingsForm({
         >
           <TabsTrigger
             value="agents"
-            className="rounded-none px-0 pb-3 text-[#ACABAA] after:bottom-0 after:h-[2px] after:bg-[#BD9952] data-[state=active]:text-[#E7E5E4]"
+            className="rounded-none px-0 pb-3 text-muted-foreground after:bottom-0 after:h-[2px] after:bg-[#BD9952] data-[state=active]:text-foreground"
           >
             Agents
           </TabsTrigger>
           <TabsTrigger
             value="email"
-            className="rounded-none px-0 pb-3 text-[#ACABAA] after:bottom-0 after:h-[2px] after:bg-[#BD9952] data-[state=active]:text-[#E7E5E4]"
+            className="rounded-none px-0 pb-3 text-muted-foreground after:bottom-0 after:h-[2px] after:bg-[#BD9952] data-[state=active]:text-foreground"
           >
             Email &amp; Automation
           </TabsTrigger>
@@ -256,8 +256,8 @@ export function AgentSettingsForm({
           </div>
           <div className={SETTINGS_SWITCH_ROW}>
             <div className="min-w-0 flex flex-col gap-0.5">
-              <span className="text-sm font-medium text-[#E7E5E4]">Include payment plan option</span>
-              <span className="text-sm text-[#ACABAA]">
+              <span className="text-sm font-medium text-foreground">Include payment plan option</span>
+              <span className="text-sm text-muted-foreground">
                 Offer a structured payment plan when chasing overdue rent.
               </span>
             </div>
@@ -314,8 +314,8 @@ export function AgentSettingsForm({
           </div>
           <div className={SETTINGS_SWITCH_ROW}>
             <div className="min-w-0 flex flex-col gap-0.5">
-              <span className="text-sm font-medium text-[#E7E5E4]">Disqualify leads with no move-in date</span>
-              <span className="text-sm text-[#ACABAA]">
+              <span className="text-sm font-medium text-foreground">Disqualify leads with no move-in date</span>
+              <span className="text-sm text-muted-foreground">
                 Automatically disqualify when no move-in date is provided.
               </span>
             </div>
@@ -337,7 +337,7 @@ export function AgentSettingsForm({
       <Card className={SETTINGS_CARD}>
         <CardHeader className={`${SETTINGS_HEADER} space-y-2`}>
           <CardTitle className={SETTINGS_TITLE}>Contract Templates</CardTitle>
-          <p className="font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
+          <p className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
             Upload your own contract templates. The AI will use these as a base instead of
             generating from scratch.
           </p>
@@ -347,8 +347,8 @@ export function AgentSettingsForm({
             htmlFor="contract-template-upload"
             className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[rgb(72_72_72_/0.35)] bg-[#0e0e0e]/40 p-8 text-center transition hover:bg-[#1a1918]/50"
           >
-            <span className="font-headline text-sm font-light text-[#E7E5E4]">Drop a file here or click to upload</span>
-            <span className="mt-1 font-[family-name:var(--font-inter)] text-xs text-[#ACABAA]">
+            <span className="font-headline text-sm font-light text-foreground">Drop a file here or click to upload</span>
+            <span className="mt-1 font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
               Accepted formats: .pdf, .docx
             </span>
             <input
@@ -375,7 +375,7 @@ export function AgentSettingsForm({
 
           <div className="grid gap-2">
             {templates.length === 0 ? (
-              <div className="rounded-lg bg-[#0e0e0e]/35 p-4 font-[family-name:var(--font-inter)] text-sm text-[#ACABAA] ring-1 ring-[rgb(72_72_72_/0.08)]">
+              <div className="rounded-lg bg-[#0e0e0e]/35 p-4 font-[family-name:var(--font-inter)] text-sm text-muted-foreground ring-1 ring-[rgb(72_72_72_/0.08)]">
                 No templates uploaded yet.
               </div>
             ) : (
@@ -426,7 +426,7 @@ export function AgentSettingsForm({
           <Card className={SETTINGS_CARD}>
             <CardHeader className={`${SETTINGS_HEADER} space-y-2`}>
               <CardTitle className={SETTINGS_TITLE}>Email &amp; Automation</CardTitle>
-              <p className="font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
+              <p className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
                 Platform email uses your display name with the verified Letora sender address. Turn on
                 auto-send per agent type when you are ready for emails to go out without review.
               </p>
@@ -446,8 +446,8 @@ export function AgentSettingsForm({
               <div className="flex flex-col gap-2">
                 <div className={SETTINGS_SWITCH_ROW}>
                   <div className="min-w-0 flex flex-col gap-0.5">
-                    <span className="text-sm font-medium text-[#E7E5E4]">Auto-send rent chaser emails</span>
-                    <span className="text-sm text-[#ACABAA]">
+                    <span className="text-sm font-medium text-foreground">Auto-send rent chaser emails</span>
+                    <span className="text-sm text-muted-foreground">
                       Automatically send overdue rent emails without review.
                     </span>
                   </div>
@@ -461,8 +461,8 @@ export function AgentSettingsForm({
                 </div>
                 <div className={SETTINGS_SWITCH_ROW}>
                   <div className="min-w-0 flex flex-col gap-0.5">
-                    <span className="text-sm font-medium text-[#E7E5E4]">Auto-send maintenance update emails</span>
-                    <span className="text-sm text-[#ACABAA]">
+                    <span className="text-sm font-medium text-foreground">Auto-send maintenance update emails</span>
+                    <span className="text-sm text-muted-foreground">
                       Send AI-drafted maintenance updates to tenants and landlord.
                     </span>
                   </div>
@@ -476,8 +476,8 @@ export function AgentSettingsForm({
                 </div>
                 <div className={SETTINGS_SWITCH_ROW}>
                   <div className="min-w-0 flex flex-col gap-0.5">
-                    <span className="text-sm font-medium text-[#E7E5E4]">Auto-send tenant onboarding emails</span>
-                    <span className="text-sm text-[#ACABAA]">
+                    <span className="text-sm font-medium text-foreground">Auto-send tenant onboarding emails</span>
+                    <span className="text-sm text-muted-foreground">
                       Automatically send welcome emails to new tenants.
                     </span>
                   </div>
@@ -491,8 +491,8 @@ export function AgentSettingsForm({
                 </div>
                 <div className={SETTINGS_SWITCH_ROW}>
                   <div className="min-w-0 flex flex-col gap-0.5">
-                    <span className="text-sm font-medium text-[#E7E5E4]">Auto-send lead update emails</span>
-                    <span className="text-sm text-[#ACABAA]">
+                    <span className="text-sm font-medium text-foreground">Auto-send lead update emails</span>
+                    <span className="text-sm text-muted-foreground">
                       Send qualification results to new leads automatically.
                     </span>
                   </div>
@@ -506,8 +506,8 @@ export function AgentSettingsForm({
                 </div>
                 <div className={SETTINGS_SWITCH_ROW}>
                   <div className="min-w-0 flex flex-col gap-0.5">
-                    <span className="text-sm font-medium text-[#E7E5E4]">Auto-send referencing handoff emails</span>
-                    <span className="text-sm text-[#ACABAA]">
+                    <span className="text-sm font-medium text-foreground">Auto-send referencing handoff emails</span>
+                    <span className="text-sm text-muted-foreground">
                       Send agency handoff emails without review when you click send (if enabled).
                     </span>
                   </div>
@@ -522,8 +522,8 @@ export function AgentSettingsForm({
               </div>
 
               <div className="mt-6 grid gap-4 rounded-xl bg-[#0e0e0e]/35 p-5 ring-1 ring-[rgb(72_72_72_/0.1)]">
-                <div className="font-headline text-sm font-light text-[#E7E5E4]">Default referencing agency</div>
-                <p className="font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
+                <div className="font-headline text-sm font-light text-foreground">Default referencing agency</div>
+                <p className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
                   UK referencing providers (e.g. Goodlord, HomeLet) run credit and reference checks; they may
                   contact the tenant with their own process. Letora does not run those checks. It sends this
                   email address a <strong>handoff</strong> with tenant and property details. Used when you

@@ -205,8 +205,8 @@ export function RentTrackerRegistry({
 
       <div className="relative mx-auto w-full max-w-7xl flex-1 px-6 pb-24 pt-6 md:px-12 md:pt-8">
         <div className="mb-8 flex flex-col gap-4 border-b border-[#484848]/15 pb-6 md:flex-row md:items-center md:justify-between">
-          <nav className="flex flex-wrap items-center gap-6 font-[family-name:var(--font-inter)] text-xs uppercase tracking-wider text-[#ACABAA]">
-            <Link href="/dashboard" className="transition-colors hover:text-[#E7E5E4]">
+          <nav className="flex flex-wrap items-center gap-6 font-[family-name:var(--font-inter)] text-xs uppercase tracking-wider text-muted-foreground">
+            <Link href="/dashboard" className="transition-colors hover:text-foreground">
               Dashboard
             </Link>
             <button
@@ -214,7 +214,7 @@ export function RentTrackerRegistry({
               onClick={() => setTabAndNav("arrears", false)}
               className={cn(
                 "transition-colors",
-                tab === "arrears" && !upcomingOnly ? "text-[#BD9952]" : "hover:text-[#E7E5E4]",
+                tab === "arrears" && !upcomingOnly ? "text-[#BD9952]" : "hover:text-foreground",
               )}
             >
               Arrears
@@ -228,7 +228,7 @@ export function RentTrackerRegistry({
               }}
               className={cn(
                 "transition-colors",
-                upcomingOnly ? "text-[#BD9952]" : "hover:text-[#E7E5E4]",
+                upcomingOnly ? "text-[#BD9952]" : "hover:text-foreground",
               )}
             >
               Upcoming
@@ -238,10 +238,10 @@ export function RentTrackerRegistry({
 
         <header className="flex flex-col gap-6 border-b border-[#484848]/15 pb-8 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="font-headline text-4xl font-extralight leading-none tracking-[-0.02em] text-[#C9C6C5] md:text-[3.5rem]">
+            <h1 className="font-headline text-4xl font-extralight leading-none tracking-[-0.02em] text-foreground md:text-[3.5rem]">
               Rent Tracker
             </h1>
-            <p className="mt-4 font-[family-name:var(--font-inter)] text-sm uppercase tracking-[0.2em] text-[#ACABAA]">
+            <p className="mt-4 font-[family-name:var(--font-inter)] text-sm uppercase tracking-[0.2em] text-muted-foreground">
               Portfolio payment intelligence
             </p>
           </div>
@@ -252,7 +252,7 @@ export function RentTrackerRegistry({
                 <button
                   type="button"
                   disabled={tenancies.length === 0}
-                  className="border border-[#484848]/25 px-5 py-2.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[#C9C6C5] transition hover:border-[#BD9952]/40 hover:text-[#BD9952] disabled:opacity-40"
+                  className="border border-[#484848]/25 px-5 py-2.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-foreground transition hover:border-[#BD9952]/40 hover:text-[#BD9952] disabled:opacity-40"
                 >
                   Record payment
                 </button>
@@ -271,19 +271,19 @@ export function RentTrackerRegistry({
 
         <section className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="flex h-32 flex-col justify-between bg-[#131313] p-6 transition-colors hover:bg-[#1F2020]">
-            <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
               Total expected
             </span>
-            <span className="font-headline text-3xl font-light text-[#C9C6C5]">
+            <span className="font-headline text-3xl font-light text-foreground">
               {gbp.format(stats.expectedThisMonth)}
             </span>
           </div>
           <div className="relative flex h-32 flex-col justify-between overflow-hidden bg-[#131313] p-6 transition-colors hover:bg-[#1F2020]">
             <div>
-              <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#ACABAA]">
+              <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                 Collected
               </span>
-              <span className="mt-1 block font-headline text-3xl font-light text-[#C9C6C5]">
+              <span className="mt-1 block font-headline text-3xl font-light text-foreground">
                 {gbp.format(stats.receivedThisMonth)}
               </span>
             </div>
@@ -311,10 +311,10 @@ export function RentTrackerRegistry({
             </div>
           </div>
           <div className="flex h-32 flex-col justify-between bg-[#131313] p-6 transition-colors hover:bg-[#1F2020]">
-            <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
               Next 30 days forecast
             </span>
-            <span className="font-headline text-3xl font-light text-[#C9C6C5]">
+            <span className="font-headline text-3xl font-light text-foreground">
               {gbp.format(stats.forecastNext30Days)}
             </span>
           </div>
@@ -328,9 +328,9 @@ export function RentTrackerRegistry({
             <h1 className="mb-1 font-[family-name:var(--font-inter)] text-[0.6875rem] font-bold uppercase tracking-[0.15em] text-[#BD9952]">
               Portfolio intelligence insight
             </h1>
-            <p className="max-w-3xl text-sm leading-relaxed text-[#ACABAA]">
+            <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
               Collection velocity across{" "}
-              <span className="text-[#C9C6C5]">{insightHighlight}</span> has stabilised with automated
+              <span className="text-foreground">{insightHighlight}</span> has stabilised with automated
               reminders. Arrears are projected to compress as upcoming instalments clear in the next
               cycle.
             </p>
@@ -363,8 +363,8 @@ export function RentTrackerRegistry({
                   className={cn(
                     "pb-4 font-[family-name:var(--font-inter)] text-xs uppercase tracking-widest transition-colors",
                     tab === id && !upcomingOnly
-                      ? "border-b-2 border-[#BD9952] font-bold text-[#C9C6C5]"
-                      : "text-[#ACABAA] hover:text-[#E7E5E4]",
+                      ? "border-b-2 border-[#BD9952] font-bold text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {label}
@@ -372,7 +372,7 @@ export function RentTrackerRegistry({
               ))}
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-[#767575]">
+              <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-muted-foreground">
                 Filter by
               </span>
               <select
@@ -381,7 +381,7 @@ export function RentTrackerRegistry({
                   setPropertyFilter(e.target.value);
                   setPage(1);
                 }}
-                className="cursor-pointer border-0 bg-transparent font-[family-name:var(--font-inter)] text-xs uppercase tracking-wider text-[#ACABAA] focus:outline-none focus:ring-0"
+                className="cursor-pointer border-0 bg-transparent font-[family-name:var(--font-inter)] text-xs uppercase tracking-wider text-muted-foreground focus:outline-none focus:ring-0"
                 aria-label="Filter by property"
               >
                 <option value="all">All properties</option>
@@ -399,25 +399,25 @@ export function RentTrackerRegistry({
               <table className="w-full min-w-[900px] border-collapse text-left">
                 <thead>
                   <tr className="border-b border-[#484848]/10">
-                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#767575]">
+                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                       Tenant
                     </th>
-                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#767575]">
+                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                       Property
                     </th>
-                    <th className="px-6 py-5 text-right font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#767575]">
+                    <th className="px-6 py-5 text-right font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                       Monthly rent
                     </th>
-                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#767575]">
+                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                       Due date
                     </th>
-                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#767575]">
+                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                       Status
                     </th>
-                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#767575]">
+                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                       Last payment
                     </th>
-                    <th className="px-6 py-5 text-right font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#767575]">
+                    <th className="px-6 py-5 text-right font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                       Actions
                     </th>
                   </tr>
@@ -427,7 +427,7 @@ export function RentTrackerRegistry({
                     <tr>
                       <td
                         colSpan={7}
-                        className="px-6 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]"
+                        className="px-6 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground"
                       >
                         No payments match this view. Add a payment or adjust filters.
                       </td>
@@ -446,19 +446,19 @@ export function RentTrackerRegistry({
                         >
                           <td className="px-6 py-6">
                             <div className="flex items-center gap-3">
-                              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#474646]/40 font-[family-name:var(--font-inter)] text-[10px] font-medium text-[#C9C6C5]">
+                              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#474646]/40 font-[family-name:var(--font-inter)] text-[10px] font-medium text-foreground">
                                 {initials(p.tenantName)}
                               </div>
-                              <span className="text-sm font-medium text-[#C9C6C5]">
+                              <span className="text-sm font-medium text-foreground">
                                 {p.tenantName ?? "—"}
                               </span>
                             </div>
                           </td>
                           <td className="max-w-[220px] px-6 py-6">
-                            <span className="text-xs text-[#ACABAA]">{p.propertyAddress ?? "—"}</span>
+                            <span className="text-xs text-muted-foreground">{p.propertyAddress ?? "—"}</span>
                           </td>
                           <td className="whitespace-nowrap px-6 py-6 text-right">
-                            <span className="font-headline text-sm text-[#C9C6C5]">
+                            <span className="font-headline text-sm text-foreground">
                               {gbp.format(p.amount)}
                             </span>
                           </td>
@@ -466,7 +466,7 @@ export function RentTrackerRegistry({
                             <span
                               className={cn(
                                 "text-xs",
-                                dueOverdue ? "text-[#BB5551]" : "text-[#ACABAA]",
+                                dueOverdue ? "text-[#BB5551]" : "text-muted-foreground",
                               )}
                             >
                               {formatDisplayDate(p.due_date)}
@@ -474,7 +474,7 @@ export function RentTrackerRegistry({
                           </td>
                           <td className="px-6 py-6">{statusPill(display)}</td>
                           <td className="whitespace-nowrap px-6 py-6">
-                            <span className="text-xs text-[#ACABAA]">
+                            <span className="text-xs text-muted-foreground">
                               {p.paid_date ? formatDisplayDate(p.paid_date) : "—"}
                             </span>
                           </td>
@@ -497,7 +497,7 @@ export function RentTrackerRegistry({
                                   type="button"
                                   disabled={busyId === p.id}
                                   onClick={() => void run(p.id, () => markRentOverdue(p.id))}
-                                  className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#ACABAA] hover:text-[#BD9952] disabled:opacity-50"
+                                  className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground hover:text-[#BD9952] disabled:opacity-50"
                                 >
                                   Mark overdue
                                 </button>
@@ -506,7 +506,7 @@ export function RentTrackerRegistry({
                                 type="button"
                                 disabled={busyId === p.id}
                                 onClick={() => void run(p.id, () => deleteRentPayment(p.id))}
-                                className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#767575] hover:text-[#ee7d77] disabled:opacity-50"
+                                className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground hover:text-[#ee7d77] disabled:opacity-50"
                               >
                                 Remove
                               </button>
@@ -522,7 +522,7 @@ export function RentTrackerRegistry({
           </div>
 
           <div className="flex flex-col gap-4 px-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
-            <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-[#767575]">
+            <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-muted-foreground">
               Showing {displayFrom} to {displayTo} of {totalFiltered} payments
             </span>
             <div className="flex items-center gap-2">
@@ -531,7 +531,7 @@ export function RentTrackerRegistry({
                 aria-label="Previous page"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="flex size-8 items-center justify-center border border-[#484848]/20 text-[#ACABAA] transition hover:border-[#BD9952]/40 hover:text-[#C9C6C5] disabled:opacity-30"
+                className="flex size-8 items-center justify-center border border-[#484848]/20 text-muted-foreground transition hover:border-[#BD9952]/40 hover:text-foreground disabled:opacity-30"
               >
                 <ChevronLeft className="size-4" />
               </button>
@@ -540,7 +540,7 @@ export function RentTrackerRegistry({
                 aria-label="Next page"
                 disabled={safePage >= pageCount}
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="flex size-8 items-center justify-center border border-[#484848]/20 text-[#ACABAA] transition hover:border-[#BD9952]/40 hover:text-[#C9C6C5] disabled:opacity-30"
+                className="flex size-8 items-center justify-center border border-[#484848]/20 text-muted-foreground transition hover:border-[#BD9952]/40 hover:text-foreground disabled:opacity-30"
               >
                 <ChevronRight className="size-4" />
               </button>

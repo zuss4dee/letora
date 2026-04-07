@@ -88,10 +88,10 @@ export default async function SettingsPage() {
             <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
               Workspace
             </p>
-            <h1 className="font-headline text-3xl font-extralight tracking-[-0.04em] text-[#E7E5E4] md:text-[2.15rem] md:leading-tight">
+            <h1 className="font-headline text-3xl font-extralight tracking-[-0.04em] text-foreground md:text-[2.15rem] md:leading-tight">
               Settings
             </h1>
-            <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">
               Business profile, agent behaviour, email automation, and billing, tuned to how you run
               tenancies.
             </p>
@@ -114,7 +114,7 @@ export default async function SettingsPage() {
           <SettingsAgentActivityCard />
           <Suspense
             fallback={
-              <div className="font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">Loading settings…</div>
+              <div className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">Loading settings…</div>
             }
           >
             <AgentSettingsForm initialValues={initialValues} userId={user?.id ?? ""} />

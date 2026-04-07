@@ -63,7 +63,7 @@ export default async function SignContractPage({
 
   if (data.tenant_signed_at) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center bg-[#0d0c0b] px-4 py-12 text-[#E7E5E4]">
+      <div className="relative flex min-h-screen items-center justify-center bg-[#0d0c0b] px-4 py-12 text-foreground">
         <div
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(61,26,10,0.4),transparent_60%)]"
           aria-hidden
@@ -80,8 +80,8 @@ export default async function SignContractPage({
               <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
             </svg>
           </div>
-          <h1 className="font-headline text-xl font-light tracking-tight text-[#E7E5E4]">Already signed</h1>
-          <p className="mt-3 font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#ACABAA]">
+          <h1 className="font-headline text-xl font-light tracking-tight text-foreground">Already signed</h1>
+          <p className="mt-3 font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">
             You have already signed this tenancy agreement. Your landlord has been notified.
           </p>
         </div>
@@ -90,7 +90,7 @@ export default async function SignContractPage({
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-[#0d0c0b] px-4 py-12 text-[#E7E5E4]">
+    <div className="relative flex min-h-screen items-center justify-center bg-[#0d0c0b] px-4 py-12 text-foreground">
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_45%_at_50%_-15%,rgba(61,26,10,0.35),transparent_58%)]"
         aria-hidden
@@ -100,44 +100,44 @@ export default async function SignContractPage({
           <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[#BD9952]/90">
             Tenancy agreement
           </p>
-          <h1 className="mt-2 font-headline text-xl font-light tracking-tight text-[#E7E5E4]">Review &amp; sign</h1>
-          <p className="mt-2 font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
-            For <span className="font-medium text-[#E7E5E4]">{data.tenantName}</span> at{" "}
-            <span className="font-medium text-[#E7E5E4]">{data.propertyAddress}</span>
+          <h1 className="mt-2 font-headline text-xl font-light tracking-tight text-foreground">Review &amp; sign</h1>
+          <p className="mt-2 font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
+            For <span className="font-medium text-foreground">{data.tenantName}</span> at{" "}
+            <span className="font-medium text-foreground">{data.propertyAddress}</span>
           </p>
         </div>
 
         <div className="space-y-4 px-6 py-6 sm:px-8">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <span className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.12em] text-[#ACABAA]">
+              <span className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 Start date
               </span>
-              <p className="mt-1 font-[family-name:var(--font-inter)] text-sm font-medium text-[#E7E5E4]">
+              <p className="mt-1 font-[family-name:var(--font-inter)] text-sm font-medium text-foreground">
                 {data.startDate ?? "—"}
               </p>
             </div>
             <div>
-              <span className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.12em] text-[#ACABAA]">
+              <span className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 End date
               </span>
-              <p className="mt-1 font-[family-name:var(--font-inter)] text-sm font-medium text-[#E7E5E4]">
+              <p className="mt-1 font-[family-name:var(--font-inter)] text-sm font-medium text-foreground">
                 {data.endDate ?? "—"}
               </p>
             </div>
             <div>
-              <span className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.12em] text-[#ACABAA]">
+              <span className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 Monthly rent
               </span>
-              <p className="mt-1 font-[family-name:var(--font-inter)] text-sm font-medium text-[#E7E5E4]">
+              <p className="mt-1 font-[family-name:var(--font-inter)] text-sm font-medium text-foreground">
                 £{data.monthlyRent.toLocaleString("en-GB", { minimumFractionDigits: 2 })}
               </p>
             </div>
             <div>
-              <span className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.12em] text-[#ACABAA]">
+              <span className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
                 Deposit
               </span>
-              <p className="mt-1 font-[family-name:var(--font-inter)] text-sm font-medium text-[#E7E5E4]">
+              <p className="mt-1 font-[family-name:var(--font-inter)] text-sm font-medium text-foreground">
                 £{data.depositAmount.toLocaleString("en-GB", { minimumFractionDigits: 2 })}
               </p>
             </div>
@@ -145,8 +145,8 @@ export default async function SignContractPage({
 
           {data.special_clauses && (
             <div className="rounded-xl bg-[#0e0e0e]/45 p-4 ring-1 ring-[rgb(72_72_72_/0.1)]">
-              <h2 className="mb-2 font-headline text-sm font-light text-[#E7E5E4]">Contract terms</h2>
-              <div className="prose prose-sm max-h-96 overflow-y-auto whitespace-pre-wrap font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA] prose-invert">
+              <h2 className="mb-2 font-headline text-sm font-light text-foreground">Contract terms</h2>
+              <div className="prose prose-sm max-h-96 overflow-y-auto whitespace-pre-wrap font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground prose-invert">
                 {data.special_clauses}
               </div>
             </div>

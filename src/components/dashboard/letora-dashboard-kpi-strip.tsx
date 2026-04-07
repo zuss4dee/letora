@@ -34,13 +34,13 @@ export function LetoraDashboardKpiStrip({
     <section className="mb-16 mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
       <div className="flex flex-col gap-4 border border-[#484848]/15 bg-[#131313] p-8">
         <div className="flex items-start justify-between">
-          <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-[#ACABAA]">
+          <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
             Active tenancies
           </span>
-          <TrendingUp className="size-[18px] text-[#ACABAA] stroke-[1.25]" aria-hidden />
+          <TrendingUp className="size-[18px] text-muted-foreground stroke-[1.25]" aria-hidden />
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="font-headline text-3xl font-light text-[#E7E5E4]">
+          <span className="font-headline text-3xl font-light text-foreground">
             {String(activeTenancies)}
           </span>
           {totalProperties > 0 ? (
@@ -49,20 +49,20 @@ export function LetoraDashboardKpiStrip({
             </span>
           ) : null}
         </div>
-        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-[#ACABAA]/60">
+        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-muted-foreground/60">
           Across your portfolio
         </p>
       </div>
 
       <div className="flex flex-col gap-4 border border-[#484848]/15 bg-[#131313] p-8">
         <div className="flex items-start justify-between">
-          <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-[#ACABAA]">
+          <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
             Collection rate
           </span>
-          <Landmark className="size-[18px] text-[#ACABAA] stroke-[1.25]" aria-hidden />
+          <Landmark className="size-[18px] text-muted-foreground stroke-[1.25]" aria-hidden />
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="font-headline text-3xl font-light text-[#E7E5E4]">
+          <span className="font-headline text-3xl font-light text-foreground">
             {collectionPct != null ? `${collectionPct}%` : "—"}
           </span>
           {monthlyRent > 0 ? (
@@ -71,7 +71,7 @@ export function LetoraDashboardKpiStrip({
             </span>
           ) : null}
         </div>
-        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-[#ACABAA]/60">
+        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-muted-foreground/60">
           Collected this month vs rent roll
         </p>
       </div>
@@ -81,7 +81,7 @@ export function LetoraDashboardKpiStrip({
         className="group flex flex-col gap-4 border border-[#484848]/15 bg-[#131313] p-8 transition-colors hover:bg-[#1F2020]/80"
       >
         <div className="flex items-start justify-between">
-          <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-[#ACABAA]">
+          <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
             Arrears at risk
           </span>
           <span className="font-[family-name:var(--font-inter)] text-lg text-[#BB5551]" aria-hidden>
@@ -89,7 +89,7 @@ export function LetoraDashboardKpiStrip({
           </span>
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="font-headline text-3xl font-light text-[#E7E5E4]">
+          <span className="font-headline text-3xl font-light text-foreground">
             {String(overduePayments)}
           </span>
           {criticalArrears > 0 ? (
@@ -98,7 +98,7 @@ export function LetoraDashboardKpiStrip({
             </span>
           ) : null}
         </div>
-        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-[#ACABAA]/60">
+        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-muted-foreground/60">
           Open rent tracker
         </p>
       </Link>
@@ -108,20 +108,20 @@ export function LetoraDashboardKpiStrip({
         className="group flex flex-col gap-4 border border-[#484848]/15 bg-[#131313] p-8 transition-colors hover:bg-[#1F2020]/80"
       >
         <div className="flex items-start justify-between">
-          <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-[#ACABAA]">
+          <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
             Maintenance
           </span>
-          <Construction className="size-[18px] text-[#ACABAA] stroke-[1.25]" aria-hidden />
+          <Construction className="size-[18px] text-muted-foreground stroke-[1.25]" aria-hidden />
         </div>
         <div className="flex items-baseline gap-2">
-          <span className="font-headline text-3xl font-light text-[#E7E5E4]">
+          <span className="font-headline text-3xl font-light text-foreground">
             {String(openMaintenance)}
           </span>
-          <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-wider text-[#ACABAA]">
+          <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-wider text-muted-foreground">
             Open requests
           </span>
         </div>
-        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-[#ACABAA]/60">
+        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-muted-foreground/60">
           Tracked in maintenance
         </p>
       </Link>

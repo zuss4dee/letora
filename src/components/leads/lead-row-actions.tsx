@@ -102,7 +102,7 @@ export function LeadRowActions({
   const controls = (
     <>
       <div className="space-y-1">
-        <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#767575]">
+        <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
           Pipeline
         </p>
         <Select
@@ -126,7 +126,7 @@ export function LeadRowActions({
       </div>
 
       <div className="space-y-1">
-        <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#767575]">
+        <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
           Qualification
         </p>
         <Select
@@ -171,7 +171,7 @@ export function LeadRowActions({
             type="button"
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-[#ACABAA] hover:bg-[#1F2020] hover:text-[#E7E5E4]"
+            className="h-8 w-8 text-muted-foreground hover:bg-[#1F2020] hover:text-foreground"
             disabled={isPending}
             aria-label="Lead actions"
           >

@@ -23,7 +23,7 @@ export function PropertyIntelligenceDock({ insight }: { insight: string }) {
           Letora Intelligence
         </span>
       </div>
-      <p className="text-sm font-light italic leading-relaxed text-[#E7E5E4]/90">
+      <p className="text-sm font-light italic leading-relaxed text-foreground/90">
         &ldquo;{insight}&rdquo;
       </p>
       <form onSubmit={onSubmit} className="mt-6">
@@ -35,7 +35,7 @@ export function PropertyIntelligenceDock({ insight }: { insight: string }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Type a command…"
-          className="w-full border-0 border-b border-[#484848]/30 bg-[#000000] px-0 py-2 font-[family-name:var(--font-inter)] text-xs text-[#E7E5E4] placeholder:text-[#ACABAA]/40 focus:border-[#BD9952] focus:outline-none"
+          className="w-full border-0 border-b border-[#484848]/30 bg-[#000000] px-0 py-2 font-[family-name:var(--font-inter)] text-xs text-foreground placeholder:text-muted-foreground/40 focus:border-[#BD9952] focus:outline-none"
         />
       </form>
     </div>

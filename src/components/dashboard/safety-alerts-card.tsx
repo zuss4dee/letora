@@ -41,7 +41,7 @@ export function SafetyAlertsCard({
       >
         <CardTitle
           className={
-            className ? "text-base text-[#E7E5E4]" : "text-base text-red-900 dark:text-red-100"
+            className ? "text-base text-foreground" : "text-base text-red-900 dark:text-red-100"
           }
         >
           Urgent safety alerts (last 7 days)
@@ -49,7 +49,7 @@ export function SafetyAlertsCard({
         <p
           className={
             className
-              ? "text-sm font-normal text-[#ACABAA]"
+              ? "text-sm font-normal text-muted-foreground"
               : "text-sm font-normal text-red-800/90 dark:text-red-200/90"
           }
         >

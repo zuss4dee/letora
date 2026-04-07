@@ -114,17 +114,17 @@ export function ReferencingPanel({
           Referencing
         </p>
         <CardTitle className={TENANCY_CARD_TITLE}>Referencing agency</CardTitle>
-        <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#ACABAA]">
+        <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">
           Your provider runs referencing and credit checks (they may email the tenant with their own link or
           process). Letora sends them a structured handoff with tenant and property details. Replies to your
-          Letora inbound address that include the <span className="font-mono text-[0.7rem] text-[#C9C6C5]">LETORA_REF</span>{" "}
+          Letora inbound address that include the <span className="font-mono text-[0.7rem] text-foreground">LETORA_REF</span>{" "}
           line are logged here and may advance onboarding when the message looks like a clear pass or fail.
         </p>
       </CardHeader>
       <CardContent className={`${TENANCY_CARD_CONTENT} space-y-6`}>
         {!canSendHandoff ? (
           <div className="rounded-xl bg-[#2a1f0e]/50 p-4 ring-1 ring-[#BD9952]/25">
-            <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#E7E5E4]">
+            <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-foreground">
               Add a <strong className="font-medium text-[#BD9952]">default agency email</strong> under{" "}
               <span className="whitespace-nowrap">Settings → Email &amp; Automation</span> (Default referencing
               agency), or enter an <strong className="font-medium">override for this tenancy</strong> below, before you can send a
@@ -150,7 +150,7 @@ export function ReferencingPanel({
               placeholder="Uses Settings default if empty"
               value={override}
               onChange={(e) => setOverride(e.target.value)}
-              className="rounded-md border-[rgb(72_72_72_/0.28)] bg-[#0e0e0e]/80 text-[#E7E5E4] placeholder:text-[#6b6a69] focus-visible:border-[#BD9952]/45 focus-visible:ring-1 focus-visible:ring-[#BD9952]/25"
+              className="rounded-md border-[rgb(72_72_72_/0.28)] bg-[#0e0e0e]/80 text-foreground placeholder:text-[#6b6a69] focus-visible:border-[#BD9952]/45 focus-visible:ring-1 focus-visible:ring-[#BD9952]/25"
             />
             <Button
               type="button"
@@ -177,31 +177,31 @@ export function ReferencingPanel({
         <div className="grid gap-4 text-sm sm:grid-cols-2">
           <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
             <span className={TENANCY_LABEL}>Onboarding status</span>
-            <p className="mt-1 font-[family-name:var(--font-inter)] font-medium capitalize text-[#E7E5E4]">
+            <p className="mt-1 font-[family-name:var(--font-inter)] font-medium capitalize text-foreground">
               {onboardingStatus.replace(/_/g, " ")}
             </p>
           </div>
           <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
             <span className={TENANCY_LABEL}>Reference token</span>
-            <p className="mt-1 break-all font-mono text-xs text-[#C9C6C5]">
+            <p className="mt-1 break-all font-mono text-xs text-foreground">
               {referencingToken ?? "Not set (generated on first send)"}
             </p>
           </div>
           <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
             <span className={TENANCY_LABEL}>Last handoff sent</span>
-            <p className="mt-1 font-[family-name:var(--font-inter)] font-medium text-[#E7E5E4]">{fmt(lastOutboundAt)}</p>
+            <p className="mt-1 font-[family-name:var(--font-inter)] font-medium text-foreground">{fmt(lastOutboundAt)}</p>
           </div>
           <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
             <span className={TENANCY_LABEL}>Last agency reply (inbound)</span>
-            <p className="mt-1 font-[family-name:var(--font-inter)] font-medium text-[#E7E5E4]">{fmt(lastInboundAt)}</p>
+            <p className="mt-1 font-[family-name:var(--font-inter)] font-medium text-foreground">{fmt(lastInboundAt)}</p>
           </div>
         </div>
 
         {handoffRecipientEmail ? (
-          <div className="rounded-xl bg-[#0e0e0e]/40 px-4 py-3 font-[family-name:var(--font-inter)] text-xs leading-relaxed text-[#ACABAA] ring-1 ring-[rgb(72_72_72_/0.1)]">
-            <span className="font-medium text-[#E7E5E4]">Handoff is emailed to </span>
-            <span className="select-all break-all font-mono text-[#C9C6C5]">{handoffRecipientEmail}</span>
-            <span className="text-[#ACABAA]">
+          <div className="rounded-xl bg-[#0e0e0e]/40 px-4 py-3 font-[family-name:var(--font-inter)] text-xs leading-relaxed text-muted-foreground ring-1 ring-[rgb(72_72_72_/0.1)]">
+            <span className="font-medium text-foreground">Handoff is emailed to </span>
+            <span className="select-all break-all font-mono text-foreground">{handoffRecipientEmail}</span>
+            <span className="text-muted-foreground">
               {" "}
               (the referencing agency, not your landlord inbox unless it is the same address). If you do not see
               it, check spam on that exact address or fix a typo in the override or under Settings → Email &amp;
@@ -218,9 +218,9 @@ export function ReferencingPanel({
             Mark referencing complete (manual)
           </Button>
         </div>
-        <p className="font-[family-name:var(--font-inter)] text-xs font-light leading-relaxed text-[#ACABAA]">
+        <p className="font-[family-name:var(--font-inter)] text-xs font-light leading-relaxed text-muted-foreground">
           When you receive the agency&apos;s final outcome (e.g. pass / fail / guarantor required), use{" "}
-          <strong className="font-medium text-[#E7E5E4]">Mark referencing complete</strong> if Letora hasn&apos;t updated automatically from inbound
+          <strong className="font-medium text-foreground">Mark referencing complete</strong> if Letora hasn&apos;t updated automatically from inbound
           email.
         </p>
 
@@ -234,17 +234,17 @@ export function ReferencingPanel({
                   className="rounded-xl bg-[#0e0e0e]/35 px-4 py-3 ring-1 ring-[rgb(72_72_72_/0.08)] transition-colors hover:bg-[#131313]/50"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-[family-name:var(--font-inter)] font-medium capitalize text-[#E7E5E4]">
+                    <span className="font-[family-name:var(--font-inter)] font-medium capitalize text-foreground">
                       {ev.direction}
                     </span>
-                    <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-[#ACABAA]">{fmt(ev.createdAt)}</span>
+                    <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">{fmt(ev.createdAt)}</span>
                   </div>
                   {ev.outcome ? (
-                    <p className="mt-1 font-[family-name:var(--font-inter)] text-xs text-[#ACABAA]">Outcome: {ev.outcome}</p>
+                    <p className="mt-1 font-[family-name:var(--font-inter)] text-xs text-muted-foreground">Outcome: {ev.outcome}</p>
                   ) : null}
-                  {ev.subject ? <p className="mt-1 font-[family-name:var(--font-inter)] text-sm text-[#C9C6C5]">{ev.subject}</p> : null}
+                  {ev.subject ? <p className="mt-1 font-[family-name:var(--font-inter)] text-sm text-foreground">{ev.subject}</p> : null}
                   {ev.bodyPreview ? (
-                    <p className="mt-1 line-clamp-2 font-[family-name:var(--font-inter)] text-xs text-[#ACABAA]">{ev.bodyPreview}</p>
+                    <p className="mt-1 line-clamp-2 font-[family-name:var(--font-inter)] text-xs text-muted-foreground">{ev.bodyPreview}</p>
                   ) : null}
                 </li>
               ))}

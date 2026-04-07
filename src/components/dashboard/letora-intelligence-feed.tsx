@@ -96,7 +96,7 @@ function iconForFeed(agentType: string | null): {
     return { Icon: CheckCircle2, className: "text-[#BD9952]" };
   }
   if (t === "contract_drafter") {
-    return { Icon: FileText, className: "text-[#ACABAA]" };
+    return { Icon: FileText, className: "text-muted-foreground" };
   }
   if (t === "maintenance_agent" || t === "maintenance") {
     return { Icon: Wrench, className: "text-[#BB5551]" };
@@ -104,7 +104,7 @@ function iconForFeed(agentType: string | null): {
   if (t === "safety_alert") {
     return { Icon: ShieldAlert, className: "text-[#BB5551]" };
   }
-  return { Icon: Bot, className: "text-[#ACABAA]" };
+  return { Icon: Bot, className: "text-muted-foreground" };
 }
 
 export function LetoraIntelligenceFeed({ runs }: { runs: ActivityRun[] }) {
@@ -113,7 +113,7 @@ export function LetoraIntelligenceFeed({ runs }: { runs: ActivityRun[] }) {
   return (
     <div className="space-y-3">
       {display.length === 0 ? (
-        <p className="px-4 py-8 font-[family-name:var(--font-inter)] text-[0.8rem] text-[#ACABAA]">
+        <p className="px-4 py-8 font-[family-name:var(--font-inter)] text-[0.8rem] text-muted-foreground">
           Nothing has run yet. Open{" "}
           <Link href="/dashboard" className="text-[#BD9952] underline-offset-4 hover:underline">
             Home
@@ -134,8 +134,8 @@ export function LetoraIntelligenceFeed({ runs }: { runs: ActivityRun[] }) {
                 <Icon className={cn("size-5 stroke-[1.25]", className)} aria-hidden />
               </div>
               <div>
-                <p className="font-[family-name:var(--font-inter)] text-[0.8rem] leading-relaxed text-[#E7E5E4]">
-                  <span className="font-medium text-[#C9C6C5]">{title}</span>
+                <p className="font-[family-name:var(--font-inter)] text-[0.8rem] leading-relaxed text-foreground">
+                  <span className="font-medium text-foreground">{title}</span>
                   {subtitle ? (
                     <>
                       {" "}
@@ -153,8 +153,8 @@ export function LetoraIntelligenceFeed({ runs }: { runs: ActivityRun[] }) {
       )}
       {runs.length > 4 ? (
         <div className="flex gap-4 p-4 opacity-50">
-          <Mail className="mt-0.5 size-5 shrink-0 text-[#ACABAA]" aria-hidden />
-          <p className="font-[family-name:var(--font-inter)] text-[0.8rem] text-[#ACABAA]">
+          <Mail className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
+          <p className="font-[family-name:var(--font-inter)] text-[0.8rem] text-muted-foreground">
             {runs.length - 4} more in the{" "}
             <Link href="/dashboard/activity" className="text-[#BD9952] underline-offset-4 hover:underline">
               full activity log

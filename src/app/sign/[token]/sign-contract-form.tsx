@@ -34,8 +34,8 @@ export function SignContractForm({ token }: { token: string }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
         </div>
-        <h2 className="font-headline text-lg font-light tracking-tight text-[#E7E5E4]">Contract signed</h2>
-        <p className="mt-2 font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#ACABAA]">
+        <h2 className="font-headline text-lg font-light tracking-tight text-foreground">Contract signed</h2>
+        <p className="mt-2 font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">
           Thank you. Your signature has been recorded. Your landlord has been notified.
         </p>
       </div>
@@ -51,7 +51,7 @@ export function SignContractForm({ token }: { token: string }) {
           onChange={(e) => setAgreed(e.target.checked)}
           className="mt-1 h-4 w-4 rounded border-[rgb(72_72_72_/0.35)] bg-[#0e0e0e] accent-[#BD9952]"
         />
-        <span className="font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
+        <span className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
           I have read and agree to the terms of this tenancy agreement
         </span>
       </label>

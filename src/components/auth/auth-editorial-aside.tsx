@@ -25,10 +25,10 @@ export function AuthEditorialAside({ variant }: { variant: keyof typeof copy }) 
         <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/90">
           {c.kicker}
         </p>
-        <h2 className="font-headline max-w-[20ch] text-2xl font-extralight leading-snug tracking-[-0.03em] text-[#E7E5E4] md:text-[1.65rem]">
+        <h2 className="font-headline max-w-[20ch] text-2xl font-extralight leading-snug tracking-[-0.03em] text-foreground md:text-[1.65rem]">
           {c.headline}
         </h2>
-        <p className="max-w-md font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#ACABAA]">
+        <p className="max-w-md font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">
           {c.body}
         </p>
       </div>

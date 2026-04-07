@@ -42,7 +42,7 @@ export function DeleteAccountCard() {
         <CardTitle className="font-headline text-lg font-light tracking-tight text-[#e8a8a4]">
           Danger zone
         </CardTitle>
-        <CardDescription className="font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
+        <CardDescription className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
           Permanently delete your Letora account and data we hold for your landlord account. This
           cannot be undone. Active subscriptions should be cancelled in billing before you delete
           your account.
@@ -51,7 +51,7 @@ export function DeleteAccountCard() {
       <form onSubmit={onSubmit}>
         <CardContent className="space-y-4 px-6 pb-2 pt-0 sm:px-8">
           <div className="space-y-2">
-            <Label htmlFor="delete-confirm" className="font-[family-name:var(--font-inter)] text-xs text-[#ACABAA]">
+            <Label htmlFor="delete-confirm" className="font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
               Type DELETE to confirm
             </Label>
             <Input
@@ -62,7 +62,7 @@ export function DeleteAccountCard() {
               value={phrase}
               onChange={(e) => setPhrase(e.target.value)}
               placeholder="DELETE"
-              className="max-w-xs rounded-md border-[rgb(72_72_72_/0.28)] bg-[#0e0e0e]/80 font-mono text-sm text-[#E7E5E4]"
+              className="max-w-xs rounded-md border-[rgb(72_72_72_/0.28)] bg-[#0e0e0e]/80 font-mono text-sm text-foreground"
               aria-invalid={phrase.length > 0 && !canSubmit && phrase.trim().toUpperCase() !== "DELETE"}
             />
           </div>

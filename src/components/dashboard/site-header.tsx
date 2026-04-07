@@ -88,13 +88,13 @@ export function SiteHeader() {
     >
       <div className="flex w-full items-center justify-between gap-4 px-4 lg:px-12">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <SidebarTrigger className="-ml-1 text-[#ACABAA] hover:bg-[#1F2020] hover:text-[#BD9952] md:hidden" />
+          <SidebarTrigger className="-ml-1 text-muted-foreground hover:bg-[#1F2020] hover:text-[#BD9952] md:hidden" />
           <div className="hidden min-w-0 items-center gap-2 md:flex">
-            <span className="font-headline text-sm font-light text-[#ACABAA]">{parent}</span>
+            <span className="font-headline text-sm font-light text-muted-foreground">{parent}</span>
             <span className="text-[#484848]" aria-hidden>
               /
             </span>
-            <span className="font-headline truncate text-sm font-light text-[#C9C6C5]">{current}</span>
+            <span className="font-headline truncate text-sm font-light text-foreground">{current}</span>
           </div>
         </div>
 
@@ -102,12 +102,12 @@ export function SiteHeader() {
           <button
             type="button"
             onClick={() => openPalette()}
-            className="relative flex w-full max-w-sm cursor-pointer items-center rounded-sm border-0 bg-[#131313] py-2 pl-10 pr-4 text-left font-[family-name:var(--font-inter)] text-xs text-[#ACABAA] transition-colors hover:bg-[#1a1a1a] hover:text-[#C9C6C5] focus:outline-none focus:ring-1 focus:ring-[#BD9952]"
+            className="relative flex w-full max-w-sm cursor-pointer items-center rounded-sm border-0 bg-[#131313] py-2 pl-10 pr-4 text-left font-[family-name:var(--font-inter)] text-xs text-muted-foreground transition-colors hover:bg-[#1a1a1a] hover:text-foreground focus:outline-none focus:ring-1 focus:ring-[#BD9952]"
             aria-label="Open command palette"
           >
-            <Search className="pointer-events-none absolute left-3 size-4 text-[#ACABAA]" aria-hidden />
+            <Search className="pointer-events-none absolute left-3 size-4 text-muted-foreground" aria-hidden />
             <span className="text-[#484848]">Search or run an agent…</span>
-            <kbd className="pointer-events-none ml-auto hidden items-center gap-0.5 rounded border border-[#484848]/40 bg-[#0E0E0E] px-1.5 py-0.5 font-mono text-[0.65rem] text-[#ACABAA] sm:inline-flex">
+            <kbd className="pointer-events-none ml-auto hidden items-center gap-0.5 rounded border border-[#484848]/40 bg-[#0E0E0E] px-1.5 py-0.5 font-mono text-[0.65rem] text-muted-foreground sm:inline-flex">
               ⌘K
             </kbd>
           </button>
@@ -118,7 +118,7 @@ export function SiteHeader() {
             type="button"
             variant="ghost"
             size="icon"
-            className="md:hidden size-9 text-[#ACABAA] hover:bg-transparent hover:text-[#BD9952]"
+            className="md:hidden size-9 text-muted-foreground hover:bg-transparent hover:text-[#BD9952]"
             aria-label="Open command palette"
             onClick={() => openPalette()}
           >
@@ -128,7 +128,7 @@ export function SiteHeader() {
             type="button"
             variant="ghost"
             size="icon"
-            className="size-9 text-[#ACABAA] hover:bg-transparent hover:text-[#BD9952]"
+            className="size-9 text-muted-foreground hover:bg-transparent hover:text-[#BD9952]"
             aria-label="Notifications"
           >
             <Bell className="size-[18px] stroke-[1.25]" />
@@ -139,14 +139,14 @@ export function SiteHeader() {
                 type="button"
                 variant="ghost"
                 size="icon"
-                className="size-9 text-[#ACABAA] hover:bg-transparent hover:text-[#BD9952]"
+                className="size-9 text-muted-foreground hover:bg-transparent hover:text-[#BD9952]"
                 aria-label="App shortcuts"
               >
                 <LayoutGrid className="size-[18px] stroke-[1.25]" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 border-[#484848]/20 bg-[#131313] text-[#E7E5E4]">
-              <DropdownMenuLabel className="font-headline text-xs font-normal text-[#ACABAA]">
+            <DropdownMenuContent align="end" className="w-56 border-[#484848]/20 bg-[#131313] text-foreground">
+              <DropdownMenuLabel className="font-headline text-xs font-normal text-muted-foreground">
                 Jump to
               </DropdownMenuLabel>
               <DropdownMenuSeparator className="bg-[#484848]/20" />

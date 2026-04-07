@@ -45,12 +45,12 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
       <section className="px-6 pb-32 pt-2 md:px-12 md:pt-4">
         <div className="mb-16 flex flex-col items-start justify-between gap-8 md:mb-20 md:flex-row md:items-end">
           <div>
-            <h1 className="font-headline text-4xl font-extralight tracking-[0.05em] text-[#C9C6C5] sm:text-5xl">
+            <h1 className="font-headline text-4xl font-extralight tracking-[0.05em] text-foreground sm:text-5xl">
               Managed Properties
             </h1>
             <div className="mt-4 flex items-center gap-4">
               <span className="h-px w-12 bg-[#BD9952]" aria-hidden />
-              <p className="font-[family-name:var(--font-inter)] text-sm uppercase tracking-widest text-[#ACABAA]">
+              <p className="font-[family-name:var(--font-inter)] text-sm uppercase tracking-widest text-muted-foreground">
                 Portfolio overview • {quarterLabel()}
               </p>
             </div>
@@ -73,8 +73,8 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
 
         {rows.length === 0 ? (
           <div className="flex min-h-[40vh] flex-col items-center justify-center border border-[#484848]/15 bg-[#131313] px-8 py-20 text-center">
-            <p className="font-headline text-xl font-light text-[#C9C6C5]">No properties yet</p>
-            <p className="mt-2 max-w-md font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">
+            <p className="font-headline text-xl font-light text-foreground">No properties yet</p>
+            <p className="mt-2 max-w-md font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
               Add your first asset to populate your portfolio matrix.
             </p>
             <div className="mt-8">
@@ -97,7 +97,7 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
         ) : (
           <>
             <div className="space-y-1">
-              <div className="mb-4 grid grid-cols-12 border-b border-[#484848]/10 px-6 py-4 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#ACABAA]/60">
+              <div className="mb-4 grid grid-cols-12 border-b border-[#484848]/10 px-6 py-4 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground/60">
                 <div className="col-span-4">Property identity</div>
                 <div className="col-span-2 text-center">Occupancy</div>
                 <div className="col-span-2 text-center">Annual yield</div>
@@ -118,22 +118,22 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
                   <div className="col-span-4 flex items-center gap-6">
                     <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-sm bg-[#252626] grayscale transition-all duration-500 group-hover:grayscale-0">
                       <div className="absolute inset-0 bg-gradient-to-br from-[#2a2a2a] to-[#131313]" />
-                      <div className="absolute inset-0 flex items-center justify-center font-headline text-lg font-extralight text-[#ACABAA]/40">
+                      <div className="absolute inset-0 flex items-center justify-center font-headline text-lg font-extralight text-muted-foreground/40">
                         {p.identityTitle.slice(0, 1)}
                       </div>
                     </div>
                     <div className="min-w-0">
-                      <h3 className="font-headline text-lg font-light tracking-wide text-[#C9C6C5]">
+                      <h3 className="font-headline text-lg font-light tracking-wide text-foreground">
                         {p.identityTitle}
                       </h3>
-                      <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-widest text-[#ACABAA]">
+                      <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-widest text-muted-foreground">
                         {p.identitySubline}
                       </p>
                     </div>
                   </div>
 
                   <div className="col-span-2 flex flex-col items-center">
-                    <span className="font-headline text-xl font-light text-[#C9C6C5]">
+                    <span className="font-headline text-xl font-light text-foreground">
                       {p.occupancyPct.toFixed(p.occupancyPct === 100 ? 0 : 1)}%
                     </span>
                     <div className="mt-3 h-1 w-24 overflow-hidden bg-[#252626]">
@@ -145,10 +145,10 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
                   </div>
 
                   <div className="col-span-2 text-center">
-                    <span className="font-headline text-xl font-light text-[#C9C6C5]">
+                    <span className="font-headline text-xl font-light text-foreground">
                       {p.yieldPctLabel}
                     </span>
-                    <p className="mt-2 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-[#ACABAA]">
+                    <p className="mt-2 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-muted-foreground">
                       {p.yieldTierLabel}
                     </p>
                   </div>
@@ -160,18 +160,18 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
                       ) : (
                         <CheckCircle2 className="size-4 shrink-0 text-[#BD9952]" aria-hidden />
                       )}
-                      <span className="text-sm font-light text-[#E7E5E4]">
+                      <span className="text-sm font-light text-foreground">
                         {p.maintenanceState === "attention" ? "Attention" : "Optimal"}
                       </span>
                     </div>
-                    <p className="mt-2 text-center font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-[#ACABAA]">
+                    <p className="mt-2 text-center font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-muted-foreground">
                       {p.maintenanceDetail}
                     </p>
                   </div>
 
                   <div className="col-span-2 text-right">
-                    <p className="text-sm font-light text-[#E7E5E4]">{p.lastActionTitle}</p>
-                    <p className="mt-2 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-[#ACABAA]">
+                    <p className="text-sm font-light text-foreground">{p.lastActionTitle}</p>
+                    <p className="mt-2 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-muted-foreground">
                       {formatRelativeEn(p.lastActionAt)}
                     </p>
                   </div>
@@ -181,32 +181,32 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
 
             <div className="mt-24 grid grid-cols-1 gap-12 lg:grid-cols-12">
               <div className="rounded-sm border-b-2 border-[#BD9952]/20 bg-[#1F2020] p-10 lg:col-span-5 lg:p-12">
-                <h4 className="mb-8 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#ACABAA]">
+                <h4 className="mb-8 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                   Portfolio health intelligence
                 </h4>
                 <div className="space-y-6">
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-sm font-light text-[#E7E5E4]">Average occupancy</span>
-                    <span className="font-headline text-2xl font-light text-[#C9C6C5]">
+                    <span className="text-sm font-light text-foreground">Average occupancy</span>
+                    <span className="font-headline text-2xl font-light text-foreground">
                       {avgOcc.toFixed(1)}%
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-sm font-light text-[#E7E5E4]">Capital appreciation</span>
-                    <span className="font-headline text-2xl font-light text-[#ACABAA]">—</span>
+                    <span className="text-sm font-light text-foreground">Capital appreciation</span>
+                    <span className="font-headline text-2xl font-light text-muted-foreground">—</span>
                   </div>
                   <div className="flex items-center justify-between gap-4">
-                    <span className="text-sm font-light text-[#E7E5E4]">Operating costs</span>
-                    <span className="font-headline text-2xl font-light text-[#ACABAA]">—</span>
+                    <span className="text-sm font-light text-foreground">Operating costs</span>
+                    <span className="font-headline text-2xl font-light text-muted-foreground">—</span>
                   </div>
                 </div>
               </div>
               <div className="flex flex-col justify-center lg:col-span-7">
                 <div className="max-w-[28rem]">
-                  <h4 className="mb-4 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#ACABAA]">
+                  <h4 className="mb-4 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                     Strategic advisory
                   </h4>
-                  <p className="font-headline text-xl font-light leading-relaxed text-[#E7E5E4]/80">
+                  <p className="font-headline text-xl font-light leading-relaxed text-foreground/80">
                     &ldquo;
                     {attention ? (
                       <>
@@ -232,7 +232,7 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
                     </Link>
                     <Link
                       href="/dashboard/activity"
-                      className="border-b border-[#484848]/40 pb-1 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-[#ACABAA] transition-colors hover:border-[#ACABAA]"
+                      className="border-b border-[#484848]/40 pb-1 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-muted-foreground transition-colors hover:border-muted-foreground"
                     >
                       View analytics
                     </Link>

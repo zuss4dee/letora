@@ -148,7 +148,7 @@ export function AgentRunsTable({ initialRuns, variant = "page" }: AgentRunsTable
           <CardTitle
             className={cn(
               "text-sm font-medium text-muted-foreground",
-              embedded && "font-[family-name:var(--font-inter)] text-xs uppercase tracking-[0.08em] text-[#ACABAA]",
+              embedded && "font-[family-name:var(--font-inter)] text-xs uppercase tracking-[0.08em] text-muted-foreground",
             )}
           >
             History

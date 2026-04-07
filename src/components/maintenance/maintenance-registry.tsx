@@ -54,7 +54,7 @@ function rowPresentation(row: MaintenanceRequestRow): {
       statusLabel: "Closed",
       actionLabel: "History",
       muted: true,
-      badgeClass: "text-[#ACABAA]/80",
+      badgeClass: "text-muted-foreground/80",
     };
   }
   if (st === "in_progress") {
@@ -92,7 +92,7 @@ function rowPresentation(row: MaintenanceRequestRow): {
       statusLabel: "Triage",
       actionLabel: "Manage",
       muted: false,
-      badgeClass: "bg-[#484848]/40 text-[#ACABAA]",
+      badgeClass: "bg-[#484848]/40 text-muted-foreground",
     };
   }
   if (row.contractorName?.trim()) {
@@ -190,7 +190,7 @@ export function MaintenanceRegistry({
     <div className="relative flex min-h-0 flex-1 flex-col bg-[#0E0E0E]">
       <div className="mx-auto w-full max-w-7xl flex-1 px-6 pb-20 pt-6 md:px-12 md:pt-8">
         <div className="flex flex-col gap-6 border-b border-[#484848]/15 pb-8 md:flex-row md:items-center md:justify-between">
-          <p className="max-w-xl font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">
+          <p className="max-w-xl font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
             Track issues, triage with AI, and keep every property within SLA. Use the queue below to manage
             work in real time.
           </p>
@@ -211,23 +211,23 @@ export function MaintenanceRegistry({
 
         <div className="mb-12 grid grid-cols-2 gap-8 border-b border-[#484848]/10 pb-10 pt-10 md:grid-cols-4 md:gap-12">
           <div>
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Active Issues
             </p>
-            <p className="font-headline mt-1 text-2xl font-extralight tabular-nums text-[#E7E5E4]">
+            <p className="font-headline mt-1 text-2xl font-extralight tabular-nums text-foreground">
               {String(activeIssues).padStart(2, "0")}
             </p>
           </div>
           <div>
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Response Avg
             </p>
-            <p className="font-headline mt-1 text-2xl font-extralight tabular-nums text-[#E7E5E4]">
+            <p className="font-headline mt-1 text-2xl font-extralight tabular-nums text-foreground">
               {responseAvg}
             </p>
           </div>
           <div>
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Network
             </p>
             <p className="font-headline mt-1 text-2xl font-extralight tabular-nums text-[#BD9952]">
@@ -235,13 +235,13 @@ export function MaintenanceRegistry({
             </p>
           </div>
           <div>
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Critical Alerts
             </p>
             <p
               className={cn(
                 "font-headline mt-1 text-2xl font-extralight tabular-nums",
-                criticalAlerts > 0 ? "text-[#BB5551]" : "text-[#E7E5E4]",
+                criticalAlerts > 0 ? "text-[#BB5551]" : "text-foreground",
               )}
             >
               {String(criticalAlerts).padStart(2, "0")}
@@ -250,7 +250,7 @@ export function MaintenanceRegistry({
         </div>
 
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.2em] text-[#ACABAA]">
+          <h2 className="font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.2em] text-muted-foreground">
             Maintenance Queue
           </h2>
           <div className="flex flex-wrap gap-6 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest">
@@ -265,8 +265,8 @@ export function MaintenanceRegistry({
                 className={cn(
                   "transition-colors",
                   tab === t.id
-                    ? "text-[#E7E5E4]"
-                    : "text-[#ACABAA]/50 hover:text-[#BD9952]",
+                    ? "text-foreground"
+                    : "text-muted-foreground/50 hover:text-[#BD9952]",
                 )}
               >
                 {t.label}
@@ -281,7 +281,7 @@ export function MaintenanceRegistry({
           sortedOpen.length === 0 &&
           resolvedRows.length > 0 ? (
             <div className="border border-[#484848]/10 bg-black/40 px-6 py-14 text-center">
-              <p className="font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">
+              <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
                 No active maintenance requests.
               </p>
               <button
@@ -293,7 +293,7 @@ export function MaintenanceRegistry({
               </button>
             </div>
           ) : queueRows.length === 0 ? (
-            <div className="border border-[#484848]/10 bg-black/40 px-6 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">
+            <div className="border border-[#484848]/10 bg-black/40 px-6 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
               No maintenance requests in this view.
             </div>
           ) : (
@@ -319,10 +319,10 @@ export function MaintenanceRegistry({
                   <div className="flex min-w-0 flex-1 items-start gap-6">
                     <StatusDot tone={pres.dot} />
                     <div className="min-w-0">
-                      <h3 className="font-headline text-[0.9375rem] font-light text-[#E7E5E4] transition-colors group-hover:text-white">
+                      <h3 className="font-headline text-[0.9375rem] font-light text-foreground transition-colors group-hover:text-white">
                         {title}
                       </h3>
-                      <p className="mt-0.5 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#ACABAA]">
+                      <p className="mt-0.5 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
                         {sub || "Property · Tenant"}
                       </p>
                     </div>
@@ -333,22 +333,22 @@ export function MaintenanceRegistry({
                         className={cn(
                           "inline-block px-2 py-0.5 font-[family-name:var(--font-inter)] text-[9px] uppercase tracking-[0.2em]",
                           pres.statusLabel === "Closed"
-                            ? "text-[#ACABAA]/70"
+                            ? "text-muted-foreground/70"
                             : pres.badgeClass,
                         )}
                       >
                         {pres.statusLabel}
                       </span>
-                      <p className="mt-1.5 font-[family-name:var(--font-inter)] text-[9px] uppercase tracking-tight text-[#ACABAA]">
+                      <p className="mt-1.5 font-[family-name:var(--font-inter)] text-[9px] uppercase tracking-tight text-muted-foreground">
                         {metaPrimary}
                       </p>
-                      <p className="mt-0.5 font-[family-name:var(--font-inter)] text-[9px] text-[#ACABAA]/80">
+                      <p className="mt-0.5 font-[family-name:var(--font-inter)] text-[9px] text-muted-foreground/80">
                         {metaSecondary}
                       </p>
                     </div>
                     <Link
                       href={`/dashboard/maintenance/${row.id}`}
-                      className="inline-flex shrink-0 items-center justify-center border border-[#484848]/25 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#C9C6C5] transition-all hover:border-[#BD9952] hover:text-[#BD9952]"
+                      className="inline-flex shrink-0 items-center justify-center border border-[#484848]/25 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-foreground transition-all hover:border-[#BD9952] hover:text-[#BD9952]"
                     >
                       {pres.actionLabel}
                     </Link>
@@ -364,7 +364,7 @@ export function MaintenanceRegistry({
             <button
               type="button"
               onClick={() => setShowHistory(true)}
-              className="flex items-center gap-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA] transition-colors hover:text-[#BD9952]"
+              className="flex items-center gap-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-[#BD9952]"
             >
               Show Historical Records
               <ChevronDown className="size-3.5" aria-hidden />
@@ -377,7 +377,7 @@ export function MaintenanceRegistry({
             <button
               type="button"
               onClick={() => setShowHistory(false)}
-              className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA] hover:text-[#BD9952]"
+              className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground hover:text-[#BD9952]"
             >
               Hide historical records
             </button>
@@ -391,10 +391,10 @@ export function MaintenanceRegistry({
               aria-hidden
             />
             <div className="max-w-2xl">
-              <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA]">
+              <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
                 Letora AI Canvas Insight
               </p>
-              <p className="mt-2 font-headline text-sm font-light leading-relaxed text-[#E7E5E4]">
+              <p className="mt-2 font-headline text-sm font-light leading-relaxed text-foreground">
                 Analyzing historical logs. Predicted trend: HVAC and plumbing workloads near{" "}
                 <span className="font-medium text-[#BD9952]">{insightProperty}</span> may rise with seasonal load.
                 Consider scheduling a preventative walkthrough.
@@ -404,13 +404,13 @@ export function MaintenanceRegistry({
           <div className="flex flex-wrap gap-4">
             <button
               type="button"
-              className="bg-[#C9C6C5]/10 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#E7E5E4] transition-colors hover:bg-[#C9C6C5]/20"
+              className="bg-[#C9C6C5]/10 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-foreground transition-colors hover:bg-[#C9C6C5]/20"
             >
               Schedule Check
             </button>
             <button
               type="button"
-              className="border border-[#484848]/15 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#ACABAA] transition-colors hover:border-[#484848]/35"
+              className="border border-[#484848]/15 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground transition-colors hover:border-[#484848]/35"
             >
               Dismiss
             </button>

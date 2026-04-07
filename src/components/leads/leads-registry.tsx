@@ -87,7 +87,7 @@ function pipelinePill(status: string): { label: string; className: string } {
   return (
     map[s] ?? {
       label: status.replace(/_/g, " ").toUpperCase(),
-      className: "border border-[#484848]/30 bg-[#474646]/30 text-[#ACABAA]",
+      className: "border border-[#484848]/30 bg-[#474646]/30 text-muted-foreground",
     }
   );
 }
@@ -199,10 +199,10 @@ export function LeadsRegistry({
       <div className="relative mx-auto w-full max-w-7xl flex-1 px-6 pb-24 pt-6 md:px-12 md:pt-8">
         <header className="mb-10 flex flex-col gap-6 border-b border-[#484848]/15 pb-10 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
-            <h1 className="font-headline text-4xl font-extralight tracking-tight text-[#C9C6C5] md:text-[2.75rem]">
+            <h1 className="font-headline text-4xl font-extralight tracking-tight text-foreground md:text-[2.75rem]">
               Lead Management
             </h1>
-            <p className="mt-4 font-[family-name:var(--font-inter)] text-lg font-light tracking-wide text-[#ACABAA]">
+            <p className="mt-4 font-[family-name:var(--font-inter)] text-lg font-light tracking-wide text-muted-foreground">
               Track prospective tenants and inquiries across your global portfolio with precision.
             </p>
           </div>
@@ -222,15 +222,15 @@ export function LeadsRegistry({
 
         <section className="mb-10 grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="border border-[#484848]/15 bg-[#131313] p-5 transition-colors hover:bg-[#1F2020]/80">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Total leads
             </p>
-            <p className="font-headline mt-2 text-2xl font-light tabular-nums text-[#E7E5E4]">
+            <p className="font-headline mt-2 text-2xl font-light tabular-nums text-foreground">
               {stats.total}
             </p>
           </div>
           <div className="border border-[#484848]/15 bg-[#131313] p-5 transition-colors hover:bg-[#1F2020]/80">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               New
             </p>
             <p className="font-headline mt-2 text-2xl font-light tabular-nums text-[#BD9952]">
@@ -238,7 +238,7 @@ export function LeadsRegistry({
             </p>
           </div>
           <div className="border border-[#484848]/15 bg-[#131313] p-5 transition-colors hover:bg-[#1F2020]/80">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Qualified
             </p>
             <p className="font-headline mt-2 text-2xl font-light tabular-nums text-[#afefdd]">
@@ -246,10 +246,10 @@ export function LeadsRegistry({
             </p>
           </div>
           <div className="border border-[#484848]/15 bg-[#131313] p-5 transition-colors hover:bg-[#1F2020]/80">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#ACABAA]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Viewings
             </p>
-            <p className="font-headline mt-2 text-2xl font-light tabular-nums text-[#E7E5E4]">
+            <p className="font-headline mt-2 text-2xl font-light tabular-nums text-foreground">
               {stats.viewingCount}
             </p>
           </div>
@@ -257,7 +257,7 @@ export function LeadsRegistry({
 
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="relative max-w-md flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#767575]" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="search"
               value={query}
@@ -266,7 +266,7 @@ export function LeadsRegistry({
                 setPage(1);
               }}
               placeholder="Search leads, properties, or inquiries…"
-              className="w-full border-0 border-b border-[#484848]/15 bg-[#000000] py-2 pl-10 pr-4 font-[family-name:var(--font-inter)] text-xs text-[#ACABAA] placeholder:text-[#767575] focus:border-[#BD9952] focus:outline-none focus:ring-0"
+              className="w-full border-0 border-b border-[#484848]/15 bg-[#000000] py-2 pl-10 pr-4 font-[family-name:var(--font-inter)] text-xs text-muted-foreground placeholder:text-muted-foreground focus:border-[#BD9952] focus:outline-none focus:ring-0"
               aria-label="Search leads"
             />
           </div>
@@ -282,8 +282,8 @@ export function LeadsRegistry({
                 className={cn(
                   "rounded-sm px-3 py-1.5 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest transition-colors",
                   statusTab === t.id
-                    ? "bg-[#2C2C2C] text-[#C9C6C5]"
-                    : "text-[#767575] hover:text-[#ACABAA]",
+                    ? "bg-[#2C2C2C] text-foreground"
+                    : "text-muted-foreground hover:text-muted-foreground",
                 )}
               >
                 {t.label}
@@ -294,7 +294,7 @@ export function LeadsRegistry({
 
         <div className="overflow-hidden border border-[#484848]/15 bg-[#131313]">
           <div className="flex items-center justify-between border-b border-[#484848]/10 px-8 py-5">
-            <h2 className="font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.2em] text-[#C9C6C5]">
+            <h2 className="font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
               Active inquiries
             </h2>
             <div className="flex items-center gap-4">
@@ -302,7 +302,7 @@ export function LeadsRegistry({
                 type="button"
                 onClick={() => setShowFilters((v) => !v)}
                 className={cn(
-                  "text-[#ACABAA] transition hover:text-[#E7E5E4]",
+                  "text-muted-foreground transition hover:text-foreground",
                   showFilters && "text-[#BD9952]",
                 )}
                 aria-label="Toggle filters"
@@ -313,7 +313,7 @@ export function LeadsRegistry({
               <button
                 type="button"
                 onClick={() => downloadCsv(filtered)}
-                className="text-[#ACABAA] transition hover:text-[#E7E5E4]"
+                className="text-muted-foreground transition hover:text-foreground"
                 aria-label="Export CSV"
               >
                 <Download className="size-5" strokeWidth={1.5} />
@@ -322,7 +322,7 @@ export function LeadsRegistry({
           </div>
 
           {showFilters ? (
-            <div className="border-b border-[#484848]/10 px-8 py-3 font-[family-name:var(--font-inter)] text-xs text-[#ACABAA]">
+            <div className="border-b border-[#484848]/10 px-8 py-3 font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
               Filter by pipeline using the chips above. Search matches name, email, phone, and
               property.
             </div>
@@ -331,7 +331,7 @@ export function LeadsRegistry({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[960px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-[#484848]/5 text-[10px] uppercase tracking-widest text-[#767575]/80">
+                <tr className="border-b border-[#484848]/5 text-[10px] uppercase tracking-widest text-muted-foreground/80">
                   <th className="px-8 py-5 font-medium">Lead name</th>
                   <th className="px-8 py-5 font-medium">Property interest</th>
                   <th className="px-8 py-5 font-medium">Source</th>
@@ -345,7 +345,7 @@ export function LeadsRegistry({
                   <tr>
                     <td
                       colSpan={6}
-                      className="px-8 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]"
+                      className="px-8 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground"
                     >
                       No leads match this view. Add a lead or adjust search.
                     </td>
@@ -362,29 +362,29 @@ export function LeadsRegistry({
                       >
                         <td className="px-8 py-6">
                           <div className="flex items-center gap-4">
-                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#484848]/10 bg-[#252626] text-[10px] font-bold text-[#C9C6C5]">
+                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#484848]/10 bg-[#252626] text-[10px] font-bold text-foreground">
                               {initials(lead.name)}
                             </div>
                             <div>
-                              <div className="text-sm font-medium tracking-wide text-[#E7E5E4]">
+                              <div className="text-sm font-medium tracking-wide text-foreground">
                                 {lead.name}
                               </div>
-                              <div className="mt-0.5 text-[10px] font-light text-[#ACABAA]">
+                              <div className="mt-0.5 text-[10px] font-light text-muted-foreground">
                                 {lead.email ?? "—"}
                               </div>
                             </div>
                           </div>
                         </td>
                         <td className="max-w-[240px] px-8 py-6">
-                          <div className="text-sm font-light text-[#C9C6C5]">{line1}</div>
+                          <div className="text-sm font-light text-foreground">{line1}</div>
                           {line2 ? (
-                            <div className="mt-0.5 text-[10px] font-light text-[#ACABAA]">
+                            <div className="mt-0.5 text-[10px] font-light text-muted-foreground">
                               {line2}
                             </div>
                           ) : null}
                         </td>
                         <td className="px-8 py-6">
-                          <div className="inline-flex items-center gap-2 rounded-sm border border-[#484848]/15 px-2 py-1 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#ACABAA]">
+                          <div className="inline-flex items-center gap-2 rounded-sm border border-[#484848]/15 px-2 py-1 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
                             <span className={cn("size-1.5 rounded-full", src.dot)} aria-hidden />
                             {src.label}
                           </div>
@@ -400,7 +400,7 @@ export function LeadsRegistry({
                           </span>
                         </td>
                         <td className="whitespace-nowrap px-8 py-6">
-                          <span className="font-[family-name:var(--font-inter)] text-[11px] font-light text-[#ACABAA]">
+                          <span className="font-[family-name:var(--font-inter)] text-[11px] font-light text-muted-foreground">
                             {formatDateAdded(lead.createdAt)}
                           </span>
                         </td>
@@ -423,7 +423,7 @@ export function LeadsRegistry({
           </div>
 
           <div className="flex flex-col gap-4 border-t border-[#484848]/5 px-8 py-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#767575]/80">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground/80">
               Showing {displayFrom}–{displayTo} of {total} leads
             </p>
             <div className="flex items-center gap-4">
@@ -432,7 +432,7 @@ export function LeadsRegistry({
                 aria-label="Previous page"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="text-[#ACABAA] transition hover:text-[#E7E5E4] disabled:opacity-30"
+                className="text-muted-foreground transition hover:text-foreground disabled:opacity-30"
               >
                 <ChevronLeft className="size-5" />
               </button>
@@ -444,7 +444,7 @@ export function LeadsRegistry({
                 aria-label="Next page"
                 disabled={safePage >= pageCount}
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="text-[#ACABAA] transition hover:text-[#E7E5E4] disabled:opacity-30"
+                className="text-muted-foreground transition hover:text-foreground disabled:opacity-30"
               >
                 <ChevronRight className="size-5" />
               </button>

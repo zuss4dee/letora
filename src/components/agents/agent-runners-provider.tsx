@@ -412,10 +412,10 @@ function AgentRunnersInner({
           className="flex w-full flex-col gap-0 overflow-hidden border-[#484848]/25 bg-[#0E0E0E] p-0 sm:max-w-lg"
         >
           <SheetHeader className="border-b border-[#484848]/20 px-6 py-5 text-left">
-            <SheetTitle className="font-headline text-lg font-light text-[#E7E5E4]">
+            <SheetTitle className="font-headline text-lg font-light text-foreground">
               Agent activity log
             </SheetTitle>
-            <SheetDescription className="font-[family-name:var(--font-inter)] text-xs text-[#ACABAA]">
+            <SheetDescription className="font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
               Recent runs from Rent Chaser, Lead Qualifier, Contract Drafter, and other agents.
             </SheetDescription>
           </SheetHeader>
