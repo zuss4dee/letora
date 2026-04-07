@@ -15,7 +15,7 @@ export function WelcomeEmailTemplate({
   startDate,
 }: WelcomeEmailTemplateProps) {
   return (
-    <BaseEmailTemplate previewText={`Welcome to Letora — your tenancy at ${propertyAddress} starts ${startDate}`}>
+    <BaseEmailTemplate previewText={`Welcome to Letora: your tenancy at ${propertyAddress} starts ${startDate}`}>
       <Heading className="text-2xl font-bold text-gray-900 mb-4">
         Welcome to your new home!
       </Heading>
@@ -45,7 +45,7 @@ export function WelcomeEmailTemplate({
       </Section>
 
       <Text className="text-gray-600 text-sm leading-5">
-        If you have any questions, just reply to this email — we&apos;re here to
+        If you have any questions, just reply to this email. We&apos;re here to
         help.
       </Text>
 

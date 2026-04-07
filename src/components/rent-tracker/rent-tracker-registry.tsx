@@ -523,7 +523,7 @@ export function RentTrackerRegistry({
 
           <div className="flex flex-col gap-4 px-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
             <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-[#767575]">
-              Showing {displayFrom} — {displayTo} of {totalFiltered} payments
+              Showing {displayFrom} to {displayTo} of {totalFiltered} payments
             </span>
             <div className="flex items-center gap-2">
               <button

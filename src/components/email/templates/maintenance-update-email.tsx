@@ -33,7 +33,7 @@ export function MaintenanceUpdateEmailTemplate({
   const config = statusConfig[status];
 
   return (
-    <BaseEmailTemplate previewText={`Maintenance update: ${requestTitle} — ${config.label}`}>
+    <BaseEmailTemplate previewText={`Maintenance update: ${requestTitle} (${config.label})`}>
       <Heading className="text-2xl font-bold text-gray-900 mb-4">
         Maintenance request update
       </Heading>

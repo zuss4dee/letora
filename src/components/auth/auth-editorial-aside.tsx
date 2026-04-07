@@ -3,7 +3,7 @@ const copy = {
     kicker: "Quiet power",
     headline: "Calm operations beat busy dashboards.",
     body:
-      "Rent, maintenance, and leads in one editorial workspace — tuned for UK landlords who need precision without noise.",
+      "Rent, maintenance, and leads in one editorial workspace, tuned for UK landlords who need precision without noise.",
   },
   signup: {
     kicker: "Start sharp",

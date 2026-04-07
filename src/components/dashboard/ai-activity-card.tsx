@@ -185,7 +185,7 @@ export function AiActivityCard({ initialRuns }: { initialRuns: ActivityRun[] }) 
                   colSpan={3}
                   className="py-10 text-center text-sm text-muted-foreground"
                 >
-                  No agent activity yet — run an agent to see results here
+                  No agent activity yet. Run an agent to see results here
                 </TableCell>
               </TableRow>
             ) : (

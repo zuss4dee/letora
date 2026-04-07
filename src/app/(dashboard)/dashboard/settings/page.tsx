@@ -92,14 +92,21 @@ export default async function SettingsPage() {
               Settings
             </h1>
             <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#ACABAA]">
-              Business profile, agent behaviour, email automation, and billing — tuned to how you run
+              Business profile, agent behaviour, email automation, and billing, tuned to how you run
               tenancies.
             </p>
           </div>
           {user?.id ? (
-            <div className="shrink-0 lg:pb-1">
+            <section
+              id="billing"
+              aria-labelledby="billing-heading"
+              className="shrink-0 scroll-mt-[calc(var(--header-height,4rem)+0.75rem)] lg:pb-1"
+            >
+              <h2 id="billing-heading" className="sr-only">
+                Billing
+              </h2>
               <ManageBillingButton />
-            </div>
+            </section>
           ) : null}
         </header>
 

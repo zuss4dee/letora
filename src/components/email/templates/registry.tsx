@@ -81,7 +81,7 @@ export type RenderedTemplate = {
   subject: string;
 };
 
-// Template registry — add new versions here
+// Template registry: add new versions here
 export const templateRegistry: Record<
   EmailTemplateType,
   TemplateDefinition
@@ -177,7 +177,7 @@ export async function renderWelcomeEmail(
   return {
     html,
     text,
-    subject: "Welcome to Letora — your new home awaits",
+    subject: "Welcome to Letora: your new home awaits",
   };
 }
 
@@ -203,7 +203,7 @@ export async function renderRentReminderEmail(
   return {
     html,
     text,
-    subject: `Rent payment reminder — due ${props.dueDate}`,
+    subject: `Rent payment reminder, due ${props.dueDate}`,
   };
 }
 
@@ -216,7 +216,7 @@ export async function renderPaymentReceiptEmail(
   return {
     html,
     text,
-    subject: `Payment received — ${props.amount}`,
+    subject: `Payment received: ${props.amount}`,
   };
 }
 
@@ -229,7 +229,7 @@ export async function renderMaintenanceUpdateEmail(
   return {
     html,
     text,
-    subject: `Maintenance update: ${props.requestTitle} — ${props.status.replace("_", " ")}`,
+    subject: `Maintenance update: ${props.requestTitle} (${props.status.replace("_", " ")})`,
   };
 }
 

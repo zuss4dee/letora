@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
-/** Shared input chrome for auth flows — ghost border, gold focus ring. */
+/** Shared input chrome for auth flows: ghost border, gold focus ring. */
 export const authInputClassName =
   "h-11 rounded-md border border-[rgb(72_72_72_/0.28)] bg-[#0e0e0e]/85 px-4 text-[#E7E5E4] shadow-none placeholder:text-[#6b6a69] transition-colors focus-visible:border-[#BD9952]/45 focus-visible:ring-1 focus-visible:ring-[#BD9952]/25";
 

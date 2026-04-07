@@ -20,7 +20,7 @@ export function SignContractForm({ token }: { token: string }) {
       }
       setSigned(true);
     } catch {
-      setError("Network error — please try again");
+      setError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -36,7 +36,7 @@ export function SignContractForm({ token }: { token: string }) {
         </div>
         <h2 className="font-headline text-lg font-light tracking-tight text-[#E7E5E4]">Contract signed</h2>
         <p className="mt-2 font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#ACABAA]">
-          Thank you — your signature has been recorded. Your landlord has been notified.
+          Thank you. Your signature has been recorded. Your landlord has been notified.
         </p>
       </div>
     );

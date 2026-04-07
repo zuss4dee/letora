@@ -32,7 +32,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
-/** Tonal cards — DESIGN.md layering, no heavy structural borders. */
+/** Tonal cards: DESIGN.md layering, no heavy structural borders. */
 const SETTINGS_CARD =
   "gap-0 border-0 bg-gradient-to-b from-[#1c1b1a]/95 to-[#141312]/98 py-0 shadow-[0_24px_48px_rgba(0,0,0,0.35)] backdrop-blur-md ring-1 ring-[rgb(72_72_72_/0.08)]";
 const SETTINGS_HEADER = "border-0 bg-[#1a1918]/50 px-6 pb-5 pt-7 sm:px-8";
@@ -525,7 +525,7 @@ export function AgentSettingsForm({
                 <div className="font-headline text-sm font-light text-[#E7E5E4]">Default referencing agency</div>
                 <p className="font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
                   UK referencing providers (e.g. Goodlord, HomeLet) run credit and reference checks; they may
-                  contact the tenant with their own process. Letora does not run those checks — it sends this
+                  contact the tenant with their own process. Letora does not run those checks. It sends this
                   email address a <strong>handoff</strong> with tenant and property details. Used when you
                   send a handoff from a tenancy unless you set an override on that tenancy.
                 </p>

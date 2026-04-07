@@ -396,8 +396,8 @@ export function MaintenanceRegistry({
               </p>
               <p className="mt-2 font-headline text-sm font-light leading-relaxed text-[#E7E5E4]">
                 Analyzing historical logs. Predicted trend: HVAC and plumbing workloads near{" "}
-                <span className="font-medium text-[#BD9952]">{insightProperty}</span> may rise with seasonal load —
-                consider scheduling a preventative walkthrough.
+                <span className="font-medium text-[#BD9952]">{insightProperty}</span> may rise with seasonal load.
+                Consider scheduling a preventative walkthrough.
               </p>
             </div>
           </div>

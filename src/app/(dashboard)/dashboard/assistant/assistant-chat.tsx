@@ -33,7 +33,7 @@ export interface ChatMessage {
   suggestedActions?: LetoraSuggestedAction[];
   /** Present when assistant is waiting for Reply yes (persisted in DB metadata on refresh). */
   pendingCeoAction?: PendingCEOAction;
-  /** UI-only flag — marks "please wait" messages with transitional styling. */
+  /** UI-only flag: marks "please wait" messages with transitional styling. */
   isTransitional?: boolean;
 }
 
@@ -749,7 +749,7 @@ export function AssistantChat({
           <div className="hidden border-b border-[#484848]/20 px-4 py-2 font-[family-name:var(--font-inter)] text-xs text-[#ACABAA] md:block lg:px-6">
             <span className="inline-flex items-center gap-1">
               <PanelLeft className="size-3.5 opacity-70" aria-hidden />
-              Chat history on the left — menu on mobile.
+              Chat history on the left; menu on mobile.
             </span>
           </div>
           <div className="flex min-h-0 flex-1 flex-col">
@@ -758,7 +758,7 @@ export function AssistantChat({
                 <div className="mx-auto max-w-2xl rounded-xl border border-dashed border-[#484848]/35 bg-[#131313]/30 p-6 text-center text-sm text-[#ACABAA] backdrop-blur-sm">
                   <p className="font-headline font-medium text-[#E7E5E4]">Start a conversation</p>
                   <p className="mt-2 leading-relaxed">
-                    Your assistant can help with property-related tasks — rent chasing, maintenance,
+                    Your assistant can help with property-related tasks: rent chasing, maintenance,
                     tenants, tenancy agreements, and leads. Describe what you need in plain English.
                   </p>
                 </div>

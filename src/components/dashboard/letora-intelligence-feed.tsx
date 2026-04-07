@@ -139,7 +139,7 @@ export function LetoraIntelligenceFeed({ runs }: { runs: ActivityRun[] }) {
                   {subtitle ? (
                     <>
                       {" "}
-                      — {subtitle}
+                      · {subtitle}
                     </>
                   ) : null}
                 </p>

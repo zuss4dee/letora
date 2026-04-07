@@ -607,7 +607,7 @@ function AgentRunnersInner({
               <SelectContent>
                 {draftContracts.map((c) => (
                   <SelectItem key={c.id} value={c.id}>
-                    {c.tenant_name} — {c.property_address}
+                    {c.tenant_name} · {c.property_address}
                   </SelectItem>
                 ))}
               </SelectContent>

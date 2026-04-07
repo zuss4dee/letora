@@ -21,7 +21,7 @@ export function PaymentReceiptEmailTemplate({
   transactionId,
 }: PaymentReceiptEmailTemplateProps) {
   return (
-    <BaseEmailTemplate previewText={`Payment receipt — ${amount} received on ${paymentDate}`}>
+    <BaseEmailTemplate previewText={`Payment receipt: ${amount} received on ${paymentDate}`}>
       <Heading className="text-2xl font-bold text-gray-900 mb-4">
         Payment received
       </Heading>

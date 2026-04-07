@@ -184,7 +184,7 @@ export function TenancyOnboardingPanel({
       }
       toast.success(
         data.tasksCreated != null
-          ? `Onboarding started — ${data.tasksCreated} tasks created`
+          ? `Onboarding started: ${data.tasksCreated} tasks created`
           : "Onboarding started",
       );
       router.refresh();
@@ -224,7 +224,7 @@ export function TenancyOnboardingPanel({
           </p>
           <CardTitle className={TENANCY_CARD_TITLE}>Tenant onboarding</CardTitle>
           <p className="max-w-2xl font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#ACABAA]">
-            Welcome emails, references, and move-in tasks — track progress and mark manual steps done here.
+            Welcome emails, references, and move-in tasks. Track progress and mark manual steps done here.
           </p>
         </div>
         {onboardingStatusBadge(onboardingStatus)}

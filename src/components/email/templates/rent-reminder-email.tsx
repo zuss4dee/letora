@@ -17,7 +17,7 @@ export function RentReminderEmailTemplate({
   paymentUrl,
 }: RentReminderEmailTemplateProps) {
   return (
-    <BaseEmailTemplate previewText={`Rent payment reminder — ${amount} due ${dueDate}`}>
+    <BaseEmailTemplate previewText={`Rent payment reminder: ${amount} due ${dueDate}`}>
       <Heading className="text-2xl font-bold text-gray-900 mb-4">
         Rent payment reminder
       </Heading>

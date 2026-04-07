@@ -469,7 +469,7 @@ export function TenanciesRegistry({
 
           <div className="flex flex-col gap-4 border-t border-[#484848]/15 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#767575]">
-              Displaying {displayFrom} — {displayTo} of {total} tenancies
+              Displaying {displayFrom} to {displayTo} of {total} tenancies
             </p>
             <div className="flex items-center gap-2">
               <button

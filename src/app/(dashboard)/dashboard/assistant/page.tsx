@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-/** Assistant UI lives on `/dashboard` with `?c=` / `?q=` — keep route for bookmarks. */
+/** Assistant UI lives on `/dashboard` with `?c=` / `?q=`; keep route for bookmarks. */
 export default async function AssistantRouteRedirect({
   searchParams,
 }: {

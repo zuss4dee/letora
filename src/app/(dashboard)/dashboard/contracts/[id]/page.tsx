@@ -93,7 +93,7 @@ export default async function ContractDetailPage({
           <div>
             <h1 className="text-base font-semibold tracking-tight">Contract Details</h1>
             <p className="text-sm text-muted-foreground">
-              {tenantName} — {propertyAddr}
+              {tenantName} · {propertyAddr}
             </p>
           </div>
           {statusBadge(status)}
@@ -123,7 +123,7 @@ export default async function ContractDetailPage({
             </CardHeader>
             <CardContent>
               <p className="text-base font-semibold">
-                {formatDate(contract.start_date as string | null)} — {formatDate(contract.end_date as string | null)}
+                {formatDate(contract.start_date as string | null)} to {formatDate(contract.end_date as string | null)}
               </p>
             </CardContent>
           </Card>

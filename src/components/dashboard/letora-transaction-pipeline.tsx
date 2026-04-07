@@ -6,7 +6,7 @@ function formatStatus(status: string) {
   return status.replace(/_/g, " ");
 }
 
-/** Dashboard snapshot for leads — full pipeline lives on `/dashboard/leads`. */
+/** Dashboard snapshot for leads; full pipeline lives on `/dashboard/leads`. */
 export function LetoraTransactionPipeline({ leads }: { leads: LeadListRow[] }) {
   const count = leads.length;
   const primary = leads[0];

@@ -6,6 +6,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isDashboardRoute = pathname.startsWith("/dashboard");
   const isLoginRoute = pathname === "/login";
+  const isSignupRoute = pathname === "/signup";
 
   const { response, user } = await updateSession(request);
 
@@ -18,7 +19,7 @@ export async function middleware(request: NextRequest) {
     return redirect;
   }
 
-  if (isLoginRoute && user) {
+  if ((isLoginRoute || isSignupRoute) && user) {
     const url = request.nextUrl.clone();
     url.pathname = "/dashboard";
     url.search = "";

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 
 /**
- * Full-viewport atmospheric background for auth — warm obsidian, rust bloom, subtle grain.
+ * Full-viewport atmospheric background for auth: warm obsidian, rust bloom, subtle grain.
  * Matches DESIGN.md “Nocturnal Architect” / Letora dashboard tones.
  */
 export function AuthLayoutCanvas({ children }: { children: ReactNode }) {

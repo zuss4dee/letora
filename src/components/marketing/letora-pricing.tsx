@@ -1,0 +1,206 @@
+import type { ReactNode } from "react";
+import Link from "next/link";
+import { ArrowUpRight, Check } from "lucide-react";
+
+import { cn } from "@/lib/utils";
+import { PLAN_ORDER, PLANS as STRIPE_PLANS, type PlanKey } from "@/lib/stripe-plans";
+
+type MarketingTier = {
+  key: PlanKey;
+  name: string;
+  tagline: string;
+  price: string;
+  priceSuffix: string;
+  footnote?: string;
+  badge?: string;
+  features: readonly string[];
+  cta: string;
+  href: string;
+  highlighted?: boolean;
+};
+
+function buildStripeTiers(): MarketingTier[] {
+  return PLAN_ORDER.map((key) => {
+    const p = STRIPE_PLANS[key];
+    const cta =
+      key === "starter" ? "Start with Starter" : key === "pro" ? "Get Pro" : "Get Portfolio";
+    const badge = key === "pro" ? STRIPE_PLANS.pro.badge : undefined;
+    return {
+      key,
+      name: p.name,
+      tagline: p.tagline,
+      price: `£${p.price}`,
+      priceSuffix: "/ month",
+      badge,
+      features: p.features,
+      cta,
+      href: `/signup?plan=${key}`,
+      highlighted: p.highlighted,
+    };
+  });
+}
+
+const ENTERPRISE_TIER: Omit<MarketingTier, "key"> = {
+  name: "Enterprise",
+  tagline: "Procurement, security reviews, and bespoke rollout",
+  price: "Custom",
+  priceSuffix: "",
+  footnote: "Minimums and annual agreements typical. We scope SLAs and integrations with your team.",
+  features: [
+    "Volume pricing and MSAs",
+    "Security questionnaire and data handling alignment",
+    "Custom integrations and onboarding",
+    "Named success contact",
+    "Uptime and support terms to match your needs",
+  ],
+  cta: "Talk to sales",
+  href: "/signup?intent=enterprise",
+};
+
+function PricingCta({
+  href,
+  children,
+  highlighted,
+}: {
+  href: string;
+  children: ReactNode;
+  highlighted?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      className={cn(
+        "group inline-flex w-full items-center justify-center gap-2 rounded-full py-3 pl-5 pr-4 text-sm font-semibold transition-all",
+        highlighted
+          ? "bg-gradient-to-br from-[#FFEABB] to-[#FFC800] text-[#3e2e00] shadow-[0_0_32px_-8px_rgba(255,234,187,0.4)] hover:shadow-[0_0_40px_-6px_rgba(255,234,187,0.55)]"
+          : "border border-[#4F4632]/35 bg-[#1a1a1a] text-[#E2E2E2] hover:border-[#4F4632]/55 hover:bg-[#222]",
+      )}
+    >
+      <span>{children}</span>
+      <ArrowUpRight
+        className={cn(
+          "size-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5",
+          highlighted ? "text-[#3e2e00]" : "text-[#d2c5ab]",
+        )}
+        aria-hidden
+      />
+    </Link>
+  );
+}
+
+export function LetoraPricingSection() {
+  const stripeTiers = buildStripeTiers();
+  const allTiers: (MarketingTier | (Omit<MarketingTier, "key"> & { key: "enterprise" }))[] = [
+    ...stripeTiers,
+    { key: "enterprise" as const, ...ENTERPRISE_TIER },
+  ];
+
+  return (
+    <section
+      id="pricing"
+      className="scroll-mt-24 border-t border-[#4F4632]/10 bg-[#131313] px-6 py-24 md:px-12 lg:px-24 lg:py-32"
+      aria-labelledby="pricing-heading"
+    >
+      <div className="mx-auto max-w-screen-2xl">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-[#FFEABB]">
+            Pricing
+          </p>
+          <h2
+            id="pricing-heading"
+            className="mt-4 font-headline text-4xl font-bold tracking-[-0.04em] text-[#E2E2E2] md:text-5xl lg:text-6xl"
+          >
+            Plans that scale with your portfolio
+          </h2>
+          <p className="mx-auto mt-5 max-w-xl font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-[#d2c5ab] md:text-lg">
+            Value tracks how many properties you run and how much of the workspace you use. Self-serve plans bill in
+            GBP monthly through Stripe. Prices exclude VAT where applicable.
+          </p>
+          <p className="mt-6 font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-1 font-medium text-[#FFEABB] underline-offset-4 hover:underline"
+            >
+              Create an account to subscribe
+              <ArrowUpRight className="size-3.5" aria-hidden />
+            </Link>
+          </p>
+        </div>
+
+        <div className="mt-16 grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {allTiers.map((plan) => (
+            <article
+              key={plan.key}
+              className={cn(
+                "flex h-full min-w-0 flex-col rounded-2xl border p-6 shadow-[0_24px_64px_rgba(0,0,0,0.35)] md:p-7",
+                plan.highlighted
+                  ? "border-[#FFEABB]/35 bg-[linear-gradient(180deg,rgba(27,27,27,0.98)_0%,rgba(19,19,19,0.99)_100%)] ring-1 ring-[#FFEABB]/15"
+                  : "border-[#4F4632]/20 bg-[#161616]/90",
+              )}
+            >
+              <div className="space-y-2">
+                <div className="flex min-h-[1.5rem] items-center">
+                  {plan.badge ? (
+                    <span className="inline-flex w-fit rounded-full border border-[#FFEABB]/25 bg-[#FFEABB]/10 px-2.5 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[#FFEABB]">
+                      {plan.badge}
+                    </span>
+                  ) : null}
+                </div>
+                <h3 className="font-headline text-xl font-semibold tracking-[-0.03em] text-[#E2E2E2]">{plan.name}</h3>
+                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-[#d2c5ab]/90">
+                  {plan.tagline}
+                </p>
+              </div>
+
+              <ul className="mt-6 flex flex-1 flex-col gap-3">
+                {plan.features.map((f) => (
+                  <li
+                    key={f}
+                    className="flex gap-3 font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-[#E2E2E2]/90"
+                  >
+                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#FFEABB]/12 text-[#FFEABB]">
+                      <Check className="size-3" strokeWidth={2.5} aria-hidden />
+                    </span>
+                    <span>{f}</span>
+                  </li>
+                ))}
+              </ul>
+
+              <div className="mt-5 min-h-[2.75rem]">
+                {plan.footnote ? (
+                  <p className="font-[family-name:var(--font-inter)] text-xs italic leading-relaxed text-[#ACABAA]/90">
+                    {plan.footnote}
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="mt-auto border-t border-[#4F4632]/15 pt-6">
+                <div className="flex flex-wrap items-baseline gap-1.5">
+                  <span className="font-headline text-3xl font-bold tabular-nums tracking-tight text-[#E2E2E2]">
+                    {plan.price}
+                  </span>
+                  {plan.priceSuffix ? (
+                    <span className="font-[family-name:var(--font-inter)] text-sm font-medium text-[#ACABAA]">
+                      {plan.priceSuffix}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="mt-5">
+                  <PricingCta href={plan.href} highlighted={plan.highlighted}>
+                    {plan.cta}
+                  </PricingCta>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <p className="mx-auto mt-12 max-w-2xl text-center font-[family-name:var(--font-inter)] text-xs leading-relaxed text-[#6b6a69]">
+          Need to change plan or payment method after signup? Open{" "}
+          <span className="text-[#ACABAA]">Billing</span> in Settings while signed in. Enterprise buyers can start from
+          signup and we will follow up on larger requirements.
+        </p>
+      </div>
+    </section>
+  );
+}

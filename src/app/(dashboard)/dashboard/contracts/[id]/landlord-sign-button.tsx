@@ -44,7 +44,7 @@ export function LandlordSignButton({
       </button>
       {!tenantSigned && (
         <p className="mt-2 text-xs text-muted-foreground">
-          The tenant has not signed yet. You can sign first — the contract will be fully executed once both parties have signed.
+          The tenant has not signed yet. You can sign first. The contract will be fully executed once both parties have signed.
         </p>
       )}
       {error && <p className="mt-2 text-sm text-red-500">{error}</p>}

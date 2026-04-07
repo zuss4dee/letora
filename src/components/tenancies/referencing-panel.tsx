@@ -101,7 +101,7 @@ export function ReferencingPanel({
         toast.error(result.error);
         return;
       }
-      toast.success("Referencing marked complete — onboarding advanced to contract stage.");
+      toast.success("Referencing marked complete. Onboarding advanced to contract stage.");
       router.refresh();
       await refreshEvents();
     });
@@ -184,7 +184,7 @@ export function ReferencingPanel({
           <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
             <span className={TENANCY_LABEL}>Reference token</span>
             <p className="mt-1 break-all font-mono text-xs text-[#C9C6C5]">
-              {referencingToken ?? "— (generated on first send)"}
+              {referencingToken ?? "Not set (generated on first send)"}
             </p>
           </div>
           <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
@@ -203,7 +203,7 @@ export function ReferencingPanel({
             <span className="select-all break-all font-mono text-[#C9C6C5]">{handoffRecipientEmail}</span>
             <span className="text-[#ACABAA]">
               {" "}
-              (the referencing agency — not your landlord inbox unless it is the same address). If you do not see
+              (the referencing agency, not your landlord inbox unless it is the same address). If you do not see
               it, check spam on that exact address or fix a typo in the override or under Settings → Email &amp;
               Automation.
             </span>

@@ -12,7 +12,7 @@ function alertTitle(payload: SafetyAlertRow["payload"]) {
   const addr = normalizePropertyAddressLabel(payload.propertyAddress ?? "") || "Property";
   const summary = payload.issueSummary ?? "";
   const short = summary.length > 80 ? `${summary.slice(0, 77)}…` : summary;
-  return `${addr}${short ? ` — ${short}` : ""}`;
+  return `${addr}${short ? ` · ${short}` : ""}`;
 }
 
 export function SafetyAlertsCard({

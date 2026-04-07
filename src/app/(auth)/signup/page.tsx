@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
 import { AuthBrandMark } from "@/components/auth/auth-brand-mark";
+import { SignupPlanHint } from "@/components/auth/signup-plan-hint";
 import { AuthEditorialAside } from "@/components/auth/auth-editorial-aside";
 import {
   authInputClassName,
@@ -82,6 +83,10 @@ export default function SignupPage() {
             Set up your workspace and start managing your portfolio.
           </p>
         </div>
+
+        <Suspense fallback={null}>
+          <SignupPlanHint />
+        </Suspense>
 
         {emailConfirmationSent ? (
           <div className="space-y-4 rounded-xl border border-[rgb(72_72_72_/0.18)] bg-[#0e0e0e]/60 px-5 py-6 text-left backdrop-blur-sm">

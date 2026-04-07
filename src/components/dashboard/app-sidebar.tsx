@@ -7,6 +7,7 @@ import {
   Building2,
   ChevronDown,
   CircleDollarSign,
+  CreditCard,
   FileText,
   HelpCircle,
   History,
@@ -100,6 +101,20 @@ function NavSection({
 
 const FOOTER_STORAGE_KEY = "letora-sidebar-footer-open";
 
+/** Sync with `window.location.hash` for Settings vs Billing deep links. */
+function useHash(pathname: string) {
+  const [hash, setHash] = React.useState("");
+
+  React.useEffect(() => {
+    const sync = () => setHash(typeof window !== "undefined" ? window.location.hash : "");
+    sync();
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
+  }, [pathname]);
+
+  return hash;
+}
+
 function useFooterOpen() {
   const [footerOpen, setFooterOpen] = React.useState(true);
 
@@ -132,6 +147,10 @@ export function AppSidebar({
   const pathname = usePathname();
   const router = useRouter();
   const [footerOpen, setFooterOpen] = useFooterOpen();
+  const hash = useHash(pathname);
+  const onSettingsPage = pathname === "/dashboard/settings";
+  const settingsNavActive = onSettingsPage && hash !== "#billing";
+  const billingNavActive = onSettingsPage && hash === "#billing";
 
   async function onLogout() {
     const supabase = createClient();
@@ -218,10 +237,27 @@ export function AppSidebar({
               </Link>
               <Link
                 href="/dashboard/settings"
-                className="flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-[#ACABAA] transition-colors hover:bg-[#1F2020] hover:text-[#C9C6C5]"
+                className={cn(
+                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-300",
+                  settingsNavActive
+                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-[#C9C6C5]"
+                    : "border-l-2 border-transparent text-[#ACABAA] hover:bg-[#1F2020] hover:text-[#C9C6C5]",
+                )}
               >
-                <Settings className="size-5 stroke-[1.25]" aria-hidden />
+                <Settings className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
                 Settings
+              </Link>
+              <Link
+                href="/dashboard/settings#billing"
+                className={cn(
+                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-300",
+                  billingNavActive
+                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-[#C9C6C5]"
+                    : "border-l-2 border-transparent text-[#ACABAA] hover:bg-[#1F2020] hover:text-[#C9C6C5]",
+                )}
+              >
+                <CreditCard className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
+                Billing
               </Link>
               <SidebarAgentActivityButton />
               <div className="flex items-center gap-3 px-4 py-2">
