@@ -418,7 +418,8 @@ export function scrubDraftContractTenancyIdForMerge(
 
   if (!hasAlternativeResolution) return input;
 
-  const { tenancy_id: _removed, ...rest } = input;
+  const { tenancy_id, ...rest } = input;
+  void tenancy_id;
   return rest;
 }
 

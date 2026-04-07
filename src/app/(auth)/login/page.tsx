@@ -74,6 +74,7 @@ function LoginForm() {
                 </Label>
                 <Input
                   id="email"
+                  data-testid="login-email"
                   type="email"
                   autoComplete="email"
                   placeholder="hello@letora.ai"
@@ -99,6 +100,7 @@ function LoginForm() {
                 </div>
                 <Input
                   id="password"
+                  data-testid="login-password"
                   type="password"
                   autoComplete="current-password"
                   placeholder="••••••••"
@@ -118,6 +120,7 @@ function LoginForm() {
 
               <Button
                 type="submit"
+                data-testid="login-submit"
                 className="h-10 w-full rounded-full bg-indigo-600 text-[13px] font-normal text-white shadow-sm transition-colors hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
                 disabled={isSubmitting}
               >

@@ -23,7 +23,7 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="h-9 w-9 rounded-md border border-zinc-200/70 bg-white/70 text-zinc-900 shadow-sm hover:bg-white dark:border-zinc-800 dark:bg-zinc-950/40 dark:text-zinc-100 dark:hover:bg-zinc-950"
+      className="h-9 w-9 rounded-sm border border-[#484848]/20 bg-transparent text-[#ACABAA] shadow-none hover:bg-[#1F2020] hover:text-[#BD9952] dark:border-[#484848]/20 dark:bg-transparent dark:text-[#ACABAA] dark:hover:bg-[#1F2020] dark:hover:text-[#BD9952]"
       aria-label="Toggle theme"
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

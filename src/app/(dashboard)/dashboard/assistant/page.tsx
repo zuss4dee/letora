@@ -11,9 +11,11 @@ import {
 export default async function AssistantPage({
   searchParams,
 }: {
-  searchParams: Promise<{ c?: string }>;
+  searchParams: Promise<{ c?: string; start?: string }>;
 }) {
   const sp = await searchParams;
+  const startParam = typeof sp.start === "string" ? sp.start : undefined;
+
   let conversations = await listAssistantConversationsForSession();
 
   if (conversations.length === 0) {
@@ -30,7 +32,10 @@ export default async function AssistantPage({
   }
 
   if (sp.c !== activeId) {
-    redirect(`/dashboard/assistant?c=${activeId}`);
+    const q = new URLSearchParams();
+    q.set("c", activeId);
+    if (startParam) q.set("start", startParam);
+    redirect(`/dashboard/assistant?${q.toString()}`);
   }
 
   const rawMessages = await listAssistantMessagesForConversation(
@@ -44,12 +49,16 @@ export default async function AssistantPage({
     pendingCeoAction: m.metadata?.pendingCeoAction,
   }));
 
+  const starter =
+    startParam && startParam.trim() && initialMessages.length === 0 ? startParam.trim() : undefined;
+
   return (
     <AssistantChat
       key={activeId}
       conversations={conversations}
       activeConversationId={activeId}
       initialMessages={initialMessages}
+      initialPromptToSend={starter}
     />
   );
 }

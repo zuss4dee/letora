@@ -255,7 +255,7 @@ export async function markReferencingCompleteManual(tenancyId: string) {
   const { error: upErr } = await supabase
     .from("tenancies")
     .update({
-      onboarding_status: "contract_sent",
+      onboarding_status: "references",
       referencing_last_inbound_at: new Date().toISOString(),
     })
     .eq("id", tenancyId);
@@ -270,6 +270,26 @@ export async function markReferencingCompleteManual(tenancyId: string) {
     body_preview: "Marked complete manually in dashboard",
     outcome: "manual_complete",
   });
+
+  const { autoCreateAndSendContract } = await import("@/lib/onboarding/auto-contract-flow");
+  const contractResult = await autoCreateAndSendContract(supabase, tenancyId, user.id);
+
+  if (contractResult.ok) {
+    await supabase
+      .from("referencing_events")
+      .update({
+        raw_payload: {
+          auto_contract_created: true,
+          contract_id: contractResult.contractId,
+          contract_message: contractResult.message,
+        },
+      })
+      .eq("tenancy_id", tenancyId)
+      .eq("direction", "inbound")
+      .eq("outcome", "manual_complete")
+      .order("created_at", { ascending: false })
+      .limit(1);
+  }
 
   revalidatePath(`/dashboard/tenancies/${tenancyId}`);
   revalidatePath("/dashboard/tenancies");

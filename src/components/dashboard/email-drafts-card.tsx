@@ -25,7 +25,13 @@ function formatAgentType(agentType: string) {
     .join(" ");
 }
 
-export function EmailDraftsCard({ drafts }: { drafts: EmailDraftRow[] }) {
+export function EmailDraftsCard({
+  drafts,
+  className,
+}: {
+  drafts: EmailDraftRow[];
+  className?: string;
+}) {
   useDashboardPollRefresh();
   const router = useRouter();
   const [reviewDraft, setReviewDraft] = useState<Awaited<
@@ -61,10 +67,18 @@ export function EmailDraftsCard({ drafts }: { drafts: EmailDraftRow[] }) {
 
   return (
     <>
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle>Pending Email Drafts</CardTitle>
-          <p className="text-sm font-normal text-muted-foreground">
+      <Card
+        className={className}
+      >
+        <CardHeader className={className ? "border-b border-[#484848]/15" : "border-b"}>
+          <CardTitle className={className ? "font-headline text-[#C9C6C5]" : undefined}>
+            Pending Email Drafts
+          </CardTitle>
+          <p
+            className={
+              className ? "text-sm font-normal text-[#ACABAA]" : "text-sm font-normal text-muted-foreground"
+            }
+          >
             Review and send messages when auto-send is off, or before they go out.
           </p>
         </CardHeader>

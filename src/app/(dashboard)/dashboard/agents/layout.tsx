@@ -18,15 +18,15 @@ export default async function AgentsLayout({ children }: { children: ReactNode }
       <SidebarProvider
         style={
           {
-            "--sidebar-width": "calc(var(--spacing) * 72)",
-            "--header-height": "calc(var(--spacing) * 12)",
+            "--sidebar-width": "220px",
+            "--header-height": "4rem",
           } as CSSProperties
         }
       >
-        <AppSidebar variant="inset" userEmail={userEmail} />
-        <SidebarInset>
+        <AppSidebar variant="sidebar" userEmail={userEmail} />
+        <SidebarInset className="bg-[#0E0E0E]">
           <SiteHeader />
-          <div className="flex flex-1 flex-col">{children}</div>
+          <div className="flex min-h-0 flex-1 flex-col">{children}</div>
         </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>

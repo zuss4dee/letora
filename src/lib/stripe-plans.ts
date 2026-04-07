@@ -1,8 +1,9 @@
+/** GBP/month display amounts — must match Stripe Product prices in Dashboard (live vs test price IDs). */
 export const PLANS = {
   starter: {
     name: "Starter",
     priceId: process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID!,
-    price: 19,
+    price: 29,
     properties: 3,
     features: [
       "Up to 3 properties",
@@ -14,7 +15,7 @@ export const PLANS = {
   pro: {
     name: "Pro",
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID!,
-    price: 39,
+    price: 59,
     properties: 10,
     features: [
       "Up to 10 properties",
@@ -27,7 +28,7 @@ export const PLANS = {
   landlord_pro: {
     name: "Landlord Pro",
     priceId: process.env.NEXT_PUBLIC_STRIPE_LANDLORD_PRO_PRICE_ID!,
-    price: 79,
+    price: 99,
     properties: -1,
     features: [
       "Unlimited properties",

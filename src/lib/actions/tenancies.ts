@@ -16,6 +16,7 @@ export type TenancyRow = {
   propertyAddress: string | null;
   tenantId: string | null;
   tenantFullName: string | null;
+  tenantEmail: string | null;
   startDate: string | null;
   endDate: string | null;
   moveInDate: string | null;
@@ -60,7 +61,7 @@ export async function getTenancies(userId: string): Promise<TenancyRow[]> {
   const { data, error } = await supabase
     .from("tenancies")
     .select(
-      "id,property_id,tenant_id,start_date,end_date,move_in_date,monthly_rent,deposit_amount,status,properties!inner(address,user_id),tenants(full_name)",
+      "id,property_id,tenant_id,start_date,end_date,move_in_date,monthly_rent,deposit_amount,status,properties!inner(address,user_id),tenants(full_name,email)",
     )
     .eq("properties.user_id", userId)
     .order("created_at", { ascending: false });
@@ -76,6 +77,7 @@ export async function getTenancies(userId: string): Promise<TenancyRow[]> {
     propertyAddress: normalizePropertyAddressLabel(property?.address ?? "") || null,
     tenantId: row.tenant_id ?? null,
     tenantFullName: tenant?.full_name ?? null,
+    tenantEmail: tenant?.email ?? null,
     startDate: row.start_date ?? null,
     endDate: row.end_date ?? null,
     moveInDate: row.move_in_date ?? null,

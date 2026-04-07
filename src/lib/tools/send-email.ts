@@ -1,25 +1,11 @@
 import { Resend } from "resend";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { randomUUID } from "crypto";
 
 /** Maps to user_settings.auto_send_* columns */
 export type EmailAgentType = "rent_chaser" | "maintenance" | "onboarding" | "lead" | "referencing";
 
-export type SendEmailToolParams = {
-  to: string;
-  toName: string;
-  subject: string;
-  body: string;
-  agentType: EmailAgentType;
-  /** When true, send via Resend even if the matching auto_send_* flag is off (user already confirmed). */
-  forceSend?: boolean;
-};
-
-export type SendEmailToolResult = {
-  sent: boolean;
-  emailLogId: string;
-  message: string;
-  error?: string;
-};
+export { retryFailedEmail };
 
 type SettingsRow = {
   email_from_name: string | null;
@@ -56,19 +42,122 @@ export function buildResendFromHeader(emailFromName: string | null | undefined):
   return `${name} <${address}>`;
 }
 
-/**
- * Central email path: always creates email_logs (draft first), then sends via Resend when
- * `forceSend` is true **or** the matching `auto_send_*` flag is on in user_settings.
- * Callers that already have explicit user consent (e.g. tenancy “Send handoff”, CEO-confirmed tools)
- * must pass `forceSend: true` so Resend runs even when the toggle is off. Otherwise the row stays
- * `draft` for Pending Email Drafts and **no** Resend API call is made (nothing appears in Resend logs).
- */
-export async function sendEmailTool(
+export function generateUnsubscribeToken(): string {
+  return randomUUID();
+}
+
+export function buildUnsubscribeUrl(token: string): string {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://letora.co";
+  return `${baseUrl}/api/email/unsubscribe?token=${token}`;
+}
+
+type SendEmailParams = {
+  to: string;
+  toName: string;
+  subject: string;
+  body: string;
+  agentType: EmailAgentType;
+  html?: string;
+  templateType?: string;
+  templateVersion?: number;
+  forceSend?: boolean;
+};
+
+type SendEmailResult = {
+  sent: boolean;
+  emailLogId: string;
+  message: string;
+  error?: string;
+};
+
+async function checkUnsubscribed(supabase: SupabaseClient, email: string): Promise<boolean> {
+  const { data } = await supabase
+    .rpc("is_email_unsubscribed", { check_email: email.toLowerCase() })
+    .single<boolean>();
+  return data ?? false;
+}
+
+async function retryFailedEmail(supabase: SupabaseClient, logId: string): Promise<boolean> {
+  const { data: log, error: fetchError } = await supabase
+    .from("email_logs")
+    .select("*")
+    .eq("id", logId)
+    .eq("status", "failed")
+    .lt("retry_count", "max_retries")
+    .single();
+
+  if (fetchError || !log) return false;
+
+  const retryCount = (log.retry_count ?? 0) + 1;
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) return false;
+
+  const resend = new Resend(apiKey);
+
+  try {
+    const from = buildResendFromHeader(log.email_from_name);
+    const sendResult = await resend.emails.send({
+      from,
+      to: log.to_email,
+      subject: log.subject,
+      text: log.body,
+      ...(log.html_body ? { html: log.html_body } : {}),
+    });
+
+    if (sendResult.error) {
+      await supabase
+        .from("email_logs")
+        .update({
+          retry_count: retryCount,
+          next_retry_at: new Date(Date.now() + Math.pow(2, retryCount) * 60 * 1000).toISOString(),
+          error_message: sendResult.error.message,
+        })
+        .eq("id", logId);
+      return false;
+    }
+
+    await supabase
+      .from("email_logs")
+      .update({
+        status: "sent",
+        delivery_status: "sent",
+        sent_at: new Date().toISOString(),
+        resend_email_id: sendResult.data?.id,
+        retry_count: retryCount,
+        error_message: null,
+      })
+      .eq("id", logId);
+
+    return true;
+  } catch {
+    await supabase
+      .from("email_logs")
+      .update({
+        retry_count: retryCount,
+        next_retry_at: new Date(Date.now() + Math.pow(2, retryCount) * 60 * 1000).toISOString(),
+      })
+      .eq("id", logId);
+    return false;
+  }
+}
+
+export async function sendEmail(
   supabase: SupabaseClient,
   userId: string,
   agentRunId: string | null,
-  params: SendEmailToolParams,
-): Promise<SendEmailToolResult> {
+  params: SendEmailParams,
+): Promise<SendEmailResult> {
+  const isUnsubscribed = await checkUnsubscribed(supabase, params.to);
+  if (isUnsubscribed) {
+    return {
+      sent: false,
+      emailLogId: "",
+      message: `Email not sent — ${params.to} has unsubscribed`,
+    };
+  }
+
+  const unsubscribeToken = generateUnsubscribeToken();
+
   const { data: inserted, error: insertError } = await supabase
     .from("email_logs")
     .insert({
@@ -79,7 +168,12 @@ export async function sendEmailTool(
       to_name: params.toName,
       subject: params.subject,
       body: params.body,
+      html_body: params.html,
+      template_type: params.templateType,
+      template_version: params.templateVersion,
       status: "draft",
+      delivery_status: "pending",
+      unsubscribe_token: unsubscribeToken,
     })
     .select("id")
     .single();
@@ -136,6 +230,7 @@ export async function sendEmailTool(
       .from("email_logs")
       .update({
         status: "failed",
+        delivery_status: "failed",
         error_message: "RESEND_API_KEY is not configured",
       })
       .eq("id", emailLogId)
@@ -156,12 +251,14 @@ export async function sendEmailTool(
     const msg = e instanceof Error ? e.message : "Invalid from address";
     await supabase
       .from("email_logs")
-      .update({ status: "failed", error_message: msg })
+      .update({ status: "failed", delivery_status: "failed", error_message: msg })
       .eq("id", emailLogId)
       .eq("user_id", userId);
 
     return { sent: false, emailLogId, message: msg, error: msg };
   }
+
+  const unsubscribeUrl = buildUnsubscribeUrl(unsubscribeToken);
 
   const resend = new Resend(apiKey);
   const sendResult = await resend.emails.send({
@@ -169,6 +266,10 @@ export async function sendEmailTool(
     to: params.to,
     subject: params.subject,
     text: params.body,
+    ...(params.html ? { html: params.html } : {}),
+    headers: {
+      "List-Unsubscribe": `<${unsubscribeUrl}>`,
+    },
   });
 
   if (sendResult.error) {
@@ -177,7 +278,11 @@ export async function sendEmailTool(
       .from("email_logs")
       .update({
         status: "failed",
+        delivery_status: "failed",
         error_message: errMsg,
+        retry_count: 0,
+        max_retries: 3,
+        next_retry_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
       })
       .eq("id", emailLogId)
       .eq("user_id", userId);
@@ -197,6 +302,7 @@ export async function sendEmailTool(
       .from("email_logs")
       .update({
         status: "failed",
+        delivery_status: "failed",
         error_message: unexpected,
       })
       .eq("id", emailLogId)
@@ -214,6 +320,7 @@ export async function sendEmailTool(
     .from("email_logs")
     .update({
       status: "sent",
+      delivery_status: "sent",
       sent_at: new Date().toISOString(),
       error_message: null,
       resend_email_id: resendMessageId,
@@ -227,3 +334,6 @@ export async function sendEmailTool(
     message: "Email sent successfully",
   };
 }
+
+/** @alias sendEmail — backward-compatible export for existing callers */
+export const sendEmailTool = sendEmail;

@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -69,18 +69,18 @@ export function AgentSettingsForm({
 
   const isSubmitting = form.formState.isSubmitting;
 
-  async function loadTemplates() {
+  const loadTemplates = useCallback(async () => {
     if (!userId) return;
     setTemplatesLoading(true);
     const rows = await getContractTemplates(userId);
     setTemplates(rows);
     setTemplatesEnabled(rows.length > 0);
     setTemplatesLoading(false);
-  }
+  }, [userId]);
 
   useEffect(() => {
     void loadTemplates();
-  }, [userId]);
+  }, [loadTemplates]);
 
   function toggleSource(source: UserSettingsInput["preferredSources"][number], checked: boolean) {
     const current = form.getValues("preferredSources");

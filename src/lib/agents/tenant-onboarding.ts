@@ -3,7 +3,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { recordAgentRunStep } from "@/lib/agents/audit";
 import { loadAgentContext } from "@/lib/agents/context-loader";
 import { assertStepBudget } from "@/lib/agents/ota-loop";
-import { readAgentFile } from "@/lib/agents/paths";
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { sendEmailTool } from "@/lib/tools/send-email";
 import { createClient } from "@/lib/supabase/server";
@@ -62,41 +61,22 @@ function addDaysIso(isoDate: string, deltaDays: number): string {
   return d.toISOString().slice(0, 10);
 }
 
-function fillWelcomeTemplate(template: string, ctx: TenancyContext): string {
-  return template
-    .replace(/\{\{tenant\.name\}\}/g, ctx.tenantName)
-    .replace(/\{\{property\.address\}\}/g, ctx.propertyAddress)
-    .replace(/\{\{moveInDate\}\}/g, formatUkDate(ctx.moveInDate))
-    .replace(/\{\{landlord\.name\}\}/g, ctx.landlordName)
-    .replace(/\{\{landlord\.contact\}\}/g, ctx.landlordContact);
-}
+async function buildWelcomeEmail(ctx: TenancyContext): Promise<{ subject: string; body: string; html?: string }> {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://letora.co";
+  const onboardingUrl = `${baseUrl}/dashboard/tenancies/${ctx.tenancyId}`;
 
-function buildWelcomeEmail(ctx: TenancyContext): { subject: string; body: string } {
-  const raw = readAgentFile("tenant_onboarding/skills/send_welcome_email.md");
-  const subjectLine =
-    raw.match(/## Subject line[^\n]*\n+\s*([^\n]+)/)?.[1]?.trim() ??
-    "Welcome to your new home — {{property.address}}";
-  const bodyStart = raw.indexOf("## Body template");
-  const bodySection = bodyStart >= 0 ? raw.slice(bodyStart) : raw;
-  const lines = bodySection.split("\n");
-  const bodyLines: string[] = [];
-  let inBody = false;
-  for (const line of lines) {
-    if (line.startsWith("## Body template")) {
-      inBody = true;
-      continue;
-    }
-    if (inBody && line.startsWith("## ")) break;
-    if (inBody) bodyLines.push(line);
-  }
-  let body = bodyLines.join("\n").trim();
-  if (!body) {
-    body = "Welcome — we’re pleased to confirm your tenancy.";
-  }
-  const subject = fillWelcomeTemplate(subjectLine, ctx);
+  const { renderWelcomeEmail } = await import("@/components/email/templates/registry");
+  const rendered = await renderWelcomeEmail({
+    tenantName: ctx.tenantName,
+    propertyAddress: ctx.propertyAddress,
+    onboardingUrl,
+    startDate: formatUkDate(ctx.moveInDate),
+  });
+
   return {
-    subject,
-    body: fillWelcomeTemplate(body, ctx),
+    subject: rendered.subject,
+    body: rendered.text,
+    html: rendered.html,
   };
 }
 
@@ -457,7 +437,7 @@ export async function runTenantOnboardingAgent(
     detail: { chars: systemContext.length },
   });
 
-  const { subject, body } = buildWelcomeEmail(ctx);
+  const { subject, body, html } = await buildWelcomeEmail(ctx);
 
   const payload = {
     tenancyId,
@@ -497,7 +477,9 @@ export async function runTenantOnboardingAgent(
     toName: ctx.tenantName,
     subject,
     body,
+    html,
     agentType: "onboarding",
+    templateType: "welcome",
   });
 
   const emailStatus: TenantOnboardingResult["emailStatus"] = sendResult.sent

@@ -1,5 +1,5 @@
 import { BaseEmailTemplate } from "./base-template";
-import { Button, Heading, Link, Section, Text } from "@react-email/components";
+import { Button, Heading, Section, Text } from "@react-email/components";
 
 interface LeadFollowUpEmailTemplateProps {
   leadName: string;

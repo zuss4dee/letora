@@ -16,6 +16,7 @@ export async function runAnthropic(
   const response = await client.messages.create({
     model: effectiveModel,
     max_tokens: maxTokens,
+    temperature,
     system: systemMessage,
     messages: conversation.map((m) => ({
       role: m.role as "user" | "assistant",

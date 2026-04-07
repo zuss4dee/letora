@@ -1,6 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { NextResponse } from "next/server";
 
+import { logAgentActivity } from "@/lib/agent-activity-log";
 import { runTenantOnboardingAgent } from "@/lib/agents/tenant-onboarding";
 import { createClient } from "@/lib/supabase/server";
 
@@ -27,6 +28,17 @@ export async function POST(request: Request) {
   }
 
   const result = await runTenantOnboardingAgent(tenancyId, user.id);
+
+  await logAgentActivity(supabase, {
+    userId: user.id,
+    agentName: "Tenant onboarding",
+    actionTaken: "run_tenant_onboarding",
+    inputSummary: `tenancyId=${tenancyId}`,
+    outputSummary: result.success
+      ? `agentRunId=${result.agentRunId}; tasksCreated=${result.tasksCreated}; emailStatus=${result.emailStatus ?? "n/a"}`
+      : result.message,
+    status: result.success ? "success" : "error",
+  });
 
   if (!result.success) {
     return NextResponse.json(

@@ -46,13 +46,8 @@ export async function confirmMoveIn(
       .update({ onboarding_status: "active", status: "active" })
       .eq("id", tenancyId);
 
-    await supabase
-      .from("onboarding_tasks")
-      .update({ status: "complete", completed_at: now })
-      .eq("tenancy_id", tenancyId)
-      .eq("user_id", user.id)
-      .eq("task_name", "Send move-in instructions email")
-      .eq("status", "pending");
+    const { sendMoveInInstructionsEmail } = await import("@/lib/onboarding/send-move-in-email");
+    await sendMoveInInstructionsEmail(supabase, tenancyId, user.id);
   }
 
   revalidatePath(`/dashboard/contracts/${contractId}`);

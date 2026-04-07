@@ -1,4 +1,5 @@
 import { AddTenancyDialog } from "@/components/rent/add-tenancy-dialog";
+import { CollectRentButton } from "@/components/rent/collect-rent-button";
 import { LogPaymentDialog } from "@/components/rent/log-payment-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -176,11 +177,18 @@ export default async function RentTrackerPage() {
                                   <TableCell>{t.endDate ?? "—"}</TableCell>
                                   <TableCell>{tenancyStatusBadge(uiStatus)}</TableCell>
                                   <TableCell className="text-right">
-                                    <LogPaymentDialog
-                                      tenancyId={tenancyId}
-                                      defaultAmountPaid={amount}
-                                      triggerLabel="Log Payment"
-                                    />
+                                    <div className="flex items-center justify-end gap-2">
+                                      <LogPaymentDialog
+                                        tenancyId={tenancyId}
+                                        defaultAmountPaid={amount}
+                                        triggerLabel="Log Payment"
+                                      />
+                                      <CollectRentButton
+                                        tenancyId={tenancyId}
+                                        monthlyRent={amount}
+                                        tenantEmail={t.tenantEmail}
+                                      />
+                                    </div>
                                   </TableCell>
                                 </TableRow>
                               );

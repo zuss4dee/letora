@@ -35,6 +35,7 @@ import { Suspense } from "react";
 
 import { AgentSettingsForm } from "@/components/settings/agent-settings-form";
 import { DeleteAccountCard } from "@/components/settings/delete-account-card";
+import { ManageBillingButton } from "@/components/settings/manage-billing-button";
 import { getUserSettings } from "@/lib/actions/user-settings";
 import { createClient } from "@/lib/supabase/server";
 import { type UserSettingsInput } from "@/lib/validations/user-settings";
@@ -77,11 +78,14 @@ export default async function SettingsPage() {
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
       <div className="flex flex-col gap-6 py-4 md:py-6">
-        <div className="px-4 lg:px-6">
-          <h1 className="text-base font-semibold tracking-tight">Settings</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your business profile and agent preferences.
-          </p>
+        <div className="flex flex-col gap-4 px-4 sm:flex-row sm:items-start sm:justify-between lg:px-6">
+          <div>
+            <h1 className="text-base font-semibold tracking-tight">Settings</h1>
+            <p className="text-sm text-muted-foreground">
+              Manage your business profile and agent preferences.
+            </p>
+          </div>
+          {user?.id ? <ManageBillingButton /> : null}
         </div>
         <div className="flex flex-col gap-6 px-4 lg:px-6">
           <Suspense

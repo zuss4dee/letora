@@ -1,17 +1,29 @@
-/**
- * Stripe client — disabled while pricing / billing UI is removed.
- *
- * Re-enable when restoring checkout + portal + webhooks:
- * - STRIPE_SECRET_KEY — Dashboard → Developers → API keys
- * - STRIPE_WEBHOOK_SECRET — used by `src/app/api/stripe/webhook/route.ts`
- * - Price IDs — `src/lib/stripe-plans.ts` and checkout body
- */
+import Stripe from "stripe";
 
-// import Stripe from "stripe";
-// import { PLANS } from "@/lib/stripe-plans";
-//
-// export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-//   apiVersion: "2023-10-16",
-// });
-//
-// export { PLANS };
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  // @ts-expect-error - Stripe v14 supports newer API versions
+  apiVersion: "2024-12-18.acacia",
+});
+
+export type StripeRentMetadata = {
+  tenancyId: string;
+  userId: string;
+  rentPaymentId: string;
+  propertyAddress: string;
+  tenantName: string;
+};
+
+export function buildRentMetadata(metadata: StripeRentMetadata): Record<string, string> {
+  return {
+    tenancy_id: metadata.tenancyId,
+    user_id: metadata.userId,
+    rent_payment_id: metadata.rentPaymentId,
+    property_address: metadata.propertyAddress,
+    tenant_name: metadata.tenantName,
+    payment_type: "rent",
+  };
+}
+
+export function gbpToPence(amount: number): number {
+  return Math.round(amount * 100);
+}

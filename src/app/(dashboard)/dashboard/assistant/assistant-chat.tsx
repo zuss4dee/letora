@@ -454,10 +454,13 @@ export function AssistantChat({
   conversations,
   activeConversationId,
   initialMessages,
+  initialPromptToSend,
 }: {
   conversations: AssistantConversationListItem[];
   activeConversationId: string;
   initialMessages: ChatMessage[];
+  /** First message to send automatically (e.g. from home landing). Only used when the thread is empty. */
+  initialPromptToSend?: string;
 }) {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
@@ -472,6 +475,7 @@ export function AssistantChat({
   );
   const [mobileOpen, setMobileOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const starterFiredRef = useRef(false);
 
   useEffect(() => {
     const next = initialMessages.map((m) => ({
@@ -589,9 +593,13 @@ export function AssistantChat({
     return updated;
   }
 
-  async function sendMessage() {
-    const trimmed = input.trim();
+  async function sendMessage(overrideText?: string) {
+    const trimmed = (overrideText ?? input).trim();
     if (!trimmed || loading) return;
+
+    if (overrideText !== undefined) {
+      router.replace(`/dashboard/assistant?c=${activeConversationId}`, { scroll: false });
+    }
 
     const userMessage: ChatMessage = { role: "user", content: trimmed };
     let currentThread: ChatMessage[] = [...messages, userMessage];
@@ -676,6 +684,15 @@ export function AssistantChat({
       void sendMessage();
     }
   }
+
+  useEffect(() => {
+    if (!initialPromptToSend?.trim()) return;
+    if (starterFiredRef.current) return;
+    if (messages.length > 0) return;
+    starterFiredRef.current = true;
+    void sendMessage(initialPromptToSend);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot bootstrap from landing page
+  }, [initialPromptToSend, activeConversationId, messages.length]);
 
   const canSend = input.trim().length > 0 && !loading;
 

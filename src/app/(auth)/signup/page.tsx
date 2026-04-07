@@ -101,6 +101,7 @@ export default function SignupPage() {
                 </Label>
                 <Input
                   id="fullName"
+                  data-testid="signup-fullname"
                   autoComplete="name"
                   placeholder="Jane Landlord"
                   className="h-10 rounded-md border-zinc-200 bg-white shadow-none focus-visible:ring-indigo-600 dark:border-zinc-800 dark:bg-zinc-950/40 dark:focus-visible:ring-indigo-400"
@@ -117,6 +118,7 @@ export default function SignupPage() {
                 </Label>
                 <Input
                   id="email"
+                  data-testid="signup-email"
                   type="email"
                   autoComplete="email"
                   placeholder="you@company.com"
@@ -134,6 +136,7 @@ export default function SignupPage() {
                 </Label>
                 <Input
                   id="password"
+                  data-testid="signup-password"
                   type="password"
                   autoComplete="new-password"
                   placeholder="••••••••"
@@ -151,6 +154,7 @@ export default function SignupPage() {
                 </Label>
                 <Input
                   id="confirmPassword"
+                  data-testid="signup-confirm-password"
                   type="password"
                   autoComplete="new-password"
                   placeholder="••••••••"
@@ -170,6 +174,7 @@ export default function SignupPage() {
 
               <Button
                 type="submit"
+                data-testid="signup-submit"
                 className="h-10 w-full rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
                 disabled={isSubmitting}
               >

@@ -68,6 +68,7 @@ export async function callRentChaserToolPlaceholder(
   name: string,
   _args: Record<string, unknown>,
 ): Promise<{ ok: boolean; note: string }> {
+  void _args;
   const known = rentChaserTools.some((t) => t.name === name);
   if (!known) return { ok: false, note: `Unknown tool: ${name}` };
   return { ok: true, note: "Execute via runRentChaserAgent / tool executors in app code." };
