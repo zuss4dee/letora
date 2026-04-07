@@ -11,7 +11,7 @@ const items = [
   { title: "Tenants", url: "/dashboard/tenants", icon: Users },
   { title: "Properties", url: "/dashboard/properties", icon: Building2 },
   { title: "Contracts", url: "/dashboard/contracts", icon: FileText },
-  { title: "Intelligence", url: "/dashboard/assistant", icon: LineChart },
+  { title: "Intelligence", url: "/dashboard", icon: LineChart },
 ] as const;
 
 export function NavMonolith() {

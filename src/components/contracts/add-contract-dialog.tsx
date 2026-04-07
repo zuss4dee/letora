@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 import { Controller, useForm, type Resolver } from "react-hook-form";
 
 import { addContract } from "@/lib/actions/contracts";
@@ -44,13 +44,21 @@ import { toast } from "sonner";
 export function AddContractDialog({
   properties,
   tenants,
+  trigger,
+  open: openProp,
+  onOpenChange: onOpenChangeProp,
 }: {
   properties: PropertyPickListItem[];
   tenants: TenantPickListItem[];
+  trigger?: ReactElement;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const controlled = openProp !== undefined && onOpenChangeProp !== undefined;
+  const open = controlled ? openProp : internalOpen;
 
   const defaultValues = useMemo<AddContractInput>(
     () => ({
@@ -72,7 +80,8 @@ export function AddContractDialog({
   });
 
   function handleOpenChange(next: boolean) {
-    setOpen(next);
+    if (controlled) onOpenChangeProp?.(next);
+    else setInternalOpen(next);
     if (next) {
       setSubmitError(null);
       form.reset(defaultValues);
@@ -94,7 +103,7 @@ export function AddContractDialog({
       });
       toast.success("Contract created.");
       form.reset(defaultValues);
-      setOpen(false);
+      handleOpenChange(false);
       router.refresh();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Could not create contract";
@@ -110,12 +119,14 @@ export function AddContractDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button
-          className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-          disabled={disabled}
-        >
-          New Contract
-        </Button>
+        {trigger ?? (
+          <Button
+            className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+            disabled={disabled}
+          >
+            New Contract
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
         <DialogHeader>
@@ -289,7 +300,7 @@ export function AddContractDialog({
           </div>
 
           <div className={dialogFormFooterClass("mt-4")}>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting || disabled}>

@@ -4,9 +4,8 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  Activity,
-  Bot,
   Building2,
+  ChevronDown,
   CircleDollarSign,
   FileText,
   HelpCircle,
@@ -15,7 +14,6 @@ import {
   Key,
   LogOut,
   Mail,
-  MessageSquare,
   PlusCircle,
   Settings,
   UserPlus,
@@ -23,6 +21,7 @@ import {
   Wrench,
 } from "lucide-react";
 
+import { SidebarAgentActivityButton } from "@/components/dashboard/sidebar-agent-activity-button";
 import { cn } from "@/lib/utils";
 import {
   Sidebar,
@@ -43,8 +42,6 @@ const mainItems: NavItem[] = [
 const workflowItems: NavItem[] = [
   { title: "Contracts", url: "/dashboard/contracts", icon: FileText },
   { title: "Maintenance", url: "/dashboard/maintenance", icon: Wrench },
-  { title: "Intelligence", url: "/dashboard/agents", icon: Bot },
-  { title: "History", url: "/dashboard/activity", icon: History },
 ];
 
 const moreItems: NavItem[] = [
@@ -52,7 +49,6 @@ const moreItems: NavItem[] = [
   { title: "Rent Tracker", url: "/dashboard/rent-tracker", icon: CircleDollarSign },
   { title: "Emails", url: "/dashboard/emails", icon: Mail },
   { title: "Leads", url: "/dashboard/leads", icon: UserPlus },
-  { title: "Assistant", url: "/dashboard/assistant", icon: MessageSquare },
 ];
 
 function isActivePath(pathname: string, url: string) {
@@ -102,6 +98,31 @@ function NavSection({
   );
 }
 
+const FOOTER_STORAGE_KEY = "letora-sidebar-footer-open";
+
+function useFooterOpen() {
+  const [footerOpen, setFooterOpen] = React.useState(true);
+
+  React.useEffect(() => {
+    try {
+      const v = localStorage.getItem(FOOTER_STORAGE_KEY);
+      if (v === "0") setFooterOpen(false);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem(FOOTER_STORAGE_KEY, footerOpen ? "1" : "0");
+    } catch {
+      /* ignore */
+    }
+  }, [footerOpen]);
+
+  return [footerOpen, setFooterOpen] as const;
+}
+
 export function AppSidebar({
   userEmail,
   ...props
@@ -110,6 +131,7 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const [footerOpen, setFooterOpen] = useFooterOpen();
 
   async function onLogout() {
     const supabase = createClient();
@@ -150,40 +172,81 @@ export function AppSidebar({
         </nav>
       </SidebarContent>
       <SidebarFooter className="border-t border-[#484848]/15 p-4">
-        <Link
-          href="/dashboard/assistant"
-          className="mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-[#ACABAA] transition-colors hover:bg-[#1F2020] hover:text-[#C9C6C5]"
+        <button
+          type="button"
+          onClick={() => setFooterOpen((o) => !o)}
+          className={cn(
+            "flex w-full items-center justify-between gap-2 rounded-sm px-2 py-2 text-left font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-[#ACABAA] transition-colors hover:bg-[#1F2020] hover:text-[#C9C6C5]",
+            footerOpen && "mb-2",
+          )}
+          aria-expanded={footerOpen}
+          aria-controls="sidebar-footer-panel"
         >
-          <HelpCircle className="size-5 stroke-[1.25]" aria-hidden />
-          Help
-        </Link>
-        <Link
-          href="/dashboard/settings"
-          className="mb-4 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-[#ACABAA] transition-colors hover:bg-[#1F2020] hover:text-[#C9C6C5]"
+          <span>Workspace</span>
+          <ChevronDown
+            className={cn("size-4 shrink-0 transition-transform duration-200", footerOpen && "rotate-180")}
+            aria-hidden
+          />
+        </button>
+        <div
+          id="sidebar-footer-panel"
+          className={cn(
+            "grid transition-[grid-template-rows] duration-200 ease-out",
+            footerOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
+          )}
         >
-          <Settings className="size-5 stroke-[1.25]" aria-hidden />
-          Settings
-        </Link>
-        <div className="flex items-center gap-3 px-4 py-2">
-          <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#1F2020] font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase text-[#C9C6C5]">
-            {(userEmail?.[0] ?? "?").toUpperCase()}
+          <div className="min-h-0 overflow-hidden">
+            <div className={cn("flex flex-col gap-0", !footerOpen && "pointer-events-none")}>
+              <Link
+                href="/dashboard"
+                className="mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-[#ACABAA] transition-colors hover:bg-[#1F2020] hover:text-[#C9C6C5]"
+              >
+                <HelpCircle className="size-5 stroke-[1.25]" aria-hidden />
+                Help
+              </Link>
+              <Link
+                href="/dashboard/activity"
+                className={cn(
+                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-300",
+                  isActivePath(pathname, "/dashboard/activity")
+                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-[#C9C6C5]"
+                    : "border-l-2 border-transparent text-[#ACABAA] hover:bg-[#1F2020] hover:text-[#C9C6C5]",
+                )}
+              >
+                <History className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
+                History
+              </Link>
+              <Link
+                href="/dashboard/settings"
+                className="flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-[#ACABAA] transition-colors hover:bg-[#1F2020] hover:text-[#C9C6C5]"
+              >
+                <Settings className="size-5 stroke-[1.25]" aria-hidden />
+                Settings
+              </Link>
+              <SidebarAgentActivityButton />
+              <div className="flex items-center gap-3 px-4 py-2">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#1F2020] font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase text-[#C9C6C5]">
+                  {(userEmail?.[0] ?? "?").toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-[#C9C6C5]">
+                    Profile
+                  </p>
+                  <p className="truncate font-[family-name:var(--font-inter)] text-[0.65rem] text-[#ACABAA]">
+                    {userEmail ?? "—"}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={onLogout}
+                  className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-[#ACABAA] transition-colors hover:bg-[#1F2020] hover:text-[#C9C6C5]"
+                  aria-label="Log out"
+                >
+                  <LogOut className="size-4 stroke-[1.25]" />
+                </button>
+              </div>
+            </div>
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="truncate font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-[#C9C6C5]">
-              Profile
-            </p>
-            <p className="truncate font-[family-name:var(--font-inter)] text-[0.65rem] text-[#ACABAA]">
-              {userEmail ?? "—"}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onLogout}
-            className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-[#ACABAA] transition-colors hover:bg-[#1F2020] hover:text-[#C9C6C5]"
-            aria-label="Log out"
-          >
-            <LogOut className="size-4 stroke-[1.25]" />
-          </button>
         </div>
       </SidebarFooter>
     </Sidebar>

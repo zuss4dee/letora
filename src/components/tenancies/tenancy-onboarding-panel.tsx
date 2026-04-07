@@ -20,7 +20,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+import {
+  TENANCY_CARD,
+  TENANCY_CARD_CONTENT,
+  TENANCY_CARD_HEADER,
+  TENANCY_CARD_TITLE,
+  TENANCY_PRIMARY_BTN,
+} from "./tenancy-letora-surfaces";
 
 function onboardingStatusBadge(status: string) {
   const s = status.toLowerCase();
@@ -34,56 +43,91 @@ function onboardingStatusBadge(status: string) {
           : status.replace(/_/g, " ");
   if (s === "not_started") {
     return (
-      <Badge className="border border-zinc-300 bg-zinc-100 text-zinc-800 dark:border-zinc-600 dark:bg-zinc-800 dark:text-zinc-200">
+      <Badge
+        className={cn(
+          "border-0 bg-[#0e0e0e]/70 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[#ACABAA] ring-1 ring-[rgb(72_72_72_/0.12)]",
+        )}
+      >
         {label}
       </Badge>
     );
   }
   if (s === "in_progress" || s === "references" || s === "contract_sent") {
     return (
-      <Badge className="border border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900/40 dark:bg-blue-500/10 dark:text-blue-300">
+      <Badge
+        className={cn(
+          "border-0 bg-[#BD9952]/12 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[#c9a660] ring-1 ring-[#BD9952]/35",
+        )}
+      >
         {label}
       </Badge>
     );
   }
   if (s === "complete") {
     return (
-      <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
+      <Badge
+        className={cn(
+          "border-0 bg-[#142018]/85 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[#9cd4a8] ring-1 ring-[#2d4a38]/50",
+        )}
+      >
         Complete
       </Badge>
     );
   }
-  return <Badge variant="secondary">{status}</Badge>;
+  return (
+    <Badge
+      variant="secondary"
+      className="border-0 bg-[#131313]/80 font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-[0.08em] text-[#C9C6C5]"
+    >
+      {status}
+    </Badge>
+  );
 }
 
 function taskTypeBadge(type: string) {
   return (
-    <Badge variant="outline" className="capitalize">
+    <span className="inline-flex rounded-md bg-[#0e0e0e]/50 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.08em] text-[#ACABAA] ring-1 ring-[rgb(72_72_72_/0.1)]">
       {type}
-    </Badge>
+    </span>
   );
 }
 
 function taskStatusBadge(task: OnboardingTaskRow) {
   if (task.status === "complete") {
     return (
-      <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
+      <Badge
+        className={cn(
+          "border-0 bg-[#142018]/85 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#9cd4a8] ring-1 ring-[#2d4a38]/50",
+        )}
+      >
         Complete
       </Badge>
     );
   }
   if (task.email_log_status === "sent") {
     return (
-      <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
+      <Badge
+        className={cn(
+          "border-0 bg-[#142018]/85 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#9cd4a8] ring-1 ring-[#2d4a38]/50",
+        )}
+      >
         Complete
       </Badge>
     );
   }
   if (task.status === "skipped") {
-    return <Badge variant="secondary">Skipped</Badge>;
+    return (
+      <Badge className="border-0 bg-[#131313]/80 font-[family-name:var(--font-inter)] text-[0.65rem] text-[#ACABAA] ring-1 ring-[rgb(72_72_72_/0.12)]">
+        Skipped
+      </Badge>
+    );
   }
   return (
-    <Badge className="border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/40 dark:bg-amber-500/10 dark:text-amber-300">
+    <Badge
+      className={cn(
+        "border-0 bg-[#2a1f0e]/85 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#BD9952] ring-1 ring-[#BD9952]/25",
+      )}
+    >
       Pending
     </Badge>
   );
@@ -93,18 +137,20 @@ function emailTaskLabel(task: OnboardingTaskRow) {
   if (task.task_type !== "email") return null;
   if (task.email_log_status === "sent" && task.email_sent_at) {
     return (
-      <span className="text-xs text-muted-foreground">
+      <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-[#ACABAA]">
         Sent ✓ {new Date(task.email_sent_at).toLocaleString("en-GB")}
       </span>
     );
   }
   if (task.email_log_id && task.email_log_status === "draft") {
-    return <span className="text-xs text-amber-700 dark:text-amber-400">Draft ready</span>;
+    return <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-[#BD9952]">Draft ready</span>;
   }
   if (task.email_log_id && task.email_log_status === "failed") {
-    return <span className="text-xs text-red-600">Send failed</span>;
+    return <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-[#e8a8a4]">Send failed</span>;
   }
-  return <span className="text-xs text-muted-foreground">Scheduled / pending</span>;
+  return (
+    <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-[#ACABAA]">Scheduled / pending</span>
+  );
 }
 
 export function TenancyOnboardingPanel({
@@ -170,82 +216,110 @@ export function TenancyOnboardingPanel({
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2 border-b">
-        <CardTitle className="text-base">Onboarding</CardTitle>
+    <Card className={TENANCY_CARD}>
+      <CardHeader className={`${TENANCY_CARD_HEADER} flex flex-row flex-wrap items-start justify-between gap-3`}>
+        <div className="space-y-2">
+          <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[#BD9952]/95">
+            Workflow
+          </p>
+          <CardTitle className={TENANCY_CARD_TITLE}>Tenant onboarding</CardTitle>
+          <p className="max-w-2xl font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#ACABAA]">
+            Welcome emails, references, and move-in tasks — track progress and mark manual steps done here.
+          </p>
+        </div>
         {onboardingStatusBadge(onboardingStatus)}
       </CardHeader>
-      <CardContent className="space-y-4 pt-4">
+      <CardContent className={`${TENANCY_CARD_CONTENT} space-y-6`}>
         {onboardingStatus === "not_started" ? (
-          <div className="flex flex-wrap items-center gap-3">
-            <Button type="button" disabled={pending} onClick={() => void startOnboarding()}>
-              {pending ? "Starting…" : "Start onboarding"}
-            </Button>
-            <p className="text-sm text-muted-foreground">
+          <div className="flex flex-col gap-4 rounded-xl bg-[#0e0e0e]/35 p-5 ring-1 ring-[rgb(72_72_72_/0.1)] sm:flex-row sm:items-center sm:justify-between">
+            <p className="max-w-xl font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#ACABAA]">
               Creates welcome email (draft or send), reference checks, and move-in tasks.
             </p>
+            <Button type="button" disabled={pending} onClick={() => void startOnboarding()} className={cn(TENANCY_PRIMARY_BTN, "shrink-0 px-6")}>
+              {pending ? "Starting…" : "Start onboarding"}
+            </Button>
           </div>
         ) : null}
 
         {onboardingStatus !== "not_started" && tasks.length > 0 ? (
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="w-12 text-center">Done</TableHead>
-                <TableHead>Task</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Due</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tasks.map((task) => (
-                <TableRow key={task.id}>
-                  <TableCell className="text-center align-middle">
-                    <Checkbox
-                      checked={task.status === "complete"}
-                      disabled={
-                        (task.status !== "pending" && task.status !== "complete") ||
-                        taskLoadingId === task.id
-                      }
-                      aria-label={
-                        task.status === "complete"
-                          ? `Mark ${task.task_name} as not done`
-                          : `Mark ${task.task_name} complete`
-                      }
-                      onCheckedChange={(checked) => {
-                        if (checked === true && task.status === "pending") {
-                          void markManualComplete(task.id);
-                        }
-                        if (checked === false && task.status === "complete") {
-                          void revertToPending(task.id);
-                        }
-                      }}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{task.task_name}</TableCell>
-                  <TableCell>{taskTypeBadge(task.task_type)}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {task.due_date
-                      ? new Date(`${task.due_date}T12:00:00.000Z`).toLocaleDateString("en-GB")
-                      : task.task_type === "email"
-                        ? "Immediate"
-                        : "—"}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      {taskStatusBadge(task)}
-                      {emailTaskLabel(task)}
-                    </div>
-                  </TableCell>
+          <div className="overflow-hidden rounded-xl ring-1 ring-[rgb(72_72_72_/0.08)]">
+            <Table>
+              <TableHeader className="[&_tr]:border-0">
+                <TableRow className="border-0 hover:bg-transparent">
+                  <TableHead className="w-12 text-center font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[#ACABAA]">
+                    Done
+                  </TableHead>
+                  <TableHead className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[#ACABAA]">
+                    Task
+                  </TableHead>
+                  <TableHead className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[#ACABAA]">
+                    Type
+                  </TableHead>
+                  <TableHead className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[#ACABAA]">
+                    Due
+                  </TableHead>
+                  <TableHead className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[#ACABAA]">
+                    Status
+                  </TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {tasks.map((task) => (
+                  <TableRow
+                    key={task.id}
+                    className="border-0 border-b border-[rgb(72_72_72_/0.06)] last:border-0 hover:bg-[#0e0e0e]/45"
+                  >
+                    <TableCell className="text-center align-middle">
+                      <Checkbox
+                        checked={task.status === "complete"}
+                        disabled={
+                          (task.status !== "pending" && task.status !== "complete") ||
+                          taskLoadingId === task.id
+                        }
+                        aria-label={
+                          task.status === "complete"
+                            ? `Mark ${task.task_name} as not done`
+                            : `Mark ${task.task_name} complete`
+                        }
+                        onCheckedChange={(checked) => {
+                          if (checked === true && task.status === "pending") {
+                            void markManualComplete(task.id);
+                          }
+                          if (checked === false && task.status === "complete") {
+                            void revertToPending(task.id);
+                          }
+                        }}
+                        className="border-[rgb(72_72_72_/0.35)] data-checked:border-[#BD9952] data-checked:bg-[#BD9952] data-checked:text-[#2c1e00]"
+                      />
+                    </TableCell>
+                    <TableCell className="font-[family-name:var(--font-inter)] font-medium text-[#E7E5E4]">
+                      {task.task_name}
+                    </TableCell>
+                    <TableCell>{taskTypeBadge(task.task_type)}</TableCell>
+                    <TableCell className="font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">
+                      {task.due_date
+                        ? new Date(`${task.due_date}T12:00:00.000Z`).toLocaleDateString("en-GB")
+                        : task.task_type === "email"
+                          ? "Immediate"
+                          : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-1">
+                        {taskStatusBadge(task)}
+                        {emailTaskLabel(task)}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         ) : null}
 
         {onboardingStatus !== "not_started" && tasks.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No onboarding tasks recorded yet.</p>
+          <p className="font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
+            No onboarding tasks recorded yet.
+          </p>
         ) : null}
       </CardContent>
     </Card>

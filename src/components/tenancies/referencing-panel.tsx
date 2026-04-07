@@ -18,6 +18,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import {
+  TENANCY_CARD,
+  TENANCY_CARD_CONTENT,
+  TENANCY_CARD_HEADER,
+  TENANCY_CARD_TITLE,
+  TENANCY_LABEL,
+  TENANCY_OUTLINE_BTN,
+  TENANCY_PRIMARY_BTN,
+} from "./tenancy-letora-surfaces";
+import { cn } from "@/lib/utils";
+
 type Props = {
   tenancyId: string;
   userId: string;
@@ -97,28 +108,31 @@ export function ReferencingPanel({
   }
 
   return (
-    <Card>
-      <CardHeader className="border-b">
-        <CardTitle className="text-sm font-medium">Referencing agency</CardTitle>
-        <p className="text-sm font-normal text-muted-foreground">
+    <Card className={TENANCY_CARD}>
+      <CardHeader className={`${TENANCY_CARD_HEADER} space-y-3`}>
+        <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[#BD9952]/95">
+          Referencing
+        </p>
+        <CardTitle className={TENANCY_CARD_TITLE}>Referencing agency</CardTitle>
+        <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#ACABAA]">
           Your provider runs referencing and credit checks (they may email the tenant with their own link or
           process). Letora sends them a structured handoff with tenant and property details. Replies to your
-          Letora inbound address that include the <span className="font-mono text-xs">LETORA_REF</span> line
-          are logged here and may advance onboarding when the message looks like a clear pass or fail.
+          Letora inbound address that include the <span className="font-mono text-[0.7rem] text-[#C9C6C5]">LETORA_REF</span>{" "}
+          line are logged here and may advance onboarding when the message looks like a clear pass or fail.
         </p>
       </CardHeader>
-      <CardContent className="space-y-4 pt-4">
+      <CardContent className={`${TENANCY_CARD_CONTENT} space-y-6`}>
         {!canSendHandoff ? (
-          <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-            <p>
-              Add a <strong>default agency email</strong> under{" "}
+          <div className="rounded-xl bg-[#2a1f0e]/50 p-4 ring-1 ring-[#BD9952]/25">
+            <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#E7E5E4]">
+              Add a <strong className="font-medium text-[#BD9952]">default agency email</strong> under{" "}
               <span className="whitespace-nowrap">Settings → Email &amp; Automation</span> (Default referencing
-              agency), or enter an <strong>override for this tenancy</strong> below, before you can send a
+              agency), or enter an <strong className="font-medium">override for this tenancy</strong> below, before you can send a
               handoff.
             </p>
             <Link
               href="/dashboard/settings"
-              className="mt-2 inline-block font-medium text-foreground underline underline-offset-4"
+              className="mt-3 inline-block font-[family-name:var(--font-inter)] text-sm font-medium text-[#BD9952] underline-offset-4 transition-colors hover:text-[#c9a660] hover:underline"
             >
               Open Settings
             </Link>
@@ -126,7 +140,9 @@ export function ReferencingPanel({
         ) : null}
 
         <div className="grid gap-2 sm:max-w-md">
-          <Label htmlFor="ref-override">Agency email override (this tenancy)</Label>
+          <Label htmlFor="ref-override" className={TENANCY_LABEL}>
+            Agency email override (this tenancy)
+          </Label>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Input
               id="ref-override"
@@ -134,10 +150,10 @@ export function ReferencingPanel({
               placeholder="Uses Settings default if empty"
               value={override}
               onChange={(e) => setOverride(e.target.value)}
+              className="rounded-md border-[rgb(72_72_72_/0.28)] bg-[#0e0e0e]/80 text-[#E7E5E4] placeholder:text-[#6b6a69] focus-visible:border-[#BD9952]/45 focus-visible:ring-1 focus-visible:ring-[#BD9952]/25"
             />
             <Button
               type="button"
-              variant="secondary"
               size="sm"
               disabled={pending}
               onClick={() => {
@@ -151,36 +167,41 @@ export function ReferencingPanel({
                   router.refresh();
                 });
               }}
+              className={cn(TENANCY_OUTLINE_BTN, "h-9 shrink-0 px-4")}
             >
               Save override
             </Button>
           </div>
         </div>
 
-        <div className="grid gap-2 text-sm sm:grid-cols-2">
-          <div>
-            <span className="text-muted-foreground">Onboarding status</span>
-            <p className="font-medium capitalize">{onboardingStatus.replace(/_/g, " ")}</p>
+        <div className="grid gap-4 text-sm sm:grid-cols-2">
+          <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
+            <span className={TENANCY_LABEL}>Onboarding status</span>
+            <p className="mt-1 font-[family-name:var(--font-inter)] font-medium capitalize text-[#E7E5E4]">
+              {onboardingStatus.replace(/_/g, " ")}
+            </p>
           </div>
-          <div>
-            <span className="text-muted-foreground">Reference token</span>
-            <p className="font-mono text-xs break-all">{referencingToken ?? "— (generated on first send)"}</p>
+          <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
+            <span className={TENANCY_LABEL}>Reference token</span>
+            <p className="mt-1 break-all font-mono text-xs text-[#C9C6C5]">
+              {referencingToken ?? "— (generated on first send)"}
+            </p>
           </div>
-          <div>
-            <span className="text-muted-foreground">Last handoff sent</span>
-            <p className="font-medium">{fmt(lastOutboundAt)}</p>
+          <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
+            <span className={TENANCY_LABEL}>Last handoff sent</span>
+            <p className="mt-1 font-[family-name:var(--font-inter)] font-medium text-[#E7E5E4]">{fmt(lastOutboundAt)}</p>
           </div>
-          <div>
-            <span className="text-muted-foreground">Last agency reply (inbound)</span>
-            <p className="font-medium">{fmt(lastInboundAt)}</p>
+          <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
+            <span className={TENANCY_LABEL}>Last agency reply (inbound)</span>
+            <p className="mt-1 font-[family-name:var(--font-inter)] font-medium text-[#E7E5E4]">{fmt(lastInboundAt)}</p>
           </div>
         </div>
 
         {handoffRecipientEmail ? (
-          <div className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-xs leading-relaxed text-muted-foreground">
-            <span className="font-medium text-foreground">Handoff is emailed to </span>
-            <span className="select-all break-all font-mono text-foreground">{handoffRecipientEmail}</span>
-            <span className="text-muted-foreground">
+          <div className="rounded-xl bg-[#0e0e0e]/40 px-4 py-3 font-[family-name:var(--font-inter)] text-xs leading-relaxed text-[#ACABAA] ring-1 ring-[rgb(72_72_72_/0.1)]">
+            <span className="font-medium text-[#E7E5E4]">Handoff is emailed to </span>
+            <span className="select-all break-all font-mono text-[#C9C6C5]">{handoffRecipientEmail}</span>
+            <span className="text-[#ACABAA]">
               {" "}
               (the referencing agency — not your landlord inbox unless it is the same address). If you do not see
               it, check spam on that exact address or fix a typo in the override or under Settings → Email &amp;
@@ -189,36 +210,41 @@ export function ReferencingPanel({
           </div>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
-          <Button type="button" onClick={onSendHandoff} disabled={pending || !canSendHandoff}>
+        <div className="flex flex-wrap gap-3">
+          <Button type="button" onClick={onSendHandoff} disabled={pending || !canSendHandoff} className={cn(TENANCY_PRIMARY_BTN, "px-6")}>
             {pending ? "Working…" : "Send referencing handoff"}
           </Button>
-          <Button type="button" variant="outline" onClick={onMarkComplete} disabled={pending}>
+          <Button type="button" variant="outline" onClick={onMarkComplete} disabled={pending} className={cn(TENANCY_OUTLINE_BTN, "h-10 px-5")}>
             Mark referencing complete (manual)
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="font-[family-name:var(--font-inter)] text-xs font-light leading-relaxed text-[#ACABAA]">
           When you receive the agency&apos;s final outcome (e.g. pass / fail / guarantor required), use{" "}
-          <strong>Mark referencing complete</strong> if Letora hasn&apos;t updated automatically from inbound
+          <strong className="font-medium text-[#E7E5E4]">Mark referencing complete</strong> if Letora hasn&apos;t updated automatically from inbound
           email.
         </p>
 
         {events.length > 0 ? (
-          <div className="border-t pt-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Recent activity</p>
-            <ul className="mt-2 space-y-2 text-sm">
+          <div className="border-t border-[rgb(72_72_72_/0.1)] pt-6">
+            <p className={cn(TENANCY_LABEL, "mb-3")}>Recent activity</p>
+            <ul className="space-y-2">
               {events.map((ev) => (
-                <li key={ev.id} className="rounded-md border border-border px-3 py-2">
+                <li
+                  key={ev.id}
+                  className="rounded-xl bg-[#0e0e0e]/35 px-4 py-3 ring-1 ring-[rgb(72_72_72_/0.08)] transition-colors hover:bg-[#131313]/50"
+                >
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-medium capitalize">{ev.direction}</span>
-                    <span className="text-xs text-muted-foreground">{fmt(ev.createdAt)}</span>
+                    <span className="font-[family-name:var(--font-inter)] font-medium capitalize text-[#E7E5E4]">
+                      {ev.direction}
+                    </span>
+                    <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-[#ACABAA]">{fmt(ev.createdAt)}</span>
                   </div>
                   {ev.outcome ? (
-                    <p className="text-xs text-muted-foreground">Outcome: {ev.outcome}</p>
+                    <p className="mt-1 font-[family-name:var(--font-inter)] text-xs text-[#ACABAA]">Outcome: {ev.outcome}</p>
                   ) : null}
-                  {ev.subject ? <p className="text-xs">{ev.subject}</p> : null}
+                  {ev.subject ? <p className="mt-1 font-[family-name:var(--font-inter)] text-sm text-[#C9C6C5]">{ev.subject}</p> : null}
                   {ev.bodyPreview ? (
-                    <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{ev.bodyPreview}</p>
+                    <p className="mt-1 line-clamp-2 font-[family-name:var(--font-inter)] text-xs text-[#ACABAA]">{ev.bodyPreview}</p>
                   ) : null}
                 </li>
               ))}

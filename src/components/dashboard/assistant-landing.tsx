@@ -5,22 +5,22 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Loader2, Send, Sparkles } from "lucide-react";
 
+import { AgentQuickActions } from "@/components/dashboard/agent-quick-actions";
+import { AssistantConversationList } from "@/components/dashboard/assistant-conversation-list";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import type { AssistantConversationListItem } from "@/lib/assistant-messages/store";
 import { cn } from "@/lib/utils";
-
-function deriveTitle(firstLine: string) {
-  const line = firstLine.split("\n")[0]?.trim() ?? "";
-  if (!line) return "New chat";
-  return line.length > 200 ? `${line.slice(0, 199)}…` : line;
-}
 
 export function AssistantLanding({
   greetingName,
   className,
+  conversations = [],
 }: {
   greetingName: string;
   className?: string;
+  /** Prior threads so users can continue without opening the chat view first. */
+  conversations?: AssistantConversationListItem[];
 }) {
   const router = useRouter();
   const [text, setText] = useState("");
@@ -34,22 +34,8 @@ export function AssistantLanding({
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/assistant/conversations", {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: deriveTitle(trimmed) }),
-      });
-      const data = (await res.json().catch(() => null)) as { id?: string; error?: string } | null;
-      if (!res.ok) {
-        throw new Error(data?.error ?? "Could not start a chat.");
-      }
-      if (!data?.id) {
-        throw new Error("Could not start a chat.");
-      }
-      router.push(
-        `/dashboard/assistant?c=${encodeURIComponent(data.id)}&start=${encodeURIComponent(trimmed)}`,
-      );
+      router.push(`/dashboard?q=${encodeURIComponent(trimmed)}`);
+      setText("");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong.");
     } finally {
@@ -72,7 +58,7 @@ export function AssistantLanding({
       </h1>
 
       <form onSubmit={handleSubmit} className="w-full max-w-4xl text-left">
-        <div className="flex gap-4 border-b border-[#484848]/30 bg-[#131313] px-6 py-6 transition-colors focus-within:border-[#BD9952]/50 sm:gap-5 sm:px-8">
+        <div className="flex gap-4 border-b border-[#484848]/30 bg-[#131313]/40 px-6 py-6 backdrop-blur-xl transition-colors focus-within:border-[#BD9952]/50 sm:gap-5 sm:px-8">
           <Sparkles
             className="mt-0.5 size-7 shrink-0 text-[#ACABAA] stroke-[1]"
             aria-hidden
@@ -115,6 +101,19 @@ export function AssistantLanding({
         </div>
       </form>
 
+      <AgentQuickActions />
+
+      {conversations.length > 0 ? (
+        <div className="mt-8 w-full max-w-4xl text-left">
+          <h2 className="mb-3 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.2em] text-[#ACABAA]">
+            Continue a conversation
+          </h2>
+          <div className="max-h-[min(40vh,22rem)] overflow-y-auto rounded-xl border border-[#484848]/30 bg-[#131313]/40 backdrop-blur-xl">
+            <AssistantConversationList conversations={conversations} variant="inline" />
+          </div>
+        </div>
+      ) : null}
+
       <div className="mt-8 flex flex-wrap justify-center gap-3 md:gap-4">
         <Link
           href="/dashboard/properties"
@@ -127,18 +126,6 @@ export function AssistantLanding({
           className="rounded-full border border-[#484848]/30 px-5 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.1em] text-[#ACABAA] transition-all hover:border-[#BD9952]/50 hover:bg-[#BD9952]/5 hover:text-[#C9C6C5]"
         >
           Email inbox
-        </Link>
-        <Link
-          href="/dashboard/assistant"
-          className="rounded-full border border-[#484848]/30 px-5 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.1em] text-[#ACABAA] transition-all hover:border-[#BD9952]/50 hover:bg-[#BD9952]/5 hover:text-[#C9C6C5]"
-        >
-          All chats
-        </Link>
-        <Link
-          href="/dashboard/settings"
-          className="rounded-full border border-[#484848]/30 px-5 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.1em] text-[#ACABAA] transition-all hover:border-[#BD9952]/50 hover:bg-[#BD9952]/5 hover:text-[#C9C6C5]"
-        >
-          Workspace settings
         </Link>
       </div>
     </section>

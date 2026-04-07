@@ -7,6 +7,7 @@ import { useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
 import { updateTenancy } from "@/lib/actions/tenancies";
+import { cn } from "@/lib/utils";
 import { type UpdateTenancyInput, updateTenancySchema } from "@/lib/validations/tenancy";
 import {
   DIALOG_FIELD_CLASS,
@@ -14,6 +15,7 @@ import {
   DIALOG_SINGLE_COLUMN_CLASS,
   dialogFormFooterClass,
 } from "@/lib/ui/dialog-form";
+import { TENANCY_OUTLINE_BTN, TENANCY_PRIMARY_BTN } from "@/components/tenancies/tenancy-letora-surfaces";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -65,11 +67,13 @@ export function EditTenancyDialog({
   userId,
   initial,
   triggerLabel = "Edit",
+  triggerClassName,
 }: {
   tenancyId: string;
   userId: string;
   initial: EditTenancyInitial;
   triggerLabel?: string;
+  triggerClassName?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -107,7 +111,12 @@ export function EditTenancyDialog({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" type="button">
+        <Button
+          variant="outline"
+          size="sm"
+          type="button"
+          className={cn(TENANCY_OUTLINE_BTN, "h-9 px-4", triggerClassName)}
+        >
           {triggerLabel}
         </Button>
       </DialogTrigger>
@@ -232,11 +241,11 @@ export function EditTenancyDialog({
 
           <div className={dialogFormFooterClass()}>
             <DialogClose asChild>
-              <Button type="button" variant="outline">
+              <Button type="button" variant="outline" className={cn(TENANCY_OUTLINE_BTN, "h-9 px-4")}>
                 Cancel
               </Button>
             </DialogClose>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className={cn(TENANCY_PRIMARY_BTN, "px-6")}>
               {isSubmitting ? "Saving…" : "Save changes"}
             </Button>
           </div>

@@ -23,6 +23,8 @@ export type TenancyRow = {
   monthlyRent: number | null;
   depositAmount: number | null;
   status: string | null;
+  /** Pipeline: `not_started` | `in_progress` | `references` | `contract_sent` | `complete` | … */
+  onboardingStatus: string | null;
 };
 
 export type RentPaymentRow = {
@@ -61,7 +63,7 @@ export async function getTenancies(userId: string): Promise<TenancyRow[]> {
   const { data, error } = await supabase
     .from("tenancies")
     .select(
-      "id,property_id,tenant_id,start_date,end_date,move_in_date,monthly_rent,deposit_amount,status,properties!inner(address,user_id),tenants(full_name,email)",
+      "id,property_id,tenant_id,start_date,end_date,move_in_date,monthly_rent,deposit_amount,status,onboarding_status,properties!inner(address,user_id),tenants(full_name,email)",
     )
     .eq("properties.user_id", userId)
     .order("created_at", { ascending: false });
@@ -94,6 +96,7 @@ export async function getTenancies(userId: string): Promise<TenancyRow[]> {
           ? row.deposit_amount
           : Number(row.deposit_amount),
     status: row.status ?? null,
+    onboardingStatus: (row as { onboarding_status?: string | null }).onboarding_status ?? null,
   };
   });
 }

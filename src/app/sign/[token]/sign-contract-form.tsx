@@ -13,7 +13,7 @@ export function SignContractForm({ token }: { token: string }) {
     setError(null);
     try {
       const res = await fetch(`/api/sign/${token}`, { method: "POST" });
-      const body = await res.json() as { ok?: boolean; error?: string };
+      const body = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok) {
         setError(body.error ?? "Something went wrong");
         return;
@@ -28,14 +28,14 @@ export function SignContractForm({ token }: { token: string }) {
 
   if (signed) {
     return (
-      <div className="border-t border-border px-6 py-8 text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10">
-          <svg className="h-7 w-7 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+      <div className="border-t border-[rgb(72_72_72_/0.12)] bg-[#0e0e0e]/30 px-6 py-8 text-center sm:px-8">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#BD9952]/12 ring-1 ring-[#BD9952]/25">
+          <svg className="h-7 w-7 text-[#BD9952]" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
           </svg>
         </div>
-        <h2 className="text-lg font-semibold text-foreground">Contract Signed</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <h2 className="font-headline text-lg font-light tracking-tight text-[#E7E5E4]">Contract signed</h2>
+        <p className="mt-2 font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-[#ACABAA]">
           Thank you — your signature has been recorded. Your landlord has been notified.
         </p>
       </div>
@@ -43,30 +43,28 @@ export function SignContractForm({ token }: { token: string }) {
   }
 
   return (
-    <div className="border-t border-border px-6 py-5">
-      <label className="flex items-start gap-3 cursor-pointer">
+    <div className="border-t border-[rgb(72_72_72_/0.12)] bg-[#0e0e0e]/25 px-6 py-6 sm:px-8">
+      <label className="flex cursor-pointer items-start gap-3">
         <input
           type="checkbox"
           checked={agreed}
           onChange={(e) => setAgreed(e.target.checked)}
-          className="mt-0.5 h-4 w-4 rounded border-border accent-primary"
+          className="mt-1 h-4 w-4 rounded border-[rgb(72_72_72_/0.35)] bg-[#0e0e0e] accent-[#BD9952]"
         />
-        <span className="text-sm text-muted-foreground">
+        <span className="font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
           I have read and agree to the terms of this tenancy agreement
         </span>
       </label>
 
-      {error && (
-        <p className="mt-3 text-sm text-red-500">{error}</p>
-      )}
+      {error ? <p className="mt-3 font-[family-name:var(--font-inter)] text-sm text-[#e8a8a4]">{error}</p> : null}
 
       <button
         type="button"
         disabled={!agreed || loading}
         onClick={handleSign}
-        className="mt-4 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="mt-5 w-full rounded-md bg-[#BD9952] px-4 py-3 font-[family-name:var(--font-inter)] text-sm font-medium text-[#2c1e00] transition-colors hover:bg-[#c9a660] disabled:cursor-not-allowed disabled:opacity-45"
       >
-        {loading ? "Signing…" : "Sign Contract"}
+        {loading ? "Signing…" : "Sign contract"}
       </button>
     </div>
   );

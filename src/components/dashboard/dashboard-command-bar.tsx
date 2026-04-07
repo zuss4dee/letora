@@ -13,9 +13,15 @@ export function DashboardCommandBar({ className }: { className?: string }) {
   const onSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      router.push("/dashboard/assistant");
+      const t = value.trim();
+      if (t) {
+        router.push(`/dashboard?q=${encodeURIComponent(t)}`);
+      } else {
+        router.push("/dashboard");
+      }
+      setValue("");
     },
-    [router],
+    [router, value],
   );
 
   return (

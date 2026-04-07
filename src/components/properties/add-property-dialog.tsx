@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 
 import { addProperty } from "@/lib/actions/properties";
@@ -34,7 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function AddPropertyDialog() {
+export function AddPropertyDialog({ trigger }: { trigger?: ReactElement }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -76,9 +76,11 @@ export function AddPropertyDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300">
-          Add Property
-        </Button>
+        {trigger ?? (
+          <Button className="rounded-sm bg-gradient-to-br from-[#C9C6C5] to-[#474646] font-[family-name:var(--font-inter)] text-[#414040] hover:brightness-110">
+            Add property
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
         <DialogHeader>

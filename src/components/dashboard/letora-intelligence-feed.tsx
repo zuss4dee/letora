@@ -115,10 +115,10 @@ export function LetoraIntelligenceFeed({ runs }: { runs: ActivityRun[] }) {
       {display.length === 0 ? (
         <p className="px-4 py-8 font-[family-name:var(--font-inter)] text-[0.8rem] text-[#ACABAA]">
           Nothing has run yet. Open{" "}
-          <Link href="/dashboard/agents" className="text-[#BD9952] underline-offset-4 hover:underline">
-            Intelligence
+          <Link href="/dashboard" className="text-[#BD9952] underline-offset-4 hover:underline">
+            Home
           </Link>{" "}
-          to start rent chasers, lead qualification, onboarding, or contract drafts.
+          to run rent chasers, lead qualification, onboarding, or contract drafts from Quick actions or ⌘K.
         </p>
       ) : (
         display.map((row) => {

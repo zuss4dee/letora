@@ -7,6 +7,7 @@ import { useForm, type Resolver } from "react-hook-form";
 
 import { logPayment } from "@/lib/actions/tenancies";
 import { type LogPaymentInput, logPaymentSchema } from "@/lib/validations/tenancy";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -38,11 +39,13 @@ export function LogPaymentDialog({
   rentPaymentId,
   defaultAmountPaid,
   triggerLabel,
+  triggerClassName,
 }: {
   tenancyId: string;
   rentPaymentId?: string | null;
   defaultAmountPaid: number;
   triggerLabel: string;
+  triggerClassName?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -82,7 +85,11 @@ export function LogPaymentDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn(triggerClassName)}
+        >
           {triggerLabel}
         </Button>
       </DialogTrigger>

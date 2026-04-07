@@ -1,16 +1,11 @@
-export const dynamic = "force-dynamic";
+import { redirect } from "next/navigation";
 
-import { AgentRunsTable } from "@/components/agents/agent-runs-table";
-import { AgentsClient } from "@/components/agents/agents-client";
-import { getAgentRuns } from "@/lib/actions/agents";
+const LEGACY_URL = "/dashboard/settings?agentRuns=1";
 
-export default async function AgentsPage() {
-  const runs = await getAgentRuns();
-
-  return (
-    <>
-      <AgentsClient />
-      <AgentRunsTable initialRuns={runs} />
-    </>
-  );
+/**
+ * Legacy route: AI agent controls and history now live on the home dashboard,
+ * command palette (⌘K), and the Agent activity side panel.
+ */
+export default function AgentsPageRedirect() {
+  redirect(LEGACY_URL);
 }

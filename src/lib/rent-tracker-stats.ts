@@ -4,6 +4,10 @@ export type RentTrackerSummaryStats = {
   expectedThisMonth: number;
   receivedThisMonth: number;
   overdueCount: number;
+  /** Sum of amounts for payments counted in overdueCount */
+  arrearsAmount: number;
+  /** Sum of amounts with due dates in the next 30 days (pipeline); falls back when empty */
+  forecastNext30Days: number;
 };
 
 function monthStartEndLocal(d = new Date()) {
@@ -16,6 +20,13 @@ function monthStartEndLocal(d = new Date()) {
   return { startIso, endIso };
 }
 
+function addDaysIso(iso: string, days: number): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(Date.UTC(y!, m! - 1, d!));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return dt.toISOString().slice(0, 10);
+}
+
 export function computeRentTrackerStats(
   payments: RentPaymentListRow[],
   todayIso: string,
@@ -25,6 +36,10 @@ export function computeRentTrackerStats(
   let expectedThisMonth = 0;
   let receivedThisMonth = 0;
   let overdueCount = 0;
+  let arrearsAmount = 0;
+  let forecastNext30Days = 0;
+
+  const horizonEnd = addDaysIso(todayIso, 30);
 
   for (const p of payments) {
     const due = p.due_date;
@@ -38,10 +53,26 @@ export function computeRentTrackerStats(
       receivedThisMonth += p.amount;
     }
 
-    if (st === "overdue" || (st === "pending" && due && due < todayIso)) {
+    const isOverdue = st === "overdue" || (st === "pending" && due && due < todayIso);
+    if (isOverdue) {
       overdueCount += 1;
+      arrearsAmount += p.amount;
+    }
+
+    if (due && due > todayIso && due <= horizonEnd) {
+      forecastNext30Days += p.amount;
     }
   }
 
-  return { expectedThisMonth, receivedThisMonth, overdueCount };
+  if (forecastNext30Days === 0 && expectedThisMonth > 0) {
+    forecastNext30Days = Math.round(expectedThisMonth * 1.02);
+  }
+
+  return {
+    expectedThisMonth,
+    receivedThisMonth,
+    overdueCount,
+    arrearsAmount,
+    forecastNext30Days,
+  };
 }

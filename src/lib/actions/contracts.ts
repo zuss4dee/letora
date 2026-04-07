@@ -18,6 +18,9 @@ export type ContractListRow = {
   createdAt: string | null;
   updatedAt: string | null;
   propertyAddress: string | null;
+  /** First line / subline for registry layout (from address + city). */
+  propertyLine1: string | null;
+  propertySubline: string | null;
   tenantName: string | null;
   tenantEmail: string | null;
 };
@@ -34,6 +37,21 @@ function toNum(v: unknown): number {
   if (v == null) return 0;
   const n = typeof v === "number" ? v : Number(v);
   return Number.isFinite(n) ? n : 0;
+}
+
+function propertyDisplayLines(addrRaw: string | null, city: string | null) {
+  const normalized = normalizePropertyAddressLabel(addrRaw ?? "");
+  if (!normalized.trim()) {
+    return { line1: null as string | null, line2: city?.trim() || null };
+  }
+  const parts = normalized.split(",").map((s) => s.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    return {
+      line1: parts[0] ?? normalized,
+      line2: parts.slice(1).join(" · ") || city?.trim() || null,
+    };
+  }
+  return { line1: normalized, line2: city?.trim() || null };
 }
 
 export async function getContracts(): Promise<ContractListRow[]> {
@@ -64,8 +82,8 @@ export async function getContracts(): Promise<ContractListRow[]> {
 
   const [{ data: properties }, { data: tenants }] = await Promise.all([
     propertyIds.length > 0
-      ? supabase.from("properties").select("id, address").in("id", propertyIds)
-      : Promise.resolve({ data: [] as { id: string; address: string | null }[] | null }),
+      ? supabase.from("properties").select("id, address, city").in("id", propertyIds)
+      : Promise.resolve({ data: [] as { id: string; address: string | null; city: string | null }[] | null }),
     tenantIds.length > 0
       ? supabase.from("tenants").select("id, full_name, email").in("id", tenantIds)
       : Promise.resolve({
@@ -84,6 +102,8 @@ export async function getContracts(): Promise<ContractListRow[]> {
     const prop = c.property_id ? propById.get(c.property_id) : undefined;
     const ten = c.tenant_id ? tenantById.get(c.tenant_id) : undefined;
     const addr = prop?.address ?? "";
+    const city = prop?.city ?? null;
+    const { line1, line2 } = propertyDisplayLines(addr, city);
     return {
       id: c.id as string,
       contractType: (c.contract_type as string | null) ?? null,
@@ -96,6 +116,8 @@ export async function getContracts(): Promise<ContractListRow[]> {
       createdAt: (c.created_at as string | null) ?? null,
       updatedAt: (c.updated_at as string | null) ?? null,
       propertyAddress: normalizePropertyAddressLabel(addr) || null,
+      propertyLine1: line1,
+      propertySubline: line2,
       tenantName: ten?.full_name ?? null,
       tenantEmail: ten?.email ?? null,
     };
@@ -120,8 +142,8 @@ export async function getContractDetail(contractId: string): Promise<ContractLis
 
   const [{ data: property }, { data: tenant }] = await Promise.all([
     c.property_id
-      ? supabase.from("properties").select("address").eq("id", c.property_id).maybeSingle()
-      : Promise.resolve({ data: null as { address: string | null } | null }),
+      ? supabase.from("properties").select("address, city").eq("id", c.property_id).maybeSingle()
+      : Promise.resolve({ data: null as { address: string | null; city: string | null } | null }),
     c.tenant_id
       ? supabase
           .from("tenants")
@@ -137,6 +159,8 @@ export async function getContractDetail(contractId: string): Promise<ContractLis
   ]);
 
   const addr = property?.address ?? "";
+  const city = property?.city ?? null;
+  const { line1, line2 } = propertyDisplayLines(addr, city);
   return {
     id: c.id as string,
     contractType: (c.contract_type as string | null) ?? null,
@@ -149,6 +173,8 @@ export async function getContractDetail(contractId: string): Promise<ContractLis
     createdAt: (c.created_at as string | null) ?? null,
     updatedAt: (c.updated_at as string | null) ?? null,
     propertyAddress: normalizePropertyAddressLabel(addr) || null,
+    propertyLine1: line1,
+    propertySubline: line2,
     tenantName: tenant?.full_name ?? null,
     tenantEmail: tenant?.email ?? null,
   };

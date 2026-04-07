@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactElement } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 
 import { addTenancy } from "@/lib/actions/tenancies";
@@ -37,9 +37,11 @@ import {
 export function AddTenancyDialog({
   properties,
   tenants,
+  trigger,
 }: {
   properties: Array<{ id: string; label: string }>;
   tenants: Array<{ id: string; label: string }>;
+  trigger?: ReactElement;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -82,12 +84,14 @@ export function AddTenancyDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-          disabled={disabled}
-        >
-          Add Tenancy
-        </Button>
+        {trigger ?? (
+          <Button
+            className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+            disabled={disabled}
+          >
+            Add Tenancy
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
         <DialogHeader>

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Textarea } from "@/components/ui/textarea";
 import { getPendingCeoActionFromMessages } from "@/lib/assistant/pending-ceo-from-messages";
+import { AssistantConversationList } from "@/components/dashboard/assistant-conversation-list";
 import type { AssistantConversationListItem } from "@/lib/assistant-messages/store";
 import type { PendingCEOAction } from "@/lib/agents/ceo/safety";
 import type { LetoraSuggestedAction } from "@/lib/agents/ceo/suggested-actions";
@@ -243,15 +244,29 @@ function MessageBubble({
   suggestedActions,
   isTransitional,
   onPickSuggestedMessage,
-}: ChatMessage & { onPickSuggestedMessage?: (text: string) => void }) {
+  compact,
+}: ChatMessage & {
+  onPickSuggestedMessage?: (text: string) => void;
+  /** Drawer / narrow column: full width + tighter typography. */
+  compact?: boolean;
+}) {
   const isUser = role === "user";
+  const bubbleText = cn(
+    "whitespace-pre-wrap text-sm leading-relaxed [word-break:normal]",
+    "break-words [overflow-wrap:anywhere]",
+  );
   if (role === "assistant") {
     const parsed = parseLeadQualifyEmbed(content);
     if (parsed) {
       return (
-        <div className="flex w-full justify-start">
-          <div className="max-w-[min(100%,42rem)] rounded-xl border border-border bg-muted/60 px-3 py-2.5 text-sm leading-relaxed text-foreground shadow-sm dark:bg-muted/40">
-            <p className="whitespace-pre-wrap break-words">{parsed.introText}</p>
+        <div className="flex w-full min-w-0 justify-start">
+          <div
+            className={cn(
+              "min-w-0 rounded-xl border border-border bg-muted/60 px-3 py-2.5 text-sm leading-relaxed text-foreground shadow-sm dark:bg-muted/40",
+              compact ? "w-full max-w-full" : "max-w-[min(100%,42rem)]",
+            )}
+          >
+            <p className={bubbleText}>{parsed.introText}</p>
             <LeadQualifyPanel payload={parsed.payload} />
           </div>
         </div>
@@ -263,17 +278,18 @@ function MessageBubble({
     : { cleanText: content, actions: [] as ActionTag[] };
 
   return (
-    <div className={cn("flex w-full", isUser ? "justify-end" : "justify-start")}>
+    <div className={cn("flex w-full min-w-0", isUser ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "max-w-[min(100%,42rem)] rounded-xl border px-3 py-2.5 text-sm leading-relaxed shadow-sm",
+          "min-w-0 rounded-xl border px-3 py-2.5 text-sm leading-relaxed shadow-sm",
+          compact ? "w-full max-w-full" : "max-w-[min(100%,42rem)]",
           isUser
             ? "border-transparent bg-primary text-primary-foreground"
             : "border-border bg-muted/60 text-foreground dark:bg-muted/40",
           isTransitional && !isUser && "animate-pulse border-primary/30 opacity-60",
         )}
       >
-        <p className="whitespace-pre-wrap break-words">{cleanText}</p>
+        <p className={bubbleText}>{cleanText}</p>
         {role === "assistant" && suggestedActions && suggestedActions.length > 0 && onPickSuggestedMessage ? (
           <SuggestedActionChips actions={suggestedActions} onMessagePick={onPickSuggestedMessage} />
         ) : null}
@@ -419,37 +435,6 @@ async function postChatRequest(
   };
 }
 
-function ConversationListPanel({
-  conversations,
-  activeConversationId,
-}: {
-  conversations: AssistantConversationListItem[];
-  activeConversationId: string;
-}) {
-  return (
-    <div className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-2">
-      {conversations.map((c) => {
-        const active = c.id === activeConversationId;
-        return (
-          <Link
-            key={c.id}
-            href={`/dashboard/assistant?c=${c.id}`}
-            scroll={false}
-            className={cn(
-              "rounded-lg px-3 py-2 text-left text-sm transition-colors",
-              active
-                ? "bg-muted font-medium text-foreground"
-                : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-            )}
-          >
-            <span className="line-clamp-2">{c.title || "New chat"}</span>
-          </Link>
-        );
-      })}
-    </div>
-  );
-}
-
 export function AssistantChat({
   conversations,
   activeConversationId,
@@ -459,7 +444,7 @@ export function AssistantChat({
   conversations: AssistantConversationListItem[];
   activeConversationId: string;
   initialMessages: ChatMessage[];
-  /** First message to send automatically (e.g. from home landing). Only used when the thread is empty. */
+  /** First message to send automatically (e.g. from home handoff). Only used when the thread is empty. */
   initialPromptToSend?: string;
 }) {
   const router = useRouter();
@@ -473,7 +458,7 @@ export function AssistantChat({
   const [pendingAction, setPendingAction] = useState<PendingCEOAction | null>(() =>
     getPendingCeoActionFromMessages(initialMessages),
   );
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [conversationListOpen, setConversationListOpen] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
   const starterFiredRef = useRef(false);
 
@@ -496,25 +481,9 @@ export function AssistantChat({
     scrollToLatest();
   }, [messages, loading, assistantStream, scrollToLatest]);
 
-  async function createNewChat() {
-    setMobileOpen(false);
-    setError(null);
-    try {
-      const res = await fetch("/api/assistant/conversations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-      if (!res.ok) {
-        const j = (await res.json().catch(() => null)) as { error?: string } | null;
-        throw new Error(j?.error ?? "Could not start a new chat.");
-      }
-      const data = (await res.json()) as { id: string };
-      router.push(`/dashboard/assistant?c=${data.id}`);
-      router.refresh();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not start a new chat.");
-    }
+  function createNewChat() {
+    setConversationListOpen(false);
+    router.push("/dashboard");
   }
 
   type ProcessedChatResult = {
@@ -598,7 +567,7 @@ export function AssistantChat({
     if (!trimmed || loading) return;
 
     if (overrideText !== undefined) {
-      router.replace(`/dashboard/assistant?c=${activeConversationId}`, { scroll: false });
+      router.replace(`/dashboard?c=${activeConversationId}`, { scroll: false });
     }
 
     const userMessage: ChatMessage = { role: "user", content: trimmed };
@@ -700,42 +669,71 @@ export function AssistantChat({
     messages.length === 0 && !loading && assistantStream.kind === "idle";
 
   const sidebar = (
-    <div className="flex h-full min-h-0 w-full flex-col border-r border-border bg-muted/20">
-      <div className="flex shrink-0 items-center gap-2 border-b border-border p-2">
-        <Button type="button" variant="outline" size="sm" className="flex-1" onClick={() => void createNewChat()}>
+    <div className="flex h-full min-h-0 w-full flex-col border-r border-[#484848]/20 bg-[#0E0E0E]/40 backdrop-blur-sm">
+      <div className="flex shrink-0 items-center gap-2 border-b border-[#484848]/20 p-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="flex-1 border-[#484848]/35 bg-[#131313]/60 text-[#E7E5E4] hover:bg-[#1F2020]"
+          onClick={() => createNewChat()}
+        >
           <MessageSquarePlus className="mr-1 size-4" aria-hidden />
           New chat
         </Button>
       </div>
-      <ConversationListPanel conversations={conversations} activeConversationId={activeConversationId} />
+      <AssistantConversationList
+        className="min-h-0 flex-1"
+        conversations={conversations}
+        activeConversationId={activeConversationId}
+        variant="sidebar"
+      />
     </div>
   );
 
   return (
     <div className="@container/main flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 flex-col gap-1 border-b border-border px-4 py-4 lg:px-6">
+      <div className="flex shrink-0 flex-col gap-1 border-b border-[#484848]/25 bg-[#0E0E0E]/30 px-4 py-4 backdrop-blur-sm lg:px-6">
         <div className="flex items-start justify-between gap-2">
           <div>
-            <h1 className="text-base font-semibold tracking-tight">Letora Assistant</h1>
-            <p className="text-sm text-muted-foreground">
-              Ask about rent, maintenance, tenants, tenancy agreements, or leads.
+            <h1 className="font-headline text-base font-medium tracking-tight text-[#E7E5E4]">
+              Letora Assistant
+            </h1>
+            <p className="font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">
+              Rent, maintenance, tenants, agreements, or leads.
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2 md:hidden">
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <Sheet open={conversationListOpen} onOpenChange={setConversationListOpen}>
               <SheetTrigger asChild>
-                <Button type="button" variant="outline" size="icon" aria-label="Open conversations">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="border-[#484848]/35 bg-[#131313]/70"
+                  aria-label="Open conversations"
+                >
                   <Menu className="size-4" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="flex w-[min(100%,20rem)] flex-col p-0">
-                <SheetHeader className="border-b border-border px-4 py-3 text-left">
-                  <SheetTitle className="text-base">Conversations</SheetTitle>
+              <SheetContent
+                side="left"
+                className="flex w-[min(100%,20rem)] flex-col gap-0 border-[#484848]/25 bg-[#0E0E0E]/95 p-0 backdrop-blur-xl"
+              >
+                <SheetHeader className="border-b border-[#484848]/20 px-4 py-3 text-left">
+                  <SheetTitle className="font-headline text-base text-[#E7E5E4]">Conversations</SheetTitle>
                 </SheetHeader>
                 {sidebar}
               </SheetContent>
             </Sheet>
-            <Button type="button" variant="outline" size="icon" onClick={() => void createNewChat()} aria-label="New chat">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="border-[#484848]/35 bg-[#131313]/70"
+              onClick={() => createNewChat()}
+              aria-label="New chat"
+            >
               <MessageSquarePlus className="size-4" />
             </Button>
           </div>
@@ -743,20 +741,22 @@ export function AssistantChat({
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-64 shrink-0 border-r border-border bg-muted/15 md:flex md:flex-col">{sidebar}</aside>
+        <aside className="hidden w-64 shrink-0 border-r border-[#484848]/20 bg-[#0E0E0E]/35 backdrop-blur-sm md:flex md:flex-col">
+          {sidebar}
+        </aside>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="hidden border-b border-border px-4 py-2 text-xs text-muted-foreground md:block lg:px-6">
+          <div className="hidden border-b border-[#484848]/20 px-4 py-2 font-[family-name:var(--font-inter)] text-xs text-[#ACABAA] md:block lg:px-6">
             <span className="inline-flex items-center gap-1">
               <PanelLeft className="size-3.5 opacity-70" aria-hidden />
-              Conversations on the left — or use the menu on mobile.
+              Chat history on the left — menu on mobile.
             </span>
           </div>
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6">
               {showEmptyPlaceholder ? (
-                <div className="mx-auto max-w-2xl rounded-xl border border-dashed border-border bg-muted/30 p-6 text-center text-sm text-muted-foreground dark:bg-muted/20">
-                  <p className="font-medium text-foreground">Start a conversation</p>
+                <div className="mx-auto max-w-2xl rounded-xl border border-dashed border-[#484848]/35 bg-[#131313]/30 p-6 text-center text-sm text-[#ACABAA] backdrop-blur-sm">
+                  <p className="font-headline font-medium text-[#E7E5E4]">Start a conversation</p>
                   <p className="mt-2 leading-relaxed">
                     Your assistant can help with property-related tasks — rent chasing, maintenance,
                     tenants, tenancy agreements, and leads. Describe what you need in plain English.
@@ -796,7 +796,7 @@ export function AssistantChat({
               </div>
             ) : null}
 
-            <div className="shrink-0 border-t border-border bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:px-6">
+            <div className="shrink-0 border-t border-[#484848]/25 bg-[#0E0E0E]/75 p-4 backdrop-blur-md supports-[backdrop-filter]:bg-[#0E0E0E]/60 lg:px-6">
               <form
                 className="mx-auto flex w-full max-w-3xl flex-col gap-2 sm:flex-row sm:items-end"
                 onSubmit={(e) => {
@@ -811,13 +811,13 @@ export function AssistantChat({
                   placeholder="Message Letora Assistant…"
                   rows={2}
                   disabled={loading}
-                  className="min-h-[44px] flex-1 resize-none sm:min-h-[52px]"
+                  className="min-h-[44px] min-w-0 flex-1 resize-none border-[#484848]/30 bg-[#131313]/50 text-[#E7E5E4] placeholder:text-[#484848] sm:min-h-[52px]"
                   aria-label="Message"
                 />
                 <Button
                   type="submit"
                   disabled={!canSend}
-                  className="h-11 shrink-0 sm:h-auto sm:min-h-[52px] sm:px-6"
+                  className="h-11 shrink-0 bg-[#BD9952] text-[#2c1e00] hover:bg-[#c9a660] sm:h-auto sm:min-h-[52px] sm:px-6"
                 >
                   {loading ? (
                     <Loader2 className="size-4 animate-spin" aria-hidden />

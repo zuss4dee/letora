@@ -6,14 +6,24 @@ import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 import { tenantSchema, tenantUpdateSchema } from "@/lib/validations/tenant";
 
+export type TenantRentStatus = "paid" | "overdue" | "pending";
+
 export type TenantRow = {
   id: string;
   fullName: string | null;
   email: string | null;
   phone: string | null;
   propertyAddress: string | null;
+  propertyLine1: string | null;
+  propertySubtitle: string | null;
   rightToRentStatus: string | null;
   tenancyStatus: string | null;
+  onboardingStatus: string | null;
+  tenancyId: string | null;
+  leaseStartDate: string | null;
+  leaseEndDate: string | null;
+  leaseMonths: number | null;
+  rentStatus: TenantRentStatus;
   createdAt: string | null;
 };
 
@@ -23,7 +33,16 @@ export async function getTenants(userId: string): Promise<TenantRow[]> {
   const { data, error } = await supabase
     .from("tenants")
     .select(
-      "id,full_name,email,phone,right_to_rent_status,created_at,tenancies(status,properties(address))",
+      `id,full_name,email,phone,right_to_rent_status,created_at,
+      tenancies(
+        id,
+        status,
+        start_date,
+        end_date,
+        onboarding_status,
+        properties(address,city,property_type),
+        rent_payments(status,due_date)
+      )`,
     )
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
@@ -31,6 +50,70 @@ export async function getTenants(userId: string): Promise<TenantRow[]> {
   if (error) return [];
 
   return (data ?? []).map((row) => mapTenantListRow(row));
+}
+
+function pickPrimaryTenancy(
+  tenancies: Array<{
+    id?: string;
+    status?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    onboarding_status?: string | null;
+    properties?: { address?: string | null; city?: string | null; property_type?: string | null } | null;
+    rent_payments?: unknown;
+  }>,
+) {
+  const list = Array.isArray(tenancies) ? tenancies : [];
+  const active = list.filter((t) => (t.status ?? "").toLowerCase() === "active");
+  const pool = active.length > 0 ? active : list;
+  return pool.sort((a, b) => {
+    const aStart = a.start_date ? new Date(a.start_date).getTime() : 0;
+    const bStart = b.start_date ? new Date(b.start_date).getTime() : 0;
+    return bStart - aStart;
+  })[0] ?? null;
+}
+
+function aggregateRentStatus(payments: unknown): TenantRentStatus {
+  const list = Array.isArray(payments) ? payments : [];
+  const statuses = list.map((p) => ((p as { status?: string | null }).status ?? "").toLowerCase());
+  if (statuses.some((s) => s === "overdue")) return "overdue";
+  if (statuses.some((s) => s === "pending")) return "pending";
+  if (statuses.some((s) => s === "paid")) return "paid";
+  return "pending";
+}
+
+function splitPropertyLines(
+  address: string | null,
+  city: string | null,
+  propertyType: string | null,
+): { line1: string | null; subtitle: string | null } {
+  const normalized = normalizePropertyAddressLabel(address ?? "");
+  if (!normalized.trim()) {
+    return {
+      line1: null,
+      subtitle: city?.trim() || propertyType?.trim() || null,
+    };
+  }
+  const parts = normalized.split(",").map((s) => s.trim()).filter(Boolean);
+  if (parts.length >= 2) {
+    return {
+      line1: parts[0] ?? normalized,
+      subtitle: parts.slice(1).join(", ") || city?.trim() || propertyType?.trim() || null,
+    };
+  }
+  return {
+    line1: normalized,
+    subtitle: city?.trim() || propertyType?.trim() || null,
+  };
+}
+
+function leaseMonthSpan(start: string | null, end: string | null): number | null {
+  if (!start || !end) return null;
+  const a = new Date(start);
+  const b = new Date(end);
+  if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return null;
+  const months = (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth());
+  return Math.max(0, months);
 }
 
 function mapTenantListRow(row: {
@@ -43,21 +126,43 @@ function mapTenantListRow(row: {
   tenancies?: unknown;
 }): TenantRow {
   const tenancies = (row.tenancies ?? []) as Array<{
+    id?: string;
     status?: string | null;
-    properties?: { address?: string | null } | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    onboarding_status?: string | null;
+    properties?: { address?: string | null; city?: string | null; property_type?: string | null } | null;
+    rent_payments?: Array<{ status?: string | null; due_date?: string | null }> | null;
   }>;
 
-  const firstTenancy = tenancies[0] ?? null;
+  const t = pickPrimaryTenancy(tenancies);
+  const addr = t?.properties?.address ?? null;
+  const city = t?.properties?.city ?? null;
+  const propertyType = t?.properties?.property_type ?? null;
+  const { line1, subtitle } = splitPropertyLines(addr, city, propertyType);
+  const fullAddress = normalizePropertyAddressLabel(addr ?? "") || null;
+
+  const rentStatus = aggregateRentStatus(t?.rent_payments);
+
+  const start = t?.start_date ? String(t.start_date).slice(0, 10) : null;
+  const end = t?.end_date ? String(t.end_date).slice(0, 10) : null;
 
   return {
     id: row.id,
     fullName: row.full_name ?? null,
     email: row.email ?? null,
     phone: row.phone ?? null,
-    propertyAddress:
-      normalizePropertyAddressLabel(firstTenancy?.properties?.address ?? "") || null,
+    propertyAddress: fullAddress,
+    propertyLine1: line1,
+    propertySubtitle: subtitle,
     rightToRentStatus: row.right_to_rent_status ?? null,
-    tenancyStatus: firstTenancy?.status ?? null,
+    tenancyStatus: t?.status ?? null,
+    onboardingStatus: t?.onboarding_status ?? null,
+    tenancyId: t?.id ? String(t.id) : null,
+    leaseStartDate: start,
+    leaseEndDate: end,
+    leaseMonths: leaseMonthSpan(start, end),
+    rentStatus,
     createdAt: row.created_at ?? null,
   };
 }

@@ -44,6 +44,7 @@ export async function saveRentChaserDraft(draft: {
 
   if (error || !data?.id) throw new Error(error?.message ?? "Could not save draft");
 
+  revalidatePath("/dashboard");
   revalidatePath("/dashboard/agents");
   return { draftId: data.id as string };
 }

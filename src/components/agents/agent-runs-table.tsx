@@ -125,17 +125,34 @@ function statusBadge(status: string) {
 
 type AgentRunsTableProps = {
   initialRuns: AgentRun[];
+  /** Compact layout without outer page heading (e.g. sheet drawer). */
+  variant?: "page" | "embedded";
 };
 
-export function AgentRunsTable({ initialRuns }: AgentRunsTableProps) {
+export function AgentRunsTable({ initialRuns, variant = "page" }: AgentRunsTableProps) {
   useDashboardPollRefresh();
 
+  const embedded = variant === "embedded";
+
   return (
-    <div className="mt-8 space-y-3 px-4 lg:px-6">
-      <h2 className="text-base font-semibold tracking-tight">Recent Agent Runs</h2>
-      <Card>
-        <CardHeader className="border-b">
-          <CardTitle className="text-sm font-medium text-muted-foreground">History</CardTitle>
+    <div
+      className={cn(
+        embedded ? "space-y-3 px-0" : "mt-8 space-y-3 px-4 lg:px-6",
+      )}
+    >
+      {!embedded ? (
+        <h2 className="text-base font-semibold tracking-tight">Recent Agent Runs</h2>
+      ) : null}
+      <Card className={cn(embedded && "border-[#484848]/25 bg-[#131313]")}>
+        <CardHeader className={cn("border-b", embedded && "border-[#484848]/20 py-3")}>
+          <CardTitle
+            className={cn(
+              "text-sm font-medium text-muted-foreground",
+              embedded && "font-[family-name:var(--font-inter)] text-xs uppercase tracking-[0.08em] text-[#ACABAA]",
+            )}
+          >
+            History
+          </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           {initialRuns.length === 0 ? (

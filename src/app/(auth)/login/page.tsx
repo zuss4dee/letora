@@ -7,6 +7,13 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
+import { AuthBrandMark } from "@/components/auth/auth-brand-mark";
+import { AuthEditorialAside } from "@/components/auth/auth-editorial-aside";
+import {
+  authInputClassName,
+  authPrimaryButtonClassName,
+  AuthSplitShell,
+} from "@/components/auth/auth-split-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -56,101 +63,86 @@ function LoginForm() {
   }
 
   return (
-    <main className="w-full max-w-[1080px] font-normal">
-      <div className="grid min-h-[620px] overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 shadow-[0_25px_80px_-40px_rgba(15,23,42,0.22)] transition-colors dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-[0_25px_80px_-40px_rgba(0,0,0,0.8)] lg:grid-cols-2">
-        <section className="flex items-center justify-center bg-white px-6 py-14 transition-colors dark:bg-zinc-900">
-          <div className="w-full max-w-[340px] space-y-6 rounded-2xl border border-zinc-200 bg-white p-7 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900">
-            <header className="space-y-3 text-center">
-              <div className="space-y-1">
-                <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100">Letora</h1>
-                <p className="text-sm font-normal text-zinc-500 dark:text-zinc-400">Property Operating System</p>
-              </div>
-            </header>
+    <AuthSplitShell aside={<AuthEditorialAside variant="login" />}>
+      <div className="w-full max-w-[380px] space-y-8">
+        <AuthBrandMark />
 
-            <form className="space-y-3.5" onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="space-y-1.5">
-                <Label htmlFor="email" className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  data-testid="login-email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="hello@letora.ai"
-                  className="h-10 rounded-full border-zinc-300 bg-white/90 px-4 text-zinc-900 shadow-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus-visible:ring-indigo-400"
-                  {...form.register("email")}
-                />
-                {form.formState.errors.email ? (
-                  <p className="text-xs text-red-500 dark:text-red-400">{form.formState.errors.email.message}</p>
-                ) : null}
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-sm font-medium text-zinc-700 dark:text-zinc-200">
-                    Password
-                  </Label>
-                  <Link
-                    href="#"
-                    className="text-xs font-normal text-zinc-500 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input
-                  id="password"
-                  data-testid="login-password"
-                  type="password"
-                  autoComplete="current-password"
-                  placeholder="••••••••"
-                  className="h-10 rounded-full border-zinc-300 bg-white/90 px-4 text-zinc-900 shadow-none focus-visible:ring-2 focus-visible:ring-indigo-600 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:focus-visible:ring-indigo-400"
-                  {...form.register("password")}
-                />
-                {form.formState.errors.password ? (
-                  <p className="text-xs text-red-500 dark:text-red-400">{form.formState.errors.password.message}</p>
-                ) : null}
-              </div>
-
-              {submitError ? (
-                <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2.5 py-2 text-xs font-normal text-red-600 dark:text-red-400">
-                  {submitError}
-                </p>
-              ) : null}
-
-              <Button
-                type="submit"
-                data-testid="login-submit"
-                className="h-10 w-full rounded-full bg-indigo-600 text-[13px] font-normal text-white shadow-sm transition-colors hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Signing in..." : "Continue"}
-              </Button>
-            </form>
-
-            <div className="space-y-3">
-              <div className="flex items-center gap-2.5">
-                <div className="h-px flex-1 bg-zinc-300 dark:bg-zinc-700" />
-                <span className="text-[11px] font-normal text-zinc-500 dark:text-zinc-400">or</span>
-                <div className="h-px flex-1 bg-zinc-300 dark:bg-zinc-700" />
-              </div>
-              <p className="text-center text-xs font-normal text-zinc-500 dark:text-zinc-400">
-                Don&apos;t have an account?{" "}
-                <Link href="/signup" className="font-normal text-zinc-900 hover:underline dark:text-zinc-100">
-                  Sign up
-                </Link>
-              </p>
-            </div>
+        <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)}>
+          <div className="space-y-2">
+            <Label htmlFor="email" className="font-[family-name:var(--font-inter)] text-xs font-medium text-[#ACABAA]">
+              Email
+            </Label>
+            <Input
+              id="email"
+              data-testid="login-email"
+              type="email"
+              autoComplete="email"
+              placeholder="hello@letora.ai"
+              className={authInputClassName}
+              {...form.register("email")}
+            />
+            {form.formState.errors.email ? (
+              <p className="text-xs text-[#c97a76]">{form.formState.errors.email.message}</p>
+            ) : null}
           </div>
-        </section>
 
-        <aside className="relative hidden overflow-hidden border-l border-zinc-200 bg-zinc-50 transition-colors dark:border-zinc-800 dark:bg-zinc-950 lg:block">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,theme(colors.zinc.200/.55)_1px,transparent_1px),linear-gradient(to_bottom,theme(colors.zinc.200/.55)_1px,transparent_1px)] bg-[size:26px_26px] dark:hidden" />
-          <div className="absolute inset-0 hidden dark:block dark:bg-[radial-gradient(circle_at_18%_25%,rgba(129,140,248,0.12),transparent_36%),radial-gradient(circle_at_75%_35%,rgba(129,140,248,0.09),transparent_42%),linear-gradient(170deg,#09090b_0%,#09090b_100%)]" />
-          <div className="absolute inset-0 hidden dark:block dark:bg-[linear-gradient(to_right,theme(colors.zinc.900/.35)_1px,transparent_1px),linear-gradient(to_bottom,theme(colors.zinc.900/.35)_1px,transparent_1px)] dark:bg-[size:26px_26px]" />
-        </aside>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor="password" className="font-[family-name:var(--font-inter)] text-xs font-medium text-[#ACABAA]">
+                Password
+              </Label>
+              <Link
+                href="#"
+                className="text-[0.7rem] font-medium text-[#6b6a69] transition-colors hover:text-[#BD9952]"
+              >
+                Forgot password?
+              </Link>
+            </div>
+            <Input
+              id="password"
+              data-testid="login-password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              className={authInputClassName}
+              {...form.register("password")}
+            />
+            {form.formState.errors.password ? (
+              <p className="text-xs text-[#c97a76]">{form.formState.errors.password.message}</p>
+            ) : null}
+          </div>
+
+          {submitError ? (
+            <p
+              className="rounded-md border border-[#BB5551]/35 bg-[#1a1210]/90 px-3 py-2.5 text-xs font-normal text-[#e8a8a4]"
+              role="alert"
+            >
+              {submitError}
+            </p>
+          ) : null}
+
+          <Button type="submit" data-testid="login-submit" className={authPrimaryButtonClassName} disabled={isSubmitting}>
+            {isSubmitting ? "Signing in…" : "Continue"}
+          </Button>
+        </form>
+
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="h-px flex-1 bg-[rgb(72_72_72_/0.25)]" />
+            <span className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-[#6b6a69]">
+              or
+            </span>
+            <div className="h-px flex-1 bg-[rgb(72_72_72_/0.25)]" />
+          </div>
+          <p className="text-center font-[family-name:var(--font-inter)] text-sm font-normal text-[#ACABAA]">
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="font-medium text-[#E7E5E4] underline-offset-4 transition-colors hover:text-[#BD9952] hover:underline">
+              Sign up
+            </Link>
+          </p>
+        </div>
       </div>
-    </main>
+    </AuthSplitShell>
   );
 }
 
@@ -158,7 +150,7 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-[620px] w-full max-w-[1080px] items-center justify-center font-normal text-zinc-500">
+        <main className="flex min-h-[560px] w-full max-w-[1080px] items-center justify-center font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">
           Loading…
         </main>
       }

@@ -1,14 +1,16 @@
 "use client";
 
-import { Loader2, Mail, FileText, Users, ExternalLink } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { saveContractDraft, saveRentChaserDraft } from "@/lib/actions/agents";
+import type { AgentRun } from "@/lib/actions/agents";
 import { sendEmailDraft } from "@/lib/actions/email-drafts";
 import { updateLeadQualifiedStatus } from "@/lib/actions/leads";
 
+import { AgentRunsTable } from "@/components/agents/agent-runs-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +29,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Table,
   TableBody,
@@ -129,7 +138,35 @@ function recommendationBadge(value: "qualify" | "reject") {
   );
 }
 
-export function AgentsClient() {
+export type AgentRunnersContextValue = {
+  runRentChaser: () => Promise<void>;
+  runLeadQualifier: () => Promise<void>;
+  openContractDrafter: () => void;
+  openAgentRuns: () => void;
+  closeAgentRuns: () => void;
+  isRentRunning: boolean;
+  isLeadRunning: boolean;
+  isContractRunning: boolean;
+  agentRunsOpen: boolean;
+};
+
+const AgentRunnersContext = createContext<AgentRunnersContextValue | null>(null);
+
+export function useAgentRunners(): AgentRunnersContextValue {
+  const ctx = useContext(AgentRunnersContext);
+  if (!ctx) {
+    throw new Error("useAgentRunners must be used within AgentRunnersProvider");
+  }
+  return ctx;
+}
+
+function AgentRunnersInner({
+  children,
+  initialRuns,
+}: {
+  children: ReactNode;
+  initialRuns: AgentRun[];
+}) {
   const [isRentRunning, setIsRentRunning] = useState(false);
   const [showRentDialog, setShowRentDialog] = useState(false);
   const [rentDrafts, setRentDrafts] = useState<RentDraft[]>([]);
@@ -152,6 +189,8 @@ export function AgentsClient() {
   const [showContractResult, setShowContractResult] = useState(false);
   const [copiedContract, setCopiedContract] = useState(false);
   const [savedContract, setSavedContract] = useState(false);
+
+  const [agentRunsOpen, setAgentRunsOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/contracts/drafts")
@@ -299,9 +338,7 @@ export function AgentsClient() {
     setSendingRentIndex(index);
     try {
       await sendEmailDraft(draftId);
-      setRentDrafts((prev) =>
-        prev.map((d, i) => (i === index ? { ...d, sent: true } : d)),
-      );
+      setRentDrafts((prev) => prev.map((d, i) => (i === index ? { ...d, sent: true } : d)));
     } catch {
       toast.error("Failed to send");
     } finally {
@@ -350,123 +387,43 @@ export function AgentsClient() {
     }
   }
 
+  const openAgentRuns = useCallback(() => setAgentRunsOpen(true), []);
+  const closeAgentRuns = useCallback(() => setAgentRunsOpen(false), []);
+
+  const contextValue: AgentRunnersContextValue = {
+    runRentChaser: onRunRentChaser,
+    runLeadQualifier: onRunLeadQualifier,
+    openContractDrafter: openContractPicker,
+    openAgentRuns,
+    closeAgentRuns,
+    isRentRunning,
+    isLeadRunning,
+    isContractRunning,
+    agentRunsOpen,
+  };
+
   return (
-    <div className="@container/main flex flex-1 flex-col gap-2">
-      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-        <div className="px-4 lg:px-6">
-          <h1 className="text-base font-semibold tracking-tight">AI Agents</h1>
-          <p className="text-sm text-muted-foreground">
-            Autonomous agents that manage your property portfolio.
-          </p>
-        </div>
+    <AgentRunnersContext.Provider value={contextValue}>
+      {children}
 
-        <div className="grid gap-4 px-4 md:grid-cols-3 lg:px-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
-                <CardTitle className="text-base">Rent Chaser</CardTitle>
-              </div>
-              <CardDescription>
-                Automatically detects overdue rent and drafts chase emails.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <Button
-                type="button"
-                onClick={onRunRentChaser}
-                disabled={isRentRunning}
-                className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-              >
-                {isRentRunning ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Running...
-                  </>
-                ) : (
-                  "Run Agent"
-                )}
-              </Button>
-              <Button type="button" variant="outline" asChild>
-                <Link href="/dashboard/rent-tracker">
-                  Rent Tracker
-                  <ExternalLink className="ml-2 h-3.5 w-3.5 opacity-70" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-zinc-500" />
-                <CardTitle className="text-base">Lead Qualifier</CardTitle>
-              </div>
-              <CardDescription>
-                Scores and qualifies incoming leads based on criteria.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <Button
-                type="button"
-                onClick={onRunLeadQualifier}
-                disabled={isLeadRunning}
-                className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-              >
-                {isLeadRunning ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Running...
-                  </>
-                ) : (
-                  "Run Agent"
-                )}
-              </Button>
-              <Button type="button" variant="outline" asChild>
-                <Link href="/dashboard/leads">
-                  Leads
-                  <ExternalLink className="ml-2 h-3.5 w-3.5 opacity-70" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-zinc-500" />
-                <CardTitle className="text-base">Contract Drafter</CardTitle>
-              </div>
-              <CardDescription>
-                Generates contract drafts with your tenancy details.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-              <Button
-                type="button"
-                onClick={openContractPicker}
-                disabled={isContractRunning}
-                className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-              >
-                {isContractRunning ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  "Run Agent"
-                )}
-              </Button>
-              <Button type="button" variant="outline" asChild>
-                <Link href="/dashboard/contracts">
-                  Contracts
-                  <ExternalLink className="ml-2 h-3.5 w-3.5 opacity-70" />
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      <Sheet open={agentRunsOpen} onOpenChange={setAgentRunsOpen}>
+        <SheetContent
+          side="right"
+          className="flex w-full flex-col gap-0 overflow-hidden border-[#484848]/25 bg-[#0E0E0E] p-0 sm:max-w-lg"
+        >
+          <SheetHeader className="border-b border-[#484848]/20 px-6 py-5 text-left">
+            <SheetTitle className="font-headline text-lg font-light text-[#E7E5E4]">
+              Agent activity log
+            </SheetTitle>
+            <SheetDescription className="font-[family-name:var(--font-inter)] text-xs text-[#ACABAA]">
+              Recent runs from Rent Chaser, Lead Qualifier, Contract Drafter, and other agents.
+            </SheetDescription>
+          </SheetHeader>
+          <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-6">
+            <AgentRunsTable initialRuns={initialRuns} variant="embedded" />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Rent Chaser */}
       <Dialog open={showRentDialog} onOpenChange={setShowRentDialog}>
@@ -525,9 +482,7 @@ export function AgentsClient() {
                     <Button
                       type="button"
                       variant="default"
-                      disabled={
-                        !draft.draftId || draft.sent === true || sendingRentIndex === index
-                      }
+                      disabled={!draft.draftId || draft.sent === true || sendingRentIndex === index}
                       onClick={() => void onSendRentDraft(draft.draftId!, index)}
                       className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
                     >
@@ -724,9 +679,7 @@ export function AgentsClient() {
                 </Button>
                 {savedContract ? (
                   <Button variant="outline" asChild>
-                    <Link href={`/dashboard/contracts/${contractResult.contractId}`}>
-                      View contract →
-                    </Link>
+                    <Link href={`/dashboard/contracts/${contractResult.contractId}`}>View contract →</Link>
                   </Button>
                 ) : null}
               </DialogFooter>
@@ -734,6 +687,16 @@ export function AgentsClient() {
           ) : null}
         </DialogContent>
       </Dialog>
-    </div>
+    </AgentRunnersContext.Provider>
   );
+}
+
+export function AgentRunnersProvider({
+  children,
+  initialRuns,
+}: {
+  children: ReactNode;
+  initialRuns: AgentRun[];
+}) {
+  return <AgentRunnersInner initialRuns={initialRuns}>{children}</AgentRunnersInner>;
 }

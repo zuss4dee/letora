@@ -37,19 +37,23 @@ export function DeleteAccountCard() {
   }
 
   return (
-    <Card className="border-destructive/40">
-      <CardHeader>
-        <CardTitle className="text-destructive">Danger zone</CardTitle>
-        <CardDescription>
+    <Card className="gap-0 overflow-hidden border-0 bg-gradient-to-b from-[#1f1410]/90 to-[#141312]/95 py-0 ring-1 ring-[#BB5551]/20 backdrop-blur-md">
+      <CardHeader className="space-y-2 border-0 bg-[#1a1210]/60 px-6 pb-4 pt-6 sm:px-8">
+        <CardTitle className="font-headline text-lg font-light tracking-tight text-[#e8a8a4]">
+          Danger zone
+        </CardTitle>
+        <CardDescription className="font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
           Permanently delete your Letora account and data we hold for your landlord account. This
           cannot be undone. Active subscriptions should be cancelled in billing before you delete
           your account.
         </CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 px-6 pb-2 pt-0 sm:px-8">
           <div className="space-y-2">
-            <Label htmlFor="delete-confirm">Type DELETE to confirm</Label>
+            <Label htmlFor="delete-confirm" className="font-[family-name:var(--font-inter)] text-xs text-[#ACABAA]">
+              Type DELETE to confirm
+            </Label>
             <Input
               id="delete-confirm"
               name="delete-confirm"
@@ -58,22 +62,25 @@ export function DeleteAccountCard() {
               value={phrase}
               onChange={(e) => setPhrase(e.target.value)}
               placeholder="DELETE"
-              className="max-w-xs font-mono"
+              className="max-w-xs rounded-md border-[rgb(72_72_72_/0.28)] bg-[#0e0e0e]/80 font-mono text-sm text-[#E7E5E4]"
               aria-invalid={phrase.length > 0 && !canSubmit && phrase.trim().toUpperCase() !== "DELETE"}
             />
           </div>
           {message ? (
-            <p className="text-sm text-destructive" role="alert">
+            <p className="font-[family-name:var(--font-inter)] text-sm text-[#e8a8a4]" role="alert">
               {message}
             </p>
           ) : null}
         </CardContent>
-        <CardFooter>
+        <CardFooter className="border-0 bg-transparent px-6 pb-6 pt-2 sm:px-8">
           <Button
             type="submit"
             variant="destructive"
             disabled={!canSubmit}
-            className={cn(pending && "opacity-80")}
+            className={cn(
+              "rounded-md bg-[#7a2e2a] text-[#fce8e7] hover:bg-[#8f3832]",
+              pending && "opacity-80",
+            )}
           >
             {pending ? "Deleting…" : "Delete my account"}
           </Button>

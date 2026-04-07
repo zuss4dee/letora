@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { Controller, useForm } from "react-hook-form";
 
 import { addRentPayment } from "@/lib/actions/rent-tracker";
@@ -36,7 +36,13 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
-export function AddRentPaymentDialog({ tenancies }: { tenancies: TenancyRow[] }) {
+export function AddRentPaymentDialog({
+  tenancies,
+  trigger,
+}: {
+  tenancies: TenancyRow[];
+  trigger?: ReactElement;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -111,12 +117,14 @@ export function AddRentPaymentDialog({ tenancies }: { tenancies: TenancyRow[] })
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-          disabled={disabled}
-        >
-          Add Payment
-        </Button>
+        {trigger ?? (
+          <Button
+            className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+            disabled={disabled}
+          >
+            Add Payment
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
         <DialogHeader>

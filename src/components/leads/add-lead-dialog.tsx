@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactElement } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -54,7 +54,13 @@ function defaultFormValues(): AddLeadFormValues {
   };
 }
 
-export function AddLeadDialog({ properties }: { properties: PropertyPickListItem[] }) {
+export function AddLeadDialog({
+  properties,
+  trigger,
+}: {
+  properties: PropertyPickListItem[];
+  trigger?: ReactElement;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const prevOpenRef = useRef(false);
@@ -101,9 +107,11 @@ export function AddLeadDialog({ properties }: { properties: PropertyPickListItem
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300">
-          Add Lead
-        </Button>
+        {trigger ?? (
+          <Button className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300">
+            Add Lead
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
         <DialogHeader>

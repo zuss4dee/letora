@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { EditTenancyDialog } from "@/components/tenancies/edit-tenancy-dialog";
 import { ReferencingPanel } from "@/components/tenancies/referencing-panel";
 import { TenancyOnboardingPanel } from "@/components/tenancies/tenancy-onboarding-panel";
+import { TENANCY_LABEL, TENANCY_STAT_TILE } from "@/components/tenancies/tenancy-letora-surfaces";
 import { getReferencingEvents } from "@/lib/actions/referencing";
 import { getTenancyOnboardingDetail } from "@/lib/actions/onboarding";
 import { createClient } from "@/lib/supabase/server";
@@ -63,90 +64,109 @@ export default async function TenancyDetailPage({ params }: { params: Promise<{ 
   }
 
   return (
-    <div className="@container/main flex flex-1 flex-col gap-2">
-      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                <div className="flex flex-col gap-3 px-4 lg:px-6 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <Link
-                      href="/dashboard/tenancies"
-                      className="text-sm text-muted-foreground hover:text-foreground"
-                    >
-                      ← Tenancies
-                    </Link>
-                    <h1 className="mt-2 text-base font-semibold tracking-tight">Tenancy details</h1>
-                    <p className="text-sm text-muted-foreground">
-                      {detail.propertyAddress ?? "Property"} · {detail.tenantName ?? "Tenant"}
-                    </p>
-                  </div>
-                  {userId ? (
-                    <EditTenancyDialog
-                      tenancyId={id}
-                      userId={userId}
-                      initial={{
-                        startDate,
-                        endDate,
-                        moveInDate,
-                        monthlyRent,
-                        depositAmount: deposit,
-                        status: tenancyStatus,
-                      }}
-                      triggerLabel="Edit tenancy"
-                    />
-                  ) : null}
-                </div>
+    <div className="@container/main relative flex flex-1 flex-col">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[min(42vh,420px)] bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(61,26,10,0.35),transparent_65%)]"
+        aria-hidden
+      />
+      <div className="relative flex flex-col gap-10 py-8 md:py-10">
+        <header className="flex flex-col gap-6 px-4 lg:flex-row lg:items-end lg:justify-between lg:px-6">
+          <div className="max-w-3xl space-y-3">
+            <Link
+              href="/dashboard/tenancies"
+              className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-sm font-medium text-[#ACABAA] transition-colors hover:text-[#BD9952]"
+            >
+              <span aria-hidden>←</span> Tenancies
+            </Link>
+            <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
+              Tenancy
+            </p>
+            <h1 className="font-headline text-3xl font-extralight tracking-[-0.04em] text-[#E7E5E4] md:text-[2.15rem] md:leading-tight">
+              {detail.propertyAddress ?? "Property"}
+            </h1>
+            <p className="font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
+              {detail.tenantName ?? "Tenant"} · Dates, financials, referencing, and onboarding in one place.
+            </p>
+          </div>
+          {userId ? (
+            <div className="shrink-0 lg:pb-1">
+              <EditTenancyDialog
+                tenancyId={id}
+                userId={userId}
+                initial={{
+                  startDate,
+                  endDate,
+                  moveInDate,
+                  monthlyRent,
+                  depositAmount: deposit,
+                  status: tenancyStatus,
+                }}
+                triggerLabel="Edit tenancy"
+              />
+            </div>
+          ) : null}
+        </header>
 
-                <div className="grid gap-4 px-4 lg:px-6 md:grid-cols-2">
-                  <div className="rounded-lg border border-border p-4 text-sm">
-                    <div className="text-muted-foreground">Start date</div>
-                    <div className="font-medium">{startDate ?? "—"}</div>
-                  </div>
-                  <div className="rounded-lg border border-border p-4 text-sm">
-                    <div className="text-muted-foreground">End date</div>
-                    <div className="font-medium">{endDate ?? "—"}</div>
-                  </div>
-                  <div className="rounded-lg border border-border p-4 text-sm">
-                    <div className="text-muted-foreground">Move-in date</div>
-                    <div className="font-medium">{moveInDate ?? "—"}</div>
-                  </div>
-                  <div className="rounded-lg border border-border p-4 text-sm">
-                    <div className="text-muted-foreground">Status</div>
-                    <div className="font-medium capitalize">{tenancyStatus ?? "—"}</div>
-                  </div>
-                  <div className="rounded-lg border border-border p-4 text-sm">
-                    <div className="text-muted-foreground">Monthly rent</div>
-                    <div className="font-medium">
-                      {monthlyRent != null && Number.isFinite(monthlyRent) ? gbp.format(monthlyRent) : "—"}
-                    </div>
-                  </div>
-                  <div className="rounded-lg border border-border p-4 text-sm">
-                    <div className="text-muted-foreground">Deposit</div>
-                    <div className="font-medium">
-                      {deposit != null && Number.isFinite(deposit) ? gbp.format(deposit) : "—"}
-                    </div>
-                  </div>
-                </div>
+        <section className="grid gap-3 px-4 sm:grid-cols-2 lg:grid-cols-3 lg:px-6">
+          <div className={TENANCY_STAT_TILE}>
+            <div className={TENANCY_LABEL}>Start date</div>
+            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-[#E7E5E4]">
+              {startDate ?? "—"}
+            </div>
+          </div>
+          <div className={TENANCY_STAT_TILE}>
+            <div className={TENANCY_LABEL}>End date</div>
+            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-[#E7E5E4]">
+              {endDate ?? "—"}
+            </div>
+          </div>
+          <div className={TENANCY_STAT_TILE}>
+            <div className={TENANCY_LABEL}>Move-in date</div>
+            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-[#E7E5E4]">
+              {moveInDate ?? "—"}
+            </div>
+          </div>
+          <div className={TENANCY_STAT_TILE}>
+            <div className={TENANCY_LABEL}>Status</div>
+            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium capitalize text-[#E7E5E4]">
+              {tenancyStatus ?? "—"}
+            </div>
+          </div>
+          <div className={TENANCY_STAT_TILE}>
+            <div className={TENANCY_LABEL}>Monthly rent</div>
+            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-[#E7E5E4]">
+              {monthlyRent != null && Number.isFinite(monthlyRent) ? gbp.format(monthlyRent) : "—"}
+            </div>
+          </div>
+          <div className={TENANCY_STAT_TILE}>
+            <div className={TENANCY_LABEL}>Deposit</div>
+            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-[#E7E5E4]">
+              {deposit != null && Number.isFinite(deposit) ? gbp.format(deposit) : "—"}
+            </div>
+          </div>
+        </section>
 
-                <div className="grid gap-4 px-4 lg:px-6">
-                  {userId ? (
-                    <ReferencingPanel
-                      tenancyId={id}
-                      userId={userId}
-                      initialEvents={referencingEvents}
-                      referencingToken={detail.referencing_token}
-                      referencingAgencyEmailOverride={detail.referencing_agency_email_override}
-                      defaultReferencingAgencyEmail={defaultReferencingAgencyEmail}
-                      hasDefaultReferencingAgencyEmail={hasDefaultReferencingAgencyEmail}
-                      lastOutboundAt={detail.referencing_last_outbound_at}
-                      lastInboundAt={detail.referencing_last_inbound_at}
-                      onboardingStatus={detail.onboarding_status}
-                    />
-                  ) : null}
-                  <TenancyOnboardingPanel
-                    tenancyId={id}
-                    onboardingStatus={detail.onboarding_status}
-                    tasks={detail.tasks}
-                  />
-                </div>
+        <section className="grid gap-6 px-4 lg:px-6">
+          {userId ? (
+            <ReferencingPanel
+              tenancyId={id}
+              userId={userId}
+              initialEvents={referencingEvents}
+              referencingToken={detail.referencing_token}
+              referencingAgencyEmailOverride={detail.referencing_agency_email_override}
+              defaultReferencingAgencyEmail={defaultReferencingAgencyEmail}
+              hasDefaultReferencingAgencyEmail={hasDefaultReferencingAgencyEmail}
+              lastOutboundAt={detail.referencing_last_outbound_at}
+              lastInboundAt={detail.referencing_last_inbound_at}
+              onboardingStatus={detail.onboarding_status}
+            />
+          ) : null}
+          <TenancyOnboardingPanel
+            tenancyId={id}
+            onboardingStatus={detail.onboarding_status}
+            tasks={detail.tasks}
+          />
+        </section>
       </div>
     </div>
   );

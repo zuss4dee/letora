@@ -6,8 +6,14 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 
+import { AuthBrandMark } from "@/components/auth/auth-brand-mark";
+import { AuthEditorialAside } from "@/components/auth/auth-editorial-aside";
+import {
+  authInputClassName,
+  authPrimaryButtonClassName,
+  AuthSplitShell,
+} from "@/components/auth/auth-split-shell";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
@@ -66,134 +72,120 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="w-full max-w-md">
-      <Card className="rounded-lg border border-zinc-200 bg-zinc-50 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <CardHeader className="space-y-5 pb-4">
-          <div className="space-y-1">
-            <div className="text-2xl font-bold tracking-tight">Letora</div>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">Property Operating System</p>
-          </div>
-          <div className="space-y-1">
-            <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Create your account</div>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
-              Set up your workspace and start managing your portfolio.
+    <AuthSplitShell aside={<AuthEditorialAside variant="signup" />}>
+      <div className="w-full max-w-[380px] space-y-8">
+        <AuthBrandMark />
+
+        <div className="space-y-1 text-center">
+          <h2 className="font-headline text-lg font-light tracking-tight text-[#E7E5E4]">Create your account</h2>
+          <p className="font-[family-name:var(--font-inter)] text-sm font-light text-[#ACABAA]">
+            Set up your workspace and start managing your portfolio.
+          </p>
+        </div>
+
+        {emailConfirmationSent ? (
+          <div className="space-y-4 rounded-xl border border-[rgb(72_72_72_/0.18)] bg-[#0e0e0e]/60 px-5 py-6 text-left backdrop-blur-sm">
+            <p className="font-headline text-base font-light text-[#E7E5E4]">Check your email</p>
+            <p className="font-[family-name:var(--font-inter)] text-sm leading-relaxed text-[#ACABAA]">
+              We sent you a confirmation link. Once confirmed, you can{" "}
+              <Link href="/login" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
+                sign in
+              </Link>
+              .
             </p>
           </div>
-        </CardHeader>
-
-        <CardContent>
-          {emailConfirmationSent ? (
-            <div className="space-y-3">
-              <p className="text-sm text-zinc-900 dark:text-zinc-100">Check your email</p>
-              <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                We sent you a confirmation link. Once confirmed, you can{" "}
-                <Link href="/login" className="font-medium text-zinc-900 hover:underline dark:text-zinc-100">
-                  sign in
-                </Link>
-                .
-              </p>
-            </div>
-          ) : (
-            <form className="space-y-3.5" onSubmit={form.handleSubmit(onSubmit)}>
-              <div className="space-y-2">
-                <Label htmlFor="fullName" className="text-zinc-700 dark:text-zinc-200">
-                  Full name
-                </Label>
-                <Input
-                  id="fullName"
-                  data-testid="signup-fullname"
-                  autoComplete="name"
-                  placeholder="Jane Landlord"
-                  className="h-10 rounded-md border-zinc-200 bg-white shadow-none focus-visible:ring-indigo-600 dark:border-zinc-800 dark:bg-zinc-950/40 dark:focus-visible:ring-indigo-400"
-                  {...form.register("fullName")}
-                />
-                {form.formState.errors.fullName ? (
-                  <p className="text-sm text-red-400">{form.formState.errors.fullName.message}</p>
-                ) : null}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-zinc-700 dark:text-zinc-200">
-                  Email
-                </Label>
-                <Input
-                  id="email"
-                  data-testid="signup-email"
-                  type="email"
-                  autoComplete="email"
-                  placeholder="you@company.com"
-                  className="h-10 rounded-md border-zinc-200 bg-white shadow-none focus-visible:ring-indigo-600 dark:border-zinc-800 dark:bg-zinc-950/40 dark:focus-visible:ring-indigo-400"
-                  {...form.register("email")}
-                />
-                {form.formState.errors.email ? (
-                  <p className="text-sm text-red-400">{form.formState.errors.email.message}</p>
-                ) : null}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-zinc-700 dark:text-zinc-200">
-                  Password
-                </Label>
-                <Input
-                  id="password"
-                  data-testid="signup-password"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  className="h-10 rounded-md border-zinc-200 bg-white shadow-none focus-visible:ring-indigo-600 dark:border-zinc-800 dark:bg-zinc-950/40 dark:focus-visible:ring-indigo-400"
-                  {...form.register("password")}
-                />
-                {form.formState.errors.password ? (
-                  <p className="text-sm text-red-400">{form.formState.errors.password.message}</p>
-                ) : null}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-zinc-700 dark:text-zinc-200">
-                  Confirm password
-                </Label>
-                <Input
-                  id="confirmPassword"
-                  data-testid="signup-confirm-password"
-                  type="password"
-                  autoComplete="new-password"
-                  placeholder="••••••••"
-                  className="h-10 rounded-md border-zinc-200 bg-white shadow-none focus-visible:ring-indigo-600 dark:border-zinc-800 dark:bg-zinc-950/40 dark:focus-visible:ring-indigo-400"
-                  {...form.register("confirmPassword")}
-                />
-                {form.formState.errors.confirmPassword ? (
-                  <p className="text-sm text-red-400">{form.formState.errors.confirmPassword.message}</p>
-                ) : null}
-              </div>
-
-              {submitError ? (
-                <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-                  {submitError}
-                </p>
+        ) : (
+          <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+            <div className="space-y-2">
+              <Label htmlFor="fullName" className="font-[family-name:var(--font-inter)] text-xs font-medium text-[#ACABAA]">
+                Full name
+              </Label>
+              <Input
+                id="fullName"
+                data-testid="signup-fullname"
+                autoComplete="name"
+                placeholder="Jane Landlord"
+                className={authInputClassName}
+                {...form.register("fullName")}
+              />
+              {form.formState.errors.fullName ? (
+                <p className="text-xs text-[#c97a76]">{form.formState.errors.fullName.message}</p>
               ) : null}
+            </div>
 
-              <Button
-                type="submit"
-                data-testid="signup-submit"
-                className="h-10 w-full rounded-md bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Creating account..." : "Create account"}
-              </Button>
-            </form>
-          )}
-        </CardContent>
+            <div className="space-y-2">
+              <Label htmlFor="email" className="font-[family-name:var(--font-inter)] text-xs font-medium text-[#ACABAA]">
+                Email
+              </Label>
+              <Input
+                id="email"
+                data-testid="signup-email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@company.com"
+                className={authInputClassName}
+                {...form.register("email")}
+              />
+              {form.formState.errors.email ? (
+                <p className="text-xs text-[#c97a76]">{form.formState.errors.email.message}</p>
+              ) : null}
+            </div>
 
-        <CardFooter className="flex items-center justify-center">
-          <p className="text-sm text-zinc-600 dark:text-zinc-400">
-            Already have an account?{" "}
-            <Link href="/login" className="font-medium text-zinc-900 hover:underline dark:text-zinc-100">
-              Sign in
-            </Link>
-          </p>
-        </CardFooter>
-      </Card>
-    </main>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="font-[family-name:var(--font-inter)] text-xs font-medium text-[#ACABAA]">
+                Password
+              </Label>
+              <Input
+                id="password"
+                data-testid="signup-password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                className={authInputClassName}
+                {...form.register("password")}
+              />
+              {form.formState.errors.password ? (
+                <p className="text-xs text-[#c97a76]">{form.formState.errors.password.message}</p>
+              ) : null}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="font-[family-name:var(--font-inter)] text-xs font-medium text-[#ACABAA]">
+                Confirm password
+              </Label>
+              <Input
+                id="confirmPassword"
+                data-testid="signup-confirm-password"
+                type="password"
+                autoComplete="new-password"
+                placeholder="••••••••"
+                className={authInputClassName}
+                {...form.register("confirmPassword")}
+              />
+              {form.formState.errors.confirmPassword ? (
+                <p className="text-xs text-[#c97a76]">{form.formState.errors.confirmPassword.message}</p>
+              ) : null}
+            </div>
+
+            {submitError ? (
+              <p className="rounded-md border border-[#BB5551]/35 bg-[#1a1210]/90 px-3 py-2.5 text-sm text-[#e8a8a4]" role="alert">
+                {submitError}
+              </p>
+            ) : null}
+
+            <Button type="submit" data-testid="signup-submit" className={authPrimaryButtonClassName} disabled={isSubmitting}>
+              {isSubmitting ? "Creating account…" : "Create account"}
+            </Button>
+          </form>
+        )}
+
+        <p className="text-center font-[family-name:var(--font-inter)] text-sm text-[#ACABAA]">
+          Already have an account?{" "}
+          <Link href="/login" className="font-medium text-[#E7E5E4] underline-offset-4 transition-colors hover:text-[#BD9952] hover:underline">
+            Sign in
+          </Link>
+        </p>
+      </div>
+    </AuthSplitShell>
   );
 }
-

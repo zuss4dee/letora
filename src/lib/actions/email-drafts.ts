@@ -2,9 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 
+import type { EmailDispatchRow } from "@/lib/email-dispatch";
 import { buildResendFromHeader } from "@/lib/tools/send-email";
 import { createClient } from "@/lib/supabase/server";
 import { Resend } from "resend";
+
+export type { EmailDispatchRow } from "@/lib/email-dispatch";
 
 export type EmailDraftRow = {
   id: string;
@@ -26,6 +29,118 @@ export type EmailDraftTableRow = {
   tenant_name: string | null;
 };
 
+function mapLogToUiStatus(row: {
+  status: string;
+  bounced_at?: string | null;
+  opened_at?: string | null;
+  delivery_status?: string | null;
+}): "delivered" | "opened" | "bounced" {
+  const st = (row.status ?? "").toLowerCase();
+  if (st === "failed" || row.bounced_at || (row.delivery_status ?? "").toLowerCase().includes("bounce")) {
+    return "bounced";
+  }
+  if (row.opened_at) return "opened";
+  return "delivered";
+}
+
+/**
+ * Outgoing email log for /dashboard/emails — combines sent/failed `email_logs`
+ * and `email_drafts` marked sent (assistant-generated mail).
+ */
+export async function getEmailDispatchLogs(userId: string): Promise<EmailDispatchRow[]> {
+  const supabase = await createClient();
+
+  const { data: logs, error: logError } = await supabase
+    .from("email_logs")
+    .select(
+      "id,to_name,to_email,subject,body,status,sent_at,created_at,agent_type,opened_at,bounced_at,delivery_status",
+    )
+    .eq("user_id", userId)
+    .in("status", ["sent", "failed"])
+    .order("created_at", { ascending: false })
+    .limit(400);
+
+  if (logError) {
+    console.warn("[getEmailDispatchLogs] email_logs", logError.message);
+  }
+
+  const fromLogs: EmailDispatchRow[] = (logs ?? []).map((row) => {
+    const sentAt = (row.sent_at as string | null) ?? (row.created_at as string);
+    return {
+      id: row.id as string,
+      source: "email_log" as const,
+      recipientName: (row.to_name as string | null)?.trim() || "Recipient",
+      recipientEmail: String(row.to_email ?? ""),
+      subject: String(row.subject ?? "—"),
+      body: String(row.body ?? ""),
+      sentAt,
+      uiStatus: mapLogToUiStatus({
+        status: String(row.status ?? ""),
+        bounced_at: row.bounced_at as string | null | undefined,
+        opened_at: row.opened_at as string | null | undefined,
+        delivery_status: row.delivery_status as string | null | undefined,
+      }),
+      agentType: (row.agent_type as string | null) ?? null,
+    };
+  });
+
+  const { data: drafts, error: draftError } = await supabase
+    .from("email_drafts")
+    .select(
+      `
+      id, subject, body, status, updated_at, created_at,
+      tenants ( full_name, email )
+    `,
+    )
+    .eq("user_id", userId)
+    .eq("status", "sent")
+    .order("updated_at", { ascending: false })
+    .limit(200);
+
+  if (draftError) {
+    console.warn("[getEmailDispatchLogs] email_drafts", draftError.message);
+  }
+
+  const fromDrafts: EmailDispatchRow[] = (drafts ?? []).map((row) => {
+    const raw = row.tenants as unknown;
+    let fullName: string | null = null;
+    let email: string | null = null;
+    if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      fullName = (raw as { full_name?: string | null }).full_name ?? null;
+      email = (raw as { email?: string | null }).email ?? null;
+    } else if (Array.isArray(raw) && raw.length > 0) {
+      fullName = (raw[0] as { full_name?: string | null }).full_name ?? null;
+      email = (raw[0] as { email?: string | null }).email ?? null;
+    }
+    const sentAt = (row.updated_at as string | null) ?? (row.created_at as string);
+    return {
+      id: `draft-${row.id as string}`,
+      source: "email_draft" as const,
+      recipientName: fullName?.trim() || "Tenant",
+      recipientEmail: email?.trim() || "—",
+      subject: String(row.subject ?? "—"),
+      body: String(row.body ?? ""),
+      sentAt,
+      uiStatus: "delivered" as const,
+      agentType: null,
+    };
+  });
+
+  const merged = [...fromLogs, ...fromDrafts].sort(
+    (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime(),
+  );
+
+  const seen = new Set<string>();
+  const deduped: EmailDispatchRow[] = [];
+  for (const r of merged) {
+    const key = `${r.source}:${r.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(r);
+  }
+  return deduped;
+}
+
 export async function getAllEmailDrafts(userId: string): Promise<EmailDraftTableRow[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -37,8 +152,6 @@ export async function getAllEmailDrafts(userId: string): Promise<EmailDraftTable
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(100);
-
-  console.log("[emails page] drafts:", data?.length, "error:", error?.message);
 
   if (error) {
     console.warn("[getAllEmailDrafts]", error.message);

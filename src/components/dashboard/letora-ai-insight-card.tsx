@@ -22,7 +22,7 @@ export function LetoraAiInsightCard({ className }: { className?: string }) {
           week.&rdquo;
         </p>
         <Link
-          href="/dashboard/agents"
+          href="/dashboard/settings?agentRuns=1"
           className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-widest text-[#E7E5E4] transition-colors hover:text-[#BD9952]"
         >
           Initialize strategy <span aria-hidden>→</span>
