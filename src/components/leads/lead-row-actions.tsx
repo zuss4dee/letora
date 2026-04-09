@@ -171,7 +171,7 @@ export function LeadRowActions({
             type="button"
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:bg-[#1F2020] hover:text-foreground"
+            className="h-8 w-8 text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-[#1F2020]"
             disabled={isPending}
             aria-label="Lead actions"
           >
@@ -180,7 +180,7 @@ export function LeadRowActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
-          className="w-72 border-[#484848]/20 bg-[#131313] p-3"
+          className="w-72 border-border bg-card p-3"
           onCloseAutoFocus={(e) => e.preventDefault()}
         >
           <div className="flex flex-col gap-3">{controls}</div>

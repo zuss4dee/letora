@@ -34,9 +34,9 @@ export function SafetyAlertsCard({
     >
       <CardHeader
         className={
-          className
-            ? "border-b border-[#484848]/15"
-            : "border-b border-red-200 dark:border-red-900/40"
+            className
+              ? "border-b border-border"
+              : "border-b border-red-200 dark:border-red-900/40"
         }
       >
         <CardTitle
@@ -65,7 +65,7 @@ export function SafetyAlertsCard({
               key={a.id}
               className={
                 className
-                  ? "rounded-sm border border-[#484848]/15 bg-[#0E0E0E]/80 px-3 py-2 text-sm"
+                  ? "rounded-sm border border-border bg-card/90 px-3 py-2 text-sm"
                   : "rounded-md border border-red-200 bg-white/90 px-3 py-2 text-sm dark:border-red-900/50 dark:bg-zinc-950/40"
               }
             >

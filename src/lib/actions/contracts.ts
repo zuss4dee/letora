@@ -23,6 +23,10 @@ export type ContractListRow = {
   propertySubline: string | null;
   tenantName: string | null;
   tenantEmail: string | null;
+  /** Present when the tenant has signed (for registry filters / status display). */
+  tenantSignedAt: string | null;
+  /** Present when the landlord has signed. */
+  landlordSignedAt: string | null;
 };
 
 export type ContractTemplateRow = {
@@ -120,6 +124,8 @@ export async function getContracts(): Promise<ContractListRow[]> {
       propertySubline: line2,
       tenantName: ten?.full_name ?? null,
       tenantEmail: ten?.email ?? null,
+      tenantSignedAt: (c.tenant_signed_at as string | null) ?? null,
+      landlordSignedAt: (c.landlord_signed_at as string | null) ?? null,
     };
   });
 }
@@ -177,6 +183,8 @@ export async function getContractDetail(contractId: string): Promise<ContractLis
     propertySubline: line2,
     tenantName: tenant?.full_name ?? null,
     tenantEmail: tenant?.email ?? null,
+    tenantSignedAt: (c.tenant_signed_at as string | null) ?? null,
+    landlordSignedAt: (c.landlord_signed_at as string | null) ?? null,
   };
 }
 

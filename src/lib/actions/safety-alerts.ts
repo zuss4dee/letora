@@ -61,3 +61,9 @@ export async function getSafetyAlertsLast7Days(userId: string): Promise<SafetyAl
     return !resolvedIds.has(mid);
   });
 }
+
+/** Sidebar red dot on Maintenance when any active (non-resolved) safety alert exists. */
+export async function getMaintenanceSafetySidebarAttention(userId: string): Promise<boolean> {
+  const rows = await getSafetyAlertsLast7Days(userId);
+  return rows.length > 0;
+}

@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -87,55 +89,81 @@ export default async function ContractDetailPage({
   const canLandlordSign = !landlordSigned && ["sent", "pending_signature"].includes(status);
 
   return (
-    <div className="@container/main flex flex-1 flex-col gap-2">
-      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-        <div className="flex items-center justify-between gap-3 px-4 lg:px-6">
-          <div>
-            <h1 className="text-base font-semibold tracking-tight">Contract Details</h1>
-            <p className="text-sm text-muted-foreground">
+    <div className="@container/main relative flex flex-1 flex-col">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[min(42vh,420px)] bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(189,153,82,0.12),transparent_65%)] dark:bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(61,26,10,0.35),transparent_65%)]"
+        aria-hidden
+      />
+      <div className="relative flex flex-col gap-8 py-8 md:py-10">
+        <header className="flex flex-col gap-4 px-4 lg:flex-row lg:items-start lg:justify-between lg:px-6">
+          <div className="max-w-3xl space-y-3">
+            <Link
+              href="/dashboard/contracts"
+              className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-sm font-medium text-muted-foreground transition-colors hover:text-[#BD9952]"
+            >
+              <ArrowLeft className="size-4 shrink-0" aria-hidden />
+              Contracts
+            </Link>
+            <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
+              Tenancy agreement
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-headline text-3xl font-extralight tracking-[-0.04em] text-foreground md:text-[2.15rem] md:leading-tight">
+                Contract
+              </h1>
+              {statusBadge(status)}
+            </div>
+            <p className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
               {tenantName} · {propertyAddr}
             </p>
           </div>
-          {statusBadge(status)}
-        </div>
+        </header>
 
         <div className="grid gap-4 px-4 md:grid-cols-2 lg:px-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Tenant</CardTitle>
+          <Card className="overflow-hidden border-border bg-card shadow-sm ring-1 ring-border/60">
+            <CardHeader className="border-b border-border bg-muted/30 pb-3">
+              <CardTitle className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Tenant
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-base font-semibold">{tenantName}</p>
-              <p className="text-sm text-muted-foreground">{tenant?.email ?? "—"}</p>
+            <CardContent className="pt-4">
+              <p className="font-headline text-lg font-light text-foreground">{tenantName}</p>
+              <p className="mt-1 font-[family-name:var(--font-inter)] text-sm text-muted-foreground">{tenant?.email ?? "—"}</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Property</CardTitle>
+          <Card className="overflow-hidden border-border bg-card shadow-sm ring-1 ring-border/60">
+            <CardHeader className="border-b border-border bg-muted/30 pb-3">
+              <CardTitle className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Property
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-base font-semibold">{propertyAddr}</p>
+            <CardContent className="pt-4">
+              <p className="font-headline text-lg font-light text-foreground">{propertyAddr}</p>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Period</CardTitle>
+          <Card className="overflow-hidden border-border bg-card shadow-sm ring-1 ring-border/60">
+            <CardHeader className="border-b border-border bg-muted/30 pb-3">
+              <CardTitle className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Period
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-base font-semibold">
+            <CardContent className="pt-4">
+              <p className="font-[family-name:var(--font-inter)] text-base font-medium text-foreground">
                 {formatDate(contract.start_date as string | null)} to {formatDate(contract.end_date as string | null)}
               </p>
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">Rent / Deposit</CardTitle>
+          <Card className="overflow-hidden border-border bg-card shadow-sm ring-1 ring-border/60">
+            <CardHeader className="border-b border-border bg-muted/30 pb-3">
+              <CardTitle className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                Rent / deposit
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-base font-semibold">
+            <CardContent className="pt-4">
+              <p className="font-[family-name:var(--font-inter)] text-base font-medium text-foreground">
                 £{Number(contract.monthly_rent ?? 0).toLocaleString("en-GB", { minimumFractionDigits: 2 })} / month
               </p>
-              <p className="text-sm text-muted-foreground">
+              <p className="mt-1 font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
                 Deposit: £{Number(contract.deposit_amount ?? 0).toLocaleString("en-GB", { minimumFractionDigits: 2 })}
               </p>
             </CardContent>
@@ -144,12 +172,14 @@ export default async function ContractDetailPage({
 
         {contract.special_clauses && (
           <div className="px-4 lg:px-6">
-            <Card>
-              <CardHeader className="border-b">
-                <CardTitle>Contract Terms</CardTitle>
+            <Card className="overflow-hidden border-border bg-card shadow-sm ring-1 ring-border/60">
+              <CardHeader className="border-b border-border bg-muted/30">
+                <CardTitle className="font-headline text-lg font-light tracking-tight text-foreground">
+                  Contract terms
+                </CardTitle>
               </CardHeader>
               <CardContent className="pt-4">
-                <div className="prose prose-sm dark:prose-invert max-h-[32rem] overflow-y-auto whitespace-pre-wrap text-sm text-muted-foreground">
+                <div className="max-h-[32rem] overflow-y-auto whitespace-pre-wrap font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground">
                   {contract.special_clauses as string}
                 </div>
               </CardContent>
@@ -158,9 +188,9 @@ export default async function ContractDetailPage({
         )}
 
         <div className="px-4 lg:px-6">
-          <Card>
-            <CardHeader className="border-b">
-              <CardTitle>Signatures</CardTitle>
+          <Card className="overflow-hidden border-border bg-card shadow-sm ring-1 ring-border/60">
+            <CardHeader className="border-b border-border bg-muted/30">
+              <CardTitle className="font-headline text-lg font-light tracking-tight text-foreground">Signatures</CardTitle>
             </CardHeader>
             <CardContent className="pt-4">
               <div className="grid gap-4 md:grid-cols-2">
@@ -216,12 +246,12 @@ export default async function ContractDetailPage({
 
         {status !== "active" && status !== "expired" && status !== "cancelled" && (
           <div className="px-4 lg:px-6">
-            <Card>
-              <CardHeader className="border-b">
-                <CardTitle>Move-In</CardTitle>
+            <Card className="overflow-hidden border-border bg-card shadow-sm ring-1 ring-border/60">
+              <CardHeader className="border-b border-border bg-muted/30">
+                <CardTitle className="font-headline text-lg font-light tracking-tight text-foreground">Move-in</CardTitle>
               </CardHeader>
               <CardContent className="pt-4">
-                <p className="mb-4 text-sm text-muted-foreground">
+                <p className="mb-4 font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground">
                   {status === "signed"
                     ? "Both parties have signed. Confirm move-in to set this contract and tenancy to active."
                     : "Once both parties have signed the contract, you can confirm the tenant's move-in here."}

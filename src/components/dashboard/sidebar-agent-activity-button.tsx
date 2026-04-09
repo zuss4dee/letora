@@ -13,7 +13,7 @@ export function SidebarAgentActivityButton({ className }: { className?: string }
       type="button"
       onClick={() => openAgentRuns()}
       className={cn(
-        "mb-2 flex w-full items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:bg-[#1F2020] hover:text-foreground",
+        "mb-2 flex w-full items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground transition-colors duration-200 ease-out hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
         className,
       )}
     >

@@ -28,12 +28,12 @@ export function DashboardCommandBar({ className }: { className?: string }) {
     <section className={cn("relative", className)}>
       <form
         onSubmit={onSubmit}
-        className="flex flex-col gap-4 rounded-[6px] border border-white/[0.06] bg-[#0e0e0e] p-4 shadow-sm"
+        className="flex flex-col gap-4 rounded-[6px] border border-border bg-card p-4 shadow-sm dark:border-white/[0.06] dark:bg-[#0e0e0e]"
       >
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="w-full border-0 bg-transparent px-2 text-[0.875rem] text-white placeholder:text-neutral-600 focus:ring-0 focus:outline-none"
+          className="w-full border-0 bg-transparent px-2 text-[0.875rem] text-foreground placeholder:text-placeholder-foreground focus:ring-0 focus:outline-none"
           placeholder="Send a command or ask Letora Intelligence..."
           type="search"
           name="command"
@@ -43,7 +43,7 @@ export function DashboardCommandBar({ className }: { className?: string }) {
           <button
             type="button"
             onClick={() => router.push("/dashboard/settings")}
-            className="flex items-center gap-2 rounded-[6px] bg-[#2a2a2a] px-3 py-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#353534]"
+            className="flex items-center gap-2 rounded-[6px] bg-muted px-3 py-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-foreground transition-colors duration-200 ease-out hover:bg-muted/90 dark:bg-[#2a2a2a] dark:text-white dark:hover:bg-[#353534]"
           >
             <Calendar className="size-4" aria-hidden />
             Sync my calendar
@@ -51,7 +51,7 @@ export function DashboardCommandBar({ className }: { className?: string }) {
           <button
             type="button"
             onClick={() => router.push("/dashboard/leads")}
-            className="flex items-center gap-2 rounded-[6px] bg-[#2a2a2a] px-3 py-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#353534]"
+            className="flex items-center gap-2 rounded-[6px] bg-muted px-3 py-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-foreground transition-colors duration-200 ease-out hover:bg-muted/90 dark:bg-[#2a2a2a] dark:text-white dark:hover:bg-[#353534]"
           >
             <Presentation className="size-4" aria-hidden />
             Create a pitch deck
@@ -59,7 +59,7 @@ export function DashboardCommandBar({ className }: { className?: string }) {
           <button
             type="button"
             onClick={() => router.push("/dashboard/settings")}
-            className="flex items-center gap-2 rounded-[6px] bg-[#2a2a2a] px-3 py-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-white transition-colors hover:bg-[#353534]"
+            className="flex items-center gap-2 rounded-[6px] bg-muted px-3 py-1.5 text-[0.6875rem] font-semibold uppercase tracking-wider text-foreground transition-colors duration-200 ease-out hover:bg-muted/90 dark:bg-[#2a2a2a] dark:text-white dark:hover:bg-[#353534]"
           >
             <Layers className="size-4" aria-hidden />
             Initialize UI system

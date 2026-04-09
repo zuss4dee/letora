@@ -32,7 +32,7 @@ export function LetoraDashboardKpiStrip({
 
   return (
     <section className="mb-16 mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
-      <div className="flex flex-col gap-4 border border-[#484848]/15 bg-[#131313] p-8">
+      <div className="flex flex-col gap-4 border border-border bg-card p-8">
         <div className="flex items-start justify-between">
           <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
             Active tenancies
@@ -49,12 +49,12 @@ export function LetoraDashboardKpiStrip({
             </span>
           ) : null}
         </div>
-        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-muted-foreground/60">
+        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-muted-foreground">
           Across your portfolio
         </p>
       </div>
 
-      <div className="flex flex-col gap-4 border border-[#484848]/15 bg-[#131313] p-8">
+      <div className="flex flex-col gap-4 border border-border bg-card p-8">
         <div className="flex items-start justify-between">
           <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
             Collection rate
@@ -71,14 +71,14 @@ export function LetoraDashboardKpiStrip({
             </span>
           ) : null}
         </div>
-        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-muted-foreground/60">
+        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-muted-foreground">
           Collected this month vs rent roll
         </p>
       </div>
 
       <Link
         href="/dashboard/rent-tracker"
-        className="group flex flex-col gap-4 border border-[#484848]/15 bg-[#131313] p-8 transition-colors hover:bg-[#1F2020]/80"
+        className="group flex flex-col gap-4 border border-border bg-card p-8 transition-colors hover:bg-muted/80 dark:hover:bg-[#1F2020]/80"
       >
         <div className="flex items-start justify-between">
           <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
@@ -98,14 +98,14 @@ export function LetoraDashboardKpiStrip({
             </span>
           ) : null}
         </div>
-        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-muted-foreground/60">
+        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-muted-foreground">
           Open rent tracker
         </p>
       </Link>
 
       <Link
         href="/dashboard/maintenance"
-        className="group flex flex-col gap-4 border border-[#484848]/15 bg-[#131313] p-8 transition-colors hover:bg-[#1F2020]/80"
+        className="group flex flex-col gap-4 border border-border bg-card p-8 transition-colors hover:bg-muted/80 dark:hover:bg-[#1F2020]/80"
       >
         <div className="flex items-start justify-between">
           <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
@@ -121,7 +121,7 @@ export function LetoraDashboardKpiStrip({
             Open requests
           </span>
         </div>
-        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-muted-foreground/60">
+        <p className="font-[family-name:var(--font-inter)] text-[0.625rem] text-muted-foreground">
           Tracked in maintenance
         </p>
       </Link>

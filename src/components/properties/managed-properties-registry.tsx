@@ -41,7 +41,7 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
     : `I can summarize rent performance across your properties or draft notices. What should we tackle first?`;
 
   return (
-    <div className="relative min-h-0 flex-1 bg-[#0E0E0E]">
+    <div className="relative min-h-0 flex-1 bg-background">
       <section className="px-6 pb-32 pt-2 md:px-12 md:pt-4">
         <div className="mb-16 flex flex-col items-start justify-between gap-8 md:mb-20 md:flex-row md:items-end">
           <div>
@@ -72,7 +72,7 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
         </div>
 
         {rows.length === 0 ? (
-          <div className="flex min-h-[40vh] flex-col items-center justify-center border border-[#484848]/15 bg-[#131313] px-8 py-20 text-center">
+          <div className="flex min-h-[40vh] flex-col items-center justify-center border border-border bg-card px-8 py-20 text-center">
             <p className="font-headline text-xl font-light text-foreground">No properties yet</p>
             <p className="mt-2 max-w-md font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
               Add your first asset to populate your portfolio matrix.
@@ -97,7 +97,7 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
         ) : (
           <>
             <div className="space-y-1">
-              <div className="mb-4 grid grid-cols-12 border-b border-[#484848]/10 px-6 py-4 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground/60">
+              <div className="mb-4 grid grid-cols-12 border-b border-border/80 px-6 py-4 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                 <div className="col-span-4">Property identity</div>
                 <div className="col-span-2 text-center">Occupancy</div>
                 <div className="col-span-2 text-center">Annual yield</div>
@@ -111,14 +111,14 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
                   href={`/dashboard/properties/${p.id}`}
                   className={cn(
                     "grid grid-cols-12 items-center border-l-2 border-transparent px-6 py-8 transition-all duration-300",
-                    "bg-[#131313] hover:border-[#BD9952] hover:bg-[#1F2020]",
+                    "bg-card hover:border-[#BD9952] hover:bg-muted/80 dark:hover:bg-[#1F2020]",
                     "group cursor-pointer",
                   )}
                 >
                   <div className="col-span-4 flex items-center gap-6">
                     <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-sm bg-[#252626] grayscale transition-all duration-500 group-hover:grayscale-0">
                       <div className="absolute inset-0 bg-gradient-to-br from-[#2a2a2a] to-[#131313]" />
-                      <div className="absolute inset-0 flex items-center justify-center font-headline text-lg font-extralight text-muted-foreground/40">
+                      <div className="absolute inset-0 flex items-center justify-center font-headline text-lg font-extralight text-muted-foreground">
                         {p.identityTitle.slice(0, 1)}
                       </div>
                     </div>
@@ -180,7 +180,7 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
             </div>
 
             <div className="mt-24 grid grid-cols-1 gap-12 lg:grid-cols-12">
-              <div className="rounded-sm border-b-2 border-[#BD9952]/20 bg-[#1F2020] p-10 lg:col-span-5 lg:p-12">
+              <div className="rounded-sm border-b-2 border-[#BD9952]/20 bg-muted/80 p-10 ring-1 ring-border dark:bg-[#1F2020] lg:col-span-5 lg:p-12">
                 <h4 className="mb-8 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                   Portfolio health intelligence
                 </h4>
@@ -206,7 +206,7 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
                   <h4 className="mb-4 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                     Strategic advisory
                   </h4>
-                  <p className="font-headline text-xl font-light leading-relaxed text-foreground/80">
+                  <p className="font-headline text-xl font-light leading-relaxed text-foreground">
                     &ldquo;
                     {attention ? (
                       <>

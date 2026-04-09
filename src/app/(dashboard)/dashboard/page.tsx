@@ -10,6 +10,7 @@ import {
   listAssistantConversationsForSession,
   listAssistantMessagesForConversation,
 } from "@/lib/assistant-messages/store";
+import { getHomePortfolioSnapshot } from "@/lib/dashboard/home-snapshot";
 import { createClient } from "@/lib/supabase/server";
 
 function deriveTitleFromFirstLine(text: string) {
@@ -56,14 +57,18 @@ export default async function DashboardPage({
   /** Landing: focus on starting a message; chat history opens via “All chats” or direct `?c=` links. */
   if (!requested) {
     const conversations = await listAssistantConversationsForSession();
+    const homeMetrics =
+      user?.id != null ? await getHomePortfolioSnapshot(user.id) : { totalProperties: 0, activeTenancies: 0 };
 
     return (
-      <div className="relative flex min-h-0 flex-1 flex-col bg-[#0E0E0E]">
-        <div className="mx-auto w-full max-w-7xl flex-1 px-6 pb-16 pt-4 md:px-12 md:pt-2">
-          <div className="mx-auto max-w-5xl">
+      <div className="relative flex min-h-0 flex-1 flex-col bg-background">
+        <div className="mx-auto w-full max-w-7xl flex-1 px-6 pb-20 pt-6 md:px-16 md:pt-10">
+          <div className="mx-auto max-w-2xl">
             <AssistantLanding
               greetingName={firstNameFromUser(user?.email)}
               conversations={conversations}
+              totalProperties={homeMetrics.totalProperties}
+              activeTenancies={homeMetrics.activeTenancies}
             />
           </div>
         </div>
@@ -112,8 +117,8 @@ export default async function DashboardPage({
       : undefined;
 
   return (
-    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-[#0E0E0E]">
-      <div className="flex min-h-0 flex-1 flex-col border border-[#484848]/25 bg-[#131313]/35 backdrop-blur-xl md:mx-4 md:mb-4 md:mt-0 md:rounded-xl">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-background">
+      <div className="flex min-h-0 flex-1 flex-col border border-border/80 bg-card md:mx-6 md:mb-6 md:mt-1 md:rounded-2xl md:shadow-sm dark:border-white/[0.06] dark:bg-background dark:shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
         <AssistantChat
           key={activeId}
           conversations={conversations}

@@ -112,7 +112,7 @@ export function EmailsSentRegistry({
   ];
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col bg-[#0E0E0E]">
+    <div className="relative flex min-h-0 flex-1 flex-col bg-background">
       <div
         className="pointer-events-none fixed inset-0 z-0 opacity-[0.03]"
         style={{
@@ -131,7 +131,7 @@ export function EmailsSentRegistry({
           </p>
         </header>
 
-        <div className="mb-10 flex flex-col gap-4 border-b border-[#484848]/10 pb-4 md:flex-row md:items-center md:justify-between">
+        <div className="mb-10 flex flex-col gap-4 border-b border-border/80 pb-4 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap gap-8">
             {tabs.map((t) => (
               <button
@@ -166,7 +166,7 @@ export function EmailsSentRegistry({
         </div>
 
         {advancedOpen ? (
-          <div className="mb-8 flex flex-wrap items-center gap-4 rounded-sm border border-[#484848]/15 bg-[#131313]/80 px-4 py-3">
+          <div className="mb-8 flex flex-wrap items-center gap-4 rounded-sm border border-border bg-card/80 px-4 py-3">
             <span className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
               Delivery status
             </span>
@@ -203,13 +203,13 @@ export function EmailsSentRegistry({
               setPage(1);
             }}
             placeholder="Search communications…"
-            className="w-full border-0 border-b border-[#484848]/15 bg-transparent py-2 font-[family-name:var(--font-inter)] text-sm text-foreground placeholder:text-muted-foreground/40 focus:border-[#BD9952] focus:outline-none focus:ring-0"
+            className="w-full border-0 border-b border-border bg-transparent py-2 font-[family-name:var(--font-inter)] text-sm text-foreground placeholder:text-placeholder-foreground focus:border-secondary focus:outline-none focus:ring-0"
             aria-label="Search emails"
           />
         </div>
 
         <div className="space-y-0.5">
-          <div className="grid grid-cols-12 items-center rounded-t-sm bg-[#131313] px-6 py-4">
+          <div className="grid grid-cols-12 items-center rounded-t-sm bg-card px-6 py-4">
             <div className="col-span-3 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
               Recipient
             </div>
@@ -225,7 +225,7 @@ export function EmailsSentRegistry({
           </div>
 
           {slice.length === 0 ? (
-            <div className="bg-[#0E0E0E] px-6 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
+            <div className="bg-background px-6 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
               No messages in this view. Sent mail from agents and the assistant will appear here.
             </div>
           ) : (
@@ -234,7 +234,9 @@ export function EmailsSentRegistry({
                 key={`${row.source}-${row.id}`}
                 className={cn(
                   "group grid grid-cols-12 items-center px-6 py-5 transition-colors",
-                  i % 2 === 0 ? "bg-[#0E0E0E] hover:bg-[#131313]" : "bg-[#131313]/30 hover:bg-[#131313]",
+                  i % 2 === 0
+                    ? "bg-background hover:bg-muted/60 dark:hover:bg-[#131313]"
+                    : "bg-muted/30 hover:bg-muted/70 dark:bg-[#131313]/30 dark:hover:bg-[#131313]",
                 )}
               >
                 <div className="col-span-3">
@@ -277,7 +279,7 @@ export function EmailsSentRegistry({
                 aria-label="Previous page"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="flex size-6 items-center justify-center border border-[#484848]/20 text-muted-foreground transition hover:border-[#BD9952]/40 hover:text-foreground disabled:opacity-30"
+                className="flex size-6 items-center justify-center border border-border text-muted-foreground transition hover:border-secondary/40 hover:text-foreground disabled:opacity-30"
               >
                 <ChevronLeft className="size-4" />
               </button>
@@ -286,7 +288,7 @@ export function EmailsSentRegistry({
                 aria-label="Next page"
                 disabled={safePage >= pageCount}
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="flex size-6 items-center justify-center border border-[#484848]/20 text-muted-foreground transition hover:border-[#BD9952]/40 hover:text-foreground disabled:opacity-30"
+                className="flex size-6 items-center justify-center border border-border text-muted-foreground transition hover:border-secondary/40 hover:text-foreground disabled:opacity-30"
               >
                 <ChevronRight className="size-4" />
               </button>

@@ -110,4 +110,14 @@ describe("routeCEOIntent — tenant list phrasing", () => {
     expect(r.primaryIntent).toBe("tenants");
     expect(r.recommendedTools).toContain("list_tenants");
   });
+
+  it("routes compliance / certificate questions to compliance tools", () => {
+    const r = routeCEOIntent("Any expired EPC or gas safety certificates?");
+    expect(r.primaryIntent).toBe("compliance");
+    expect(r.recommendedTools[0]).toBe("get_compliance_summary");
+    expect(r.recommendedTools).toContain("get_dashboard_summary");
+    const hint = formatRouterHintForSystem(r);
+    expect(hint).toContain("get_compliance_summary");
+    expect(hint).toContain("compliance_records");
+  });
 });

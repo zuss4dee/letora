@@ -37,7 +37,9 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
   send_move_in_email:
     "Read **success**, **message**, and **email_log_id** when present. If success is true, confirm move-in instructions were emailed to the tenant. If false, explain using **message** and do not claim the email was sent.",
   get_dashboard_summary:
-    "Give a compact portfolio snapshot: property and tenant counts, overdue rent pressure, maintenance load, and what deserves attention first.",
+    "Give a compact portfolio snapshot: property and tenant counts, overdue rent pressure, maintenance load, **compliance_issue_count**, **compliance_gap_count** (missing expiry / undated certs), **compliance_expiring_soon_count** from the JSON (legal certificates — not repairs), and what deserves attention first.",
+  get_compliance_summary:
+    "Lead with **compliance_issue_count** and **compliance_gap_count**. List compliance issues (expired or expiry before today) and gaps (**is_compliance_gap** / status missing) with certificate_type and property_address. Mention **expiring_within_30_days_count** separately. Do not confuse with maintenance tickets — **definition** in the JSON explains the rule.",
   get_rent_status:
     "Prioritize **tenancies** in the JSON: monthly_rent, start_date, move_in_date, tenancy_status, rent_due_day_of_month, rent_schedule_hint, first_payment_record. Use **payments** for that month’s paid/overdue. Never say you lack rent amount or tenancy start date when **tenancies** includes them. If **ambiguity_note** is set, follow it.",
   list_tenants:

@@ -1,29 +1,74 @@
-import type Stripe from "stripe";
 import { NextRequest, NextResponse } from "next/server";
 
-import { stripe } from "@/lib/stripe";
+import { createPlatformCheckoutSession, platformCheckoutGate } from "@/lib/stripe/platform-checkout";
+import type { CheckoutReturnTarget } from "@/lib/stripe/checkout-return-target";
 import { createClient } from "@/lib/supabase/server";
+import { PLANS, type PlanKey } from "@/lib/stripe-plans";
 
-function platformCheckoutEnabled(): { ok: true } | { ok: false; status: number; message: string } {
-  if (process.env.STRIPE_PLATFORM_CHECKOUT_ENABLED === "false") {
-    return { ok: false, status: 501, message: "Platform Stripe Checkout is disabled." };
+const baseUrl = () => process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+
+/**
+ * Browser redirect after signup: `GET /api/stripe/checkout?priceId=...&plan=starter|pro|landlord_pro`.
+ * Requires an authenticated session (cookies).
+ */
+export async function GET(req: NextRequest) {
+  const gate = platformCheckoutGate();
+  if (!gate.ok) {
+    return NextResponse.redirect(`${baseUrl()}/pricing?checkout=unavailable`, 303);
   }
-  if (!process.env.STRIPE_SECRET_KEY?.trim()) {
-    return {
-      ok: false,
-      status: 503,
-      message: "Stripe is not configured (missing STRIPE_SECRET_KEY).",
-    };
+
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.redirect(
+        `${baseUrl()}/login?next=${encodeURIComponent("/pricing")}`,
+        303,
+      );
+    }
+
+    const { searchParams } = req.nextUrl;
+    const priceId = searchParams.get("priceId")?.trim();
+    const planRaw = searchParams.get("plan")?.trim();
+
+    if (!priceId || !planRaw || !(planRaw in PLANS)) {
+      return NextResponse.redirect(`${baseUrl()}/pricing?checkout=invalid`, 303);
+    }
+
+    const planKey = planRaw as PlanKey;
+    const returnRaw = searchParams.get("return")?.trim();
+    const returnTarget: CheckoutReturnTarget =
+      returnRaw === "billing" ? "billing" : returnRaw === "onboarding" ? "onboarding" : "default";
+
+    const result = await createPlatformCheckoutSession(supabase, user, {
+      priceId,
+      planKey,
+      returnTarget,
+    });
+
+    if ("error" in result) {
+      return NextResponse.redirect(
+        `${baseUrl()}/pricing?checkout=error&reason=${encodeURIComponent(result.error.slice(0, 80))}`,
+        303,
+      );
+    }
+
+    return NextResponse.redirect(result.url, 303);
+  } catch (error) {
+    console.error("Checkout GET error:", error);
+    return NextResponse.redirect(`${baseUrl()}/pricing?checkout=error`, 303);
   }
-  return { ok: true };
 }
 
 /**
  * Platform subscription Checkout (Stripe test/live per `STRIPE_SECRET_KEY`).
  * Disabled when `STRIPE_PLATFORM_CHECKOUT_ENABLED=false` or `STRIPE_SECRET_KEY` is unset.
+ * Prefer POST body: `{ "priceId": "...", "plan": "starter" | "pro" | "landlord_pro" }`.
  */
 export async function POST(req: NextRequest) {
-  const gate = platformCheckoutEnabled();
+  const gate = platformCheckoutGate();
   if (!gate.ok) {
     return NextResponse.json({ error: gate.message }, { status: gate.status });
   }
@@ -35,74 +80,46 @@ export async function POST(req: NextRequest) {
     } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    let body: { priceId?: string; plan?: string };
+    let body: { priceId?: string; plan?: string; returnTarget?: CheckoutReturnTarget };
     try {
-      body = (await req.json()) as { priceId?: string; plan?: string };
+      body = (await req.json()) as { priceId?: string; plan?: string; returnTarget?: CheckoutReturnTarget };
     } catch {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { priceId, plan } = body;
+    const { priceId, plan, returnTarget } = body;
 
     if (!priceId?.trim()) {
       return NextResponse.json({ error: "Missing priceId" }, { status: 400 });
     }
-
-    const { data: settings } = await supabase
-      .from("user_settings")
-      .select("stripe_customer_id, landlord_name")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    let customerId = settings?.stripe_customer_id ?? null;
-    if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: user.email ?? undefined,
-        name: settings?.landlord_name ?? undefined,
-        metadata: { supabase_user_id: user.id },
-      });
-      customerId = customer.id;
-      const { error: upsertError } = await supabase.from("user_settings").upsert(
-        {
-          user_id: user.id,
-          stripe_customer_id: customerId,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "user_id" },
-      );
-      if (upsertError) {
-        console.error("user_settings upsert (stripe_customer_id):", upsertError);
-        return NextResponse.json(
-          { error: "Could not save billing profile. Try again." },
-          { status: 500 },
-        );
-      }
-    }
-
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const planMeta = plan ?? "";
-
-    const sessionParams: Stripe.Checkout.SessionCreateParams = {
-      customer: customerId,
-      mode: "subscription",
-      payment_method_types: ["card"],
-      line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${baseUrl}/dashboard?success=true`,
-      cancel_url: `${baseUrl}/pricing?cancelled=true`,
-      metadata: { user_id: user.id, plan: planMeta },
-      subscription_data: { metadata: { user_id: user.id, plan: planMeta } },
-    };
-
-    const session = await stripe.checkout.sessions.create(sessionParams);
-
-    if (!session.url) {
+    if (!plan?.trim() || !(plan.trim() in PLANS)) {
       return NextResponse.json(
-        { error: "Checkout session did not return a URL" },
-        { status: 500 },
+        { error: 'Missing or invalid plan (expected "starter", "pro", or "landlord_pro")' },
+        { status: 400 },
       );
     }
 
-    return NextResponse.json({ url: session.url });
+    const planKey = plan.trim() as PlanKey;
+    const resolvedReturn: CheckoutReturnTarget =
+      returnTarget === "billing"
+        ? "billing"
+        : returnTarget === "onboarding"
+          ? "onboarding"
+          : "default";
+    const result = await createPlatformCheckoutSession(supabase, user, {
+      priceId: priceId.trim(),
+      planKey,
+      returnTarget: resolvedReturn,
+    });
+
+    if ("error" in result) {
+      return NextResponse.json(
+        { error: result.error },
+        { status: result.status ?? 500 },
+      );
+    }
+
+    return NextResponse.json({ url: result.url });
   } catch (error) {
     console.error("Checkout error:", error);
     const message = error instanceof Error ? error.message : "Internal server error";

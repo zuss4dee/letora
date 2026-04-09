@@ -34,7 +34,7 @@ function CommandDialog({
         showCloseButton={false}
         className={cn(
           "overflow-hidden p-0 shadow-lg sm:max-w-xl",
-          "border-[#484848]/30 bg-[#131313] text-foreground",
+          "border-border bg-popover text-popover-foreground",
           className,
         )}
       >
@@ -51,12 +51,12 @@ const CommandInput = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive.Input>,
   React.ComponentPropsWithoutRef<typeof CommandPrimitive.Input>
 >(({ className, ...props }, ref) => (
-  <div className="flex items-center border-b border-[#484848]/25 px-3" cmdk-input-wrapper="">
+  <div className="flex items-center border-b border-border px-3" cmdk-input-wrapper="">
     <SearchIcon className="mr-2 size-4 shrink-0 text-muted-foreground" aria-hidden />
     <CommandPrimitive.Input
       ref={ref}
       className={cn(
-        "flex h-11 w-full rounded-md bg-transparent py-3 font-[family-name:var(--font-inter)] text-sm text-foreground outline-none placeholder:text-[#484848] disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-11 w-full rounded-md bg-transparent py-3 font-[family-name:var(--font-inter)] text-sm text-foreground outline-none placeholder:text-placeholder-foreground disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
       {...props}

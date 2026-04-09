@@ -5,8 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 /**
- * Opens Stripe Customer Portal (POST /api/stripe/create-portal). Used in E2E and for landlords
- * who need billing without hunting through menus.
+ * Opens Stripe Customer Portal (POST /api/stripe/create-portal). Used on the Billing page (`/dashboard/billing`).
  */
 export function ManageBillingButton() {
   const [pending, setPending] = useState(false);
@@ -42,7 +41,7 @@ export function ManageBillingButton() {
         disabled={pending}
         data-testid="manage-billing"
         onClick={() => void onClick()}
-        className="rounded-md border-[rgb(72_72_72_/0.28)] bg-[#131313]/60 font-[family-name:var(--font-inter)] text-xs font-semibold uppercase tracking-[0.12em] text-foreground shadow-none transition-colors hover:border-[#BD9952]/45 hover:bg-[#BD9952]/10 hover:text-[#BD9952]"
+        className="rounded-md border-border bg-card font-[family-name:var(--font-inter)] text-xs font-semibold uppercase tracking-[0.12em] text-foreground shadow-none transition-colors hover:border-secondary/45 hover:bg-secondary/10 hover:text-[#BD9952]"
       >
         {pending ? "Opening…" : "Manage billing"}
       </Button>

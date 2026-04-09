@@ -55,7 +55,7 @@ export function LetoraProductFeaturesSection() {
           >
             Inside the platform
           </h2>
-          <p className="mx-auto mt-5 max-w-xl font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-foreground/90 md:text-lg">
+          <p className="mx-auto mt-5 max-w-xl font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-foreground md:text-lg">
             Real screens from the Letora workspace: editorial dark UI, gold accents, and data you can act on.
           </p>
         </div>

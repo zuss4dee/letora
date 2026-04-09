@@ -66,7 +66,7 @@ export default async function TenancyDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="@container/main relative flex flex-1 flex-col">
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[min(42vh,420px)] bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(61,26,10,0.35),transparent_65%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[min(42vh,420px)] bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(189,153,82,0.12),transparent_65%)] dark:bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(61,26,10,0.35),transparent_65%)]"
         aria-hidden
       />
       <div className="relative flex flex-col gap-10 py-8 md:py-10">

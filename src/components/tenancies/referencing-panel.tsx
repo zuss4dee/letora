@@ -150,7 +150,7 @@ export function ReferencingPanel({
               placeholder="Uses Settings default if empty"
               value={override}
               onChange={(e) => setOverride(e.target.value)}
-              className="rounded-md border-[rgb(72_72_72_/0.28)] bg-[#0e0e0e]/80 text-foreground placeholder:text-[#6b6a69] focus-visible:border-[#BD9952]/45 focus-visible:ring-1 focus-visible:ring-[#BD9952]/25"
+              className="rounded-md border-border bg-background text-foreground placeholder:text-placeholder-foreground focus-visible:border-[#BD9952]/45 focus-visible:ring-1 focus-visible:ring-[#BD9952]/25 dark:border-[rgb(72_72_72_/0.28)] dark:bg-[#0e0e0e]/80"
             />
             <Button
               type="button"
@@ -175,30 +175,30 @@ export function ReferencingPanel({
         </div>
 
         <div className="grid gap-4 text-sm sm:grid-cols-2">
-          <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
+          <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm ring-1 ring-border/60 dark:border-transparent dark:bg-[#0e0e0e]/35 dark:shadow-none dark:ring-[rgb(72_72_72_/0.08)]">
             <span className={TENANCY_LABEL}>Onboarding status</span>
             <p className="mt-1 font-[family-name:var(--font-inter)] font-medium capitalize text-foreground">
               {onboardingStatus.replace(/_/g, " ")}
             </p>
           </div>
-          <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
+          <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm ring-1 ring-border/60 dark:border-transparent dark:bg-[#0e0e0e]/35 dark:shadow-none dark:ring-[rgb(72_72_72_/0.08)]">
             <span className={TENANCY_LABEL}>Reference token</span>
             <p className="mt-1 break-all font-mono text-xs text-foreground">
               {referencingToken ?? "Not set (generated on first send)"}
             </p>
           </div>
-          <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
+          <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm ring-1 ring-border/60 dark:border-transparent dark:bg-[#0e0e0e]/35 dark:shadow-none dark:ring-[rgb(72_72_72_/0.08)]">
             <span className={TENANCY_LABEL}>Last handoff sent</span>
             <p className="mt-1 font-[family-name:var(--font-inter)] font-medium text-foreground">{fmt(lastOutboundAt)}</p>
           </div>
-          <div className="rounded-xl bg-[#0e0e0e]/35 p-4 ring-1 ring-[rgb(72_72_72_/0.08)]">
+          <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm ring-1 ring-border/60 dark:border-transparent dark:bg-[#0e0e0e]/35 dark:shadow-none dark:ring-[rgb(72_72_72_/0.08)]">
             <span className={TENANCY_LABEL}>Last agency reply (inbound)</span>
             <p className="mt-1 font-[family-name:var(--font-inter)] font-medium text-foreground">{fmt(lastInboundAt)}</p>
           </div>
         </div>
 
         {handoffRecipientEmail ? (
-          <div className="rounded-xl bg-[#0e0e0e]/40 px-4 py-3 font-[family-name:var(--font-inter)] text-xs leading-relaxed text-muted-foreground ring-1 ring-[rgb(72_72_72_/0.1)]">
+          <div className="rounded-xl border border-border bg-muted/60 px-4 py-3 font-[family-name:var(--font-inter)] text-xs leading-relaxed text-muted-foreground ring-1 ring-border/60 dark:border-transparent dark:bg-[#0e0e0e]/40 dark:ring-[rgb(72_72_72_/0.1)]">
             <span className="font-medium text-foreground">Handoff is emailed to </span>
             <span className="select-all break-all font-mono text-foreground">{handoffRecipientEmail}</span>
             <span className="text-muted-foreground">
@@ -231,7 +231,7 @@ export function ReferencingPanel({
               {events.map((ev) => (
                 <li
                   key={ev.id}
-                  className="rounded-xl bg-[#0e0e0e]/35 px-4 py-3 ring-1 ring-[rgb(72_72_72_/0.08)] transition-colors hover:bg-[#131313]/50"
+                  className="rounded-xl bg-muted/70 px-4 py-3 ring-1 ring-border transition-colors hover:bg-muted dark:bg-[#0e0e0e]/35 dark:hover:bg-[#131313]/50"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-[family-name:var(--font-inter)] font-medium capitalize text-foreground">

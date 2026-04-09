@@ -7,6 +7,7 @@ import {
   Building2,
   ChevronDown,
   CircleDollarSign,
+  ClipboardCheck,
   CreditCard,
   FileText,
   HelpCircle,
@@ -43,6 +44,7 @@ const mainItems: NavItem[] = [
 const workflowItems: NavItem[] = [
   { title: "Contracts", url: "/dashboard/contracts", icon: FileText },
   { title: "Maintenance", url: "/dashboard/maintenance", icon: Wrench },
+  { title: "Compliance", url: "/dashboard/compliance", icon: ClipboardCheck },
 ];
 
 const moreItems: NavItem[] = [
@@ -59,15 +61,22 @@ function isActivePath(pathname: string, url: string) {
   return pathname === url || pathname.startsWith(`${url}/`);
 }
 
+type AttentionItem = { url: string; title: string; ariaLabel: string };
+
 function NavSection({
   label,
   items,
   pathname,
+  attentionItems,
 }: {
   label: string;
   items: NavItem[];
   pathname: string;
+  /** Red dot + tooltip per matching nav URL (compliance expiry, maintenance safety, etc.). */
+  attentionItems?: AttentionItem[];
 }) {
+  const attentionByUrl = new Map(attentionItems?.map((a) => [a.url, a] as const) ?? []);
+
   return (
     <div className="mb-4">
       <span className="mb-2 block px-4 font-[family-name:var(--font-inter)] text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
@@ -77,19 +86,29 @@ function NavSection({
         {items.map((item) => {
           const active = isActivePath(pathname, item.url);
           const Icon = item.icon;
+          const attention = attentionByUrl.get(item.url);
+          const showDot = Boolean(attention);
           return (
             <li key={item.url}>
               <Link
                 href={item.url}
+                data-mercury-tour={item.url === "/dashboard/compliance" ? "compliance" : undefined}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-300",
+                  "flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
                   active
-                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-foreground"
-                    : "border-l-2 border-transparent text-muted-foreground hover:bg-[#1F2020] hover:text-foreground",
+                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
                 )}
               >
                 <Icon className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
-                {item.title}
+                <span className="min-w-0 flex-1">{item.title}</span>
+                {showDot && attention ? (
+                  <span
+                    className="size-1.5 shrink-0 rounded-full bg-red-500"
+                    title={attention.title}
+                    aria-label={attention.ariaLabel}
+                  />
+                ) : null}
               </Link>
             </li>
           );
@@ -100,20 +119,6 @@ function NavSection({
 }
 
 const FOOTER_STORAGE_KEY = "letora-sidebar-footer-open";
-
-/** Sync with `window.location.hash` for Settings vs Billing deep links. */
-function useHash(pathname: string) {
-  const [hash, setHash] = React.useState("");
-
-  React.useEffect(() => {
-    const sync = () => setHash(typeof window !== "undefined" ? window.location.hash : "");
-    sync();
-    window.addEventListener("hashchange", sync);
-    return () => window.removeEventListener("hashchange", sync);
-  }, [pathname]);
-
-  return hash;
-}
 
 function useFooterOpen() {
   const [footerOpen, setFooterOpen] = React.useState(true);
@@ -140,17 +145,39 @@ function useFooterOpen() {
 
 export function AppSidebar({
   userEmail,
+  complianceAttention,
+  maintenanceAttention,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   userEmail?: string | null;
+  /** Any certificate past legal expiry — red dot on Compliance (not missing PDFs alone). */
+  complianceAttention?: boolean;
+  /** Active urgent safety alerts (last 7 days, non-resolved) — red dot on Maintenance. */
+  maintenanceAttention?: boolean;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const [footerOpen, setFooterOpen] = useFooterOpen();
-  const hash = useHash(pathname);
   const onSettingsPage = pathname === "/dashboard/settings";
-  const settingsNavActive = onSettingsPage && hash !== "#billing";
-  const billingNavActive = onSettingsPage && hash === "#billing";
+  const onBillingPage = pathname === "/dashboard/billing";
+  const settingsNavActive = onSettingsPage;
+  const billingNavActive = onBillingPage;
+
+  const workflowAttention: AttentionItem[] = [];
+  if (complianceAttention) {
+    workflowAttention.push({
+      url: "/dashboard/compliance",
+      title: "Expired certificate",
+      ariaLabel: "Compliance: expired certificate on record",
+    });
+  }
+  if (maintenanceAttention) {
+    workflowAttention.push({
+      url: "/dashboard/maintenance",
+      title: "Urgent safety alert",
+      ariaLabel: "Maintenance: urgent safety alert in the last seven days",
+    });
+  }
 
   async function onLogout() {
     const supabase = createClient();
@@ -163,7 +190,7 @@ export function AppSidebar({
     <Sidebar
       collapsible="offcanvas"
       variant="sidebar"
-      className="border-[#484848]/15 [&_[data-sidebar=sidebar]]:border-[#484848]/15"
+      className="border-sidebar-border [&_[data-sidebar=sidebar]]:border-sidebar-border"
       {...props}
     >
       <SidebarHeader className="gap-0 px-4 pb-8 pt-8">
@@ -186,16 +213,21 @@ export function AppSidebar({
       <SidebarContent className="px-0">
         <nav className="flex flex-1 flex-col px-0">
           <NavSection label="Main" items={mainItems} pathname={pathname} />
-          <NavSection label="Workflow" items={workflowItems} pathname={pathname} />
+          <NavSection
+            label="Workflow"
+            items={workflowItems}
+            pathname={pathname}
+            attentionItems={workflowAttention.length > 0 ? workflowAttention : undefined}
+          />
           <NavSection label="More" items={moreItems} pathname={pathname} />
         </nav>
       </SidebarContent>
-      <SidebarFooter className="border-t border-[#484848]/15 p-4">
+      <SidebarFooter className="border-t border-sidebar-border p-4">
         <button
           type="button"
           onClick={() => setFooterOpen((o) => !o)}
           className={cn(
-            "flex w-full items-center justify-between gap-2 rounded-sm px-2 py-2 text-left font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:bg-[#1F2020] hover:text-foreground",
+            "flex w-full items-center justify-between gap-2 rounded-sm px-2 py-2 text-left font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-muted-foreground transition-colors duration-200 ease-out hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
             footerOpen && "mb-2",
           )}
           aria-expanded={footerOpen}
@@ -217,8 +249,13 @@ export function AppSidebar({
           <div className="min-h-0 overflow-hidden">
             <div className={cn("flex flex-col gap-0", !footerOpen && "pointer-events-none")}>
               <Link
-                href="/dashboard"
-                className="mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground transition-colors hover:bg-[#1F2020] hover:text-foreground"
+                href="/dashboard/help"
+                className={cn(
+                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
+                  isActivePath(pathname, "/dashboard/help")
+                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
+                )}
               >
                 <HelpCircle className="size-5 stroke-[1.25]" aria-hidden />
                 Help
@@ -226,10 +263,10 @@ export function AppSidebar({
               <Link
                 href="/dashboard/activity"
                 className={cn(
-                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-300",
+                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
                   isActivePath(pathname, "/dashboard/activity")
-                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-foreground"
-                    : "border-l-2 border-transparent text-muted-foreground hover:bg-[#1F2020] hover:text-foreground",
+                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
                 )}
               >
                 <History className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
@@ -238,22 +275,22 @@ export function AppSidebar({
               <Link
                 href="/dashboard/settings"
                 className={cn(
-                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-300",
+                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
                   settingsNavActive
-                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-foreground"
-                    : "border-l-2 border-transparent text-muted-foreground hover:bg-[#1F2020] hover:text-foreground",
+                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
                 )}
               >
                 <Settings className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
                 Settings
               </Link>
               <Link
-                href="/dashboard/settings#billing"
+                href="/dashboard/billing"
                 className={cn(
-                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-300",
+                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
                   billingNavActive
-                    ? "border-l-2 border-[#BD9952] bg-[#2C2C2C] text-foreground"
-                    : "border-l-2 border-transparent text-muted-foreground hover:bg-[#1F2020] hover:text-foreground",
+                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
                 )}
               >
                 <CreditCard className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
@@ -261,7 +298,7 @@ export function AppSidebar({
               </Link>
               <SidebarAgentActivityButton />
               <div className="flex items-center gap-3 px-4 py-2">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#1F2020] font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase text-foreground">
+                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase text-foreground">
                   {(userEmail?.[0] ?? "?").toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
@@ -275,7 +312,7 @@ export function AppSidebar({
                 <button
                   type="button"
                   onClick={onLogout}
-                  className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-[#1F2020] hover:text-foreground"
+                  className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-200 ease-out hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground"
                   aria-label="Log out"
                 >
                   <LogOut className="size-4 stroke-[1.25]" />

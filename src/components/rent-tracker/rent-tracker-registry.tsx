@@ -198,13 +198,13 @@ export function RentTrackerRegistry({
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col bg-[#0E0E0E]">
+    <div className="relative flex min-h-0 flex-1 flex-col bg-background">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -right-24 top-32 size-80 rounded-full bg-[#BD9952]/[0.04] blur-3xl" />
       </div>
 
       <div className="relative mx-auto w-full max-w-7xl flex-1 px-6 pb-24 pt-6 md:px-12 md:pt-8">
-        <div className="mb-8 flex flex-col gap-4 border-b border-[#484848]/15 pb-6 md:flex-row md:items-center md:justify-between">
+        <div className="mb-8 flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-center md:justify-between">
           <nav className="flex flex-wrap items-center gap-6 font-[family-name:var(--font-inter)] text-xs uppercase tracking-wider text-muted-foreground">
             <Link href="/dashboard" className="transition-colors hover:text-foreground">
               Dashboard
@@ -236,7 +236,7 @@ export function RentTrackerRegistry({
           </nav>
         </div>
 
-        <header className="flex flex-col gap-6 border-b border-[#484848]/15 pb-8 md:flex-row md:items-end md:justify-between">
+        <header className="flex flex-col gap-6 border-b border-border pb-8 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="font-headline text-4xl font-extralight leading-none tracking-[-0.02em] text-foreground md:text-[3.5rem]">
               Rent Tracker
@@ -252,7 +252,7 @@ export function RentTrackerRegistry({
                 <button
                   type="button"
                   disabled={tenancies.length === 0}
-                  className="border border-[#484848]/25 px-5 py-2.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-foreground transition hover:border-[#BD9952]/40 hover:text-[#BD9952] disabled:opacity-40"
+                  className="border border-border px-5 py-2.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-40"
                 >
                   Record payment
                 </button>
@@ -270,7 +270,7 @@ export function RentTrackerRegistry({
         </header>
 
         <section className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div className="flex h-32 flex-col justify-between bg-[#131313] p-6 transition-colors hover:bg-[#1F2020]">
+          <div className="flex h-32 flex-col justify-between bg-card p-6 transition-colors hover:bg-muted/80 dark:hover:bg-[#1F2020]">
             <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
               Total expected
             </span>
@@ -278,7 +278,7 @@ export function RentTrackerRegistry({
               {gbp.format(stats.expectedThisMonth)}
             </span>
           </div>
-          <div className="relative flex h-32 flex-col justify-between overflow-hidden bg-[#131313] p-6 transition-colors hover:bg-[#1F2020]">
+          <div className="relative flex h-32 flex-col justify-between overflow-hidden bg-card p-6 transition-colors hover:bg-muted/80 dark:hover:bg-[#1F2020]">
             <div>
               <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                 Collected
@@ -287,7 +287,7 @@ export function RentTrackerRegistry({
                 {gbp.format(stats.receivedThisMonth)}
               </span>
             </div>
-            <div className="mt-3 h-0.5 w-full bg-[#484848]/20">
+            <div className="mt-3 h-0.5 w-full bg-border">
               <div
                 className="h-full bg-[#BD9952] transition-all"
                 style={{ width: `${collectionPct}%` }}
@@ -297,7 +297,7 @@ export function RentTrackerRegistry({
               {collectionPct.toFixed(0)}%
             </span>
           </div>
-          <div className="flex h-32 flex-col justify-between border-l border-[#BB5551]/20 bg-[#131313] p-6">
+          <div className="flex h-32 flex-col justify-between border-l border-[#BB5551]/20 bg-card p-6">
             <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#BB5551]">
               Arrears
             </span>
@@ -310,7 +310,7 @@ export function RentTrackerRegistry({
               </span>
             </div>
           </div>
-          <div className="flex h-32 flex-col justify-between bg-[#131313] p-6 transition-colors hover:bg-[#1F2020]">
+          <div className="flex h-32 flex-col justify-between bg-card p-6 transition-colors hover:bg-muted/80 dark:hover:bg-[#1F2020]">
             <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
               Next 30 days forecast
             </span>
@@ -320,7 +320,7 @@ export function RentTrackerRegistry({
           </div>
         </section>
 
-        <div className="relative mb-8 flex flex-col gap-4 border-l border-[#BD9952]/30 bg-[#252626]/40 p-5 backdrop-blur-sm md:flex-row md:items-center md:gap-6">
+        <div className="relative mb-8 flex flex-col gap-4 border-l border-[#BD9952]/30 bg-muted/40 p-5 backdrop-blur-sm dark:bg-[#252626]/40 md:flex-row md:items-center md:gap-6">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#4f3700]/30 text-[#BD9952]">
             <Sparkles className="size-5" strokeWidth={1.25} aria-hidden />
           </div>
@@ -342,7 +342,7 @@ export function RentTrackerRegistry({
         </div>
 
         <section className="space-y-6">
-          <div className="flex flex-col gap-4 border-b border-[#484848]/10 pb-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-4 border-b border-border/80 pb-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-8">
               {(
                 [
@@ -394,11 +394,11 @@ export function RentTrackerRegistry({
             </div>
           </div>
 
-          <div className="overflow-hidden bg-[#131313]">
+          <div className="overflow-hidden bg-card">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] border-collapse text-left">
                 <thead>
-                  <tr className="border-b border-[#484848]/10">
+                  <tr className="border-b border-border/80">
                     <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                       Tenant
                     </th>
@@ -442,7 +442,7 @@ export function RentTrackerRegistry({
                       return (
                         <tr
                           key={p.id}
-                          className="group border-b border-[#484848]/5 transition-colors hover:bg-[#1F2020]/80"
+                          className="group border-b border-border/40 transition-colors hover:bg-muted/60 dark:hover:bg-[#1F2020]/80"
                         >
                           <td className="px-6 py-6">
                             <div className="flex items-center gap-3">
@@ -531,7 +531,7 @@ export function RentTrackerRegistry({
                 aria-label="Previous page"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="flex size-8 items-center justify-center border border-[#484848]/20 text-muted-foreground transition hover:border-[#BD9952]/40 hover:text-foreground disabled:opacity-30"
+                className="flex size-8 items-center justify-center border border-border text-muted-foreground transition hover:border-secondary/40 hover:text-foreground disabled:opacity-30"
               >
                 <ChevronLeft className="size-4" />
               </button>
@@ -540,7 +540,7 @@ export function RentTrackerRegistry({
                 aria-label="Next page"
                 disabled={safePage >= pageCount}
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="flex size-8 items-center justify-center border border-[#484848]/20 text-muted-foreground transition hover:border-[#BD9952]/40 hover:text-foreground disabled:opacity-30"
+                className="flex size-8 items-center justify-center border border-border text-muted-foreground transition hover:border-secondary/40 hover:text-foreground disabled:opacity-30"
               >
                 <ChevronRight className="size-4" />
               </button>

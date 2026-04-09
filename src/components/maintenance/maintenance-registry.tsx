@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { AddRequestDialog } from "@/components/maintenance/add-request-dialog";
+import { MaintenanceSafetyAlerts } from "@/components/maintenance/maintenance-safety-alerts";
 import type { MaintenanceRequestRow } from "@/lib/actions/maintenance";
+import type { SafetyAlertRow } from "@/lib/actions/safety-alerts";
 import { cn } from "@/lib/utils";
 
 type TabId = "all" | "in_progress" | "resolved";
@@ -54,7 +56,7 @@ function rowPresentation(row: MaintenanceRequestRow): {
       statusLabel: "Closed",
       actionLabel: "History",
       muted: true,
-      badgeClass: "text-muted-foreground/80",
+      badgeClass: "text-muted-foreground",
     };
   }
   if (st === "in_progress") {
@@ -135,10 +137,13 @@ export function MaintenanceRegistry({
   open: openRows,
   resolved: resolvedRows,
   tenancies,
+  safetyAlerts = [],
 }: {
   open: MaintenanceRequestRow[];
   resolved: MaintenanceRequestRow[];
   tenancies: Array<{ id: string; label: string }>;
+  /** AI urgent-safety alerts (shown above the queue). */
+  safetyAlerts?: SafetyAlertRow[];
 }) {
   const [tab, setTab] = useState<TabId>("all");
   const [showHistory, setShowHistory] = useState(false);
@@ -187,8 +192,9 @@ export function MaintenanceRegistry({
   ];
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col bg-[#0E0E0E]">
+    <div className="relative flex min-h-0 flex-1 flex-col bg-background">
       <div className="mx-auto w-full max-w-7xl flex-1 px-6 pb-20 pt-6 md:px-12 md:pt-8">
+        <MaintenanceSafetyAlerts safetyAlerts={safetyAlerts} className="max-w-full" />
         <div className="flex flex-col gap-6 border-b border-[#484848]/15 pb-8 md:flex-row md:items-center md:justify-between">
           <p className="max-w-xl font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
             Track issues, triage with AI, and keep every property within SLA. Use the queue below to manage
@@ -266,7 +272,7 @@ export function MaintenanceRegistry({
                   "transition-colors",
                   tab === t.id
                     ? "text-foreground"
-                    : "text-muted-foreground/50 hover:text-[#BD9952]",
+                    : "text-muted-foreground hover:text-[#BD9952]",
                 )}
               >
                 {t.label}
@@ -312,14 +318,14 @@ export function MaintenanceRegistry({
                 <div
                   key={row.id}
                   className={cn(
-                    "group flex flex-col gap-4 border border-[#484848]/10 bg-black/50 p-6 transition-all hover:bg-[#252626]/35 sm:flex-row sm:items-center sm:justify-between",
+                    "group flex flex-col gap-4 border border-border bg-card p-6 transition-all duration-200 ease-out hover:bg-muted/50 dark:border-[#484848]/10 dark:bg-black/50 dark:hover:bg-[#252626]/35 sm:flex-row sm:items-center sm:justify-between",
                     pres.muted && "opacity-50",
                   )}
                 >
                   <div className="flex min-w-0 flex-1 items-start gap-6">
                     <StatusDot tone={pres.dot} />
                     <div className="min-w-0">
-                      <h3 className="font-headline text-[0.9375rem] font-light text-foreground transition-colors group-hover:text-white">
+                      <h3 className="font-headline text-[0.9375rem] font-light text-foreground transition-colors group-hover:text-[#BD9952]">
                         {title}
                       </h3>
                       <p className="mt-0.5 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -333,7 +339,7 @@ export function MaintenanceRegistry({
                         className={cn(
                           "inline-block px-2 py-0.5 font-[family-name:var(--font-inter)] text-[9px] uppercase tracking-[0.2em]",
                           pres.statusLabel === "Closed"
-                            ? "text-muted-foreground/70"
+                            ? "text-muted-foreground"
                             : pres.badgeClass,
                         )}
                       >
@@ -342,7 +348,7 @@ export function MaintenanceRegistry({
                       <p className="mt-1.5 font-[family-name:var(--font-inter)] text-[9px] uppercase tracking-tight text-muted-foreground">
                         {metaPrimary}
                       </p>
-                      <p className="mt-0.5 font-[family-name:var(--font-inter)] text-[9px] text-muted-foreground/80">
+                      <p className="mt-0.5 font-[family-name:var(--font-inter)] text-[9px] text-muted-foreground">
                         {metaSecondary}
                       </p>
                     </div>
@@ -384,7 +390,7 @@ export function MaintenanceRegistry({
           </div>
         ) : null}
 
-        <div className="mt-24 flex flex-col gap-8 border border-[#484848]/15 bg-[#131313]/40 p-8 sm:flex-row sm:items-start sm:justify-between">
+        <div className="mt-24 flex flex-col gap-8 border border-border bg-card/60 p-8 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-4">
             <div
               className="mt-1 size-1.5 shrink-0 animate-pulse rounded-full bg-[#BD9952] shadow-[0_0_10px_#BD9952]"

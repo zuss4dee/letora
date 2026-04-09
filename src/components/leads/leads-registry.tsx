@@ -191,13 +191,13 @@ export function LeadsRegistry({
   const displayTo = Math.min(start + PAGE_SIZE, total);
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col bg-[#0E0E0E]">
+    <div className="relative flex min-h-0 flex-1 flex-col bg-background">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute left-1/4 top-24 size-96 rounded-full bg-[#BD9952]/[0.03] blur-3xl" />
       </div>
 
       <div className="relative mx-auto w-full max-w-7xl flex-1 px-6 pb-24 pt-6 md:px-12 md:pt-8">
-        <header className="mb-10 flex flex-col gap-6 border-b border-[#484848]/15 pb-10 md:flex-row md:items-end md:justify-between">
+        <header className="mb-10 flex flex-col gap-6 border-b border-border pb-10 md:flex-row md:items-end md:justify-between">
           <div className="max-w-2xl">
             <h1 className="font-headline text-4xl font-extralight tracking-tight text-foreground md:text-[2.75rem]">
               Lead Management
@@ -211,7 +211,7 @@ export function LeadsRegistry({
             trigger={
               <button
                 type="button"
-                className="inline-flex items-center gap-3 rounded-sm border border-[#484848]/20 px-6 py-3 font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.2em] text-[#BD9952] transition hover:bg-[#131313]"
+                className="inline-flex items-center gap-3 rounded-sm border border-border px-6 py-3 font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.2em] text-[#BD9952] transition hover:bg-muted/80 dark:hover:bg-[#131313]"
               >
                 <Plus className="size-4" strokeWidth={2} aria-hidden />
                 Add lead
@@ -221,7 +221,7 @@ export function LeadsRegistry({
         </header>
 
         <section className="mb-10 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div className="border border-[#484848]/15 bg-[#131313] p-5 transition-colors hover:bg-[#1F2020]/80">
+          <div className="border border-border bg-card p-5 transition-colors hover:bg-muted/70 dark:hover:bg-[#1F2020]/80">
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Total leads
             </p>
@@ -229,7 +229,7 @@ export function LeadsRegistry({
               {stats.total}
             </p>
           </div>
-          <div className="border border-[#484848]/15 bg-[#131313] p-5 transition-colors hover:bg-[#1F2020]/80">
+          <div className="border border-border bg-card p-5 transition-colors hover:bg-muted/70 dark:hover:bg-[#1F2020]/80">
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               New
             </p>
@@ -237,7 +237,7 @@ export function LeadsRegistry({
               {stats.newCount}
             </p>
           </div>
-          <div className="border border-[#484848]/15 bg-[#131313] p-5 transition-colors hover:bg-[#1F2020]/80">
+          <div className="border border-border bg-card p-5 transition-colors hover:bg-muted/70 dark:hover:bg-[#1F2020]/80">
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Qualified
             </p>
@@ -245,7 +245,7 @@ export function LeadsRegistry({
               {stats.qualifiedCount}
             </p>
           </div>
-          <div className="border border-[#484848]/15 bg-[#131313] p-5 transition-colors hover:bg-[#1F2020]/80">
+          <div className="border border-border bg-card p-5 transition-colors hover:bg-muted/70 dark:hover:bg-[#1F2020]/80">
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Viewings
             </p>
@@ -266,7 +266,7 @@ export function LeadsRegistry({
                 setPage(1);
               }}
               placeholder="Search leads, properties, or inquiries…"
-              className="w-full border-0 border-b border-[#484848]/15 bg-[#000000] py-2 pl-10 pr-4 font-[family-name:var(--font-inter)] text-xs text-muted-foreground placeholder:text-muted-foreground focus:border-[#BD9952] focus:outline-none focus:ring-0"
+              className="w-full border-0 border-b border-border bg-transparent py-2 pl-10 pr-4 font-[family-name:var(--font-inter)] text-xs text-foreground placeholder:text-placeholder-foreground focus:border-secondary focus:outline-none focus:ring-0"
               aria-label="Search leads"
             />
           </div>
@@ -282,7 +282,7 @@ export function LeadsRegistry({
                 className={cn(
                   "rounded-sm px-3 py-1.5 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest transition-colors",
                   statusTab === t.id
-                    ? "bg-[#2C2C2C] text-foreground"
+                    ? "bg-muted text-foreground"
                     : "text-muted-foreground hover:text-muted-foreground",
                 )}
               >
@@ -292,8 +292,8 @@ export function LeadsRegistry({
           </div>
         </div>
 
-        <div className="overflow-hidden border border-[#484848]/15 bg-[#131313]">
-          <div className="flex items-center justify-between border-b border-[#484848]/10 px-8 py-5">
+        <div className="overflow-hidden border border-border bg-card">
+          <div className="flex items-center justify-between border-b border-border/80 px-8 py-5">
             <h2 className="font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
               Active inquiries
             </h2>
@@ -331,7 +331,7 @@ export function LeadsRegistry({
           <div className="overflow-x-auto">
             <table className="w-full min-w-[960px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-[#484848]/5 text-[10px] uppercase tracking-widest text-muted-foreground/80">
+                <tr className="border-b border-[#484848]/5 text-[10px] uppercase tracking-widest text-muted-foreground">
                   <th className="px-8 py-5 font-medium">Lead name</th>
                   <th className="px-8 py-5 font-medium">Property interest</th>
                   <th className="px-8 py-5 font-medium">Source</th>
@@ -358,7 +358,7 @@ export function LeadsRegistry({
                     return (
                       <tr
                         key={lead.id}
-                        className="group border-b border-[#484848]/5 transition-colors hover:bg-[#1F2020]/90"
+                        className="group border-b border-border/50 transition-colors hover:bg-muted/70 dark:hover:bg-[#1F2020]/90"
                       >
                         <td className="px-8 py-6">
                           <div className="flex items-center gap-4">
@@ -423,7 +423,7 @@ export function LeadsRegistry({
           </div>
 
           <div className="flex flex-col gap-4 border-t border-[#484848]/5 px-8 py-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground/80">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
               Showing {displayFrom}–{displayTo} of {total} leads
             </p>
             <div className="flex items-center gap-4">

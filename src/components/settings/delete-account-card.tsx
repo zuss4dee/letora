@@ -2,6 +2,7 @@
 
 import type { FormEvent } from "react";
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { deleteAccount } from "@/lib/actions/delete-account";
@@ -37,15 +38,18 @@ export function DeleteAccountCard() {
   }
 
   return (
-    <Card className="gap-0 overflow-hidden border-0 bg-gradient-to-b from-[#1f1410]/90 to-[#141312]/95 py-0 ring-1 ring-[#BB5551]/20 backdrop-blur-md">
-      <CardHeader className="space-y-2 border-0 bg-[#1a1210]/60 px-6 pb-4 pt-6 sm:px-8">
+    <Card className="gap-0 overflow-hidden border border-red-200/80 bg-gradient-to-b from-red-50/90 to-card py-0 shadow-sm ring-1 ring-red-200/60 backdrop-blur-md dark:border-0 dark:from-[#1f1410]/90 dark:to-[#141312]/95 dark:ring-[#BB5551]/20">
+      <CardHeader className="space-y-2 border-b border-red-200/50 bg-red-50/50 px-6 pb-4 pt-6 dark:border-0 dark:bg-[#1a1210]/60 sm:px-8">
         <CardTitle className="font-headline text-lg font-light tracking-tight text-[#e8a8a4]">
           Danger zone
         </CardTitle>
         <CardDescription className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
           Permanently delete your Letora account and data we hold for your landlord account. This
-          cannot be undone. Active subscriptions should be cancelled in billing before you delete
-          your account.
+          cannot be undone. Active subscriptions should be cancelled on the{" "}
+          <Link href="/dashboard/billing" className="text-foreground underline-offset-4 hover:underline">
+            Billing
+          </Link>{" "}
+          page before you delete your account.
         </CardDescription>
       </CardHeader>
       <form onSubmit={onSubmit}>
@@ -62,7 +66,7 @@ export function DeleteAccountCard() {
               value={phrase}
               onChange={(e) => setPhrase(e.target.value)}
               placeholder="DELETE"
-              className="max-w-xs rounded-md border-[rgb(72_72_72_/0.28)] bg-[#0e0e0e]/80 font-mono text-sm text-foreground"
+              className="max-w-xs rounded-md border-border bg-background font-mono text-sm text-foreground dark:border-[rgb(72_72_72_/0.28)] dark:bg-[#0e0e0e]/80"
               aria-invalid={phrase.length > 0 && !canSubmit && phrase.trim().toUpperCase() !== "DELETE"}
             />
           </div>

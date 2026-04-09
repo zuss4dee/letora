@@ -3,11 +3,41 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { type OnboardingStatus, parseOnboardingStatus } from "@/lib/onboarding/status";
 import { type UserSettingsInput, userSettingsSchema } from "@/lib/validations/user-settings";
+
+/**
+ * Minimal read for dashboard/onboarding routing. Use this for gates instead of full
+ * `getUserSettings()` so a failing wide select (e.g. schema drift) cannot send completed
+ * users back to `/onboarding` forever.
+ */
+export async function getOnboardingStatusForGate(userId: string): Promise<string | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("user_settings")
+    .select("onboarding_status")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[getOnboardingStatusForGate]", error.message);
+    return null;
+  }
+
+  const v = (data as { onboarding_status?: string | null } | null)?.onboarding_status;
+  return typeof v === "string" ? v : null;
+}
 
 export type UserSettingsRow = UserSettingsInput & {
   id?: string;
   userId?: string;
+  /** Present after Stripe Checkout creates or links a customer. */
+  stripeCustomerId?: string | null;
+  /** Pipeline: identity → first property → full app. */
+  onboardingStatus?: OnboardingStatus;
+  onboardingPrimaryGoal?: string | null;
+  /** Mercury product tour on dashboard home; persisted in `user_settings.has_seen_tour`. */
+  hasSeenTour?: boolean;
 };
 
 export async function getUserSettings(userId: string): Promise<UserSettingsRow | null> {
@@ -16,7 +46,7 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
   const { data, error } = await supabase
     .from("user_settings")
     .select(
-      "id,user_id,business_name,landlord_name,contact_phone,contact_email,business_address,rent_chaser_tone,first_chase_days,email_signoff,include_payment_plan,email_from_name,auto_send_rent_chaser,auto_send_maintenance_updates,auto_send_onboarding_emails,auto_send_lead_updates,auto_send_referencing_emails,referencing_agency_name,referencing_agency_email,referencing_agency_notes,rent_chaser_instructions,min_lead_score,preferred_sources,disqualify_no_movein,lead_qualifier_criteria",
+      "id,user_id,stripe_customer_id,business_name,landlord_name,contact_phone,contact_email,business_address,rent_chaser_tone,first_chase_days,email_signoff,include_payment_plan,email_from_name,auto_send_rent_chaser,auto_send_maintenance_updates,auto_send_onboarding_emails,auto_send_lead_updates,auto_send_referencing_emails,referencing_agency_name,referencing_agency_email,referencing_agency_notes,rent_chaser_instructions,min_lead_score,preferred_sources,disqualify_no_movein,lead_qualifier_criteria,onboarding_status,onboarding_primary_goal,has_seen_tour",
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -35,6 +65,7 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
   return {
     id: data.id,
     userId: data.user_id,
+    stripeCustomerId: data.stripe_customer_id ?? null,
     businessName: data.business_name ?? "",
     landlordName: data.landlord_name ?? "",
     contactPhone: data.contact_phone ?? "",
@@ -58,7 +89,41 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
     preferredSources: (data.preferred_sources ?? []) as UserSettingsInput["preferredSources"],
     disqualifyNoMovein: data.disqualify_no_movein ?? false,
     leadQualifierCriteria: data.lead_qualifier_criteria ?? "",
+    onboardingStatus: parseOnboardingStatus((data as { onboarding_status?: string | null }).onboarding_status),
+    onboardingPrimaryGoal: (data as { onboarding_primary_goal?: string | null }).onboarding_primary_goal ?? null,
+    hasSeenTour: Boolean((data as { has_seen_tour?: boolean | null }).has_seen_tour),
   };
+}
+
+export async function markProductTourComplete(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const { data: updated, error } = await supabase
+    .from("user_settings")
+    .update({ has_seen_tour: true, updated_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .select("id");
+
+  if (error) return { ok: false, error: error.message };
+  if (updated && updated.length > 0) {
+    revalidatePath("/dashboard");
+    return { ok: true };
+  }
+
+  const { error: insertError } = await supabase.from("user_settings").insert({
+    user_id: user.id,
+    has_seen_tour: true,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (insertError) return { ok: false, error: insertError.message };
+  revalidatePath("/dashboard");
+  return { ok: true };
 }
 
 export async function saveSettings(formData: unknown) {
@@ -117,6 +182,7 @@ export async function saveSettings(formData: unknown) {
   if (error) return { ok: false as const, error: error.message };
 
   revalidatePath("/dashboard/settings");
+  revalidatePath("/dashboard/billing");
   return { ok: true as const };
 }
 

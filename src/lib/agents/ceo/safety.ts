@@ -15,6 +15,7 @@ export type PendingCEOAction = {
 
 const READ_ONLY_TOOLS: readonly CEOToolName[] = [
   "get_dashboard_summary",
+  "get_compliance_summary",
   "get_rent_status",
   "get_maintenance_summary",
   "get_leads_summary",
@@ -134,6 +135,18 @@ export function pendingActionFromToolUseBlocks(blocks: readonly ToolUseBlock[]):
   return { v: 1, toolCalls }
 }
 
+/**
+ * Removes Markdown bold/italic markers the model may still emit (**text**, __text__).
+ * Does not run on confirmation-template strings that intentionally use ** for emphasis.
+ */
+export function stripMarkdownDelimitersFromAssistantText(text: string): string {
+  let t = text;
+  t = t.replace(/\*\*([^*]+)\*\*/g, "$1");
+  t = t.replace(/\*\*/g, "");
+  t = t.replace(/__([^_]+)__/g, "$1");
+  return t;
+}
+
 /** Removes hex UUIDs and "(tenancy …)" fragments so chat never shows raw tenancy ids. */
 export function stripCeoHexUuidsFromText(text: string): string {
   let t = text;
@@ -198,6 +211,8 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
         return "• **Leads pipeline summary** (read-only)"
       case "get_dashboard_summary":
         return "• **Portfolio dashboard summary** (read-only)"
+      case "get_compliance_summary":
+        return "• **Compliance & certificates summary** (read-only — EPC, gas safety, electrical)"
       case "get_rent_status":
         return `• **Rent status breakdown**${
           c.input.month ? ` for **${c.input.month}**` : ""

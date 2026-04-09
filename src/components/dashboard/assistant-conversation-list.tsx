@@ -15,7 +15,8 @@ function formatChatTimestamp(iso: string): string {
     if (absMin < 60) return diffMs >= 0 ? `${absMin}m ago` : `in ${absMin}m`;
     const absH = Math.round(absMin / 60);
     if (absH < 24) return diffMs >= 0 ? `${absH}h ago` : `in ${absH}h`;
-    return new Intl.DateTimeFormat(undefined, {
+    // Fixed locale so SSR and browser match (undefined uses Node vs browser defaults).
+    return new Intl.DateTimeFormat("en-GB", {
       month: "short",
       day: "numeric",
       year: d.getFullYear() !== new Date().getFullYear() ? "numeric" : undefined,
@@ -55,22 +56,28 @@ export function AssistantConversationList({
             href={`/dashboard?c=${c.id}`}
             scroll={false}
             className={cn(
-              "rounded-lg px-3 py-2 text-left text-sm transition-colors",
+              "block min-w-0 rounded-lg px-3 py-2.5 text-left font-headline text-[0.8125rem] font-normal leading-snug transition-colors duration-200 ease-out",
               variant === "sidebar" &&
                 (active
-                  ? "bg-muted font-medium text-foreground"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"),
+                  ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+                  : "text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent/70"),
               variant === "inline" &&
                 (active
-                  ? "border border-[#BD9952]/35 bg-[#BD9952]/10 font-medium text-foreground"
-                  : "border border-transparent text-muted-foreground hover:border-[#484848]/40 hover:bg-[#1a1a1a] hover:text-foreground"),
+                  ? "border border-secondary/30 bg-secondary/10 font-medium text-foreground"
+                  : "border border-transparent text-muted-foreground transition-colors duration-200 ease-out hover:border-border hover:bg-muted hover:text-foreground"),
             )}
           >
-            <span className={cn("line-clamp-2 block", variant === "inline" && "font-headline")}>
+            <span
+              className={cn(
+                "block min-w-0 truncate",
+                variant === "inline" && "font-headline",
+              )}
+              title={c.title || "New chat"}
+            >
               {c.title || "New chat"}
             </span>
             {variant === "inline" ? (
-              <span className="mt-0.5 block font-[family-name:var(--font-inter)] text-[0.65rem] text-[#6b6a69]">
+              <span className="mt-1 block font-headline text-[0.6rem] uppercase tracking-[0.08em] text-muted-foreground">
                 {formatChatTimestamp(c.updated_at)}
               </span>
             ) : null}

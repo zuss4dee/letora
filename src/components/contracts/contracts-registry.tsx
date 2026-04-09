@@ -38,56 +38,79 @@ function formatCreated(iso: string | null): string {
   return d.toLocaleDateString("en-GB", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function isFullySignedContract(c: ContractListRow): boolean {
+  return Boolean(c.tenantSignedAt && c.landlordSignedAt);
+}
+
 function matchesTab(c: ContractListRow, tab: TabId): boolean {
   const s = (c.status ?? "draft").toLowerCase();
   if (tab === "all") return true;
   if (tab === "draft") return s === "draft";
   if (tab === "sent") return s === "sent";
   if (tab === "pending_signature") return s === "pending_signature";
-  if (tab === "signed") return s === "signed";
+  if (tab === "signed") {
+    // Include DB `signed` and any row where both parties have signed (even if status is already `active`).
+    if (s === "signed") return true;
+    return isFullySignedContract(c);
+  }
   if (tab === "active") return s === "active";
   return false;
 }
 
-function StatusPill({ status }: { status: string | null }) {
-  const s = (status ?? "draft").toLowerCase();
+function StatusPill({ c }: { c: ContractListRow }) {
+  const s = (c.status ?? "draft").toLowerCase();
+  const fullySigned = isFullySignedContract(c);
+
+  if (fullySigned && s === "active") {
+    return (
+      <span className="inline-flex flex-wrap items-center gap-1.5">
+        <span className="inline-flex items-center rounded bg-amber-100 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-amber-900 dark:bg-[#e3a78f]/10 dark:text-[#e3a78f]">
+          Signed
+        </span>
+        <span className="inline-flex items-center rounded bg-teal-100 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-teal-900 dark:bg-[#01696f]/20 dark:text-[#85d3da]">
+          Active
+        </span>
+      </span>
+    );
+  }
+
   if (s === "active") {
     return (
-      <span className="inline-flex items-center rounded bg-[#01696f]/20 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-[#85d3da]">
+      <span className="inline-flex items-center rounded bg-teal-100 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-teal-900 dark:bg-[#01696f]/20 dark:text-[#85d3da]">
         Active
       </span>
     );
   }
   if (s === "pending_signature") {
     return (
-      <span className="inline-flex items-center rounded bg-[#673c29]/20 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-[#f7b8a0]">
+      <span className="inline-flex items-center rounded bg-orange-100 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-orange-900 dark:bg-[#673c29]/20 dark:text-[#f7b8a0]">
         Pending Signature
       </span>
     );
   }
   if (s === "draft") {
     return (
-      <span className="inline-flex items-center rounded border border-[#3f4949]/30 bg-[#363433] px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-muted-foreground">
+      <span className="inline-flex items-center rounded border border-border bg-muted px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-muted-foreground dark:border-[#3f4949]/30 dark:bg-[#363433]">
         Draft
       </span>
     );
   }
   if (s === "sent") {
     return (
-      <span className="inline-flex items-center rounded bg-[#a1f0f6]/10 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-[#a1f0f6]">
+      <span className="inline-flex items-center rounded bg-cyan-50 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-cyan-900 dark:bg-[#a1f0f6]/10 dark:text-[#a1f0f6]">
         Sent
       </span>
     );
   }
   if (s === "signed") {
     return (
-      <span className="inline-flex items-center rounded bg-[#e3a78f]/10 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-[#e3a78f]">
+      <span className="inline-flex items-center rounded bg-amber-100 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-amber-900 dark:bg-[#e3a78f]/10 dark:text-[#e3a78f]">
         Signed
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center rounded bg-[#363433] px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-[#bec8c9]">
+    <span className="inline-flex items-center rounded bg-muted px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-foreground dark:bg-[#363433] dark:text-[#bec8c9]">
       {status ?? "—"}
     </span>
   );
@@ -97,11 +120,11 @@ function RowActions({ c }: { c: ContractListRow }) {
   const s = (c.status ?? "draft").toLowerCase();
   const detail = `/dashboard/contracts/${c.id}`;
   const bold =
-    "font-[family-name:var(--font-inter)] text-xs font-bold text-foreground transition-colors hover:text-[#85d3da]";
+    "font-[family-name:var(--font-inter)] text-xs font-bold text-foreground transition-colors hover:text-teal-700 dark:hover:text-[#85d3da]";
   const muted =
-    "font-[family-name:var(--font-inter)] text-xs font-bold text-muted-foreground transition-colors hover:text-[#85d3da]";
+    "font-[family-name:var(--font-inter)] text-xs font-bold text-muted-foreground transition-colors hover:text-teal-700 dark:hover:text-[#85d3da]";
   const primary =
-    "font-[family-name:var(--font-inter)] text-xs font-bold text-[#85d3da] underline-offset-4 hover:underline";
+    "font-[family-name:var(--font-inter)] text-xs font-bold text-teal-700 underline-offset-4 hover:underline dark:text-[#85d3da]";
 
   switch (s) {
     case "draft":
@@ -228,7 +251,7 @@ export function ContractsRegistry({
     tab === "all" ? "contracts" : tab === "pending_signature" ? "pending signature" : tab.replace(/_/g, " ");
 
   return (
-    <div className="min-h-0 flex-1 bg-[#141312]">
+    <div className="min-h-0 flex-1 bg-background">
       <div className="mx-auto max-w-7xl px-6 pb-36 pt-8 md:px-10 md:pt-16">
         <div className="mb-12 flex flex-col gap-1">
           <h1 className="font-[family-name:var(--font-inter)] text-[2.75rem] font-bold tracking-[-0.04em] text-foreground">
@@ -239,7 +262,7 @@ export function ContractsRegistry({
           </p>
         </div>
 
-        <div className="mb-10 flex flex-wrap items-center gap-6 border-b border-[#3f4949]/10 md:gap-8">
+        <div className="mb-10 flex flex-wrap items-center gap-6 border-b border-border md:gap-8">
           {tabs.map((t) => {
             const active = tab === t.id;
             const count =
@@ -261,12 +284,12 @@ export function ContractsRegistry({
               >
                 {t.label}
                 {count != null && count > 0 ? (
-                  <span className="rounded-full bg-[#673c29] px-1.5 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold text-[#e3a78f]">
+                  <span className="rounded-full bg-orange-100 px-1.5 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold text-orange-900 dark:bg-[#673c29] dark:text-[#e3a78f]">
                     {count}
                   </span>
                 ) : null}
                 {active ? (
-                  <span className="absolute bottom-0 left-0 h-0.5 w-full bg-[#01696f]" aria-hidden />
+                  <span className="absolute bottom-0 left-0 h-0.5 w-full bg-teal-600 dark:bg-[#01696f]" aria-hidden />
                 ) : null}
               </button>
             );
@@ -281,7 +304,7 @@ export function ContractsRegistry({
                 <button
                   type="button"
                   disabled={properties.length === 0 || tenants.length === 0}
-                  className="flex items-center gap-2 font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-wider text-[#85d3da] transition-opacity hover:opacity-80 disabled:opacity-40"
+                  className="flex items-center gap-2 font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-wider text-teal-700 transition-opacity hover:opacity-80 disabled:opacity-40 dark:text-[#85d3da]"
                 >
                   <span className="text-lg leading-none" aria-hidden>
                     +
@@ -293,10 +316,10 @@ export function ContractsRegistry({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-[#3f4949]/10 bg-[#161513]">
+        <div className="overflow-hidden rounded-xl border border-border bg-card dark:border-[#3f4949]/10 dark:bg-[#161513]">
           <table className="w-full border-collapse text-left">
             <thead>
-              <tr className="bg-[#1d1b1a]/50">
+              <tr className="bg-muted/70 dark:bg-[#1d1b1a]/50">
                 <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
                   Tenant
                 </th>
@@ -314,7 +337,7 @@ export function ContractsRegistry({
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#3f4949]/5">
+            <tbody className="divide-y divide-border dark:divide-[#3f4949]/5">
               {pageRows.length === 0 ? (
                 <tr>
                   <td
@@ -326,10 +349,10 @@ export function ContractsRegistry({
                 </tr>
               ) : (
                 pageRows.map((c) => (
-                  <tr key={c.id} className="group transition-colors hover:bg-[#211f1e]">
+                  <tr key={c.id} className="group transition-colors hover:bg-muted/50 dark:hover:bg-[#211f1e]">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-3">
-                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#2b2a28] font-[family-name:var(--font-inter)] text-xs font-bold text-[#85d3da]">
+                        <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted font-[family-name:var(--font-inter)] text-xs font-bold text-teal-700 dark:bg-[#2b2a28] dark:text-[#85d3da]">
                           {initials(c.tenantName)}
                         </div>
                         <div>
@@ -351,7 +374,7 @@ export function ContractsRegistry({
                       </p>
                     </td>
                     <td className="px-8 py-6">
-                      <StatusPill status={c.status} />
+                      <StatusPill c={c} />
                     </td>
                     <td className="px-8 py-6 font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
                       {formatCreated(c.createdAt)}
@@ -379,7 +402,7 @@ export function ContractsRegistry({
               type="button"
               disabled={safePage <= 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="flex size-8 items-center justify-center rounded border border-[#3f4949]/20 text-muted-foreground transition-colors hover:bg-[#211f1e] disabled:opacity-30"
+              className="flex size-8 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:bg-muted dark:border-[#3f4949]/20 dark:hover:bg-[#211f1e] disabled:opacity-30"
               aria-label="Previous page"
             >
               <ChevronLeft className="size-4" />
@@ -393,8 +416,8 @@ export function ContractsRegistry({
                   className={cn(
                     "flex size-8 items-center justify-center rounded text-xs font-bold transition-colors",
                     i === safePage
-                      ? "bg-[#01696f] text-[#97e6ec]"
-                      : "border border-[#3f4949]/20 text-muted-foreground hover:bg-[#211f1e] hover:text-foreground",
+                      ? "bg-teal-700 text-white dark:bg-[#01696f] dark:text-[#97e6ec]"
+                      : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground dark:border-[#3f4949]/20 dark:hover:bg-[#211f1e]",
                   )}
                 >
                   {i + 1}
@@ -409,7 +432,7 @@ export function ContractsRegistry({
               type="button"
               disabled={safePage >= pageCount - 1}
               onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-              className="flex size-8 items-center justify-center rounded border border-[#3f4949]/20 text-muted-foreground transition-colors hover:bg-[#211f1e] disabled:opacity-30"
+              className="flex size-8 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:bg-muted dark:border-[#3f4949]/20 dark:hover:bg-[#211f1e] disabled:opacity-30"
               aria-label="Next page"
             >
               <ChevronRight className="size-4" />
@@ -418,8 +441,8 @@ export function ContractsRegistry({
         </div>
       </div>
 
-      <div className="fixed bottom-10 left-1/2 z-40 flex -translate-x-1/2 items-center gap-6 rounded-xl border border-[#3f4949]/20 bg-[#363433]/80 px-6 py-4 shadow-2xl backdrop-blur-xl md:gap-8">
-        <div className="flex items-center gap-3 border-r border-[#3f4949]/20 pr-6">
+      <div className="fixed bottom-10 left-1/2 z-40 flex -translate-x-1/2 items-center gap-6 rounded-xl border border-border bg-card/95 px-6 py-4 shadow-2xl backdrop-blur-xl dark:border-[#3f4949]/20 dark:bg-[#363433]/80 md:gap-8">
+        <div className="flex items-center gap-3 border-r border-border pr-6 dark:border-[#3f4949]/20">
           <div className="size-2 rounded-full bg-[#f7b8a0]" aria-hidden />
           <p className="font-[family-name:var(--font-inter)] text-xs font-medium text-foreground">
             {pendingSigCount} Pending Signature{pendingSigCount === 1 ? "" : "s"}
@@ -447,7 +470,7 @@ export function ContractsRegistry({
             type="button"
             disabled={properties.length === 0 || tenants.length === 0}
             onClick={() => setNewContractOpen(true)}
-            className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wider text-[#85d3da] disabled:opacity-40"
+            className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wider text-teal-700 disabled:opacity-40 dark:text-[#85d3da]"
           >
             New agreement
           </button>

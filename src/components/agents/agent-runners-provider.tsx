@@ -409,7 +409,7 @@ function AgentRunnersInner({
       <Sheet open={agentRunsOpen} onOpenChange={setAgentRunsOpen}>
         <SheetContent
           side="right"
-          className="flex w-full flex-col gap-0 overflow-hidden border-[#484848]/25 bg-[#0E0E0E] p-0 sm:max-w-lg"
+          className="flex w-full flex-col gap-0 overflow-hidden border-border bg-background p-0 sm:max-w-lg"
         >
           <SheetHeader className="border-b border-[#484848]/20 px-6 py-5 text-left">
             <SheetTitle className="font-headline text-lg font-light text-foreground">

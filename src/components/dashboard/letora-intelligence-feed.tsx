@@ -128,7 +128,7 @@ export function LetoraIntelligenceFeed({ runs }: { runs: ActivityRun[] }) {
           return (
             <div
               key={row.id}
-              className="flex gap-4 p-4 transition-colors duration-300 hover:bg-[#131313]"
+              className="flex gap-4 p-4 transition-colors duration-300 hover:bg-muted/60 dark:hover:bg-[#131313]"
             >
               <div className="mt-0.5 shrink-0">
                 <Icon className={cn("size-5 stroke-[1.25]", className)} aria-hidden />
@@ -143,7 +143,7 @@ export function LetoraIntelligenceFeed({ runs }: { runs: ActivityRun[] }) {
                     </>
                   ) : null}
                 </p>
-                <span className="mt-2 block font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-widest text-[#484848]">
+                <span className="mt-2 block font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-widest text-muted-foreground">
                   {formatRelativeTime(row.created_at)}
                 </span>
               </div>

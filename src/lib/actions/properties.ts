@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { getMaxPropertiesForUser } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/server";
 import { propertySchema } from "@/lib/validations/property";
 
@@ -17,6 +19,8 @@ export type PropertyRow = {
   status: string | null;
   marketingDescription: string | null;
   createdAt: string | null;
+  /** When false, Gas Safety certificate row is not expected for this property. */
+  hasGasSupply: boolean;
 };
 
 export async function getProperties(userId: string): Promise<PropertyRow[]> {
@@ -39,6 +43,7 @@ export async function getProperties(userId: string): Promise<PropertyRow[]> {
 
 function mapPropertyRow(r: Record<string, unknown>): PropertyRow {
   const monthlyRaw = r.monthly_rent;
+  const gas = r.has_gas_supply;
   return {
     id: String(r.id),
     address: (r.address as string | null | undefined) ?? null,
@@ -56,7 +61,39 @@ function mapPropertyRow(r: Record<string, unknown>): PropertyRow {
     status: (r.status as string | null | undefined) ?? null,
     marketingDescription: (r.marketing_description as string | null | undefined) ?? null,
     createdAt: (r.created_at as string | null | undefined) ?? null,
+    hasGasSupply: typeof gas === "boolean" ? gas : true,
   };
+}
+
+async function seedComplianceRecordsForProperty(
+  supabase: SupabaseClient,
+  propertyId: string,
+  opts: {
+    hasGas: boolean;
+    epcExpiry?: string;
+    eicrExpiry?: string;
+    gasSafetyExpiry?: string;
+  },
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  type CertType = "EPC" | "Electric Safety" | "Gas Safety";
+  const rows: { type: CertType; expiry_date: string | null }[] = [
+    { type: "EPC", expiry_date: opts.epcExpiry ?? null },
+    { type: "Electric Safety", expiry_date: opts.eicrExpiry ?? null },
+  ];
+  if (opts.hasGas) {
+    rows.push({ type: "Gas Safety", expiry_date: opts.gasSafetyExpiry ?? null });
+  }
+  for (const row of rows) {
+    const { error } = await supabase.from("compliance_records").insert({
+      property_id: propertyId,
+      type: row.type,
+      expiry_date: row.expiry_date,
+    });
+    if (error) {
+      return { ok: false, error: error.message };
+    }
+  }
+  return { ok: true };
 }
 
 export type PropertyPortfolioRow = PropertyRow & {
@@ -282,7 +319,11 @@ export async function getPropertyPickList(): Promise<PropertyPickListItem[]> {
   }));
 }
 
-export async function addProperty(formData: unknown) {
+export type AddPropertyResult =
+  | { ok: true; propertyId: string; hasGasSupply: boolean }
+  | { ok: false; error: string; code?: "PROPERTY_LIMIT" };
+
+export async function addProperty(formData: unknown): Promise<AddPropertyResult> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -299,8 +340,40 @@ export async function addProperty(formData: unknown) {
 
   const values = parsed.data;
 
+  const { data: settings } = await supabase
+    .from("user_settings")
+    .select("subscription_plan, subscription_status")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const maxProps = getMaxPropertiesForUser({
+    subscription_plan: settings?.subscription_plan ?? null,
+    subscription_status: settings?.subscription_status ?? null,
+  });
+
+  if (maxProps !== -1) {
+    const { count, error: countErr } = await supabase
+      .from("properties")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id);
+
+    if (countErr) {
+      return { ok: false as const, error: "Could not verify property limit." };
+    }
+    if ((count ?? 0) >= maxProps) {
+      return {
+        ok: false as const,
+        error:
+          "You have reached the property limit for your plan. Upgrade on the Pricing page to add more.",
+        code: "PROPERTY_LIMIT" as const,
+      };
+    }
+  }
+
+  const propertyId = crypto.randomUUID();
+
   const { error } = await supabase.from("properties").insert({
-    id: crypto.randomUUID(),
+    id: propertyId,
     user_id: user.id,
     address: values.address,
     postcode: values.postcode,
@@ -310,14 +383,28 @@ export async function addProperty(formData: unknown) {
     bathrooms: values.bathrooms,
     monthly_rent: values.monthlyRent,
     status: values.status,
+    has_gas_supply: values.hasGasSupply,
   });
 
   if (error) {
     return { ok: false as const, error: error.message };
   }
 
+  const seeded = await seedComplianceRecordsForProperty(supabase, propertyId, {
+    hasGas: values.hasGasSupply,
+    epcExpiry: values.epcExpiry,
+    eicrExpiry: values.eicrExpiry,
+    gasSafetyExpiry: values.gasSafetyExpiry,
+  });
+
+  if (!seeded.ok) {
+    await supabase.from("properties").delete().eq("id", propertyId).eq("user_id", user.id);
+    return { ok: false as const, error: seeded.error };
+  }
+
   revalidatePath("/dashboard/properties");
-  return { ok: true as const };
+  revalidatePath("/dashboard/compliance");
+  return { ok: true as const, propertyId, hasGasSupply: values.hasGasSupply };
 }
 
 export async function updateProperty(propertyId: string, formData: unknown) {
@@ -348,6 +435,7 @@ export async function updateProperty(propertyId: string, formData: unknown) {
       bathrooms: values.bathrooms,
       monthly_rent: values.monthlyRent,
       status: values.status,
+      has_gas_supply: values.hasGasSupply,
     })
     .eq("id", propertyId)
     .eq("user_id", user.id);
@@ -358,6 +446,7 @@ export async function updateProperty(propertyId: string, formData: unknown) {
 
   revalidatePath("/dashboard/properties");
   revalidatePath(`/dashboard/properties/${propertyId}`);
+  revalidatePath("/dashboard/compliance");
   return { ok: true as const };
 }
 

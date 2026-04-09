@@ -17,6 +17,7 @@ export type CEOToolName =
   | "get_contracts"
   | "send_move_in_email"
   | "get_dashboard_summary"
+  | "get_compliance_summary"
   | "get_rent_status"
   | "list_tenants"
   | "resolve_onboarding_navigation"
@@ -39,6 +40,7 @@ export const CEO_TOOL_NAMES: readonly CEOToolName[] = [
   "get_contracts",
   "send_move_in_email",
   "get_dashboard_summary",
+  "get_compliance_summary",
   "get_rent_status",
   "list_tenants",
   "resolve_onboarding_navigation",
@@ -65,7 +67,8 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "get_maintenance_summary",
-    description: "Get a summary of all open, in-progress, and urgent maintenance tickets across all properties.",
+    description:
+      "Repairs and maintenance tickets only (plumbing, boiler, leaks, etc.). Do **not** use this alone for legal certificate questions — use **get_compliance_summary** for EPC, Gas Safety, Electric Safety / EICR. Get a summary of open, in-progress, and urgent maintenance tickets across all properties.",
     input_schema: {
       type: "object",
       properties: {
@@ -359,7 +362,18 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "get_dashboard_summary",
-    description: "Get a full overview of the landlord's portfolio including property count, tenant count, overdue rent, and open maintenance issues.",
+    description:
+      "Portfolio snapshot: property and tenant counts, overdue rent, open **maintenance** tickets, and **compliance** counts from the compliance_records table (EPC, Gas Safety, Electric Safety) — not the same as repairs.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "get_compliance_summary",
+    description:
+      "Read-only: **Legal/safety certificates** per property from **compliance_records** (linked by property_id). Types: EPC, Gas Safety, Electric Safety (EICR). Use this when the user asks about compliance, certificates, EPC, gas safety, electrical safety, expiry, or legal safety — **before** relying on maintenance tickets. A **compliance issue** is expired or past expiry_date; a **gap** is status **missing** (no date yet).",
     input_schema: {
       type: "object",
       properties: {},

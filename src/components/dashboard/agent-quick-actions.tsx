@@ -21,16 +21,16 @@ function QuickChip({ icon, label, description, onClick, busy }: ChipProps) {
       onClick={onClick}
       disabled={busy}
       className={cn(
-        "group flex min-w-[10rem] flex-1 flex-col items-start gap-1 rounded-lg border border-[#484848]/30 bg-[#131313]/80 px-4 py-3 text-left transition-colors",
-        "hover:border-[#BD9952]/40 hover:bg-[#BD9952]/5",
+        "group flex min-w-[10rem] flex-1 flex-col items-start gap-1.5 rounded-xl border border-border bg-card px-4 py-3.5 text-left transition-all duration-200 ease-out",
+        "hover:border-secondary/35 hover:bg-muted/80 dark:hover:bg-[#141210]",
         "disabled:pointer-events-none disabled:opacity-50",
       )}
     >
-      <span className="flex items-center gap-2 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[#BD9952]">
+      <span className="flex items-center gap-2 font-headline text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-[#BD9952]">
         {busy ? <Loader2 className="size-3.5 animate-spin" aria-hidden /> : icon}
         {label}
       </span>
-      <span className="font-[family-name:var(--font-inter)] text-xs leading-snug text-muted-foreground">
+      <span className="font-headline text-[0.75rem] font-normal leading-snug text-muted-foreground">
         {description}
       </span>
     </button>
@@ -49,11 +49,11 @@ export function AgentQuickActions() {
   } = useAgentRunners();
 
   return (
-    <div className="mt-10 w-full max-w-4xl">
-      <p className="mb-4 font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-[0.14em] text-muted-foreground">
+    <div className="mt-12 w-full">
+      <p className="mb-3 font-headline text-[0.65rem] font-medium uppercase tracking-[0.22em] text-muted-foreground">
         Quick actions
       </p>
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-center">
+      <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
         <QuickChip
           icon={<Mail className="size-3.5" aria-hidden />}
           label="Rent Chaser"
@@ -79,9 +79,9 @@ export function AgentQuickActions() {
       <button
         type="button"
         onClick={openAgentRuns}
-        className="mt-4 w-full font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-[0.12em] text-muted-foreground underline-offset-4 transition-colors hover:text-[#BD9952] hover:underline sm:text-center"
+        className="mt-5 w-full font-headline text-[0.65rem] uppercase tracking-[0.14em] text-muted-foreground underline-offset-4 transition-colors hover:text-secondary hover:underline"
       >
-        View agent activity log
+        Agent activity log
       </button>
     </div>
   );

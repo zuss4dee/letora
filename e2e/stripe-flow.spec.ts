@@ -86,8 +86,8 @@ test.describe("Stripe test flow", () => {
     // Verify redirection to dashboard after login
     await expect(page).toHaveURL(/\/dashboard/);
 
-    // 3. Open billing portal from Settings (matches app route + JSON contract)
-    await page.goto("/dashboard/settings");
+    // 3. Open billing portal from Billing page (matches app route + JSON contract)
+    await page.goto("/dashboard/billing");
     await page.getByTestId("manage-billing").click();
 
     // 4. Verify navigation to Stripe customer portal URL

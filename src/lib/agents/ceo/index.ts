@@ -7,6 +7,7 @@ import type {
   ToolUseBlock,
 } from "@anthropic-ai/sdk/resources/messages/messages";
 
+import { injectAuthoritativeCurrentDateBlock } from "./current-date-for-model";
 import { CEO_SYSTEM_PROMPT } from "./system-prompt";
 import { CEO_TOOLS } from "./tools";
 import type { CEOToolName } from "./tools";
@@ -202,6 +203,8 @@ export interface CEOAgentOptions {
   messages: CEOMessage[];
   confirmedExecution?: boolean;
   pendingAction?: PendingCEOAction | null;
+  /** Injected block from `checkPortfolioHealth` when compliance rows are expired. */
+  portfolioHealthDigest?: string | null;
 }
 
 export type CEOChatResult =
@@ -688,8 +691,14 @@ function correctLeadReplyAgainstAuthoritative(reply: string, authoritativeRaw: s
   return reply;
 }
 
+function appendPortfolioHealthDigest(base: string, digest: string | null | undefined): string {
+  const d = digest?.trim();
+  if (!d) return base;
+  return `${base}\n\n${d}`;
+}
+
 export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResult> {
-  const { userId, supabase, messages, confirmedExecution, pendingAction } = options;
+  const { userId, supabase, messages, confirmedExecution, pendingAction, portfolioHealthDigest } = options;
   const contextMessages = trimConversationMessages(
     messages,
     DEFAULT_MAX_CEO_CONVERSATION_MESSAGES,
@@ -735,13 +744,16 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
       resultBlocks.push(wrapToolResultForModel(call.name, raw));
     }
 
-    const summarySystemPrompt =
+    const summarySystemPrompt = appendPortfolioHealthDigest(
       CEO_SYSTEM_PROMPT +
-      (referencingInboundDigest ? `\n\n${referencingInboundDigest}` : "") +
-      "\n\nThe landlord already confirmed the pending actions. Tool runs are complete. Summarize outcomes in natural language. Do not ask for confirmation again." +
+        `\n\n${injectAuthoritativeCurrentDateBlock()}` +
+        (referencingInboundDigest ? `\n\n${referencingInboundDigest}` : "") +
+        "\n\nThe landlord already confirmed the pending actions. Tool runs are complete. Summarize outcomes in natural language. Do not ask for confirmation again." +
       "\n\n**Mandatory for tool JSON:** If any result has `success`: false or an `error` string, say exactly what failed using the `message` or `error` field (e.g. missing email, onboarding already started). **Do not** claim the system rejected a plain-name input, or cite UUID/form validation errors, unless those exact words appear in the JSON." +
       "\n\n**draft_contract results:** If JSON has **saved: true**, confirm the draft was saved. If JSON has **error** and **code**, quote them. **Never** say “technical barrier”, “persistent issue”, “only the dashboard”, or “cannot bypass” unless those exact phrases appear in the **error** string." +
-      "\n\n**Product truth:** Letora does not have a tenant portal or tenant app. Tenants are reached by **email**. Onboarding **tasks** are for the **landlord** in the dashboard. **Never** tell the user that tenants will see a checklist in a portal or log in to Letora.";
+      "\n\n**Product truth:** Letora does not have a tenant portal or tenant app. Tenants are reached by **email**. Onboarding **tasks** are for the **landlord** in the dashboard. **Never** tell the user that tenants will see a checklist in a portal or log in to Letora.",
+      portfolioHealthDigest,
+    );
     const summaryMessages: MessageParam[] = [
       {
         role: "user",
@@ -800,7 +812,13 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
   const route = routeCEOIntent(latestUser);
 
   const routerHint = formatRouterHintForSystem(route);
-  const systemPrompt = routerHint ? `${CEO_SYSTEM_PROMPT}\n\n${routerHint}` : CEO_SYSTEM_PROMPT;
+  const dateBlock = injectAuthoritativeCurrentDateBlock();
+  const systemPrompt = appendPortfolioHealthDigest(
+    routerHint
+      ? `${CEO_SYSTEM_PROMPT}\n\n${routerHint}\n\n${dateBlock}`
+      : `${CEO_SYSTEM_PROMPT}\n\n${dateBlock}`,
+    portfolioHealthDigest,
+  );
 
   /** Snapshot JSON from get_leads_summary — used to override model text that ignores system injection. */
   let authoritativeLeadsRaw: string | null = null;

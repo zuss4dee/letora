@@ -241,14 +241,14 @@ export function TenanciesRegistry({
   const forecastK = Math.round(kpis.forecast / 1000);
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col bg-[#0E0E0E]">
+    <div className="relative flex min-h-0 flex-1 flex-col bg-background">
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute -left-32 top-20 size-96 rounded-full bg-[#BD9952]/[0.03] blur-3xl" />
-        <div className="absolute bottom-0 right-0 size-[28rem] rounded-full bg-[#1a1a1a]/80 blur-3xl" />
+        <div className="absolute bottom-0 right-0 size-[28rem] rounded-full bg-[#BD9952]/[0.06] blur-3xl dark:bg-[#1a1a1a]/80" />
       </div>
 
       <div className="relative mx-auto w-full max-w-7xl flex-1 px-6 pb-24 pt-6 md:px-12 md:pt-8">
-        <header className="flex flex-col gap-6 border-b border-[#484848]/15 pb-8 md:flex-row md:items-end md:justify-between">
+        <header className="flex flex-col gap-6 border-b border-border pb-8 md:flex-row md:items-end md:justify-between">
           <div>
             <h1 className="font-headline text-3xl font-extralight tracking-tight text-foreground md:text-4xl">
               Tenancies
@@ -273,8 +273,8 @@ export function TenanciesRegistry({
           />
         </header>
 
-        <section className="mb-10 grid grid-cols-2 gap-6 border-b border-[#484848]/10 py-10 md:grid-cols-4 md:gap-10">
-          <div className="rounded-sm border border-[#484848]/15 bg-[#131313]/80 p-4 backdrop-blur-sm">
+        <section className="mb-10 grid grid-cols-2 gap-6 border-b border-border/80 py-10 md:grid-cols-4 md:gap-10">
+          <div className="rounded-sm border border-border bg-card/80 p-4 backdrop-blur-sm">
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Total active
             </p>
@@ -285,7 +285,7 @@ export function TenanciesRegistry({
               +4% this month
             </p>
           </div>
-          <div className="rounded-sm border border-[#484848]/15 bg-[#131313]/80 p-4 backdrop-blur-sm">
+          <div className="rounded-sm border border-border bg-card/80 p-4 backdrop-blur-sm">
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Collection rate
             </p>
@@ -303,7 +303,7 @@ export function TenanciesRegistry({
                 : "All current"}
             </p>
           </div>
-          <div className="rounded-sm border border-[#484848]/15 bg-[#131313]/80 p-4 backdrop-blur-sm">
+          <div className="rounded-sm border border-border bg-card/80 p-4 backdrop-blur-sm">
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Monthly revenue
             </p>
@@ -314,7 +314,7 @@ export function TenanciesRegistry({
               Forecast: £{forecastK}k
             </p>
           </div>
-          <div className="rounded-sm border border-[#484848]/15 bg-[#131313]/80 p-4 backdrop-blur-sm">
+          <div className="rounded-sm border border-border bg-card/80 p-4 backdrop-blur-sm">
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Onboarding
             </p>
@@ -327,11 +327,11 @@ export function TenanciesRegistry({
           </div>
         </section>
 
-        <div className="overflow-hidden rounded-sm border border-[#484848]/15 bg-[#131313]/60">
+        <div className="overflow-hidden rounded-sm border border-border bg-card/90">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[880px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-[#484848]/15 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.18em] text-muted-foreground">
+                <tr className="border-b border-border font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.18em] text-muted-foreground">
                   <th className="px-4 py-4 font-medium">Tenant</th>
                   <th className="px-4 py-4 font-medium">Property</th>
                   <th className="px-4 py-4 font-medium">Monthly rent</th>
@@ -370,12 +370,12 @@ export function TenanciesRegistry({
                     return (
                       <tr
                         key={t.id}
-                        className="group border-b border-[#484848]/10 transition-colors hover:bg-[#1F2020]/50"
+                        className="group border-b border-border/70 transition-colors hover:bg-muted/50 dark:hover:bg-[#1F2020]/50"
                       >
                         <td className="px-4 py-4">
                           <div className="flex items-center gap-3">
                             <div
-                              className="flex size-10 shrink-0 items-center justify-center rounded-full border border-[#484848]/30 bg-[#1F2020] font-[family-name:var(--font-inter)] text-xs font-semibold text-[#BD9952]"
+                              className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-muted font-[family-name:var(--font-inter)] text-xs font-semibold text-[#BD9952]"
                               aria-hidden
                             >
                               {initials(t.tenantFullName)}
@@ -406,7 +406,7 @@ export function TenanciesRegistry({
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex flex-col gap-1.5">
-                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-[#2a2a2a]">
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
                               <div
                                 className={cn("h-full rounded-full transition-all", barTone)}
                                 style={{ width: `${ob.pct}%` }}
@@ -421,7 +421,7 @@ export function TenanciesRegistry({
                           {arrears != null && arrears > 0 ? (
                             <span className="text-[#ee7d77]">{gbp.format(arrears)}</span>
                           ) : (
-                            <span className="text-[#484848]">—</span>
+                            <span className="text-muted-foreground">—</span>
                           )}
                         </td>
                         <td className="px-4 py-4 text-right">
@@ -467,7 +467,7 @@ export function TenanciesRegistry({
             </table>
           </div>
 
-          <div className="flex flex-col gap-4 border-t border-[#484848]/15 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 border-t border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Displaying {displayFrom} to {displayTo} of {total} tenancies
             </p>
@@ -477,7 +477,7 @@ export function TenanciesRegistry({
                 aria-label="Previous page"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-sm border border-[#484848]/30 p-1.5 text-muted-foreground transition hover:border-[#BD9952]/40 hover:text-[#BD9952] disabled:opacity-30"
+                className="rounded-sm border border-border p-1.5 text-muted-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-30"
               >
                 <ChevronLeft className="size-4" />
               </button>
@@ -503,7 +503,7 @@ export function TenanciesRegistry({
                 aria-label="Next page"
                 disabled={safePage >= pageCount}
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="rounded-sm border border-[#484848]/30 p-1.5 text-muted-foreground transition hover:border-[#BD9952]/40 hover:text-[#BD9952] disabled:opacity-30"
+                className="rounded-sm border border-border p-1.5 text-muted-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-30"
               >
                 <ChevronRight className="size-4" />
               </button>
@@ -514,7 +514,7 @@ export function TenanciesRegistry({
 
       <Link
         href="/dashboard"
-        className="fixed bottom-8 right-8 z-30 flex size-12 items-center justify-center rounded-sm border border-[#BD9952]/30 bg-[#131313] text-[#BD9952] shadow-[0_0_20px_rgba(189,153,82,0.2)] transition hover:border-[#BD9952]/60 hover:shadow-[0_0_28px_rgba(189,153,82,0.35)]"
+        className="fixed bottom-8 right-8 z-30 flex size-12 items-center justify-center rounded-sm border border-[#BD9952]/30 bg-card text-[#BD9952] shadow-[0_0_20px_rgba(189,153,82,0.2)] transition hover:border-[#BD9952]/60 hover:shadow-[0_0_28px_rgba(189,153,82,0.35)]"
         aria-label="Open intelligence assistant"
       >
         <Sparkles className="size-5" strokeWidth={1.5} />

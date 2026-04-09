@@ -128,6 +128,111 @@ async function fetchAccountPropertyCount(supabase: SupabaseClient, userId: strin
   return data?.length ?? 0;
 }
 
+/** YYYY-MM-DD in UTC — aligns with ISO date strings from Postgres `date` columns. */
+function utcTodayYmd(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+type ComplianceDbRow = {
+  id: string;
+  property_id: string;
+  type: string;
+  expiry_date: string | null;
+  status: string;
+};
+
+/** Legal/safety certificates: issue = expired status or expiry_date before today (not undated/missing-only). */
+function isComplianceIssueRow(row: ComplianceDbRow, todayYmd: string): boolean {
+  if (row.status === "expired") return true;
+  if (!row.expiry_date) return false;
+  const ed = String(row.expiry_date).slice(0, 10);
+  return ed.length === 10 && ed < todayYmd;
+}
+
+async function fetchComplianceContextForUser(
+  supabase: SupabaseClient,
+  userId: string,
+): Promise<{
+  propertyLabelById: Map<string, string>;
+  records: Array<
+    ComplianceDbRow & {
+      property_address: string | null;
+      is_compliance_issue: boolean;
+      is_compliance_gap: boolean;
+    }
+  >;
+  issue_count: number;
+  /** Undated certificates (status missing) — remind to add dates / documents. */
+  gap_count: number;
+  expiring_count: number;
+  valid_count: number;
+}> {
+  const { data: props } = await supabase
+    .from("properties")
+    .select("id, address, city")
+    .eq("user_id", userId);
+  const propertyLabelById = new Map<string, string>();
+  for (const p of props ?? []) {
+    const id = String((p as { id: string }).id);
+    const addr = String((p as { address?: string | null }).address ?? "").trim();
+    const city = String((p as { city?: string | null }).city ?? "").trim();
+    const label = [addr, city].filter(Boolean).join(", ") || "";
+    propertyLabelById.set(id, label);
+  }
+  const propertyIds = [...propertyLabelById.keys()];
+  if (propertyIds.length === 0) {
+    return {
+      propertyLabelById,
+      records: [],
+      issue_count: 0,
+      gap_count: 0,
+      expiring_count: 0,
+      valid_count: 0,
+    };
+  }
+
+  const { data: rawRows } = await supabase
+    .from("compliance_records")
+    .select("id, property_id, type, expiry_date, status")
+    .in("property_id", propertyIds);
+
+  const todayYmd = utcTodayYmd();
+  const rows: Array<
+    ComplianceDbRow & {
+      property_address: string | null;
+      is_compliance_issue: boolean;
+      is_compliance_gap: boolean;
+    }
+  > = [];
+  let issue_count = 0;
+  let gap_count = 0;
+  let expiring_count = 0;
+  let valid_count = 0;
+
+  for (const r of rawRows ?? []) {
+    const rawExp = (r as { expiry_date?: string | null }).expiry_date;
+    const expiry_date =
+      rawExp == null || rawExp === "" ? null : String(rawExp).slice(0, 10);
+    const row: ComplianceDbRow = {
+      id: String((r as { id: string }).id),
+      property_id: String((r as { property_id: string }).property_id),
+      type: String((r as { type?: string }).type ?? ""),
+      expiry_date,
+      status: String((r as { status?: string }).status ?? ""),
+    };
+    const property_address = propertyLabelById.get(row.property_id) ?? null;
+    const is_compliance_issue = isComplianceIssueRow(row, todayYmd);
+    const is_compliance_gap = row.status === "missing";
+    rows.push({ ...row, property_address, is_compliance_issue, is_compliance_gap });
+    if (is_compliance_issue) issue_count += 1;
+    else if (is_compliance_gap) gap_count += 1;
+    else if (row.status === "expiring") expiring_count += 1;
+    else valid_count += 1;
+  }
+
+  return { propertyLabelById, records: rows, issue_count, gap_count, expiring_count, valid_count };
+}
+
 type TenancyRowForOnboarding = {
   id: string;
   property_id?: string | null;
@@ -873,14 +978,32 @@ export async function executeCEOTool(
 
   switch (toolName) {
     case "get_dashboard_summary": {
-      const [properties, tenants, maintenance, rentPayments] = await Promise.all([
+      const [properties, tenants, maintenance, rentPayments, complianceCtx] = await Promise.all([
         supabase.from("properties").select("id, address").eq("user_id", userId),
         supabase.from("tenants").select("id").eq("user_id", userId),
         supabase.from("maintenance_requests").select("id, title, status, priority").eq("user_id", userId),
         supabase.from("rent_payments").select("id, amount, status, due_date").eq("user_id", userId),
+        fetchComplianceContextForUser(supabase, userId),
       ]);
       const overdueRent = rentPayments.data?.filter((r) => r.status === "overdue") ?? [];
       const openMaintenance = maintenance.data?.filter((m) => m.status !== "completed") ?? [];
+      const compliance_issues_preview = complianceCtx.records
+        .filter((r) => r.is_compliance_issue)
+        .slice(0, 12)
+        .map((r) => ({
+          type: r.type,
+          property_address: r.property_address,
+          expiry_date: r.expiry_date,
+          status: r.status,
+        }));
+      const compliance_gaps_preview = complianceCtx.records
+        .filter((r) => r.is_compliance_gap)
+        .slice(0, 12)
+        .map((r) => ({
+          type: r.type,
+          property_address: r.property_address,
+          status: r.status,
+        }));
       return JSON.stringify({
         total_properties: properties.data?.length ?? 0,
         total_tenants: tenants.data?.length ?? 0,
@@ -889,6 +1012,42 @@ export async function executeCEOTool(
         overdue_rent_total: overdueRent.reduce((sum, r) => sum + Number(r.amount ?? 0), 0),
         open_maintenance: openMaintenance.length,
         urgent_maintenance: maintenance.data?.filter((m) => m.priority === "urgent").length ?? 0,
+        compliance_records_total: complianceCtx.records.length,
+        compliance_issue_count: complianceCtx.issue_count,
+        compliance_gap_count: complianceCtx.gap_count,
+        compliance_expiring_soon_count: complianceCtx.expiring_count,
+        compliance_valid_count: complianceCtx.valid_count,
+        compliance_issues_preview,
+        compliance_gaps_preview,
+        compliance_note:
+          "Compliance (EPC, Gas Safety, Electric Safety) is stored in compliance_records per property — not the same as maintenance repairs. For compliance questions, prioritize this section and get_compliance_summary.",
+      });
+    }
+    case "get_compliance_summary": {
+      const ctx = await fetchComplianceContextForUser(supabase, userId);
+      const todayYmd = utcTodayYmd();
+      return JSON.stringify({
+        ok: true,
+        authoritative_date_today_ymd: todayYmd,
+        summary: {
+          total_records: ctx.records.length,
+          compliance_issue_count: ctx.issue_count,
+          compliance_gap_count: ctx.gap_count,
+          expiring_within_30_days_count: ctx.expiring_count,
+          valid_count: ctx.valid_count,
+        },
+        definition:
+          "A compliance issue means status is 'expired' OR expiry_date is before today. A gap means status is 'missing' (no expiry date yet). Maintenance tickets are separate.",
+        records: ctx.records.map((r) => ({
+          id: r.id,
+          property_id: r.property_id,
+          property_address: r.property_address,
+          certificate_type: r.type,
+          expiry_date: r.expiry_date,
+          status: r.status,
+          is_compliance_issue: r.is_compliance_issue,
+          is_compliance_gap: r.is_compliance_gap,
+        })),
       });
     }
     case "get_rent_status": {

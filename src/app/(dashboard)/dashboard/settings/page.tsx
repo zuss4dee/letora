@@ -32,11 +32,10 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
+import Link from "next/link";
 
 import { AgentSettingsForm } from "@/components/settings/agent-settings-form";
 import { DeleteAccountCard } from "@/components/settings/delete-account-card";
-import { ManageBillingButton } from "@/components/settings/manage-billing-button";
-import { SettingsAgentActivityCard } from "@/components/settings/settings-agent-activity-card";
 import { getUserSettings } from "@/lib/actions/user-settings";
 import { createClient } from "@/lib/supabase/server";
 import { type UserSettingsInput } from "@/lib/validations/user-settings";
@@ -83,7 +82,7 @@ export default async function SettingsPage() {
         aria-hidden
       />
       <div className="relative flex flex-col gap-10 py-8 md:py-12">
-        <header className="flex flex-col gap-6 px-4 lg:flex-row lg:items-end lg:justify-between lg:px-6">
+        <header className="px-4 lg:px-6">
           <div className="max-w-2xl space-y-3">
             <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
               Workspace
@@ -92,26 +91,17 @@ export default async function SettingsPage() {
               Settings
             </h1>
             <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">
-              Business profile, agent behaviour, email automation, and billing, tuned to how you run
-              tenancies.
+              Business profile, agent behaviour, and email automation — tuned to how you run tenancies. Billing lives on
+              the{" "}
+              <Link href="/dashboard/billing" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
+                Billing
+              </Link>{" "}
+              page.
             </p>
           </div>
-          {user?.id ? (
-            <section
-              id="billing"
-              aria-labelledby="billing-heading"
-              className="shrink-0 scroll-mt-[calc(var(--header-height,4rem)+0.75rem)] lg:pb-1"
-            >
-              <h2 id="billing-heading" className="sr-only">
-                Billing
-              </h2>
-              <ManageBillingButton />
-            </section>
-          ) : null}
         </header>
 
         <div className="flex flex-col gap-8 px-4 lg:px-6">
-          <SettingsAgentActivityCard />
           <Suspense
             fallback={
               <div className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">Loading settings…</div>

@@ -1,12 +1,12 @@
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Check } from "lucide-react";
 
+import { PricingPlanLinkCta, PricingPlanSubscribeButton } from "@/components/marketing/pricing-plan-button";
 import { cn } from "@/lib/utils";
 import { PLAN_ORDER, PLANS as STRIPE_PLANS, type PlanKey } from "@/lib/stripe-plans";
 
 type MarketingTier = {
-  key: PlanKey;
+  key: PlanKey | "enterprise";
   name: string;
   tagline: string;
   price: string;
@@ -15,15 +15,15 @@ type MarketingTier = {
   badge?: string;
   features: readonly string[];
   cta: string;
-  href: string;
+  /** Enterprise only — Stripe tiers use checkout button */
+  href?: string;
   highlighted?: boolean;
 };
 
 function buildStripeTiers(): MarketingTier[] {
   return PLAN_ORDER.map((key) => {
     const p = STRIPE_PLANS[key];
-    const cta =
-      key === "starter" ? "Start with Starter" : key === "pro" ? "Get Pro" : "Get Portfolio";
+    const cta = "Start 24h Free Trial";
     const badge = key === "pro" ? STRIPE_PLANS.pro.badge : undefined;
     return {
       key,
@@ -34,7 +34,6 @@ function buildStripeTiers(): MarketingTier[] {
       badge,
       features: p.features,
       cta,
-      href: `/signup?plan=${key}`,
       highlighted: p.highlighted,
     };
   });
@@ -57,43 +56,9 @@ const ENTERPRISE_TIER: Omit<MarketingTier, "key"> = {
   href: "/signup?intent=enterprise",
 };
 
-function PricingCta({
-  href,
-  children,
-  highlighted,
-}: {
-  href: string;
-  children: ReactNode;
-  highlighted?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "group inline-flex w-full items-center justify-center gap-2 rounded-full py-3 pl-5 pr-4 text-sm font-semibold transition-all",
-        highlighted
-          ? "bg-gradient-to-br from-[#FFEABB] to-[#FFC800] text-[#3e2e00] shadow-[0_0_32px_-8px_rgba(255,234,187,0.4)] hover:shadow-[0_0_40px_-6px_rgba(255,234,187,0.55)]"
-          : "border border-[#4F4632]/35 bg-[#1a1a1a] text-foreground hover:border-[#4F4632]/55 hover:bg-[#222]",
-      )}
-    >
-      <span>{children}</span>
-      <ArrowUpRight
-        className={cn(
-          "size-4 shrink-0 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5",
-          highlighted ? "text-[#3e2e00]" : "text-foreground/90",
-        )}
-        aria-hidden
-      />
-    </Link>
-  );
-}
-
 export function LetoraPricingSection() {
   const stripeTiers = buildStripeTiers();
-  const allTiers: (MarketingTier | (Omit<MarketingTier, "key"> & { key: "enterprise" }))[] = [
-    ...stripeTiers,
-    { key: "enterprise" as const, ...ENTERPRISE_TIER },
-  ];
+  const allTiers: MarketingTier[] = [...stripeTiers, { key: "enterprise" as const, ...ENTERPRISE_TIER }];
 
   return (
     <section
@@ -112,7 +77,7 @@ export function LetoraPricingSection() {
           >
             Plans that scale with your portfolio
           </h2>
-          <p className="mx-auto mt-5 max-w-xl font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-foreground/90 md:text-lg">
+          <p className="mx-auto mt-5 max-w-xl font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-foreground md:text-lg">
             Value tracks how many properties you run and how much of the workspace you use. Self-serve plans bill in
             GBP monthly through Stripe. Prices exclude VAT where applicable.
           </p>
@@ -147,7 +112,7 @@ export function LetoraPricingSection() {
                   ) : null}
                 </div>
                 <h3 className="font-headline text-xl font-semibold tracking-[-0.03em] text-foreground">{plan.name}</h3>
-                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-foreground/90">
+                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-foreground">
                   {plan.tagline}
                 </p>
               </div>
@@ -156,7 +121,7 @@ export function LetoraPricingSection() {
                 {plan.features.map((f) => (
                   <li
                     key={f}
-                    className="flex gap-3 font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-foreground/90"
+                    className="flex gap-3 font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-foreground"
                   >
                     <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#FFEABB]/12 text-[#FFEABB]">
                       <Check className="size-3" strokeWidth={2.5} aria-hidden />
@@ -168,7 +133,7 @@ export function LetoraPricingSection() {
 
               <div className="mt-5 min-h-[2.75rem]">
                 {plan.footnote ? (
-                  <p className="font-[family-name:var(--font-inter)] text-xs italic leading-relaxed text-muted-foreground/90">
+                  <p className="font-[family-name:var(--font-inter)] text-xs italic leading-relaxed text-muted-foreground">
                     {plan.footnote}
                   </p>
                 ) : null}
@@ -186,9 +151,20 @@ export function LetoraPricingSection() {
                   ) : null}
                 </div>
                 <div className="mt-5">
-                  <PricingCta href={plan.href} highlighted={plan.highlighted}>
-                    {plan.cta}
-                  </PricingCta>
+                  {plan.key === "enterprise" ? (
+                    <PricingPlanLinkCta href={plan.href ?? "/signup?intent=enterprise"} highlighted={plan.highlighted}>
+                      {plan.cta}
+                    </PricingPlanLinkCta>
+                  ) : (
+                    <div className="space-y-2">
+                      <PricingPlanSubscribeButton planKey={plan.key} highlighted={plan.highlighted}>
+                        {plan.cta}
+                      </PricingPlanSubscribeButton>
+                      <p className="font-[family-name:var(--font-inter)] text-xs leading-snug text-muted-foreground">
+                        Card required. Cancel anytime before trial ends to avoid charges.
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </article>
@@ -197,8 +173,11 @@ export function LetoraPricingSection() {
 
         <p className="mx-auto mt-12 max-w-2xl text-center font-[family-name:var(--font-inter)] text-xs leading-relaxed text-[#6b6a69]">
           Need to change plan or payment method after signup? Open{" "}
-          <span className="text-muted-foreground">Billing</span> in Settings while signed in. Enterprise buyers can start from
-          signup and we will follow up on larger requirements.
+          <Link href="/dashboard/billing" className="text-muted-foreground underline-offset-4 hover:underline">
+            Billing
+          </Link>{" "}
+          in the dashboard while signed in. Enterprise buyers can start from signup and we will follow up on larger
+          requirements.
         </p>
       </div>
     </section>

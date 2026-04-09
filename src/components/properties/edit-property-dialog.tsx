@@ -26,6 +26,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -225,6 +226,22 @@ export function EditPropertyDialog({ propertyId, initial, triggerLabel = "Edit p
                   {form.formState.errors.monthlyRent.message}
                 </p>
               ) : null}
+            </div>
+
+            <div className={DIALOG_FIELD_CLASS}>
+              <div className="flex items-center justify-between gap-4 rounded-lg border border-border/80 px-3 py-2.5">
+                <div>
+                  <Label htmlFor="ep-gas" className="text-sm font-medium">
+                    Has gas supply
+                  </Label>
+                  <p className="text-xs text-muted-foreground">Turn off if the property has no mains gas (no CP12).</p>
+                </div>
+                <Switch
+                  id="ep-gas"
+                  checked={form.watch("hasGasSupply")}
+                  onCheckedChange={(v) => form.setValue("hasGasSupply", v, { shouldValidate: true })}
+                />
+              </div>
             </div>
 
             {submitError ? (

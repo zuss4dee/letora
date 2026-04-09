@@ -143,8 +143,8 @@ export function AgentRunsTable({ initialRuns, variant = "page" }: AgentRunsTable
       {!embedded ? (
         <h2 className="text-base font-semibold tracking-tight">Recent Agent Runs</h2>
       ) : null}
-      <Card className={cn(embedded && "border-[#484848]/25 bg-[#131313]")}>
-        <CardHeader className={cn("border-b", embedded && "border-[#484848]/20 py-3")}>
+      <Card className={cn(embedded && "border-border bg-card")}>
+        <CardHeader className={cn("border-b", embedded && "border-border py-3")}>
           <CardTitle
             className={cn(
               "text-sm font-medium text-muted-foreground",

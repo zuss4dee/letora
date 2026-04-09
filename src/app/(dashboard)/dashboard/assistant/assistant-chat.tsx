@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Menu, MessageSquarePlus, PanelLeft, Send } from "lucide-react";
+import { Loader2, Menu, MessageSquarePlus, Send } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -92,8 +92,10 @@ function LeadQualifyPanel({ payload }: { payload: LeadQualifyEmbedPayloadV1 }) {
   }
 
   return (
-    <div className="mt-3 space-y-2 border-t border-border pt-3">
-      <p className="text-xs font-medium text-muted-foreground">Manual qualification</p>
+    <div className="mt-4 space-y-3 border-t border-border pt-4">
+      <p className="font-headline text-[0.65rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+        Manual qualification
+      </p>
       {rowErr ? (
         <p className="rounded-md border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-xs text-red-600 dark:text-red-400">
           {rowErr}
@@ -106,7 +108,7 @@ function LeadQualifyPanel({ payload }: { payload: LeadQualifyEmbedPayloadV1 }) {
           payload.leads.map((row) => (
             <div
               key={row.id}
-              className="rounded-lg border border-border bg-background/60 p-3 text-left dark:bg-background/40"
+              className="rounded-lg border border-border bg-background p-3 text-left"
             >
               <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0">
@@ -173,14 +175,14 @@ function SuggestedActionChips({
 }) {
   const router = useRouter();
   return (
-    <div className="mt-2 flex flex-wrap gap-2" role="group" aria-label="Suggested actions">
+    <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Suggested actions">
       {actions.map((a) => (
         <Button
           key={a.id}
           type="button"
           size="sm"
           variant="secondary"
-          className="h-auto min-h-8 max-w-full whitespace-normal text-left text-xs"
+          className="h-auto min-h-8 max-w-full whitespace-normal rounded-full border border-border bg-muted text-left text-xs font-headline font-normal text-foreground hover:bg-accent"
           onClick={() => {
             if (a.kind === "link" && a.href) router.push(a.href);
             else if (a.kind === "message" && a.message) onMessagePick(a.message);
@@ -223,17 +225,39 @@ function parseActionTags(text: string): { cleanText: string; actions: ActionTag[
 function NavigationButtons({ actions }: { actions: ActionTag[] }) {
   if (actions.length === 0) return null;
   return (
-    <div className="mt-3 flex flex-wrap gap-2">
+    <div className="mt-4 flex flex-wrap gap-2">
       {actions.map((a) => (
         <Link
           key={a.href}
           href={a.href}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3.5 py-1.5 font-headline text-xs font-medium text-foreground transition-colors hover:border-secondary/50"
         >
           {a.label}
-          <span aria-hidden>→</span>
+          <span className="text-secondary" aria-hidden>
+            →
+          </span>
         </Link>
       ))}
+    </div>
+  );
+}
+
+function AssistantThinkingIndicator() {
+  return (
+    <div
+      className="flex items-center gap-2 font-headline text-[0.75rem] font-light tracking-wide text-muted-foreground/90 dark:text-muted-foreground/80"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <span className="sr-only">Assistant is thinking</span>
+      <span aria-hidden className="select-none">
+        Assistant is thinking
+      </span>
+      <span className="inline-flex translate-y-px gap-1 pl-0.5" aria-hidden>
+        <span className="assistant-thinking-dot inline-block size-[3px] rounded-full bg-current [animation-delay:0ms]" />
+        <span className="assistant-thinking-dot inline-block size-[3px] rounded-full bg-current [animation-delay:0.18s]" />
+        <span className="assistant-thinking-dot inline-block size-[3px] rounded-full bg-current [animation-delay:0.36s]" />
+      </span>
     </div>
   );
 }
@@ -252,7 +276,7 @@ function MessageBubble({
 }) {
   const isUser = role === "user";
   const bubbleText = cn(
-    "whitespace-pre-wrap text-sm leading-relaxed [word-break:normal]",
+    "whitespace-pre-wrap text-[0.9375rem] leading-[1.65] [word-break:normal] text-foreground",
     "break-words [overflow-wrap:anywhere]",
   );
   if (role === "assistant") {
@@ -262,8 +286,8 @@ function MessageBubble({
         <div className="flex w-full min-w-0 justify-start">
           <div
             className={cn(
-              "min-w-0 rounded-xl border border-border bg-muted/60 px-3 py-2.5 text-sm leading-relaxed text-foreground shadow-sm dark:bg-muted/40",
-              compact ? "w-full max-w-full" : "max-w-[min(100%,42rem)]",
+              "min-w-0 rounded-xl border border-border bg-muted/50 px-4 py-3.5 font-headline font-light shadow-none dark:bg-[#111]/80",
+              compact ? "w-full max-w-full" : "max-w-[min(100%,40rem)]",
             )}
           >
             <p className={bubbleText}>{parsed.introText}</p>
@@ -281,12 +305,12 @@ function MessageBubble({
     <div className={cn("flex w-full min-w-0", isUser ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "min-w-0 rounded-xl border px-3 py-2.5 text-sm leading-relaxed shadow-sm",
-          compact ? "w-full max-w-full" : "max-w-[min(100%,42rem)]",
+          "min-w-0 rounded-2xl px-4 py-3 font-headline font-light shadow-none",
+          compact ? "w-full max-w-full" : "max-w-[min(100%,40rem)]",
           isUser
-            ? "border-transparent bg-primary text-primary-foreground"
-            : "border-border bg-muted/60 text-foreground dark:bg-muted/40",
-          isTransitional && !isUser && "animate-pulse border-primary/30 opacity-60",
+            ? "border border-secondary/35 bg-secondary/10 text-foreground dark:border-[#BD9952]/22 dark:bg-[#1a1610] dark:text-[#f5f0e8]"
+            : "border border-border bg-muted/40 text-foreground dark:bg-[#111]/90",
+          isTransitional && !isUser && "animate-pulse border-secondary/25 opacity-70 dark:border-[#BD9952]/15",
         )}
       >
         <p className={bubbleText}>{cleanText}</p>
@@ -648,10 +672,10 @@ export function AssistantChat({
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      void sendMessage();
-    }
+    if (e.key !== "Enter" || e.shiftKey) return;
+    e.preventDefault();
+    e.currentTarget.blur();
+    void sendMessage();
   }
 
   useEffect(() => {
@@ -668,22 +692,30 @@ export function AssistantChat({
   const showEmptyPlaceholder =
     messages.length === 0 && !loading && assistantStream.kind === "idle";
 
+  const assistantWaitingForToken =
+    assistantStream.kind === "thinking" ||
+    (assistantStream.kind === "streaming" && assistantStream.text.length === 0);
+  const assistantStreamVisible =
+    assistantStream.kind === "streaming" && assistantStream.text.length > 0;
+  const showAssistantStreamSection =
+    assistantStream.kind === "thinking" || assistantStream.kind === "streaming";
+
   const sidebar = (
-    <div className="flex h-full min-h-0 w-full flex-col border-r border-[#484848]/20 bg-[#0E0E0E]/40 backdrop-blur-sm">
-      <div className="flex shrink-0 items-center gap-2 border-b border-[#484848]/20 p-2">
+    <div className="flex h-full min-h-0 w-full flex-col border-r border-border bg-sidebar/30 dark:bg-[#0a0a0a]/80">
+      <div className="flex shrink-0 items-center gap-2 border-b border-border p-3">
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="flex-1 border-[#484848]/35 bg-[#131313]/60 text-foreground hover:bg-[#1F2020]"
+          className="flex-1 rounded-full border-border bg-transparent font-headline text-xs font-medium text-foreground transition-colors duration-200 ease-out hover:bg-muted/90 dark:hover:bg-sidebar-accent"
           onClick={() => createNewChat()}
         >
-          <MessageSquarePlus className="mr-1 size-4" aria-hidden />
+          <MessageSquarePlus className="mr-1.5 size-3.5" aria-hidden />
           New chat
         </Button>
       </div>
       <AssistantConversationList
-        className="min-h-0 flex-1"
+        className="min-h-0 flex-1 px-1"
         conversations={conversations}
         activeConversationId={activeConversationId}
         variant="sidebar"
@@ -693,14 +725,14 @@ export function AssistantChat({
 
   return (
     <div className="@container/main flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 flex-col gap-1 border-b border-[#484848]/25 bg-[#0E0E0E]/30 px-4 py-4 backdrop-blur-sm lg:px-6">
-        <div className="flex items-start justify-between gap-2">
+      <div className="flex shrink-0 flex-col border-b border-border bg-background/90 px-5 py-4 lg:px-8">
+        <div className="flex items-start justify-between gap-3">
           <div>
-            <h1 className="font-headline text-base font-medium tracking-tight text-foreground">
-              Letora Assistant
+            <h1 className="font-headline text-[0.9375rem] font-medium tracking-[-0.02em] text-foreground">
+              Assistant
             </h1>
-            <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
-              Rent, maintenance, tenants, agreements, or leads.
+            <p className="mt-0.5 font-headline text-[0.75rem] font-normal text-muted-foreground">
+              Rent · maintenance · tenants · contracts · leads
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2 md:hidden">
@@ -710,7 +742,7 @@ export function AssistantChat({
                   type="button"
                   variant="outline"
                   size="icon"
-                  className="border-[#484848]/35 bg-[#131313]/70"
+                  className="rounded-full border-border bg-muted"
                   aria-label="Open conversations"
                 >
                   <Menu className="size-4" />
@@ -718,10 +750,12 @@ export function AssistantChat({
               </SheetTrigger>
               <SheetContent
                 side="left"
-                className="flex w-[min(100%,20rem)] flex-col gap-0 border-[#484848]/25 bg-[#0E0E0E]/95 p-0 backdrop-blur-xl"
+                className="flex w-[min(100%,20rem)] flex-col gap-0 border-border bg-background p-0"
               >
-                <SheetHeader className="border-b border-[#484848]/20 px-4 py-3 text-left">
-                  <SheetTitle className="font-headline text-base text-foreground">Conversations</SheetTitle>
+                <SheetHeader className="border-b border-border px-4 py-3 text-left">
+                  <SheetTitle className="font-headline text-sm font-medium text-foreground">
+                    Chats
+                  </SheetTitle>
                 </SheetHeader>
                 {sidebar}
               </SheetContent>
@@ -730,7 +764,7 @@ export function AssistantChat({
               type="button"
               variant="outline"
               size="icon"
-              className="border-[#484848]/35 bg-[#131313]/70"
+              className="rounded-full border-border bg-muted"
               onClick={() => createNewChat()}
               aria-label="New chat"
             >
@@ -741,29 +775,21 @@ export function AssistantChat({
       </div>
 
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-64 shrink-0 border-r border-[#484848]/20 bg-[#0E0E0E]/35 backdrop-blur-sm md:flex md:flex-col">
+        <aside className="hidden w-[17rem] shrink-0 border-r border-border bg-sidebar/20 dark:bg-[#0a0a0a]/50 md:flex md:flex-col">
           {sidebar}
         </aside>
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="hidden border-b border-[#484848]/20 px-4 py-2 font-[family-name:var(--font-inter)] text-xs text-muted-foreground md:block lg:px-6">
-            <span className="inline-flex items-center gap-1">
-              <PanelLeft className="size-3.5 opacity-70" aria-hidden />
-              Chat history on the left; menu on mobile.
-            </span>
-          </div>
           <div className="flex min-h-0 flex-1 flex-col">
-            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6">
+            <div className="min-h-0 flex-1 overflow-y-auto scroll-smooth px-5 py-6 lg:px-10 lg:py-8">
               {showEmptyPlaceholder ? (
-                <div className="mx-auto max-w-2xl rounded-xl border border-dashed border-[#484848]/35 bg-[#131313]/30 p-6 text-center text-sm text-muted-foreground backdrop-blur-sm">
-                  <p className="font-headline font-medium text-foreground">Start a conversation</p>
-                  <p className="mt-2 leading-relaxed">
-                    Your assistant can help with property-related tasks: rent chasing, maintenance,
-                    tenants, tenancy agreements, and leads. Describe what you need in plain English.
+                <div className="mx-auto max-w-xl text-center">
+                  <p className="font-headline text-sm font-light text-muted-foreground">
+                    Describe a task in plain English. Mention a tenant, property, or street when it helps.
                   </p>
                 </div>
               ) : (
-                <div className="mx-auto flex w-full max-w-3xl flex-col gap-3">
+                <div className="mx-auto flex w-full max-w-[40rem] flex-col gap-6">
                   {messages.map((m, i) => (
                     <MessageBubble
                       key={`${m.role}-${i}-${m.content.slice(0, 24)}`}
@@ -774,16 +800,24 @@ export function AssistantChat({
                       onPickSuggestedMessage={(text) => setInput(text)}
                     />
                   ))}
-                  {assistantStream.kind === "thinking" ? (
-                    <div className="flex justify-start">
-                      <div className="flex items-center gap-2 rounded-xl border border-border bg-muted/60 px-3 py-2 text-sm text-muted-foreground dark:bg-muted/40">
-                        <Loader2 className="size-4 animate-spin" aria-hidden />
-                        <span>Thinking…</span>
+                  {showAssistantStreamSection ? (
+                    <div className="flex w-full min-w-0 flex-col gap-0">
+                      <div
+                        className={cn(
+                          "overflow-hidden transition-[opacity,max-height] duration-300 ease-out",
+                          assistantWaitingForToken
+                            ? "pointer-events-auto max-h-10 opacity-100"
+                            : "pointer-events-none max-h-0 opacity-0",
+                        )}
+                      >
+                        <AssistantThinkingIndicator />
                       </div>
+                      {assistantStreamVisible ? (
+                        <div className="assistant-reply-enter">
+                          <MessageBubble role="assistant" content={assistantStream.text} />
+                        </div>
+                      ) : null}
                     </div>
-                  ) : null}
-                  {assistantStream.kind === "streaming" ? (
-                    <MessageBubble role="assistant" content={assistantStream.text} />
                   ) : null}
                   <div ref={endRef} />
                 </div>
@@ -791,14 +825,14 @@ export function AssistantChat({
             </div>
 
             {error ? (
-              <div className="shrink-0 border-t border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive lg:px-6">
+              <div className="shrink-0 border-t border-red-500/20 bg-red-950/30 px-5 py-2.5 font-headline text-sm text-red-400/95 lg:px-8">
                 {error}
               </div>
             ) : null}
 
-            <div className="shrink-0 border-t border-[#484848]/25 bg-[#0E0E0E]/75 p-4 backdrop-blur-md supports-[backdrop-filter]:bg-[#0E0E0E]/60 lg:px-6">
+            <div className="shrink-0 border-t border-border bg-background/95 px-5 py-4 lg:px-8 lg:py-5 dark:bg-[#0a0a0a]/95">
               <form
-                className="mx-auto flex w-full max-w-3xl flex-col gap-2 sm:flex-row sm:items-end"
+                className="mx-auto flex w-full max-w-[40rem] flex-col gap-3 sm:flex-row sm:items-end"
                 onSubmit={(e) => {
                   e.preventDefault();
                   void sendMessage();
@@ -808,27 +842,30 @@ export function AssistantChat({
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={onKeyDown}
-                  placeholder="Message Letora Assistant…"
+                  placeholder="Write a message…"
                   rows={2}
                   disabled={loading}
-                  className="min-h-[44px] min-w-0 flex-1 resize-none border-[#484848]/30 bg-[#131313]/50 text-foreground placeholder:text-[#484848] sm:min-h-[52px]"
+                  className="min-h-[48px] min-w-0 flex-1 resize-none rounded-xl border border-border bg-muted/50 px-4 py-3 font-headline text-[0.9375rem] font-light leading-[1.5] text-foreground placeholder:text-placeholder-foreground transition-[color,background-color,border-color,box-shadow] duration-200 ease-out focus-visible:border-ring focus-visible:ring-0 sm:min-h-[52px] dark:bg-[#121212]"
                   aria-label="Message"
                 />
                 <Button
                   type="submit"
                   disabled={!canSend}
-                  className="h-11 shrink-0 bg-[#BD9952] text-[#2c1e00] hover:bg-[#c9a660] sm:h-auto sm:min-h-[52px] sm:px-6"
+                  className="h-11 shrink-0 rounded-full bg-[#BD9952] px-6 font-headline text-xs font-semibold uppercase tracking-[0.12em] text-[#1f1608] transition-colors duration-200 ease-out hover:bg-[#c4a45e] sm:h-12 sm:min-w-[7rem]"
                 >
                   {loading ? (
                     <Loader2 className="size-4 animate-spin" aria-hidden />
                   ) : (
                     <>
-                      <Send className="size-4" aria-hidden />
-                      <span className="sr-only sm:not-sr-only sm:ml-1.5">Send</span>
+                      <Send className="size-3.5" aria-hidden />
+                      <span className="sr-only sm:not-sr-only sm:ml-2">Send</span>
                     </>
                   )}
                 </Button>
               </form>
+              <p className="mx-auto mt-3 hidden max-w-[40rem] font-headline text-[0.65rem] text-muted-foreground md:block">
+                Enter to send · Shift+Enter for a new line
+              </p>
             </div>
           </div>
         </div>

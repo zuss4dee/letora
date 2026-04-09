@@ -10,6 +10,7 @@ export type CEOPropertyIntentId =
   | "rent_status"
   | "maintenance"
   | "maintenance_dispatch"
+  | "compliance"
   | "leads"
   | "onboarding"
   | "listing_generation"
@@ -46,6 +47,7 @@ const INTENT_LABELS: Record<CEOPropertyIntentId, string> = {
   rent_status: "rent status & arrears",
   maintenance: "maintenance & repairs",
   maintenance_dispatch: "maintenance dispatch / contractor coordination",
+  compliance: "compliance & legal safety certificates (EPC, gas, electrical)",
   leads: "leads & prospect qualification",
   onboarding: "tenant onboarding workflows",
   listing_generation: "property listing generation",
@@ -64,6 +66,8 @@ function toolsForIntent(id: CEOPropertyIntentId): CEOToolName[] {
       return ["get_maintenance_summary"]
     case "maintenance_dispatch":
       return ["dispatch_maintenance_request", "get_maintenance_summary"]
+    case "compliance":
+      return ["get_compliance_summary", "get_dashboard_summary"]
     case "leads":
       return ["get_leads_summary"]
     case "onboarding":
@@ -73,7 +77,7 @@ function toolsForIntent(id: CEOPropertyIntentId): CEOToolName[] {
     case "contracts":
       return ["draft_contract", "send_contract", "send_move_in_email", "get_contracts"]
     case "portfolio":
-      return ["get_dashboard_summary", "get_rent_status"]
+      return ["get_dashboard_summary", "get_compliance_summary", "get_rent_status"]
     case "tenants":
       return ["list_tenants"]
   }
@@ -99,6 +103,7 @@ function emptyScores(): ScoreRow {
     rent_status: 0,
     maintenance: 0,
     maintenance_dispatch: 0,
+    compliance: 0,
     leads: 0,
     onboarding: 0,
     listing_generation: 0,
@@ -125,6 +130,21 @@ const ROUTE_PATTERNS: ReadonlyArray<{
     re: /\b(rent\s+status|who\s+owes|paid\s+vs|rent\s+roll|rent\s+breakdown|how\s+much\s+rent|overdue\s+tenants|late\s+rent)\b/i,
   },
   { id: "rent_status", weight: 1, re: /\b(overdue|rent\s+due|due\s+rent)\b/i },
+  {
+    id: "compliance",
+    weight: 2.85,
+    re: /\b(compliance|compliance\s+issues?|compliant|landlord\s+cert|legal\s+safety|safety\s+certificates?|certificate\s+expir|expir\w*\s+certificates?|expired\s+certificates?)\b/i,
+  },
+  {
+    id: "compliance",
+    weight: 2.75,
+    re: /\b(epc|gas\s+safety|electric(?:al)?\s+safety|eicr|\beic\b|cp12|electrical\s+installation)\b/i,
+  },
+  {
+    id: "compliance",
+    weight: 2.5,
+    re: /\b(gas|electrical|electric)\s+cert(ificate)?s?\b/i,
+  },
   {
     id: "maintenance",
     weight: 2,
@@ -194,7 +214,7 @@ const ROUTE_PATTERNS: ReadonlyArray<{
 
 function isPropertyRelated(text: string): boolean {
   const t = text.toLowerCase()
-  return /\b(rent|tenant|tenants|property|properties|flat|house|lease|maintenance|repair|lead|leads|contract|tenancy|landlord|portfolio|arrears|overdue|deposit|hmo|block|unit)\b/.test(
+  return /\b(rent|tenant|tenants|property|properties|flat|house|lease|maintenance|repair|compliance|certificate|epc|lead|leads|contract|tenancy|landlord|portfolio|arrears|overdue|deposit|hmo|block|unit)\b/.test(
     t,
   )
 }
@@ -246,7 +266,7 @@ function pickSecondaries(
 }
 
 const CLARIFICATION_QUESTION =
-  "What should we focus on first — **rent & arrears**, **maintenance**, **new leads**, **contracts / paperwork**, or a quick **portfolio snapshot**?"
+  "What should we focus on first — **rent & arrears**, **compliance & certificates**, **maintenance**, **new leads**, **contracts / paperwork**, or a quick **portfolio snapshot**?"
 
 const CONFIDENCE_NORMALIZER = 6
 
@@ -420,6 +440,20 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     )
   }
 
+  const wantsCompliancePriority =
+    /\b(compliance|epc|gas\s+safety|electric(?:al)?\s+safety|eicr|landlord\s+cert|safety\s+cert|certificate\s+expir|expired\s+cert|expiring\s+cert|legal\s+safety)\b/i.test(
+      normalized,
+    ) || /\b(gas|electrical|electric)\s+cert(ificate)?s?\b/i.test(normalized)
+  if (wantsCompliancePriority) {
+    recommendedTools = uniqueToolsOrdered(
+      [
+        "get_compliance_summary",
+        ...recommendedTools.filter((t) => t !== "get_compliance_summary"),
+      ],
+      6,
+    )
+  }
+
   const confidence = Math.min(1, primaryScore / CONFIDENCE_NORMALIZER)
 
   const safetyIntent: CEOIntent = classifyCEOIntent(normalized)
@@ -520,6 +554,12 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
   if (route.wantsContinueOnboarding) {
     lines.push(
       "- **Required (continue/resume onboarding):** Call **start_tenant_onboarding** with **onboarding_for** when they named a tenant; otherwise **list_tenants** then **start_tenant_onboarding**. Summarize **pending_task_names**, **tasks_complete**/**tasks_total**, and **referencing_complete** from that JSON (or from **resolve_onboarding_navigation** if you also used it) — do **not** invent a generic checklist. **resolve_onboarding_navigation** is for the **Open onboarding** button only; it is not a substitute for **start_tenant_onboarding** resume data.",
+    )
+  }
+
+  if (route.primaryIntent === "compliance" || route.secondaryIntents.includes("compliance")) {
+    lines.push(
+      "- **Required (compliance / certificates):** Call **get_compliance_summary** this turn. Data lives in **compliance_records** (per property), not in maintenance tickets. Do **not** answer compliance questions using **get_maintenance_summary** alone.",
     )
   }
 

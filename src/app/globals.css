@@ -39,6 +39,7 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-placeholder-foreground: var(--placeholder-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -50,21 +51,23 @@
 
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Primary copy: strong contrast on white */
+  --foreground: oklch(0.12 0 0);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.12 0 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --popover-foreground: oklch(0.12 0 0);
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  /* Secondary copy: medium grey, readable on white (not too light) */
+  --muted-foreground: oklch(0.36 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
+  --border: oklch(0.88 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
   --chart-1: oklch(0.87 0 0);
@@ -74,31 +77,33 @@
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
   --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-foreground: oklch(0.12 0 0);
   --sidebar-primary: oklch(0.205 0 0);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  /* Input placeholders: grey, distinct from body text */
+  --placeholder-foreground: oklch(0.44 0 0);
 }
 
 .dark {
   /* Letora — Architectural Monolith (see DESIGN.md) */
   --background: #0e0e0e;
-  /* High-contrast body copy on charcoal — near-white for readability */
-  --foreground: #fafafa;
+  /* Body copy: full white for maximum contrast on charcoal */
+  --foreground: #ffffff;
   --card: #1f2020;
-  --card-foreground: #fafafa;
+  --card-foreground: #ffffff;
   --popover: #131313;
-  --popover-foreground: #fafafa;
+  --popover-foreground: #ffffff;
   --primary: #e4e2e1;
   --primary-foreground: #2a2828;
   --secondary: #bd9952;
   --secondary-foreground: #2c1e00;
   --muted: #131313;
-  /* Secondary / helper text — still clearly readable on #0e0e0e */
-  --muted-foreground: #c4c4c4;
+  /* Helper text: grey, not faint */
+  --muted-foreground: #d4d4d4;
   --accent: #2c2c2c;
   --accent-foreground: #fafafa;
   --destructive: #bb5551;
@@ -111,19 +116,26 @@
   --chart-4: #1f2020;
   --chart-5: #131313;
   --sidebar: #0e0e0e;
-  --sidebar-foreground: #fafafa;
+  --sidebar-foreground: #ffffff;
   --sidebar-primary: #bd9952;
   --sidebar-primary-foreground: #2c1e00;
   --sidebar-accent: #2c2c2c;
-  --sidebar-accent-foreground: #e8e6e5;
+  --sidebar-accent-foreground: #f5f5f5;
   --sidebar-border: rgb(72 72 72 / 0.15);
   --sidebar-ring: #bd9952;
   --radius: 0.125rem;
+  /* Placeholders stay clearly grey (not near white like body copy) */
+  --placeholder-foreground: #8f8f8f;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--placeholder-foreground);
+    opacity: 1;
   }
   body {
     @apply bg-background text-foreground;
@@ -134,4 +146,79 @@
 }
 .font-headline {
   font-family: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Compliance — certificate registry (dashboard) */
+@keyframes compliance-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes compliance-shimmer {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.compliance-card-enter {
+  opacity: 0;
+  animation: compliance-rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.compliance-missing-glow {
+  animation: compliance-shimmer 4s ease-in-out infinite;
+}
+
+/* Assistant chat — thinking line (minimal) */
+@keyframes assistant-thinking-dot {
+  0%,
+  100% {
+    opacity: 0.22;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.95;
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes assistant-reply-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.assistant-thinking-dot {
+  animation: assistant-thinking-dot 1.15s ease-in-out infinite;
+}
+
+.assistant-reply-enter {
+  animation: assistant-reply-enter 0.38s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .assistant-thinking-dot {
+    animation: none;
+    opacity: 0.45;
+  }
+  .assistant-reply-enter {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }

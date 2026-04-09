@@ -1,11 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type ReactElement } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 
 import { addProperty } from "@/lib/actions/properties";
+import { PropertyCreatedCompliancePrompt } from "@/components/properties/property-created-compliance-prompt";
 import { type AddPropertyInput, propertySchema } from "@/lib/validations/property";
 import {
   DIALOG_FIELD_CLASS,
@@ -26,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -38,6 +41,9 @@ export function AddPropertyDialog({ trigger }: { trigger?: ReactElement }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [compliancePromptOpen, setCompliancePromptOpen] = useState(false);
+  const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
+  const [createdHasGasSupply, setCreatedHasGasSupply] = useState(true);
 
   const defaultValues = useMemo<AddPropertyInput>(
     () => ({
@@ -49,6 +55,10 @@ export function AddPropertyDialog({ trigger }: { trigger?: ReactElement }) {
       bathrooms: 1,
       monthlyRent: 0,
       status: "active",
+      hasGasSupply: true,
+      epcExpiry: undefined,
+      eicrExpiry: undefined,
+      gasSafetyExpiry: undefined,
     }),
     [],
   );
@@ -61,6 +71,8 @@ export function AddPropertyDialog({ trigger }: { trigger?: ReactElement }) {
 
   const isSubmitting = form.formState.isSubmitting;
 
+  const hasGasSupply = form.watch("hasGasSupply");
+
   async function onSubmit(values: AddPropertyInput) {
     setSubmitError(null);
     const result = await addProperty(values);
@@ -69,11 +81,31 @@ export function AddPropertyDialog({ trigger }: { trigger?: ReactElement }) {
       return;
     }
     form.reset(defaultValues);
+    setCreatedPropertyId(result.propertyId);
+    setCreatedHasGasSupply(result.hasGasSupply);
     setOpen(false);
+    setCompliancePromptOpen(true);
+    router.refresh();
+  }
+
+  function handleCompliancePromptOpenChange(next: boolean) {
+    setCompliancePromptOpen(next);
+    if (!next) {
+      setCreatedPropertyId(null);
+    }
+  }
+
+  function handleUploadComplianceNow() {
+    const id = createdPropertyId;
+    if (!id) return;
+    setCompliancePromptOpen(false);
+    setCreatedPropertyId(null);
+    router.push(`/dashboard/compliance?onboard=${id}`);
     router.refresh();
   }
 
   return (
+    <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
@@ -248,10 +280,57 @@ export function AddPropertyDialog({ trigger }: { trigger?: ReactElement }) {
               ) : null}
             </div>
 
-            {submitError ? (
-              <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-                {submitError}
+            <div className="rounded-lg border border-border/70 bg-muted/20 px-3 py-3">
+              <p className="mb-3 font-[family-name:var(--font-inter)] text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                Compliance (optional)
               </p>
+              <div className={DIALOG_FIELD_CLASS}>
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <Label htmlFor="ap-gas" className="text-sm font-medium">
+                      Has gas supply
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      If off, we won&apos;t expect a gas safety (CP12) certificate for this address.
+                    </p>
+                  </div>
+                  <Switch
+                    id="ap-gas"
+                    checked={hasGasSupply}
+                    onCheckedChange={(v) => form.setValue("hasGasSupply", v, { shouldValidate: true })}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4 grid w-full min-w-0 gap-4 sm:grid-cols-2">
+                <div className={DIALOG_FIELD_CLASS}>
+                  <Label htmlFor="ap-epc">EPC expiry</Label>
+                  <Input id="ap-epc" className="w-full" type="date" {...form.register("epcExpiry")} />
+                </div>
+                <div className={DIALOG_FIELD_CLASS}>
+                  <Label htmlFor="ap-eicr">EICR / electrical expiry</Label>
+                  <Input id="ap-eicr" className="w-full" type="date" {...form.register("eicrExpiry")} />
+                </div>
+              </div>
+              {hasGasSupply ? (
+                <div className={`${DIALOG_FIELD_CLASS} mt-2`}>
+                  <Label htmlFor="ap-gas-exp">Gas safety expiry</Label>
+                  <Input id="ap-gas-exp" className="w-full max-w-xs" type="date" {...form.register("gasSafetyExpiry")} />
+                </div>
+              ) : null}
+            </div>
+
+            {submitError ? (
+              <div className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+                <p>{submitError}</p>
+                {submitError.includes("property limit") ? (
+                  <p className="mt-2 font-[family-name:var(--font-inter)] text-xs font-medium">
+                    <Link href="/pricing?limit=properties" className="text-[#BD9952] underline-offset-4 hover:underline">
+                      View plans and upgrade
+                    </Link>
+                  </p>
+                ) : null}
+              </div>
             ) : null}
           </div>
 
@@ -268,5 +347,13 @@ export function AddPropertyDialog({ trigger }: { trigger?: ReactElement }) {
         </form>
       </DialogContent>
     </Dialog>
+
+    <PropertyCreatedCompliancePrompt
+      open={compliancePromptOpen}
+      hasGasSupply={createdHasGasSupply}
+      onOpenChange={handleCompliancePromptOpenChange}
+      onUploadNow={handleUploadComplianceNow}
+    />
+    </>
   );
 }

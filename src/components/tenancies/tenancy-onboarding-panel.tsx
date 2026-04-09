@@ -45,7 +45,7 @@ function onboardingStatusBadge(status: string) {
     return (
       <Badge
         className={cn(
-          "border-0 bg-[#0e0e0e]/70 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground ring-1 ring-[rgb(72_72_72_/0.12)]",
+          "border-0 bg-muted font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-muted-foreground ring-1 ring-border dark:bg-[#0e0e0e]/70 dark:ring-[rgb(72_72_72_/0.12)]",
         )}
       >
         {label}
@@ -77,7 +77,7 @@ function onboardingStatusBadge(status: string) {
   return (
     <Badge
       variant="secondary"
-      className="border-0 bg-[#131313]/80 font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-[0.08em] text-foreground"
+      className="border-0 bg-card font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-[0.08em] text-foreground dark:bg-[#131313]/80"
     >
       {status}
     </Badge>
@@ -86,7 +86,7 @@ function onboardingStatusBadge(status: string) {
 
 function taskTypeBadge(type: string) {
   return (
-    <span className="inline-flex rounded-md bg-[#0e0e0e]/50 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.08em] text-muted-foreground ring-1 ring-[rgb(72_72_72_/0.1)]">
+    <span className="inline-flex rounded-md bg-muted px-2 py-0.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.08em] text-muted-foreground ring-1 ring-border dark:bg-[#0e0e0e]/50 dark:ring-[rgb(72_72_72_/0.1)]">
       {type}
     </span>
   );
@@ -117,7 +117,7 @@ function taskStatusBadge(task: OnboardingTaskRow) {
   }
   if (task.status === "skipped") {
     return (
-      <Badge className="border-0 bg-[#131313]/80 font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground ring-1 ring-[rgb(72_72_72_/0.12)]">
+      <Badge className="border-0 bg-card font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground ring-1 ring-border dark:bg-[#131313]/80">
         Skipped
       </Badge>
     );
@@ -231,7 +231,7 @@ export function TenancyOnboardingPanel({
       </CardHeader>
       <CardContent className={`${TENANCY_CARD_CONTENT} space-y-6`}>
         {onboardingStatus === "not_started" ? (
-          <div className="flex flex-col gap-4 rounded-xl bg-[#0e0e0e]/35 p-5 ring-1 ring-[rgb(72_72_72_/0.1)] sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-4 rounded-xl border border-border bg-muted/70 p-5 ring-1 ring-border/60 sm:flex-row sm:items-center sm:justify-between dark:border-transparent dark:bg-[#0e0e0e]/35 dark:ring-[rgb(72_72_72_/0.1)]">
             <p className="max-w-xl font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">
               Creates welcome email (draft or send), reference checks, and move-in tasks.
             </p>
@@ -242,7 +242,7 @@ export function TenancyOnboardingPanel({
         ) : null}
 
         {onboardingStatus !== "not_started" && tasks.length > 0 ? (
-          <div className="overflow-hidden rounded-xl ring-1 ring-[rgb(72_72_72_/0.08)]">
+          <div className="overflow-hidden rounded-xl border border-border ring-1 ring-border/60 dark:border-transparent dark:ring-[rgb(72_72_72_/0.08)]">
             <Table>
               <TableHeader className="[&_tr]:border-0">
                 <TableRow className="border-0 hover:bg-transparent">
@@ -267,7 +267,7 @@ export function TenancyOnboardingPanel({
                 {tasks.map((task) => (
                   <TableRow
                     key={task.id}
-                    className="border-0 border-b border-[rgb(72_72_72_/0.06)] last:border-0 hover:bg-[#0e0e0e]/45"
+                    className="border-0 border-b border-border last:border-0 hover:bg-muted/80 dark:border-[rgb(72_72_72_/0.06)] dark:hover:bg-[#0e0e0e]/45"
                   >
                     <TableCell className="text-center align-middle">
                       <Checkbox

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 
+import { PLANS } from "@/lib/stripe-plans";
+import { resolvePlanKeyFromStripeSubscription } from "@/lib/plan-limits";
 import { stripe } from "@/lib/stripe";
 
 const PG_UNIQUE_VIOLATION = "23505";
@@ -32,14 +34,20 @@ async function syncPlatformSubscriptionToUserSettings(
   supabase: ReturnType<typeof createServiceRoleClient>,
   userId: string,
   sub: Stripe.Subscription,
+  opts?: { stripeCustomerId?: string },
 ) {
+  const planKey = resolvePlanKeyFromStripeSubscription(sub);
+  const subscription_plan = planKey ? PLANS[planKey].name : null;
+
   await supabase
     .from("user_settings")
     .update({
       stripe_subscription_id: sub.id,
+      // trialing is normal for card-required trials; first invoice may be £0 until the trial ends.
       subscription_status: sub.status,
-      subscription_plan: (sub.metadata?.plan as string) ?? null,
+      subscription_plan,
       subscription_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+      ...(opts?.stripeCustomerId ? { stripe_customer_id: opts.stripeCustomerId } : {}),
     })
     .eq("user_id", userId);
 }
@@ -54,6 +62,26 @@ async function handleCheckoutSessionCompleted(
     logWebhookIssue("checkout.session.completed missing user_id metadata", { sessionId: session.id });
     return;
   }
+  const c = session.customer;
+  const stripeCustomerId =
+    c == null ? null : typeof c === "string" ? c : "deleted" in c && c.deleted ? null : c.id;
+
+  if (stripeCustomerId) {
+    const { error: custErr } = await supabase
+      .from("user_settings")
+      .upsert(
+        {
+          user_id: userId,
+          stripe_customer_id: stripeCustomerId,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "user_id" },
+      );
+    if (custErr) {
+      logWebhookIssue("user_settings upsert stripe_customer_id failed", { sessionId: session.id });
+    }
+  }
+
   const subRef = session.subscription;
   const subId = typeof subRef === "string" ? subRef : subRef?.id;
   if (!subId) {
@@ -61,7 +89,9 @@ async function handleCheckoutSessionCompleted(
     return;
   }
   const sub = await stripe.subscriptions.retrieve(subId);
-  await syncPlatformSubscriptionToUserSettings(supabase, userId, sub);
+  await syncPlatformSubscriptionToUserSettings(supabase, userId, sub, {
+    stripeCustomerId: stripeCustomerId ?? undefined,
+  });
 }
 
 async function handleInvoicePaid(
@@ -83,7 +113,7 @@ async function notifySubscriptionPaymentFailed(
   invoice: Stripe.Invoice,
 ) {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const portalHint = `${baseUrl}/dashboard/settings`;
+  const portalHint = `${baseUrl}/dashboard/billing`;
   const { data: settings } = await supabase
     .from("user_settings")
     .select("contact_email, landlord_name")
@@ -105,7 +135,7 @@ async function notifySubscriptionPaymentFailed(
     subject: "Action needed: your Letora subscription payment failed",
     body: `We could not process your latest subscription payment (${invoice.currency?.toUpperCase() ?? "GBP"} ${amount}). Stripe will retry automatically according to your subscription settings.
 
-Update your payment method in Letora: open Settings → Billing (or your Stripe Customer Portal session) from ${portalHint}
+Update your payment method in Letora: open Billing (Stripe Customer Portal) from ${portalHint}
 
 If you need help, reply to this email.`,
     agentType: "onboarding",

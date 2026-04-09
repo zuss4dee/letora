@@ -32,14 +32,17 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 
-/** Tonal cards: DESIGN.md layering, no heavy structural borders. */
+/** Cards: theme tokens in light mode; tonal layering in dark. */
 const SETTINGS_CARD =
-  "gap-0 border-0 bg-gradient-to-b from-[#1c1b1a]/95 to-[#141312]/98 py-0 shadow-[0_24px_48px_rgba(0,0,0,0.35)] backdrop-blur-md ring-1 ring-[rgb(72_72_72_/0.08)]";
-const SETTINGS_HEADER = "border-0 bg-[#1a1918]/50 px-6 pb-5 pt-7 sm:px-8";
+  "gap-0 overflow-hidden border border-border bg-card py-0 shadow-sm ring-1 ring-border/60 dark:border-0 dark:bg-gradient-to-b dark:from-[#1c1b1a]/95 dark:to-[#141312]/98 dark:shadow-[0_24px_48px_rgba(0,0,0,0.35)] dark:backdrop-blur-md dark:ring-[rgb(72_72_72_/0.08)]";
+const SETTINGS_HEADER =
+  "border-b border-border bg-muted/40 px-6 pb-5 pt-7 dark:border-0 dark:bg-[#1a1918]/50 sm:px-8";
 const SETTINGS_TITLE = "font-headline text-lg font-light tracking-tight text-foreground";
 const SETTINGS_CONTENT = "space-y-4 px-6 pb-8 pt-2 sm:px-8";
 const SETTINGS_SWITCH_ROW =
-  "flex items-center justify-between gap-4 rounded-lg bg-[#0e0e0e]/45 px-3 py-3.5 ring-1 ring-[rgb(72_72_72_/0.06)]";
+  "flex items-center justify-between gap-4 rounded-lg border border-border bg-muted/50 px-3 py-3.5 dark:border-transparent dark:bg-[#0e0e0e]/45 dark:ring-1 dark:ring-[rgb(72_72_72_/0.06)]";
+const SETTINGS_INSET =
+  "rounded-lg border border-border bg-muted/40 ring-1 ring-border/50 dark:border-transparent dark:bg-[#0e0e0e]/35 dark:ring-[rgb(72_72_72_/0.08)]";
 
 const sourceOptions: Array<UserSettingsInput["preferredSources"][number]> = [
   "Rightmove",
@@ -155,7 +158,7 @@ export function AgentSettingsForm({
       >
         <TabsList
           variant="line"
-          className="h-auto w-full justify-start gap-0 rounded-none border-b border-[rgb(72_72_72_/0.12)] bg-transparent p-0 sm:w-auto sm:gap-8"
+          className="h-auto w-full justify-start gap-0 rounded-none border-b border-border bg-transparent p-0 dark:border-[rgb(72_72_72_/0.12)] sm:w-auto sm:gap-8"
         >
           <TabsTrigger
             value="agents"
@@ -297,10 +300,7 @@ export function AgentSettingsForm({
               {sourceOptions.map((source) => {
                 const checked = form.watch("preferredSources").includes(source);
                 return (
-                  <div
-                    key={source}
-                    className="flex items-center gap-2 rounded-lg bg-[#0e0e0e]/35 p-2 ring-1 ring-[rgb(72_72_72_/0.08)]"
-                  >
+                  <div key={source} className={`flex items-center gap-2 p-2 ${SETTINGS_INSET}`}>
                     <Checkbox
                       id={`source-${source}`}
                       checked={checked}
@@ -345,7 +345,7 @@ export function AgentSettingsForm({
         <CardContent className={`${SETTINGS_CONTENT} grid gap-4`}>
           <label
             htmlFor="contract-template-upload"
-            className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[rgb(72_72_72_/0.35)] bg-[#0e0e0e]/40 p-8 text-center transition hover:bg-[#1a1918]/50"
+            className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/40 p-8 text-center transition hover:bg-muted/70 dark:border-[rgb(72_72_72_/0.35)] dark:bg-[#0e0e0e]/40 dark:hover:bg-[#1a1918]/50"
           >
             <span className="font-headline text-sm font-light text-foreground">Drop a file here or click to upload</span>
             <span className="mt-1 font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
@@ -361,7 +361,7 @@ export function AgentSettingsForm({
             />
           </label>
 
-          <div className="flex items-center gap-3 rounded-lg bg-[#0e0e0e]/45 p-3 ring-1 ring-[rgb(72_72_72_/0.08)]">
+          <div className={`flex items-center gap-3 p-3 ${SETTINGS_INSET} dark:bg-[#0e0e0e]/45`}>
             <Checkbox
               id="use-template-base"
               checked={templatesEnabled}
@@ -375,14 +375,16 @@ export function AgentSettingsForm({
 
           <div className="grid gap-2">
             {templates.length === 0 ? (
-              <div className="rounded-lg bg-[#0e0e0e]/35 p-4 font-[family-name:var(--font-inter)] text-sm text-muted-foreground ring-1 ring-[rgb(72_72_72_/0.08)]">
+              <div
+                className={`p-4 font-[family-name:var(--font-inter)] text-sm text-muted-foreground ${SETTINGS_INSET}`}
+              >
                 No templates uploaded yet.
               </div>
             ) : (
               templates.map((template) => (
                 <div
                   key={template.id}
-                  className="flex flex-col gap-3 rounded-lg bg-[#0e0e0e]/35 p-3 ring-1 ring-[rgb(72_72_72_/0.08)] md:flex-row md:items-center md:justify-between"
+                  className={`flex flex-col gap-3 p-3 md:flex-row md:items-center md:justify-between ${SETTINGS_INSET}`}
                 >
                   <div>
                     <div className="text-sm font-medium">{template.filename}</div>
@@ -521,7 +523,7 @@ export function AgentSettingsForm({
                 </div>
               </div>
 
-              <div className="mt-6 grid gap-4 rounded-xl bg-[#0e0e0e]/35 p-5 ring-1 ring-[rgb(72_72_72_/0.1)]">
+              <div className={`mt-6 grid gap-4 rounded-xl p-5 ${SETTINGS_INSET} dark:bg-[#0e0e0e]/35 dark:ring-[rgb(72_72_72_/0.1)]`}>
                 <div className="font-headline text-sm font-light text-foreground">Default referencing agency</div>
                 <p className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
                   UK referencing providers (e.g. Goodlord, HomeLet) run credit and reference checks; they may

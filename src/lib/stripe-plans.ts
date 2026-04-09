@@ -1,7 +1,8 @@
 /**
  * Canonical subscription packaging for Letora (GBP/month).
- * Price IDs must match Stripe Dashboard products (see .env.example).
- * Display copy here should stay aligned with what checkout and webhooks record in metadata.plan.
+ * Price IDs must match Stripe Dashboard products (see .env.example) — amounts charged are on the Price in Stripe.
+ * Display `price` is for marketing only (£19 / £39 / £79).
+ * Display copy should stay aligned with what checkout and webhooks record in metadata.plan.
  */
 
 export const PLANS = {
@@ -9,7 +10,7 @@ export const PLANS = {
     name: "Starter",
     /** Stripe Price ID (monthly GBP) */
     priceId: process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID ?? "",
-    price: 29,
+    price: 19,
     /** Max properties; -1 means unlimited */
     properties: 3,
     tagline: "Core workspace for a small UK portfolio",
@@ -25,7 +26,7 @@ export const PLANS = {
   pro: {
     name: "Pro",
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRO_PRICE_ID ?? "",
-    price: 59,
+    price: 39,
     properties: 10,
     tagline: "Full agent layer for landlords who are scaling",
     highlighted: true,
@@ -42,7 +43,7 @@ export const PLANS = {
     /** Shown as "Portfolio" in marketing; key stays stable for Stripe metadata.code */
     name: "Portfolio",
     priceId: process.env.NEXT_PUBLIC_STRIPE_LANDLORD_PRO_PRICE_ID ?? "",
-    price: 99,
+    price: 79,
     properties: -1,
     tagline: "Unlimited doors and heavier support",
     highlighted: false,

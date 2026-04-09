@@ -3,6 +3,7 @@ export const dynamic = "force-dynamic";
 import { MaintenanceRegistry } from "@/components/maintenance/maintenance-registry";
 import { DashboardPollRefresh } from "@/hooks/use-dashboard-poll-refresh";
 import { getMaintenanceRequests } from "@/lib/actions/maintenance";
+import { getSafetyAlertsLast7Days } from "@/lib/actions/safety-alerts";
 import { getTenancies } from "@/lib/actions/tenancies";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,9 +15,13 @@ export default async function MaintenancePage() {
 
   const userId = user?.id ?? null;
 
-  const [requests, tenancies] = userId
-    ? await Promise.all([getMaintenanceRequests(userId), getTenancies(userId)])
-    : [{ open: [], resolved: [] }, []];
+  const [requests, tenancies, safetyAlerts] = userId
+    ? await Promise.all([
+        getMaintenanceRequests(userId),
+        getTenancies(userId),
+        getSafetyAlertsLast7Days(userId),
+      ])
+    : [{ open: [], resolved: [] }, [], []];
 
   const tenancyOptions = tenancies.map((t) => ({
     id: t.id,
@@ -30,6 +35,7 @@ export default async function MaintenancePage() {
         open={requests.open}
         resolved={requests.resolved}
         tenancies={tenancyOptions}
+        safetyAlerts={safetyAlerts}
       />
     </>
   );

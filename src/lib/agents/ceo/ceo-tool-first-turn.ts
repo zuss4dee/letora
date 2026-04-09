@@ -31,4 +31,4 @@ export function replyLooksLikeDeferredToolPromise(text: string): boolean {
  * User message appended when the model returned text-only instead of tools; forces a retry.
  */
 export const CEO_TOOL_NUDGE_USER_MESSAGE =
-  "You must call at least one tool in your next assistant message (e.g. list_tenants, draft_contract, get_maintenance_summary, get_leads_summary, chase_rent). Do not reply with only text, and do not say you will fetch data later — call the tool now.";
+  "You must call at least one tool in your next assistant message (e.g. list_tenants, draft_contract, get_compliance_summary, get_maintenance_summary, get_leads_summary, chase_rent). Do not reply with only text, and do not say you will fetch data later — call the tool now.";

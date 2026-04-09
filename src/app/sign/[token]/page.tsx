@@ -63,12 +63,12 @@ export default async function SignContractPage({
 
   if (data.tenant_signed_at) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center bg-[#0d0c0b] px-4 py-12 text-foreground">
+      <div className="relative flex min-h-screen items-center justify-center bg-background px-4 py-12 text-foreground dark:bg-[#0d0c0b]">
         <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(61,26,10,0.4),transparent_60%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(189,153,82,0.15),transparent_60%)] dark:bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(61,26,10,0.4),transparent_60%)]"
           aria-hidden
         />
-        <div className="relative mx-auto w-full max-w-lg rounded-2xl bg-gradient-to-b from-[#1c1b1a]/95 to-[#141312]/98 p-8 text-center shadow-[0_24px_48px_rgba(0,0,0,0.45)] ring-1 ring-[rgb(72_72_72_/0.08)] backdrop-blur-md">
+        <div className="relative mx-auto w-full max-w-lg rounded-2xl border border-border bg-card p-8 text-center shadow-lg ring-1 ring-border/60 backdrop-blur-md dark:border-transparent dark:bg-gradient-to-b dark:from-[#1c1b1a]/95 dark:to-[#141312]/98 dark:shadow-[0_24px_48px_rgba(0,0,0,0.45)] dark:ring-[rgb(72_72_72_/0.08)]">
           <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#BD9952]/12 ring-1 ring-[#BD9952]/25">
             <svg
               className="h-7 w-7 text-[#BD9952]"
@@ -90,13 +90,13 @@ export default async function SignContractPage({
   }
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-[#0d0c0b] px-4 py-12 text-foreground">
+    <div className="relative flex min-h-screen items-center justify-center bg-background px-4 py-12 text-foreground dark:bg-[#0d0c0b]">
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_45%_at_50%_-15%,rgba(61,26,10,0.35),transparent_58%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_45%_at_50%_-15%,rgba(189,153,82,0.12),transparent_58%)] dark:bg-[radial-gradient(ellipse_90%_45%_at_50%_-15%,rgba(61,26,10,0.35),transparent_58%)]"
         aria-hidden
       />
-      <div className="relative mx-auto w-full max-w-2xl overflow-hidden rounded-2xl bg-gradient-to-b from-[#1c1b1a]/95 to-[#141312]/98 shadow-[0_28px_90px_-48px_rgba(0,0,0,0.85)] ring-1 ring-[rgb(72_72_72_/0.08)] backdrop-blur-md">
-        <div className="bg-[#1a1918]/40 px-6 py-6 sm:px-8">
+      <div className="relative mx-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-card shadow-xl ring-1 ring-border/60 backdrop-blur-md dark:border-transparent dark:bg-gradient-to-b dark:from-[#1c1b1a]/95 dark:to-[#141312]/98 dark:shadow-[0_28px_90px_-48px_rgba(0,0,0,0.85)] dark:ring-[rgb(72_72_72_/0.08)]">
+        <div className="border-b border-border bg-muted/40 px-6 py-6 dark:border-[rgb(72_72_72_/0.08)] dark:bg-[#1a1918]/40 sm:px-8">
           <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[#BD9952]/90">
             Tenancy agreement
           </p>
@@ -144,9 +144,9 @@ export default async function SignContractPage({
           </div>
 
           {data.special_clauses && (
-            <div className="rounded-xl bg-[#0e0e0e]/45 p-4 ring-1 ring-[rgb(72_72_72_/0.1)]">
+            <div className="rounded-xl border border-border bg-muted/50 p-4 ring-1 ring-border/60 dark:border-transparent dark:bg-[#0e0e0e]/45 dark:ring-[rgb(72_72_72_/0.1)]">
               <h2 className="mb-2 font-headline text-sm font-light text-foreground">Contract terms</h2>
-              <div className="prose prose-sm max-h-96 overflow-y-auto whitespace-pre-wrap font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground prose-invert">
+              <div className="prose prose-sm max-h-96 overflow-y-auto whitespace-pre-wrap font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground dark:prose-invert">
                 {data.special_clauses}
               </div>
             </div>

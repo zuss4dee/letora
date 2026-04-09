@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,42 +60,52 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
   const detail = await getMaintenanceRequestDetail(userId, id);
   if (!detail) notFound();
 
-  return (
-    <div className="@container/main flex flex-1 flex-col gap-2">
-      <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
-                <div className="flex flex-col gap-3 px-4 sm:flex-row sm:items-start sm:justify-between lg:px-6">
-                  <div className="min-w-0 flex-1">
-                    <Link
-                      href="/dashboard/maintenance"
-                      className="text-sm text-muted-foreground hover:text-foreground"
-                    >
-                      ← Maintenance
-                    </Link>
-                    <h1 className="mt-2 text-base font-semibold tracking-tight">
-                      {(() => {
-                        const line = detail.description?.split(/\n/)[0]?.trim();
-                        return line && line.length > 0 ? line.slice(0, 120) : "Maintenance request";
-                      })()}
-                    </h1>
-                    <p className="text-sm text-muted-foreground">
-                      {detail.propertyAddress ?? "Property"} · {detail.tenantFullName ?? "Tenant"}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    {(detail.status ?? "").toLowerCase() === "resolved" ? (
-                      <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
-                        Resolved
-                      </Badge>
-                    ) : (detail.status ?? "").toLowerCase() === "open" ? (
-                      <ResolveMaintenanceForm requestId={detail.id} />
-                    ) : null}
-                  </div>
-                </div>
+  const titleLine = (() => {
+    const line = detail.description?.split(/\n/)[0]?.trim();
+    return line && line.length > 0 ? line.slice(0, 120) : "Maintenance request";
+  })();
 
-                <div className="grid gap-4 px-4 lg:px-6">
-                  <Card>
-                    <CardHeader className="border-b">
-                      <CardTitle className="text-base">Issue</CardTitle>
+  return (
+    <div className="@container/main relative flex flex-1 flex-col">
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-[min(42vh,420px)] bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(189,153,82,0.12),transparent_65%)] dark:bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(61,26,10,0.35),transparent_65%)]"
+        aria-hidden
+      />
+      <div className="relative flex flex-col gap-8 py-8 md:py-10">
+        <header className="flex flex-col gap-4 px-4 sm:flex-row sm:items-start sm:justify-between lg:px-6">
+          <div className="min-w-0 flex-1 space-y-3">
+            <Link
+              href="/dashboard/maintenance"
+              className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-sm font-medium text-muted-foreground transition-colors hover:text-[#BD9952]"
+            >
+              <ArrowLeft className="size-4 shrink-0" aria-hidden />
+              Maintenance
+            </Link>
+            <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
+              Issue
+            </p>
+            <h1 className="font-headline text-2xl font-extralight tracking-[-0.03em] text-foreground md:text-3xl">
+              {titleLine}
+            </h1>
+            <p className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
+              {detail.propertyAddress ?? "Property"} · {detail.tenantFullName ?? "Tenant"}
+            </p>
+          </div>
+          <div className="flex shrink-0 items-center gap-2 lg:pt-10">
+            {(detail.status ?? "").toLowerCase() === "resolved" ? (
+              <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
+                Resolved
+              </Badge>
+            ) : (detail.status ?? "").toLowerCase() === "open" ? (
+              <ResolveMaintenanceForm requestId={detail.id} />
+            ) : null}
+          </div>
+        </header>
+
+        <div className="grid gap-6 px-4 lg:px-6">
+                  <Card className="overflow-hidden border-border bg-card shadow-sm ring-1 ring-border/60">
+                    <CardHeader className="border-b border-border bg-muted/30">
+                      <CardTitle className="font-headline text-lg font-light tracking-tight text-foreground">Issue</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-2 pt-4 text-sm">
                       <p className="whitespace-pre-wrap text-muted-foreground">{detail.description}</p>
@@ -109,9 +120,9 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
                     </CardContent>
                   </Card>
 
-                  <Card>
-                    <CardHeader className="border-b">
-                      <CardTitle className="text-base">AI triage</CardTitle>
+                  <Card className="overflow-hidden border-border bg-card shadow-sm ring-1 ring-border/60">
+                    <CardHeader className="border-b border-border bg-muted/30">
+                      <CardTitle className="font-headline text-lg font-light tracking-tight text-foreground">AI triage</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3 pt-4 text-sm">
                       <div className="flex flex-wrap items-center gap-2">
@@ -160,10 +171,12 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
                     status={detail.status}
                   />
 
-                  <Card>
-                    <CardHeader className="border-b">
-                      <CardTitle className="text-base">Related emails</CardTitle>
-                      <p className="text-sm font-normal text-muted-foreground">
+                  <Card className="overflow-hidden border-border bg-card shadow-sm ring-1 ring-border/60">
+                    <CardHeader className="border-b border-border bg-muted/30">
+                      <CardTitle className="font-headline text-lg font-light tracking-tight text-foreground">
+                        Related emails
+                      </CardTitle>
+                      <p className="font-[family-name:var(--font-inter)] text-sm font-normal text-muted-foreground">
                         Tenant acknowledgement and landlord summary (via maintenance agent).
                       </p>
                     </CardHeader>
@@ -171,7 +184,7 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
                       <MaintenanceRelatedEmailsTable emailLogs={detail.emailLogs} />
                     </CardContent>
                   </Card>
-                </div>
+        </div>
       </div>
     </div>
   );

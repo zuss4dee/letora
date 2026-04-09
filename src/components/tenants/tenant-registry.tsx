@@ -134,7 +134,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
   const pageRows = filtered.slice(sliceStart, sliceStart + PAGE_SIZE);
 
   return (
-    <div className="relative min-h-0 flex-1 bg-[#0E0E0E]">
+    <div className="relative min-h-0 flex-1 bg-background">
       <div className="mx-auto w-full max-w-6xl px-6 pb-28 pt-2 md:px-12">
         <header className="mb-12 max-w-6xl">
           <h1 className="font-headline mb-2 text-4xl font-extralight tracking-tight text-foreground sm:text-5xl">
@@ -192,11 +192,11 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-sm bg-[#131313]">
+        <div className="overflow-hidden rounded-sm bg-card">
           <div className="w-full overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="bg-[#1F2020]">
+                <tr className="bg-muted dark:bg-[#1F2020]">
                   <th className="px-8 py-5 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
                     Tenant name
                   </th>
@@ -214,7 +214,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#484848]/10">
+              <tbody className="divide-y divide-border/70">
                 {pageRows.length === 0 ? (
                   <tr>
                     <td
@@ -228,11 +228,11 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
                   pageRows.map((row) => (
                     <tr
                       key={row.id}
-                      className="group transition-colors hover:bg-[#252626]"
+                      className="group transition-colors duration-200 ease-out hover:bg-muted/70 dark:hover:bg-[#252626]"
                     >
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-4">
-                          <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-[#484848]/30 bg-[#474646] font-[family-name:var(--font-inter)] text-sm font-semibold text-[#d2d0cf]">
+                          <div className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-muted font-[family-name:var(--font-inter)] text-sm font-semibold text-foreground dark:border-[#484848]/30 dark:bg-[#474646] dark:text-[#d2d0cf]">
                             {initials(row.fullName)}
                           </div>
                           <div>
@@ -291,7 +291,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
               type="button"
               disabled={safePage <= 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="border border-[#484848]/20 p-2 text-foreground transition-colors hover:bg-[#1F2020] disabled:pointer-events-none disabled:opacity-30"
+              className="border border-border p-2 text-foreground transition-colors hover:bg-muted dark:hover:bg-[#1F2020] disabled:pointer-events-none disabled:opacity-30"
               aria-label="Previous page"
             >
               <ChevronLeft className="size-[18px]" aria-hidden />
@@ -300,7 +300,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
               type="button"
               disabled={safePage >= pageCount - 1}
               onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-              className="border border-[#484848]/20 p-2 text-foreground transition-colors hover:bg-[#1F2020] disabled:pointer-events-none disabled:opacity-30"
+              className="border border-border p-2 text-foreground transition-colors hover:bg-muted dark:hover:bg-[#1F2020] disabled:pointer-events-none disabled:opacity-30"
               aria-label="Next page"
             >
               <ChevronRight className="size-[18px]" aria-hidden />

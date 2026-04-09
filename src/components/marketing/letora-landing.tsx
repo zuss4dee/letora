@@ -43,7 +43,7 @@ function JewelryButton({
 
 export function LetoraLanding() {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#131313] text-foreground selection:bg-[#FFEABB]/35 selection:text-[#1a1200]">
+    <div className="dark min-h-screen overflow-x-hidden bg-[#131313] text-foreground selection:bg-[#FFEABB]/35 selection:text-[#1a1200]">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-[#FFEABB] focus:px-4 focus:py-2 focus:text-[#3e2e00]"
@@ -69,19 +69,19 @@ export function LetoraLanding() {
                 Property Operating System
               </span>
             </h1>
-            <p className="mx-auto max-w-xl font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-foreground/90 md:text-xl">
+            <p className="mx-auto max-w-xl font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-foreground md:text-xl">
               One calm surface for UK landlords: leads, rent, tenancies, and maintenance. You approve what goes
               out.
             </p>
             <div className="pt-4">
               <JewelryButton href="/signup" size="lg">
-                Create your Letora account
+                Try for free
               </JewelryButton>
             </div>
           </div>
           <a
             href="#lead-intelligence"
-            className="absolute bottom-10 left-1/2 flex -translate-x-1/2 flex-col items-center gap-3 text-foreground/40 transition-colors hover:text-[#FFEABB]/80"
+            className="absolute bottom-10 left-1/2 flex -translate-x-1/2 flex-col items-center gap-3 text-muted-foreground transition-colors hover:text-[#FFEABB]/80"
           >
             <span className="font-[family-name:var(--font-inter)] text-[0.65rem] font-light uppercase tracking-[0.3em]">
               Discover more
@@ -105,7 +105,7 @@ export function LetoraLanding() {
                 <br />
                 Intelligence
               </h2>
-              <p className="max-w-md font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-foreground/90 md:text-xl">
+              <p className="max-w-md font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-foreground md:text-xl">
                 See intent before the first reply. Letora scores and qualifies leads from your pipeline so
                 your team spends time on tenancies that convert, not on noise.
               </p>
@@ -149,7 +149,7 @@ export function LetoraLanding() {
                 Rent chasing
               </h2>
               <div className="flex justify-end">
-                <p className="max-w-md font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-foreground/90 md:text-xl">
+                <p className="max-w-md font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-foreground md:text-xl">
                   Stop chasing spreadsheets. Rent Chaser sends firm, professional follow-ups on your schedule,
                   with drafts you can approve before anything goes out.
                 </p>
@@ -222,7 +222,7 @@ export function LetoraLanding() {
                 <br />
                 Operations
               </h2>
-              <p className="mx-auto max-w-2xl pt-4 font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-foreground/90 md:text-2xl">
+              <p className="mx-auto max-w-2xl pt-4 font-[family-name:var(--font-inter)] text-lg font-light leading-relaxed text-foreground md:text-2xl">
                 Not another add-on chatbot. Letora is an operator layer across email, tenancies, maintenance,
                 and contracts, with a single place to see what needs attention today.
               </p>
@@ -254,28 +254,28 @@ export function LetoraLanding() {
             <div className="grid grid-cols-1 gap-12 pt-8 text-left md:grid-cols-3 md:gap-10">
               <div className="space-y-3">
                 <div className="font-headline text-3xl font-bold tracking-tighter text-foreground">99.9%</div>
-                <div className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground/80">
+                <div className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
                   Uptime target
                 </div>
-                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-foreground/90">
+                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-foreground">
                   Infrastructure built for always-on property operations, not demo-day uptime.
                 </p>
               </div>
               <div className="space-y-3">
                 <div className="font-headline text-3xl font-bold tracking-tighter text-foreground">&lt;15s</div>
-                <div className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground/80">
+                <div className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
                   Typical reply path
                 </div>
-                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-foreground/90">
+                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-foreground">
                   Drafts and agent responses surface fast enough to feel like a live desk, without the desk.
                 </p>
               </div>
               <div className="space-y-3">
                 <div className="font-headline text-3xl font-bold tracking-tighter text-foreground">∞</div>
-                <div className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground/80">
+                <div className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
                   Portfolio scale
                 </div>
-                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-foreground/90">
+                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-foreground">
                   From a handful of doors to a growing portfolio: same surface, same discipline.
                 </p>
               </div>
@@ -297,18 +297,18 @@ export function LetoraLanding() {
         <footer className="flex flex-col items-center justify-between gap-10 border-t border-[#4F4632]/10 bg-[#131313] px-6 py-16 md:flex-row md:px-12 lg:px-24">
           <div className="flex flex-col items-center gap-2 md:items-start">
             <span className="font-headline text-xl font-semibold tracking-[-0.04em] text-foreground">Letora</span>
-            <p className="font-[family-name:var(--font-inter)] text-[10px] font-light uppercase tracking-[0.2em] text-foreground/40">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] font-light uppercase tracking-[0.2em] text-muted-foreground">
               © {new Date().getFullYear()} Letora. All rights reserved.
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-8 md:gap-10">
-            <span className="font-[family-name:var(--font-inter)] text-sm font-light uppercase tracking-widest text-foreground/40">
+            <span className="font-[family-name:var(--font-inter)] text-sm font-light uppercase tracking-widest text-muted-foreground">
               About
             </span>
-            <span className="font-[family-name:var(--font-inter)] text-sm font-light uppercase tracking-widest text-foreground/40">
+            <span className="font-[family-name:var(--font-inter)] text-sm font-light uppercase tracking-widest text-muted-foreground">
               Privacy
             </span>
-            <span className="font-[family-name:var(--font-inter)] text-sm font-light uppercase tracking-widest text-foreground/40">
+            <span className="font-[family-name:var(--font-inter)] text-sm font-light uppercase tracking-widest text-muted-foreground">
               Terms
             </span>
           </div>

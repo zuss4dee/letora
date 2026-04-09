@@ -39,6 +39,8 @@ alter table email_logs add column if not exists retry_count integer default 0;
 alter table email_logs add column if not exists max_retries integer default 3;
 alter table email_logs add column if not exists next_retry_at timestamptz;
 alter table email_logs add column if not exists unsubscribe_token text;
+-- Resend API message id (e.g. re_...); must exist before idx_email_logs_delivery
+alter table email_logs add column if not exists resend_email_id text;
 
 -- Index for retry logic
 create index if not exists idx_email_logs_retry on email_logs (status, next_retry_at)
@@ -47,8 +49,8 @@ create index if not exists idx_email_logs_retry on email_logs (status, next_retr
 -- Index for template tracking
 create index if not exists idx_email_logs_template on email_logs (template_type, template_version);
 
--- Index for delivery tracking
-create index if not exists idx_email_logs_delivery on email_logs (delivery_status, resent_email_id)
+-- Index for delivery tracking (resend_email_id correlates with Resend dashboard)
+create index if not exists idx_email_logs_delivery on email_logs (delivery_status, resend_email_id)
   where delivery_status is not null;
 
 -- Unsubscribe tokens table

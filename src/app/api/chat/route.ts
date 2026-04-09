@@ -6,7 +6,10 @@ import {
   runCEOChat,
 } from "@/lib/agents/ceo";
 import type { CEOMessage } from "@/lib/agents/ceo";
-import { stripCeoHexUuidsFromText } from "@/lib/agents/ceo/safety";
+import {
+  stripCeoHexUuidsFromText,
+  stripMarkdownDelimitersFromAssistantText,
+} from "@/lib/agents/ceo/safety";
 import { buildLeadQualifyAssistantMessage } from "@/lib/assistant/build-lead-qualify-message";
 import { shouldOfferManualLeadQualifyUi } from "@/lib/assistant/lead-qualify-embed";
 import {
@@ -15,6 +18,10 @@ import {
   isAssistantConversationId,
 } from "@/lib/assistant-messages/store";
 import { checkChatRateLimit } from "@/lib/chat-rate-limit";
+import {
+  checkPortfolioHealth,
+  formatPortfolioHealthDigestForAssistant,
+} from "@/lib/portfolio/check-portfolio-health";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
@@ -127,9 +134,9 @@ function mapAssistantError(err: unknown): { status: number; code: string; messag
   };
 }
 
-/** Last line of defense: never persist or stream raw tenancy UUIDs the model echoed from tool JSON. */
+/** Last line of defense: strip UUID echoes, then Markdown markers the model may still emit. */
 function sanitizeAssistantReply(text: string): string {
-  return stripCeoHexUuidsFromText(text);
+  return stripMarkdownDelimitersFromAssistantText(stripCeoHexUuidsFromText(text));
 }
 
 function chunkUtf8Text(text: string, maxChars: number): string[] {
@@ -272,12 +279,16 @@ export async function POST(request: Request) {
 
   let result;
   try {
+    const health = await checkPortfolioHealth(userId, supabase);
+    const portfolioHealthDigest = formatPortfolioHealthDigestForAssistant(health.expired);
+
     result = await runCEOChat({
       userId,
       supabase,
       messages,
       confirmedExecution: bodyObj.confirmedExecution === true,
       pendingAction,
+      portfolioHealthDigest,
     });
   } catch (err) {
     const mapped = mapAssistantError(err);

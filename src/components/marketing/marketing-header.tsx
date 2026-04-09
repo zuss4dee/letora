@@ -79,7 +79,7 @@ export function MarketingHeader() {
                 href={navHref(item.hash)}
                 className={cn(
                   "font-[family-name:var(--font-inter)] text-xs font-semibold tracking-tight transition-opacity md:text-[0.8125rem] xl:text-sm",
-                  active ? "text-[#FFEABB] opacity-100" : "text-foreground/80 hover:opacity-100",
+                  active ? "text-[#FFEABB] opacity-100" : "text-muted-foreground hover:text-foreground",
                   "whitespace-nowrap",
                 )}
               >
