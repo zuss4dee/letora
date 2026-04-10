@@ -14,7 +14,9 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:resend": "node --env-file=.env.local scripts/send-resend-test.mjs"
+    "test:resend": "node --env-file=.env.local scripts/send-resend-test.mjs",
+    "remotion:studio": "remotion studio remotion/index.ts",
+    "remotion:render": "remotion render remotion/index.ts LaunchVideo out/launch.mp4"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
@@ -26,6 +28,8 @@
     "@hookform/resolvers": "^5.2.2",
     "@react-email/components": "^1.0.11",
     "@react-pdf/renderer": "^4.3.3",
+    "@remotion/cli": "^4.0.447",
+    "@remotion/zod-types": "^4.0.447",
     "@stripe/stripe-js": "^9.0.0",
     "@supabase/ssr": "^0.9.0",
     "@supabase/supabase-js": "^2.100.0",
@@ -46,6 +50,7 @@
     "react-dom": "19.2.4",
     "react-hook-form": "^7.72.0",
     "recharts": "^3.8.0",
+    "remotion": "^4.0.447",
     "resend": "^4.8.0",
     "shadcn": "^4.1.0",
     "sonner": "^2.0.7",
