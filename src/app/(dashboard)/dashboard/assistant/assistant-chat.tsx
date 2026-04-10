@@ -245,7 +245,7 @@ function NavigationButtons({ actions }: { actions: ActionTag[] }) {
 function AssistantThinkingIndicator() {
   return (
     <div
-      className="flex items-center gap-2 font-headline text-[0.75rem] font-light tracking-wide text-muted-foreground/90 dark:text-muted-foreground/80"
+      className="flex items-center gap-2 font-headline text-[0.75rem] font-medium tracking-wide text-muted-foreground"
       aria-live="polite"
       aria-busy="true"
     >
@@ -276,8 +276,10 @@ function MessageBubble({
 }) {
   const isUser = role === "user";
   const bubbleText = cn(
-    "whitespace-pre-wrap text-[0.9375rem] leading-[1.65] [word-break:normal] text-foreground",
-    "break-words [overflow-wrap:anywhere]",
+    "whitespace-pre-wrap [word-break:normal] break-words [overflow-wrap:anywhere]",
+    role === "assistant"
+      ? "text-base font-normal leading-relaxed text-slate-200"
+      : "text-[0.9375rem] font-normal leading-[1.65] text-foreground",
   );
   if (role === "assistant") {
     const parsed = parseLeadQualifyEmbed(content);
@@ -286,7 +288,7 @@ function MessageBubble({
         <div className="flex w-full min-w-0 justify-start">
           <div
             className={cn(
-              "min-w-0 rounded-xl border border-border bg-muted/50 px-4 py-3.5 font-headline font-light shadow-none dark:bg-[#111]/80",
+              "min-w-0 rounded-xl border border-border bg-muted/50 px-4 py-3.5 font-headline shadow-none dark:bg-[#111]/80",
               compact ? "w-full max-w-full" : "max-w-[min(100%,40rem)]",
             )}
           >
@@ -305,11 +307,11 @@ function MessageBubble({
     <div className={cn("flex w-full min-w-0", isUser ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "min-w-0 rounded-2xl px-4 py-3 font-headline font-light shadow-none",
+          "min-w-0 rounded-2xl px-4 py-3 font-headline shadow-none",
           compact ? "w-full max-w-full" : "max-w-[min(100%,40rem)]",
           isUser
-            ? "border border-secondary/35 bg-secondary/10 text-foreground dark:border-[#BD9952]/22 dark:bg-[#1a1610] dark:text-[#f5f0e8]"
-            : "border border-border bg-muted/40 text-foreground dark:bg-[#111]/90",
+            ? "border border-secondary/35 bg-secondary/10 text-foreground dark:border-[#BD9952]/22 dark:bg-[#1a1610] dark:text-slate-100"
+            : "border border-border bg-muted/40 dark:bg-[#111]/90",
           isTransitional && !isUser && "animate-pulse border-secondary/25 opacity-70 dark:border-[#BD9952]/15",
         )}
       >

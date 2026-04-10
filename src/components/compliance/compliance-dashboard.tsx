@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Eye, FileWarning, Loader2, ShieldAlert, Upload } from "lucide-react";
+import { Calendar, ChevronDown, Eye, FileWarning, Loader2, ShieldAlert, Upload } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -16,6 +16,7 @@ import {
 } from "@/lib/actions/compliance";
 import type { ComplianceType } from "@/lib/compliance/types";
 import type { PropertyRow } from "@/lib/actions/properties";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const ALL_CERT_ROWS: { type: ComplianceType; label: string; hint: string }[] = [
   { type: "EPC", label: "EPC", hint: "Energy performance certificate" },
@@ -123,6 +124,24 @@ export function ComplianceDashboard({
   /** Signed URL from last upload so View works without router.refresh(). */
   const [viewUrlByKey, setViewUrlByKey] = useState<Record<string, string>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const isMobile = useIsMobile();
+  /** Mobile: collapsible cards; desktop: always show full card. */
+  const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
+
+  const isCardExpanded = (propertyId: string, index: number) => {
+    if (!isMobile) return true;
+    const v = expandedById[propertyId];
+    if (v !== undefined) return v;
+    return index === 0;
+  };
+
+  const toggleCard = (propertyId: string, index: number) => {
+    if (!isMobile) return;
+    setExpandedById((m) => {
+      const cur = m[propertyId] ?? index === 0;
+      return { ...m, [propertyId]: !cur };
+    });
+  };
 
   useEffect(() => {
     setOptimisticDocKeys((prev) => {
@@ -229,12 +248,14 @@ export function ComplianceDashboard({
   }
 
   return (
-    <div className="grid gap-8 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
+    <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 xl:grid-cols-3">
       {properties.map((p, cardIndex) => {
         const title = [p.address, p.postcode].filter(Boolean).join(", ") || "Property";
         const sub = p.city ? p.city : null;
         const attention = propertyNeedsAttention(records, p.id, p.hasGasSupply);
         const rows = certRowsForProperty(p.hasGasSupply);
+        const expanded = isCardExpanded(p.id, cardIndex);
+        const panelId = `compliance-property-${p.id}`;
 
         return (
           <article
@@ -260,25 +281,70 @@ export function ComplianceDashboard({
 
             <div className="relative p-6 pt-5">
               {attention ? (
-                <div className="absolute right-4 top-4 flex items-center gap-1.5 rounded-full border border-red-400/40 bg-red-500/10 px-2.5 py-1 font-headline text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-red-800 dark:text-red-200">
+                <div className="pointer-events-none absolute right-4 top-4 flex items-center gap-1.5 rounded-full border border-red-400/40 bg-red-500/10 px-2.5 py-1 font-headline text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-red-800 dark:text-red-200">
                   <ShieldAlert className="size-3.5 shrink-0" aria-hidden />
                   Attention
                 </div>
               ) : null}
 
-              <header className={cn("mb-6 border-b border-border/50 pb-5", attention && "pr-24 sm:pr-28")}>
-                <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]">
-                  Registered property
-                </p>
-                <h2 className="mt-2 font-headline text-xl font-light leading-snug tracking-tight text-foreground">
-                  {title}
-                </h2>
-                {sub ? (
-                  <p className="mt-1.5 font-headline text-sm font-light leading-snug text-muted-foreground">{sub}</p>
-                ) : null}
-              </header>
+              {isMobile ? (
+                <button
+                  type="button"
+                  id={`${panelId}-trigger`}
+                  aria-expanded={expanded}
+                  aria-controls={panelId}
+                  aria-label={expanded ? "Collapse certificates for this property" : "Expand certificates for this property"}
+                  onClick={() => toggleCard(p.id, cardIndex)}
+                  className={cn(
+                    "flex w-full touch-manipulation items-start justify-between gap-3 border-b border-border/50 pb-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#BD9952]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                    attention && "pr-24 sm:pr-28",
+                  )}
+                >
+                  <header className="min-w-0 flex-1">
+                    <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]">
+                      Registered property
+                    </p>
+                    <h2 className="mt-2 font-headline text-xl font-light leading-snug tracking-tight text-foreground">
+                      {title}
+                    </h2>
+                    {sub ? (
+                      <p className="mt-1.5 font-headline text-sm font-light leading-snug text-muted-foreground">{sub}</p>
+                    ) : null}
+                  </header>
+                  <span
+                    className={cn(
+                      "mt-1 flex size-10 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/30 text-muted-foreground transition-transform duration-200",
+                      expanded && "rotate-180",
+                    )}
+                    aria-hidden
+                  >
+                    <ChevronDown className="size-5 stroke-[1.5]" />
+                  </span>
+                </button>
+              ) : (
+                <header
+                  id={`${panelId}-trigger`}
+                  className={cn("mb-6 border-b border-border/50 pb-5", attention && "pr-24 sm:pr-28")}
+                >
+                  <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]">
+                    Registered property
+                  </p>
+                  <h2 className="mt-2 font-headline text-xl font-light leading-snug tracking-tight text-foreground">
+                    {title}
+                  </h2>
+                  {sub ? (
+                    <p className="mt-1.5 font-headline text-sm font-light leading-snug text-muted-foreground">{sub}</p>
+                  ) : null}
+                </header>
+              )}
 
-              <ul className="flex flex-col gap-4">
+              <div
+                id={panelId}
+                role="region"
+                aria-labelledby={`${panelId}-trigger`}
+                className={cn(!expanded && isMobile && "hidden")}
+              >
+              <ul className={cn("flex flex-col gap-4", isMobile ? "mt-0" : "mt-0")}>
               {rows.map((row) => {
                   const rec = recordFor(records, p.id, row.type);
                   const value = rec?.expiryDate ?? "";
@@ -424,6 +490,7 @@ export function ComplianceDashboard({
                   );
                 })}
               </ul>
+              </div>
             </div>
           </article>
         );

@@ -30,6 +30,7 @@ import {
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { createClient } from "@/lib/supabase/client";
 
@@ -68,12 +69,15 @@ function NavSection({
   items,
   pathname,
   attentionItems,
+  onNavigate,
 }: {
   label: string;
   items: NavItem[];
   pathname: string;
   /** Red dot + tooltip per matching nav URL (compliance expiry, maintenance safety, etc.). */
   attentionItems?: AttentionItem[];
+  /** Close mobile sheet so one tap navigates (avoids double-tap / focus + click). */
+  onNavigate?: () => void;
 }) {
   const attentionByUrl = new Map(attentionItems?.map((a) => [a.url, a] as const) ?? []);
 
@@ -93,8 +97,9 @@ function NavSection({
               <Link
                 href={item.url}
                 data-mercury-tour={item.url === "/dashboard/compliance" ? "compliance" : undefined}
+                onClick={() => onNavigate?.()}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
+                  "touch-manipulation flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out active:bg-sidebar-accent/80",
                   active
                     ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
                     : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
@@ -157,6 +162,10 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const closeMobileNav = React.useCallback(() => {
+    if (isMobile) setOpenMobile(false);
+  }, [isMobile, setOpenMobile]);
   const [footerOpen, setFooterOpen] = useFooterOpen();
   const onSettingsPage = pathname === "/dashboard/settings";
   const onBillingPage = pathname === "/dashboard/billing";
@@ -194,7 +203,7 @@ export function AppSidebar({
       {...props}
     >
       <SidebarHeader className="gap-0 px-4 pb-8 pt-8">
-        <Link href="/dashboard" className="block px-2">
+        <Link href="/dashboard" onClick={closeMobileNav} className="block touch-manipulation px-2">
           <span className="font-headline text-lg font-light tracking-[0.2em] text-foreground">
             LETORA
           </span>
@@ -204,7 +213,8 @@ export function AppSidebar({
         </Link>
         <Link
           href="/dashboard/properties"
-          className="mt-6 flex items-center gap-2 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-[#BD9952] transition-colors hover:text-foreground"
+          onClick={closeMobileNav}
+          className="mt-6 flex touch-manipulation items-center gap-2 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-[#BD9952] transition-colors hover:text-foreground"
         >
           <PlusCircle className="size-4 stroke-[1.25]" aria-hidden />
           Add a property
@@ -212,14 +222,15 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent className="px-0">
         <nav className="flex flex-1 flex-col px-0">
-          <NavSection label="Main" items={mainItems} pathname={pathname} />
+          <NavSection label="Main" items={mainItems} pathname={pathname} onNavigate={closeMobileNav} />
           <NavSection
             label="Workflow"
             items={workflowItems}
             pathname={pathname}
             attentionItems={workflowAttention.length > 0 ? workflowAttention : undefined}
+            onNavigate={closeMobileNav}
           />
-          <NavSection label="More" items={moreItems} pathname={pathname} />
+          <NavSection label="More" items={moreItems} pathname={pathname} onNavigate={closeMobileNav} />
         </nav>
       </SidebarContent>
       <SidebarFooter className="border-t border-sidebar-border p-4">
@@ -250,8 +261,9 @@ export function AppSidebar({
             <div className={cn("flex flex-col gap-0", !footerOpen && "pointer-events-none")}>
               <Link
                 href="/dashboard/help"
+                onClick={closeMobileNav}
                 className={cn(
-                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
+                  "mb-2 flex touch-manipulation items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
                   isActivePath(pathname, "/dashboard/help")
                     ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
                     : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
@@ -262,8 +274,9 @@ export function AppSidebar({
               </Link>
               <Link
                 href="/dashboard/activity"
+                onClick={closeMobileNav}
                 className={cn(
-                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
+                  "mb-2 flex touch-manipulation items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
                   isActivePath(pathname, "/dashboard/activity")
                     ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
                     : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
@@ -274,8 +287,9 @@ export function AppSidebar({
               </Link>
               <Link
                 href="/dashboard/settings"
+                onClick={closeMobileNav}
                 className={cn(
-                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
+                  "mb-2 flex touch-manipulation items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
                   settingsNavActive
                     ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
                     : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
@@ -286,8 +300,9 @@ export function AppSidebar({
               </Link>
               <Link
                 href="/dashboard/billing"
+                onClick={closeMobileNav}
                 className={cn(
-                  "mb-2 flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
+                  "mb-2 flex touch-manipulation items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
                   billingNavActive
                     ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
                     : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
@@ -296,7 +311,7 @@ export function AppSidebar({
                 <CreditCard className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
                 Billing
               </Link>
-              <SidebarAgentActivityButton />
+              <SidebarAgentActivityButton onBeforeOpen={closeMobileNav} />
               <div className="flex items-center gap-3 px-4 py-2">
                 <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase text-foreground">
                   {(userEmail?.[0] ?? "?").toUpperCase()}

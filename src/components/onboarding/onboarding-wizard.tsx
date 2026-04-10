@@ -98,6 +98,54 @@ export function OnboardingWizard({
     }
   }, [searchParams, finishCheckoutSuccess]);
 
+  /** Enter matches Next / Enter Letora: inputs submit the step; step 1 advances when a focus is chosen. */
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key !== "Enter" || e.repeat || e.defaultPrevented) return;
+      if (identityBusy || focusBusy || propertyBusy || skipBusy) return;
+
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("textarea")) return;
+      if (target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement) return;
+
+      if (target instanceof HTMLInputElement) {
+        if (step === 0 && portfolioName.trim().length >= 2) {
+          e.preventDefault();
+          void submitIdentity();
+        }
+        if (step === 2 && addressLine.trim().length >= 5) {
+          e.preventDefault();
+          void submitProperty();
+        }
+        return;
+      }
+
+      if (step === 0 && portfolioName.trim().length >= 2) {
+        e.preventDefault();
+        void submitIdentity();
+      } else if (step === 1 && focus) {
+        e.preventDefault();
+        void submitFocusAndContinue();
+      } else if (step === 2 && addressLine.trim().length >= 5) {
+        e.preventDefault();
+        void submitProperty();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // submit* are stable enough per render; step + fields drive behavior
+  }, [
+    step,
+    portfolioName,
+    focus,
+    addressLine,
+    identityBusy,
+    focusBusy,
+    propertyBusy,
+    skipBusy,
+  ]);
+
   async function handleSkipForNow() {
     setSkipBusy(true);
     try {

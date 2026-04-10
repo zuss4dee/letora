@@ -294,6 +294,24 @@ export function MercuryProductTour({
     setStep((s) => s + 1);
   }, [step, finish]);
 
+  useEffect(() => {
+    if (!tourActive || phase !== "tour") return;
+    function onKey(e: KeyboardEvent) {
+      if (e.repeat || e.defaultPrevented) return;
+      if (e.key === "Enter") {
+        if (e.target instanceof HTMLButtonElement) return;
+        e.preventDefault();
+        onNext();
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onSkip();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [tourActive, phase, onNext, onSkip]);
+
   if (!mounted || !tourActive) return null;
 
   if (phase === "celebrate") {
