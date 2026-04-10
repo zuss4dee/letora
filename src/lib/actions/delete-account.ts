@@ -38,7 +38,7 @@ export async function deleteAccount(confirmation: string): Promise<{ ok: boolean
       ok: false,
       error:
         error.message +
-        " If this persists, run `supabase db push` so migrations through `20260427120000_account_deletion_storage_and_fk_repair.sql` apply (fixes storage.objects FKs and public cascades). Or contact support with the full error from Supabase logs.",
+        " If this persists, run `supabase db push` (including `20260428120000_tenants_user_id_delete_cascade.sql` if you use the `tenants` table). Or contact support with the Postgres error from Supabase logs.",
     };
   }
 
