@@ -27,19 +27,25 @@ const loginSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>;
 
+const authAlertBoxClass =
+  "rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2.5 text-xs font-normal text-destructive dark:border-[#BB5551]/35 dark:bg-[#1a1210]/90 dark:text-[#e8a8a4]";
+
 function LoginAuthAlert({ error }: { error: { message: string; code?: string } }) {
   const kind = classifySignInError(error);
-  const boxClass =
-    "rounded-md border border-[#BB5551]/35 bg-[#1a1210]/90 px-3 py-2.5 text-xs font-normal text-[#e8a8a4]";
 
   if (kind === "invalid_credentials") {
     return (
-      <div className={`${boxClass} space-y-2`} role="alert">
-        <p className="font-medium text-[#e8a8a4]">We couldn&apos;t sign you in with that email and password.</p>
-        <p className="leading-relaxed text-[#e8a8a4]/90">
+      <div className={`${authAlertBoxClass} space-y-2`} role="alert">
+        <p className="font-medium text-destructive dark:text-[#e8a8a4]">
+          We couldn&apos;t sign you in with that email and password.
+        </p>
+        <p className="leading-relaxed text-destructive/90 dark:text-[#e8a8a4]/90">
           There isn&apos;t an account with those details, or the password doesn&apos;t match. If you removed your Letora
           account, you can{" "}
-          <Link href="/signup" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
+          <Link
+            href="/signup"
+            className="font-medium text-[#a67c2c] underline-offset-4 hover:underline dark:text-[#BD9952]"
+          >
             create a new account
           </Link>
           . Otherwise double-check your password.
@@ -50,7 +56,7 @@ function LoginAuthAlert({ error }: { error: { message: string; code?: string } }
 
   if (kind === "email_not_confirmed") {
     return (
-      <p className={boxClass} role="alert">
+      <p className={authAlertBoxClass} role="alert">
         Confirm your email using the link we sent you, then try signing in again.
       </p>
     );
@@ -58,14 +64,14 @@ function LoginAuthAlert({ error }: { error: { message: string; code?: string } }
 
   if (kind === "rate_limit") {
     return (
-      <p className={boxClass} role="alert">
+      <p className={authAlertBoxClass} role="alert">
         Too many sign-in attempts. Wait a few minutes and try again.
       </p>
     );
   }
 
   return (
-    <p className={boxClass} role="alert">
+    <p className={authAlertBoxClass} role="alert">
       {signInErrorMessageForOther(error.message)}
     </p>
   );
@@ -127,7 +133,7 @@ function LoginForm() {
               {...form.register("email")}
             />
             {form.formState.errors.email ? (
-              <p className="text-xs text-[#c97a76]">{form.formState.errors.email.message}</p>
+              <p className="text-xs text-destructive dark:text-[#c97a76]">{form.formState.errors.email.message}</p>
             ) : null}
           </div>
 
@@ -138,7 +144,7 @@ function LoginForm() {
               </Label>
               <Link
                 href="#"
-                className="text-[0.7rem] font-medium text-[#6b6a69] transition-colors hover:text-[#BD9952]"
+                className="text-[0.7rem] font-medium text-muted-foreground transition-colors hover:text-[#a67c2c] dark:hover:text-[#BD9952]"
               >
                 Forgot password?
               </Link>
@@ -153,7 +159,7 @@ function LoginForm() {
               {...form.register("password")}
             />
             {form.formState.errors.password ? (
-              <p className="text-xs text-[#c97a76]">{form.formState.errors.password.message}</p>
+              <p className="text-xs text-destructive dark:text-[#c97a76]">{form.formState.errors.password.message}</p>
             ) : null}
           </div>
 
@@ -166,11 +172,11 @@ function LoginForm() {
 
         <div className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="h-px flex-1 bg-[rgb(72_72_72_/0.25)]" />
-            <span className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-[#6b6a69]">
+            <div className="h-px flex-1 bg-border" />
+            <span className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-muted-foreground">
               or
             </span>
-            <div className="h-px flex-1 bg-[rgb(72_72_72_/0.25)]" />
+            <div className="h-px flex-1 bg-border" />
           </div>
           <p className="text-center font-[family-name:var(--font-inter)] text-sm font-normal text-muted-foreground">
             Don&apos;t have an account?{" "}

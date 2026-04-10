@@ -108,11 +108,14 @@ function SignupForm() {
       </Suspense>
 
       {emailConfirmationSent ? (
-        <div className="space-y-4 rounded-xl border border-[rgb(72_72_72_/0.18)] bg-[#0e0e0e]/60 px-5 py-6 text-left backdrop-blur-sm">
+        <div className="space-y-4 rounded-xl border border-border bg-card/80 px-5 py-6 text-left shadow-sm backdrop-blur-sm dark:border-[rgb(72_72_72_/0.18)] dark:bg-[#0e0e0e]/60 dark:shadow-none">
           <p className="font-headline text-base font-light text-foreground">Check your email</p>
           <p className="font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground">
             We sent you a confirmation link. Once confirmed, you can{" "}
-            <Link href="/login" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
+            <Link
+              href="/login"
+              className="font-medium text-[#a67c2c] underline-offset-4 hover:underline dark:text-[#BD9952]"
+            >
               sign in
             </Link>{" "}
             — then start your free trial from <Link href="/pricing">Pricing</Link> or{" "}
@@ -134,7 +137,7 @@ function SignupForm() {
               {...form.register("fullName")}
             />
             {form.formState.errors.fullName ? (
-              <p className="text-xs text-[#c97a76]">{form.formState.errors.fullName.message}</p>
+              <p className="text-xs text-destructive dark:text-[#c97a76]">{form.formState.errors.fullName.message}</p>
             ) : null}
           </div>
 
@@ -152,7 +155,7 @@ function SignupForm() {
               {...form.register("email")}
             />
             {form.formState.errors.email ? (
-              <p className="text-xs text-[#c97a76]">{form.formState.errors.email.message}</p>
+              <p className="text-xs text-destructive dark:text-[#c97a76]">{form.formState.errors.email.message}</p>
             ) : null}
           </div>
 
@@ -170,7 +173,7 @@ function SignupForm() {
               {...form.register("password")}
             />
             {form.formState.errors.password ? (
-              <p className="text-xs text-[#c97a76]">{form.formState.errors.password.message}</p>
+              <p className="text-xs text-destructive dark:text-[#c97a76]">{form.formState.errors.password.message}</p>
             ) : null}
           </div>
 
@@ -188,12 +191,15 @@ function SignupForm() {
               {...form.register("confirmPassword")}
             />
             {form.formState.errors.confirmPassword ? (
-              <p className="text-xs text-[#c97a76]">{form.formState.errors.confirmPassword.message}</p>
+              <p className="text-xs text-destructive dark:text-[#c97a76]">{form.formState.errors.confirmPassword.message}</p>
             ) : null}
           </div>
 
           {submitError ? (
-            <p className="rounded-md border border-[#BB5551]/35 bg-[#1a1210]/90 px-3 py-2.5 text-sm text-[#e8a8a4]" role="alert">
+            <p
+              className="rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2.5 text-sm text-destructive dark:border-[#BB5551]/35 dark:bg-[#1a1210]/90 dark:text-[#e8a8a4]"
+              role="alert"
+            >
               {submitError}
             </p>
           ) : null}

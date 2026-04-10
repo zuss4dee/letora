@@ -16,9 +16,9 @@ const copy = {
 export function AuthEditorialAside({ variant }: { variant: keyof typeof copy }) {
   const c = copy[variant];
   return (
-    <div className="relative flex h-full min-h-[560px] flex-col justify-between overflow-hidden border-l border-[rgb(72_72_72_/0.12)] bg-gradient-to-br from-[#141312] via-[#0e0e0e] to-[#121110] p-10">
+    <div className="relative flex h-full min-h-[560px] flex-col justify-between overflow-hidden border-l border-border bg-gradient-to-br from-muted/80 via-background to-muted/60 p-10 dark:border-[rgb(72_72_72_/0.12)] dark:from-[#141312] dark:via-[#0e0e0e] dark:to-[#121110]">
       <div
-        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgb(72_72_72_/0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgb(72_72_72_/0.06)_1px,transparent_1px)] bg-[size:28px_28px] opacity-80"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgb(0_0_0_/0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(0_0_0_/0.04)_1px,transparent_1px)] bg-[size:28px_28px] opacity-80 dark:bg-[linear-gradient(to_right,rgb(72_72_72_/0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgb(72_72_72_/0.06)_1px,transparent_1px)]"
         aria-hidden
       />
       <div className="relative z-[1] space-y-6">
@@ -32,8 +32,8 @@ export function AuthEditorialAside({ variant }: { variant: keyof typeof copy }) 
           {c.body}
         </p>
       </div>
-      <div className="relative z-[1] mt-12 border-t border-[rgb(72_72_72_/0.1)] pt-8">
-        <p className="font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-[0.18em] text-[#6b6a69]">
+      <div className="relative z-[1] mt-12 border-t border-border pt-8 dark:border-[rgb(72_72_72_/0.1)]">
+        <p className="font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-[0.18em] text-muted-foreground">
           Letora · UK property operations
         </p>
       </div>

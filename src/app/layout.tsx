@@ -26,11 +26,10 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      style={{ colorScheme: "dark" }}
       className={`${inter.variable} font-sans h-full subpixel-antialiased`}
     >
-      <body className={`${inter.className} min-h-full flex flex-col font-normal`} suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+      <body className={`${inter.className} min-h-full flex flex-col bg-background font-normal text-foreground`} suppressHydrationWarning>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} enableColorScheme>
           {children}
           <Toaster richColors />
         </ThemeProvider>
