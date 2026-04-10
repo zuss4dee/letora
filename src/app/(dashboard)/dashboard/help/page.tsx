@@ -5,21 +5,6 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const PLACEHOLDER_CONFIG: Array<{ label: string; detail: string }> = [
-  {
-    label: "Stripe live mode",
-    detail: "Confirm production Stripe keys and webhook endpoints before go-live.",
-  },
-  {
-    label: "Support email / contact form",
-    detail: "Wire the contact block below to your inbox or CRM (placeholder until configured).",
-  },
-  {
-    label: "Custom domain & DNS",
-    detail: "Replace default app URL when branding and mail-from domain are ready.",
-  },
-];
-
 export default async function DashboardHelpPage() {
   const supabase = await createClient();
   const {
@@ -68,28 +53,6 @@ export default async function DashboardHelpPage() {
               </p>
             </div>
           </div>
-        </section>
-
-        <section className="max-w-2xl space-y-4">
-          <h2 className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-            Configuration checklist
-          </h2>
-          <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
-            Track items to swap from placeholders before production. Remove or edit this list as you ship.
-          </p>
-          <ul className="space-y-3">
-            {PLACEHOLDER_CONFIG.map((item) => (
-              <li
-                key={item.label}
-                className="rounded-xl border border-border bg-muted/40 p-4 ring-1 ring-border/50 dark:bg-[#161616]/80"
-              >
-                <p className="font-[family-name:var(--font-inter)] text-sm font-medium text-foreground">{item.label}</p>
-                <p className="mt-1 font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">
-                  {item.detail}
-                </p>
-              </li>
-            ))}
-          </ul>
         </section>
 
         <ul className="max-w-xl space-y-6 font-[family-name:var(--font-inter)] text-sm leading-relaxed text-foreground">
