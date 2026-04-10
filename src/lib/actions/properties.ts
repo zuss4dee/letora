@@ -6,6 +6,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { getMaxPropertiesForUser } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/server";
 import { propertySchema } from "@/lib/validations/property";
+import { userFacingError } from "@/lib/user-facing-errors";
 
 export type PropertyRow = {
   id: string;
@@ -90,7 +91,7 @@ async function seedComplianceRecordsForProperty(
       expiry_date: row.expiry_date,
     });
     if (error) {
-      return { ok: false, error: error.message };
+      return { ok: false, error: userFacingError(error.message, "We couldn't set up compliance for this property.") };
     }
   }
   return { ok: true };
@@ -387,7 +388,10 @@ export async function addProperty(formData: unknown): Promise<AddPropertyResult>
   });
 
   if (error) {
-    return { ok: false as const, error: error.message };
+    return {
+      ok: false as const,
+      error: userFacingError(error.message, "We couldn't add that property. Please try again."),
+    };
   }
 
   const seeded = await seedComplianceRecordsForProperty(supabase, propertyId, {
@@ -441,7 +445,10 @@ export async function updateProperty(propertyId: string, formData: unknown) {
     .eq("user_id", user.id);
 
   if (error) {
-    return { ok: false as const, error: error.message };
+    return {
+      ok: false as const,
+      error: userFacingError(error.message, "We couldn't update that property. Please try again."),
+    };
   }
 
   revalidatePath("/dashboard/properties");

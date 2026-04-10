@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
+import { classifySignInError, signInErrorMessageForOther } from "@/lib/user-facing-errors";
 
 const loginSchema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -26,12 +27,56 @@ const loginSchema = z.object({
 
 type LoginValues = z.infer<typeof loginSchema>;
 
+function LoginAuthAlert({ error }: { error: { message: string; code?: string } }) {
+  const kind = classifySignInError(error);
+  const boxClass =
+    "rounded-md border border-[#BB5551]/35 bg-[#1a1210]/90 px-3 py-2.5 text-xs font-normal text-[#e8a8a4]";
+
+  if (kind === "invalid_credentials") {
+    return (
+      <div className={`${boxClass} space-y-2`} role="alert">
+        <p className="font-medium text-[#e8a8a4]">We couldn&apos;t sign you in with that email and password.</p>
+        <p className="leading-relaxed text-[#e8a8a4]/90">
+          There isn&apos;t an account with those details, or the password doesn&apos;t match. If you removed your Letora
+          account, you can{" "}
+          <Link href="/signup" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
+            create a new account
+          </Link>
+          . Otherwise double-check your password.
+        </p>
+      </div>
+    );
+  }
+
+  if (kind === "email_not_confirmed") {
+    return (
+      <p className={boxClass} role="alert">
+        Confirm your email using the link we sent you, then try signing in again.
+      </p>
+    );
+  }
+
+  if (kind === "rate_limit") {
+    return (
+      <p className={boxClass} role="alert">
+        Too many sign-in attempts. Wait a few minutes and try again.
+      </p>
+    );
+  }
+
+  return (
+    <p className={boxClass} role="alert">
+      {signInErrorMessageForOther(error.message)}
+    </p>
+  );
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = useMemo(() => searchParams.get("next") ?? "/dashboard", [searchParams]);
 
-  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<{ message: string; code?: string } | null>(null);
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -45,7 +90,7 @@ function LoginForm() {
   const isSubmitting = form.formState.isSubmitting;
 
   async function onSubmit(values: LoginValues) {
-    setSubmitError(null);
+    setAuthError(null);
     const supabase = createClient();
 
     const { error } = await supabase.auth.signInWithPassword({
@@ -54,7 +99,7 @@ function LoginForm() {
     });
 
     if (error) {
-      setSubmitError(error.message);
+      setAuthError({ message: error.message, code: error.code });
       return;
     }
 
@@ -112,14 +157,7 @@ function LoginForm() {
             ) : null}
           </div>
 
-          {submitError ? (
-            <p
-              className="rounded-md border border-[#BB5551]/35 bg-[#1a1210]/90 px-3 py-2.5 text-xs font-normal text-[#e8a8a4]"
-              role="alert"
-            >
-              {submitError}
-            </p>
-          ) : null}
+          {authError ? <LoginAuthAlert error={authError} /> : null}
 
           <Button type="submit" data-testid="login-submit" className={authPrimaryButtonClassName} disabled={isSubmitting}>
             {isSubmitting ? "Signing in…" : "Continue"}

@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
+import { signUpErrorForUser } from "@/lib/user-facing-errors";
 import { PLANS, type PlanKey } from "@/lib/stripe-plans";
 
 const signupSchema = z
@@ -75,7 +76,7 @@ function SignupForm() {
     });
 
     if (error) {
-      setSubmitError(error.message);
+      setSubmitError(signUpErrorForUser(error));
       return;
     }
 
@@ -83,7 +84,7 @@ function SignupForm() {
       const planKey = resolvePlanKeyFromSearch(searchParams.get("plan"));
       const priceId = PLANS[planKey].priceId?.trim();
       if (!priceId) {
-        setSubmitError("Billing is not configured. Add Stripe price IDs, then try again.");
+        setSubmitError("Checkout isn’t available right now. Please try again later or contact support.");
         return;
       }
       window.location.href = `/api/stripe/checkout?priceId=${encodeURIComponent(priceId)}&plan=${encodeURIComponent(planKey)}`;

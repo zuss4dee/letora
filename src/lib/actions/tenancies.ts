@@ -9,6 +9,7 @@ import {
   logPaymentSchema,
   updateTenancySchema,
 } from "@/lib/validations/tenancy";
+import { userFacingError } from "@/lib/user-facing-errors";
 
 export type TenancyRow = {
   id: string;
@@ -151,7 +152,10 @@ export async function updateTenancy(
     .eq("id", tenancyId);
 
   if (updateError) {
-    return { success: false, error: updateError.message };
+    return {
+      success: false,
+      error: userFacingError(updateError.message, "We couldn't update that payment. Please try again."),
+    };
   }
 
   revalidatePath("/dashboard/tenancies");
@@ -185,7 +189,11 @@ export async function addTenancy(formData: unknown) {
     status: "active",
   });
 
-  if (error) return { ok: false as const, error: error.message };
+  if (error)
+    return {
+      ok: false as const,
+      error: userFacingError(error.message, "We couldn't complete that action. Please try again."),
+    };
 
   revalidatePath("/dashboard/tenancies");
   revalidatePath("/dashboard/rent-tracker");
@@ -265,7 +273,11 @@ export async function autoGeneratePendingPayments(userId: string) {
       tenancies.map((t) => t.id),
     );
 
-  if (existingError) return { ok: false as const, error: existingError.message };
+  if (existingError)
+    return {
+      ok: false as const,
+      error: userFacingError(existingError.message, "We couldn't verify that tenancy. Please try again."),
+    };
 
   const existingSet = new Set((existingPayments ?? []).map((p) => p.tenancy_id));
 
@@ -289,7 +301,11 @@ export async function autoGeneratePendingPayments(userId: string) {
   if (toInsert.length === 0) return { ok: true as const };
 
   const { error } = await supabase.from("rent_payments").insert(toInsert);
-  if (error) return { ok: false as const, error: error.message };
+  if (error)
+    return {
+      ok: false as const,
+      error: userFacingError(error.message, "We couldn't complete that action. Please try again."),
+    };
 
   revalidatePath("/dashboard/tenancies");
   revalidatePath("/dashboard/rent-tracker");
@@ -321,7 +337,11 @@ export async function logPayment(formData: unknown) {
       })
       .eq("id", values.rentPaymentId);
 
-    if (error) return { ok: false as const, error: error.message };
+    if (error)
+      return {
+        ok: false as const,
+        error: userFacingError(error.message, "We couldn't complete that action. Please try again."),
+      };
   } else {
     const { error } = await supabase.from("rent_payments").insert({
       id: crypto.randomUUID(),
@@ -335,7 +355,11 @@ export async function logPayment(formData: unknown) {
       notes: values.notes ?? null,
     });
 
-    if (error) return { ok: false as const, error: error.message };
+    if (error)
+      return {
+        ok: false as const,
+        error: userFacingError(error.message, "We couldn't complete that action. Please try again."),
+      };
   }
 
   revalidatePath("/dashboard/tenancies");

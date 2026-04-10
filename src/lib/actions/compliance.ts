@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { ComplianceType } from "@/lib/compliance/types";
 import { COMPLIANCE_VAULT_BUCKET, storagePathForCompliance } from "@/lib/compliance/vault";
 import { getProperties } from "@/lib/actions/properties";
+import { userFacingError } from "@/lib/user-facing-errors";
 
 export type ComplianceRecordRow = {
   id: string;
@@ -130,7 +131,7 @@ export async function uploadComplianceDocument(
     });
 
   if (uploadErr) {
-    return { ok: false, error: uploadErr.message };
+      return { ok: false, error: userFacingError(uploadErr.message, "We couldn't upload that file. Please try again.") };
   }
 
   const { data: existing, error: findErr } = await supabase
@@ -141,7 +142,7 @@ export async function uploadComplianceDocument(
     .maybeSingle();
 
   if (findErr) {
-    return { ok: false, error: findErr.message };
+    return { ok: false, error: userFacingError(findErr.message, "We couldn't load that certificate. Please try again.") };
   }
 
   const now = new Date().toISOString();
@@ -155,7 +156,7 @@ export async function uploadComplianceDocument(
       .maybeSingle();
 
     if (upErr) {
-      return { ok: false, error: upErr.message };
+      return { ok: false, error: userFacingError(upErr.message, "We couldn't upload that file. Please try again.") };
     }
     const saved = String((updated as { document_url?: string } | null)?.document_url ?? "").trim();
     if (!saved || saved !== path) {
@@ -174,7 +175,7 @@ export async function uploadComplianceDocument(
       .maybeSingle();
 
     if (insErr) {
-      return { ok: false, error: insErr.message };
+      return { ok: false, error: userFacingError(insErr.message, "We couldn't save that change. Please try again.") };
     }
     const saved = String((inserted as { document_url?: string } | null)?.document_url ?? "").trim();
     if (!saved || saved !== path) {
@@ -255,7 +256,7 @@ export async function getComplianceDocumentSignedUrl(
     .maybeSingle();
 
   if (rowErr) {
-    return { ok: false, error: rowErr.message };
+    return { ok: false, error: userFacingError(rowErr.message, "We couldn't update that record. Please try again.") };
   }
 
   const docPath = (row as { document_url?: string | null } | null)?.document_url?.trim();
@@ -268,7 +269,10 @@ export async function getComplianceDocumentSignedUrl(
     .createSignedUrl(docPath, 3600);
 
   if (signErr || !signed?.signedUrl) {
-    return { ok: false, error: signErr?.message ?? "Could not create link." };
+    return {
+      ok: false,
+      error: userFacingError(signErr?.message, "We couldn't create a download link. Please try again."),
+    };
   }
 
   return { ok: true, url: signed.signedUrl };
@@ -317,7 +321,7 @@ export async function upsertComplianceRecord(
     .maybeSingle();
 
   if (findErr) {
-    return { ok: false, error: findErr.message };
+    return { ok: false, error: userFacingError(findErr.message, "We couldn't load that certificate. Please try again.") };
   }
 
   if (existing?.id) {
@@ -327,7 +331,7 @@ export async function upsertComplianceRecord(
       .eq("id", existing.id as string);
 
     if (upErr) {
-      return { ok: false, error: upErr.message };
+      return { ok: false, error: userFacingError(upErr.message, "We couldn't upload that file. Please try again.") };
     }
   } else {
     const { error: insErr } = await supabase.from("compliance_records").insert({
@@ -337,7 +341,7 @@ export async function upsertComplianceRecord(
     });
 
     if (insErr) {
-      return { ok: false, error: insErr.message };
+      return { ok: false, error: userFacingError(insErr.message, "We couldn't save that change. Please try again.") };
     }
   }
 

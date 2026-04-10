@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/server";
 import { sendEmailTool } from "@/lib/tools/send-email";
+import { userFacingError } from "@/lib/user-facing-errors";
 
 export type ReferencingEventRow = {
   id: string;
@@ -111,7 +112,7 @@ export async function runReferencingHandoffForUser(
       .from("tenancies")
       .update({ referencing_token: token })
       .eq("id", tenancyId);
-    if (upTok) return { ok: false, error: upTok.message };
+    if (upTok) return { ok: false, error: userFacingError(upTok.message, "We couldn't send that email. Please try again.") };
   }
 
   const agencyName =
@@ -229,7 +230,8 @@ export async function updateReferencingAgencyOverride(tenancyId: string, email: 
     .update({ referencing_agency_email_override: trimmed.length > 0 ? trimmed : null })
     .eq("id", tenancyId);
 
-  if (upErr) return { ok: false as const, error: upErr.message };
+  if (upErr)
+    return { ok: false as const, error: userFacingError(upErr.message, "We couldn't update that record. Please try again.") };
 
   revalidatePath(`/dashboard/tenancies/${tenancyId}`);
   return { ok: true as const };
@@ -260,7 +262,8 @@ export async function markReferencingCompleteManual(tenancyId: string) {
     })
     .eq("id", tenancyId);
 
-  if (upErr) return { ok: false as const, error: upErr.message };
+  if (upErr)
+    return { ok: false as const, error: userFacingError(upErr.message, "We couldn't update that record. Please try again.") };
 
   await supabase.from("referencing_events").insert({
     user_id: user.id,

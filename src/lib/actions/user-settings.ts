@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { type OnboardingStatus, parseOnboardingStatus } from "@/lib/onboarding/status";
 import { type UserSettingsInput, userSettingsSchema } from "@/lib/validations/user-settings";
+import { userFacingError } from "@/lib/user-facing-errors";
 
 /**
  * Minimal read for dashboard/onboarding routing. Use this for gates instead of full
@@ -109,7 +110,8 @@ export async function markProductTourComplete(): Promise<{ ok: true } | { ok: fa
     .eq("user_id", user.id)
     .select("id");
 
-  if (error) return { ok: false, error: error.message };
+  if (error)
+    return { ok: false, error: userFacingError(error.message, "We couldn't update that setting. Please try again.") };
   if (updated && updated.length > 0) {
     revalidatePath("/dashboard");
     return { ok: true };
@@ -121,7 +123,8 @@ export async function markProductTourComplete(): Promise<{ ok: true } | { ok: fa
     updated_at: new Date().toISOString(),
   });
 
-  if (insertError) return { ok: false, error: insertError.message };
+  if (insertError)
+    return { ok: false, error: userFacingError(insertError.message, "We couldn't save that setting. Please try again.") };
   revalidatePath("/dashboard");
   return { ok: true };
 }
@@ -179,7 +182,11 @@ export async function saveSettings(formData: unknown) {
     { onConflict: "user_id" },
   );
 
-  if (error) return { ok: false as const, error: error.message };
+  if (error)
+    return {
+      ok: false as const,
+      error: userFacingError(error.message, "We couldn't save your settings. Please try again."),
+    };
 
   revalidatePath("/dashboard/settings");
   revalidatePath("/dashboard/billing");

@@ -25,20 +25,24 @@ export async function deleteAccount(confirmation: string): Promise<{ ok: boolean
   try {
     admin = createServiceRoleClient();
   } catch {
+    console.error("[deleteAccount] service role client unavailable");
     return {
       ok: false,
-      error:
-        "Account deletion is not available: server is missing SUPABASE_SERVICE_ROLE_KEY. Add it in production and run the latest database migrations.",
+      error: "We couldn't complete account deletion right now. Please try again later or contact support.",
     };
   }
 
   const { error } = await admin.auth.admin.deleteUser(user.id);
   if (error) {
+    console.error("[deleteAccount] admin.deleteUser failed", {
+      userId: user.id,
+      message: error.message,
+      code: "code" in error ? (error as { code?: string }).code : undefined,
+    });
     return {
       ok: false,
       error:
-        error.message +
-        " If this persists, run `supabase db push` (including `20260428120000_tenants_user_id_delete_cascade.sql` if you use the `tenants` table). Or contact support with the Postgres error from Supabase logs.",
+        "We couldn't remove your account right now. Please try again in a few minutes, or contact support and we'll help you finish this.",
     };
   }
 

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-errors";
 
 export type ContractTemplateRow = {
   id: string;
@@ -38,7 +39,11 @@ export async function uploadContractTemplate(formData: FormData, userId: string)
     contentType: file.type || undefined,
   });
 
-  if (uploadError) return { ok: false as const, error: uploadError.message };
+  if (uploadError)
+    return {
+      ok: false as const,
+      error: userFacingError(uploadError.message, "We couldn't upload that template. Please try again."),
+    };
 
   const { error: insertError } = await supabase.from("contract_templates").insert({
     user_id: userId,
@@ -49,7 +54,10 @@ export async function uploadContractTemplate(formData: FormData, userId: string)
 
   if (insertError) {
     await supabase.storage.from(BUCKET).remove([storagePath]);
-    return { ok: false as const, error: insertError.message };
+    return {
+      ok: false as const,
+      error: userFacingError(insertError.message, "We couldn't save that template. Please try again."),
+    };
   }
 
   revalidatePath("/dashboard/settings");
@@ -92,7 +100,11 @@ export async function deleteContractTemplate(templateId: string) {
   if (fetchError || !template) return { ok: false as const, error: "Template not found" };
 
   const { error: storageError } = await supabase.storage.from(BUCKET).remove([template.storage_path]);
-  if (storageError) return { ok: false as const, error: storageError.message };
+  if (storageError)
+    return {
+      ok: false as const,
+      error: userFacingError(storageError.message, "We couldn't read that file. Please try again."),
+    };
 
   const { error: deleteError } = await supabase
     .from("contract_templates")
@@ -100,7 +112,11 @@ export async function deleteContractTemplate(templateId: string) {
     .eq("id", templateId)
     .eq("user_id", user.id);
 
-  if (deleteError) return { ok: false as const, error: deleteError.message };
+  if (deleteError)
+    return {
+      ok: false as const,
+      error: userFacingError(deleteError.message, "We couldn't remove that template. Please try again."),
+    };
 
   revalidatePath("/dashboard/settings");
   return { ok: true as const };
@@ -113,14 +129,22 @@ export async function setDefaultTemplate(templateId: string, userId: string) {
     .from("contract_templates")
     .update({ is_default: false })
     .eq("user_id", userId);
-  if (clearError) return { ok: false as const, error: clearError.message };
+  if (clearError)
+    return {
+      ok: false as const,
+      error: userFacingError(clearError.message, "We couldn't update defaults. Please try again."),
+    };
 
   const { error: setError } = await supabase
     .from("contract_templates")
     .update({ is_default: true })
     .eq("id", templateId)
     .eq("user_id", userId);
-  if (setError) return { ok: false as const, error: setError.message };
+  if (setError)
+    return {
+      ok: false as const,
+      error: userFacingError(setError.message, "We couldn't set the default template. Please try again."),
+    };
 
   revalidatePath("/dashboard/settings");
   return { ok: true as const };

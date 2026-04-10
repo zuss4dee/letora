@@ -7,6 +7,7 @@ import { addProperty } from "@/lib/actions/properties";
 import { mockResolveUkAddress } from "@/lib/onboarding/mock-address";
 import type { OnboardingStatus } from "@/lib/onboarding/status";
 import { createClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-errors";
 
 /** UI values → stored onboarding_primary_goal slugs (existing column). */
 const focusSchema = z.enum(["automate_rent", "legal_compliance", "lead_management"]);
@@ -30,7 +31,12 @@ async function setUserOnboardingStatus(userId: string, status: OnboardingStatus)
     { onConflict: "user_id" },
   );
 
-  return error ? { ok: false as const, error: error.message } : { ok: true as const };
+  return error
+    ? {
+        ok: false as const,
+        error: userFacingError(error.message, "We couldn't save your progress. Please try again."),
+      }
+    : { ok: true as const };
 }
 
 /** Step 1 — company / portfolio label only. */
@@ -58,7 +64,8 @@ export async function saveOnboardingIdentity(input: {
     { onConflict: "user_id" },
   );
 
-  if (error) return { ok: false, error: error.message };
+  if (error)
+    return { ok: false, error: userFacingError(error.message, "We couldn't save your details. Please try again.") };
 
   revalidatePath("/onboarding");
   return { ok: true };
@@ -95,7 +102,8 @@ export async function saveOnboardingFocus(input: {
     })
     .eq("user_id", user.id);
 
-  if (error) return { ok: false, error: error.message };
+  if (error)
+    return { ok: false, error: userFacingError(error.message, "We couldn't save your details. Please try again.") };
 
   revalidatePath("/onboarding");
   return { ok: true };

@@ -6,6 +6,7 @@ import type { EmailDispatchRow } from "@/lib/email-dispatch";
 import { buildResendFromHeader } from "@/lib/tools/send-email";
 import { createClient } from "@/lib/supabase/server";
 import { Resend } from "resend";
+import { userFacingError } from "@/lib/user-facing-errors";
 
 export type { EmailDispatchRow } from "@/lib/email-dispatch";
 
@@ -262,7 +263,10 @@ export async function sendEmailLogNow(logId: string) {
       .eq("id", logId)
       .eq("user_id", user.id);
 
-    return { ok: false as const, error: sendError.message };
+    return {
+      ok: false as const,
+      error: userFacingError(sendError.message, "We couldn't send that email. Please try again."),
+    };
   }
 
   await supabase

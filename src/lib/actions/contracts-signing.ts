@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-errors";
 
 export async function confirmMoveIn(
   contractId: string,
@@ -36,7 +37,7 @@ export async function confirmMoveIn(
     .eq("user_id", user.id);
 
   if (contractErr) {
-    return { ok: false, error: contractErr.message };
+    return { ok: false, error: userFacingError(contractErr.message, "We couldn't update that contract. Please try again.") };
   }
 
   const tenancyId = contract.tenancy_id as string | null;
@@ -95,7 +96,7 @@ export async function signContractAsLandlord(
     .eq("user_id", user.id);
 
   if (updateErr) {
-    return { ok: false, error: updateErr.message };
+    return { ok: false, error: userFacingError(updateErr.message, "We couldn't save that signature. Please try again.") };
   }
 
   const tenancyId = contract.tenancy_id as string | null;

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 import { tenantSchema, tenantUpdateSchema } from "@/lib/validations/tenant";
+import { userFacingError } from "@/lib/user-facing-errors";
 
 export type TenantRentStatus = "paid" | "overdue" | "pending";
 
@@ -310,7 +311,11 @@ export async function addTenant(formData: unknown) {
     right_to_rent_status: values.rightToRentStatus,
   });
 
-  if (error) return { ok: false as const, error: error.message };
+  if (error)
+    return {
+      ok: false as const,
+      error: userFacingError(error.message, "We couldn't save that tenant. Please try again."),
+    };
 
   revalidatePath("/dashboard/tenants");
   return { ok: true as const };
@@ -343,7 +348,11 @@ export async function updateTenant(tenantId: string, formData: unknown) {
     .eq("id", tenantId)
     .eq("user_id", user.id);
 
-  if (error) return { ok: false as const, error: error.message };
+  if (error)
+    return {
+      ok: false as const,
+      error: userFacingError(error.message, "We couldn't save that tenant. Please try again."),
+    };
 
   revalidatePath("/dashboard/tenants");
   revalidatePath(`/dashboard/tenants/${tenantId}`);

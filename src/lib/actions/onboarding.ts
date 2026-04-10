@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
+import { userFacingError } from "@/lib/user-facing-errors";
 
 export type OnboardingTaskRow = {
   id: string;
@@ -153,7 +154,11 @@ export async function completeManualOnboardingTask(taskId: string) {
     .eq("id", taskId)
     .eq("user_id", user.id);
 
-  if (updateError) return { ok: false as const, error: updateError.message };
+  if (updateError)
+    return {
+      ok: false as const,
+      error: userFacingError(updateError.message, "We couldn't update onboarding. Please try again."),
+    };
 
   revalidatePath(`/dashboard/tenancies/${task.tenancy_id}`);
   revalidatePath("/dashboard/tenancies");
@@ -189,7 +194,11 @@ export async function revertOnboardingTaskToPending(taskId: string) {
     .eq("id", taskId)
     .eq("user_id", user.id);
 
-  if (updateError) return { ok: false as const, error: updateError.message };
+  if (updateError)
+    return {
+      ok: false as const,
+      error: userFacingError(updateError.message, "We couldn't update onboarding. Please try again."),
+    };
 
   revalidatePath(`/dashboard/tenancies/${task.tenancy_id}`);
   revalidatePath("/dashboard/tenancies");
