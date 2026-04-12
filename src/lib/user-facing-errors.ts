@@ -77,3 +77,17 @@ export function signUpErrorForUser(error: { message?: string; code?: string }): 
   }
   return raw.trim() || "Something went wrong while creating your account. Please try again.";
 }
+
+/** Errors from `auth.resend` (signup confirmation, etc.) — keep copy friendly. */
+export function resendAuthEmailErrorForUser(error: { message?: string; code?: string }): string {
+  const raw = error.message ?? "";
+  const code = (error.code ?? "").toLowerCase();
+  const msg = raw.toLowerCase();
+  if (code === "too_many_requests" || msg.includes("rate limit") || msg.includes("too many requests")) {
+    return "Too many emails were sent. Wait a few minutes, then try again.";
+  }
+  if (isLikelyTechnicalErrorMessage(raw)) {
+    return "We couldn’t resend that email. Try again in a moment.";
+  }
+  return raw.trim() || "We couldn’t resend that email. Try again in a moment.";
+}

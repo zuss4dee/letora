@@ -19,7 +19,8 @@ interface BaseEmailTemplateProps {
 }
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://letora.co";
-const logoUrl = `${baseUrl}/logo.png`;
+/** Dark wordmark + gold mark for email header strip */
+const logoUrl = `${baseUrl}/letora-logo-dark.svg`;
 
 export function BaseEmailTemplate({
   previewText = "Letora notification",

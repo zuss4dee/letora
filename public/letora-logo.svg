@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 44" role="img" aria-labelledby="title">
+  <title id="title">Letora</title>
+  <defs>
+    <linearGradient id="letoraGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d4b06a"/>
+      <stop offset="50%" stop-color="#BD9952"/>
+      <stop offset="100%" stop-color="#a67c2c"/>
+    </linearGradient>
+  </defs>
+  <!-- Icon -->
+  <rect x="2" y="4" width="36" height="36" rx="9" fill="none" stroke="url(#letoraGold)" stroke-width="1.25" opacity="0.9"/>
+  <path d="M12 30V14h4v12h10v4H12z" fill="url(#letoraGold)"/>
+  <path d="M24 26V16h4v10h-4z" fill="#c9a660" opacity="0.9"/>
+  <!-- Wordmark: neutral for light UI; auth overlays use CSS filter in dark mode if needed -->
+  <text
+    x="48"
+    y="30"
+    font-family="ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif"
+    font-size="22"
+    font-weight="300"
+    letter-spacing="-0.06em"
+    fill="#171717"
+  >Letora</text>
+</svg>

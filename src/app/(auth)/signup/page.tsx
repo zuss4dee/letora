@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useState } from "react";
+import { Mail } from "lucide-react";
+import { Suspense, useEffect, useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -19,7 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
-import { signUpErrorForUser } from "@/lib/user-facing-errors";
+import { resendAuthEmailErrorForUser, signUpErrorForUser } from "@/lib/user-facing-errors";
 import { PLANS, type PlanKey } from "@/lib/stripe-plans";
 
 const signupSchema = z
@@ -36,6 +37,114 @@ const signupSchema = z
 
 type SignupValues = z.infer<typeof signupSchema>;
 
+function authCallbackUrl(): string {
+  if (typeof window === "undefined") return "";
+  return `${window.location.origin}/auth/callback`;
+}
+
+function SignupEmailConfirmation({
+  email,
+  onUseDifferentEmail,
+}: {
+  email: string;
+  onUseDifferentEmail: () => void;
+}) {
+  const [resendError, setResendError] = useState<string | null>(null);
+  const [resendSentHint, setResendSentHint] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = window.setTimeout(() => setCooldown((c) => Math.max(0, c - 1)), 1000);
+    return () => clearTimeout(id);
+  }, [cooldown]);
+
+  async function handleResend() {
+    if (cooldown > 0 || isResending) return;
+    setResendError(null);
+    setResendSentHint(false);
+    setIsResending(true);
+    const supabase = createClient();
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email,
+      options: { emailRedirectTo: authCallbackUrl() },
+    });
+    setIsResending(false);
+    if (error) {
+      setResendError(resendAuthEmailErrorForUser(error));
+      return;
+    }
+    setResendSentHint(true);
+    setCooldown(60);
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col items-center space-y-3 text-center">
+        <div
+          className="flex h-12 w-12 items-center justify-center rounded-full bg-muted/70 dark:bg-muted/25"
+          aria-hidden
+        >
+          <Mail className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="font-headline text-xl font-light tracking-tight text-foreground">Check your inbox</h2>
+          <p className="mx-auto max-w-[300px] font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
+            Open the link we sent to confirm your address.
+          </p>
+        </div>
+        <p className="break-all font-[family-name:var(--font-inter)] text-sm font-medium text-foreground">{email}</p>
+      </div>
+
+      <p className="text-center font-[family-name:var(--font-inter)] text-xs leading-relaxed text-muted-foreground">
+        Nothing after a couple of minutes? Check spam or promotions. You can resend below or fix a typo in your email.
+      </p>
+
+      {resendError ? (
+        <p className="text-center text-sm text-destructive dark:text-[#e8a8a4]" role="alert">
+          {resendError}
+        </p>
+      ) : null}
+      {resendSentHint ? (
+        <p className="text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
+          If an account is waiting on this address, we sent another message.
+        </p>
+      ) : null}
+
+      <div className="space-y-3">
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full rounded-md font-[family-name:var(--font-inter)] text-[13px]"
+          onClick={handleResend}
+          disabled={isResending || cooldown > 0}
+        >
+          {isResending ? "Sending…" : cooldown > 0 ? `Resend email (${cooldown}s)` : "Resend confirmation email"}
+        </Button>
+        <button
+          type="button"
+          className="w-full font-[family-name:var(--font-inter)] text-sm text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          onClick={onUseDifferentEmail}
+        >
+          Wrong email? Go back and change it
+        </button>
+      </div>
+
+      <p className="text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
+        Already confirmed?{" "}
+        <Link
+          href="/login"
+          className="font-medium text-foreground underline-offset-4 transition-colors hover:text-[#a67c2c] hover:underline dark:hover:text-[#BD9952]"
+        >
+          Sign in
+        </Link>
+      </p>
+    </div>
+  );
+}
+
 function resolvePlanKeyFromSearch(planParam: string | null): PlanKey {
   if (planParam === "starter" || planParam === "pro" || planParam === "landlord_pro") {
     return planParam;
@@ -47,6 +156,7 @@ function SignupForm() {
   const searchParams = useSearchParams();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
+  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   const form = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
@@ -69,6 +179,7 @@ function SignupForm() {
       email: values.email,
       password: values.password,
       options: {
+        emailRedirectTo: authCallbackUrl(),
         data: {
           full_name: values.fullName,
         },
@@ -91,37 +202,34 @@ function SignupForm() {
       return;
     }
 
+    setPendingEmail(values.email);
     setEmailConfirmationSent(true);
+  }
+
+  function handleUseDifferentEmail() {
+    setEmailConfirmationSent(false);
+    setPendingEmail(null);
   }
 
   return (
     <>
-      <div className="space-y-1 text-center">
-        <h2 className="font-headline text-lg font-light tracking-tight text-foreground">Create your account</h2>
-        <p className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
-          Set up your workspace and start managing your portfolio.
-        </p>
-      </div>
-
-      <Suspense fallback={null}>
-        <SignupPlanHint />
-      </Suspense>
-
-      {emailConfirmationSent ? (
-        <div className="space-y-4 rounded-xl border border-border bg-card/80 px-5 py-6 text-left shadow-sm backdrop-blur-sm dark:border-[rgb(72_72_72_/0.18)] dark:bg-[#0e0e0e]/60 dark:shadow-none">
-          <p className="font-headline text-base font-light text-foreground">Check your email</p>
-          <p className="font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground">
-            We sent you a confirmation link. Once confirmed, you can{" "}
-            <Link
-              href="/login"
-              className="font-medium text-[#a67c2c] underline-offset-4 hover:underline dark:text-[#BD9952]"
-            >
-              sign in
-            </Link>{" "}
-            — then start your free trial from <Link href="/pricing">Pricing</Link> or{" "}
-            <Link href="/dashboard/billing">Billing</Link>.
+      {emailConfirmationSent && pendingEmail ? null : (
+        <div className="space-y-1 text-center">
+          <h2 className="font-headline text-lg font-light tracking-tight text-foreground">Create your account</h2>
+          <p className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
+            Set up your workspace and start managing your portfolio.
           </p>
         </div>
+      )}
+
+      {emailConfirmationSent ? null : (
+        <Suspense fallback={null}>
+          <SignupPlanHint />
+        </Suspense>
+      )}
+
+      {emailConfirmationSent && pendingEmail ? (
+        <SignupEmailConfirmation email={pendingEmail} onUseDifferentEmail={handleUseDifferentEmail} />
       ) : (
         <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
           <div className="space-y-2">
@@ -210,12 +318,14 @@ function SignupForm() {
         </form>
       )}
 
-      <p className="text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
-        Already have an account?{" "}
-        <Link href="/login" className="font-medium text-foreground underline-offset-4 transition-colors hover:text-[#BD9952] hover:underline">
-          Sign in
-        </Link>
-      </p>
+      {emailConfirmationSent ? null : (
+        <p className="text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link href="/login" className="font-medium text-foreground underline-offset-4 transition-colors hover:text-[#BD9952] hover:underline">
+            Sign in
+          </Link>
+        </p>
+      )}
     </>
   );
 }

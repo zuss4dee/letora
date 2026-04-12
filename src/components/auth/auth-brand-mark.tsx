@@ -1,13 +1,31 @@
+import Image from "next/image";
+
 export function AuthBrandMark() {
   return (
-    <header className="space-y-2 text-center">
-      <div className="mx-auto h-px w-12 bg-gradient-to-r from-transparent via-[#BD9952]/80 to-transparent" />
-      <div className="space-y-1">
-        <h1 className="font-headline text-2xl font-light tracking-[-0.04em] text-foreground">Letora</h1>
-        <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-          Property Operating System
-        </p>
+    <header className="space-y-3 text-center">
+      <div className="flex justify-center">
+        <Image
+          src="/letora-logo.svg"
+          alt="Letora"
+          width={176}
+          height={40}
+          className="h-9 w-auto dark:hidden"
+          priority
+          unoptimized
+        />
+        <Image
+          src="/letora-logo-dark.svg"
+          alt="Letora"
+          width={176}
+          height={40}
+          className="hidden h-9 w-auto dark:block"
+          priority
+          unoptimized
+        />
       </div>
+      <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+        Property Operating System
+      </p>
     </header>
   );
 }

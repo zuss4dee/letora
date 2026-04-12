@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 
 import { NavMain } from "@/components/nav-main"
@@ -17,7 +18,6 @@ import {
   Bot,
   Building2,
   CircleDollarSign,
-  CommandIcon,
   Key,
   FileText,
   LayoutDashboard,
@@ -110,7 +110,14 @@ export function AppSidebar({
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <a href="/dashboard">
-                <CommandIcon className="size-5!" />
+                <Image
+                  src="/letora-mark.svg"
+                  alt=""
+                  width={20}
+                  height={20}
+                  className="size-5!"
+                  unoptimized
+                />
                 <span className="text-base font-semibold">Letora</span>
               </a>
             </SidebarMenuButton>

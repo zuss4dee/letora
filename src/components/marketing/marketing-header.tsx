@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
@@ -61,12 +62,22 @@ export function MarketingHeader() {
         className="mx-auto flex h-[3.75rem] max-w-[100vw] items-center justify-between gap-2 px-4 sm:h-16 sm:gap-3 sm:px-6 md:px-8 lg:px-16 xl:px-24"
         aria-label="Primary"
       >
-        <Link href="/" className="group flex min-w-0 shrink-0 flex-col leading-none">
-          <span className="font-headline text-[1.125rem] font-semibold tracking-[-0.04em] text-foreground transition-colors group-hover:text-white sm:text-xl">
-            Letora
-          </span>
-          <span className="mt-0.5 hidden font-[family-name:var(--font-inter)] text-[0.55rem] font-medium uppercase tracking-[0.28em] text-muted-foreground sm:block">
-            Property OS
+        <Link href="/" className="group flex min-w-0 shrink-0 items-center gap-2.5 leading-none sm:gap-3">
+          <Image
+            src="/letora-mark.svg"
+            alt=""
+            width={36}
+            height={36}
+            className="size-8 shrink-0 sm:size-9"
+            unoptimized
+          />
+          <span className="flex min-w-0 flex-col text-left">
+            <span className="font-headline text-[1.125rem] font-semibold tracking-[-0.04em] text-foreground transition-colors group-hover:text-white sm:text-xl">
+              Letora
+            </span>
+            <span className="mt-0.5 hidden font-[family-name:var(--font-inter)] text-[0.55rem] font-medium uppercase tracking-[0.28em] text-muted-foreground sm:block">
+              Property OS
+            </span>
           </span>
         </Link>
 
