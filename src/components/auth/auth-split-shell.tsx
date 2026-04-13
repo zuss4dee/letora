@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 /** Shared input chrome for auth flows: theme-aware surface, gold focus ring. */
 export const authInputClassName =
-  "h-11 rounded-md border border-border bg-background px-4 text-foreground shadow-none placeholder:text-muted-foreground transition-colors focus-visible:border-[#BD9952]/55 focus-visible:ring-1 focus-visible:ring-[#BD9952]/25 dark:border-[rgb(72_72_72_/0.28)] dark:bg-[#0e0e0e]/85 dark:placeholder:text-[#94a3b8]";
+  "h-11 rounded-md border border-border bg-background px-4 text-foreground shadow-none placeholder:text-muted-foreground/35 transition-colors focus-visible:border-[#BD9952]/55 focus-visible:ring-1 focus-visible:ring-[#BD9952]/25 dark:border-[rgb(72_72_72_/0.28)] dark:bg-[#0e0e0e]/85 dark:placeholder:text-zinc-500/45";
 
 export const authPrimaryButtonClassName =
   "h-11 w-full rounded-md bg-[#BD9952] text-[13px] font-medium text-[#2c1e00] shadow-none transition-colors hover:bg-[#c9a660]";

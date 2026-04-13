@@ -240,7 +240,6 @@ function SignupForm() {
               id="fullName"
               data-testid="signup-fullname"
               autoComplete="name"
-              placeholder="Jane Landlord"
               className={authInputClassName}
               {...form.register("fullName")}
             />
@@ -258,7 +257,6 @@ function SignupForm() {
               data-testid="signup-email"
               type="email"
               autoComplete="email"
-              placeholder="you@company.com"
               className={authInputClassName}
               {...form.register("email")}
             />
@@ -268,16 +266,21 @@ function SignupForm() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="password" className="font-[family-name:var(--font-inter)] text-xs font-medium text-muted-foreground">
-              Password
-            </Label>
+            <div className="space-y-1">
+              <Label htmlFor="password" className="font-[family-name:var(--font-inter)] text-xs font-medium text-muted-foreground">
+                Password
+              </Label>
+              <p id="signup-password-hint" className="font-[family-name:var(--font-inter)] text-[11px] leading-snug text-muted-foreground/80">
+                At least 8 characters.
+              </p>
+            </div>
             <Input
               id="password"
               data-testid="signup-password"
               type="password"
               autoComplete="new-password"
-              placeholder="••••••••"
               className={authInputClassName}
+              aria-describedby="signup-password-hint"
               {...form.register("password")}
             />
             {form.formState.errors.password ? (
@@ -294,7 +297,6 @@ function SignupForm() {
               data-testid="signup-confirm-password"
               type="password"
               autoComplete="new-password"
-              placeholder="••••••••"
               className={authInputClassName}
               {...form.register("confirmPassword")}
             />

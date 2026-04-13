@@ -128,7 +128,6 @@ function LoginForm() {
               data-testid="login-email"
               type="email"
               autoComplete="email"
-              placeholder="hello@letora.ai"
               className={authInputClassName}
               {...form.register("email")}
             />
@@ -154,7 +153,6 @@ function LoginForm() {
               data-testid="login-password"
               type="password"
               autoComplete="current-password"
-              placeholder="••••••••"
               className={authInputClassName}
               {...form.register("password")}
             />
