@@ -5,6 +5,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/server";
 import { sendEmailTool } from "@/lib/tools/send-email";
+import { EMAIL_INVALID_MESSAGE, optionalEmailSchema } from "@/lib/validations/email";
 import { userFacingError } from "@/lib/user-facing-errors";
 
 export type ReferencingEventRow = {
@@ -224,7 +225,12 @@ export async function updateReferencingAgencyOverride(tenancyId: string, email: 
   const p = tenancy.properties as unknown as { user_id: string };
   if (p.user_id !== user.id) return { ok: false as const, error: "Not found" };
 
-  const trimmed = email.trim();
+  const parsed = optionalEmailSchema.safeParse(email);
+  if (!parsed.success) {
+    const msg = parsed.error.issues[0]?.message ?? EMAIL_INVALID_MESSAGE;
+    return { ok: false as const, error: msg };
+  }
+  const trimmed = parsed.data;
   const { error: upErr } = await supabase
     .from("tenancies")
     .update({ referencing_agency_email_override: trimmed.length > 0 ? trimmed : null })

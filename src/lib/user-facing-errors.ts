@@ -69,8 +69,17 @@ export function signUpErrorForUser(error: { message?: string; code?: string }): 
   const raw = error.message ?? "";
   const code = (error.code ?? "").toLowerCase();
   const msg = raw.toLowerCase();
-  if (code === "user_already_registered" || msg.includes("already registered") || msg.includes("user already exists")) {
-    return "An account with this email already exists. Try signing in instead.";
+  if (
+    code === "user_already_registered" ||
+    msg.includes("already registered") ||
+    msg.includes("user already exists") ||
+    msg.includes("email address is already") ||
+    msg.includes("already been registered") ||
+    msg.includes("duplicate key") ||
+    msg.includes("unique constraint") ||
+    (msg.includes("sign in") && msg.includes("already"))
+  ) {
+    return "An account with this email already exists. Please sign in instead.";
   }
   if (isLikelyTechnicalErrorMessage(raw)) {
     return "Something went wrong while creating your account. Please try again.";
@@ -85,6 +94,15 @@ export function resendAuthEmailErrorForUser(error: { message?: string; code?: st
   const msg = raw.toLowerCase();
   if (code === "too_many_requests" || msg.includes("rate limit") || msg.includes("too many requests")) {
     return "Too many emails were sent. Wait a few minutes, then try again.";
+  }
+  if (
+    msg.includes("signup") &&
+    (msg.includes("disabled") || msg.includes("not enabled") || msg.includes("confirm email"))
+  ) {
+    return "Email confirmations may be turned off in the project settings, or this address can’t receive another signup email right now. Try signing in, or contact support.";
+  }
+  if (msg.includes("redirect") && (msg.includes("not allowed") || msg.includes("invalid"))) {
+    return "The confirmation link URL isn’t allowed for this app. An administrator needs to add your site URL + /auth/callback under Supabase Authentication → URL Configuration → Redirect URLs.";
   }
   if (isLikelyTechnicalErrorMessage(raw)) {
     return "We couldn’t resend that email. Try again in a moment.";

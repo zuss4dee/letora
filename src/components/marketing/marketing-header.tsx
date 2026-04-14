@@ -23,11 +23,13 @@ const NAV_ITEMS: { label: string; hash: string }[] = [
   { label: "Rent", hash: "rent-chasing" },
   { label: "Workspace", hash: "ai-operations" },
   { label: "Features", hash: "features" },
-  { label: "Pricing", hash: "pricing" },
+  { label: "Pricing", hash: "pricing-plans" },
 ];
 
-function navHref(hash: string) {
-  return hash ? `/#${hash}` : "/";
+function navHref(hash: string, pathname: string) {
+  if (!hash) return "/";
+  if (pathname === "/pricing") return `#${hash}`;
+  return `/#${hash}`;
 }
 
 function JewelryButtonLink({
@@ -87,7 +89,7 @@ export function MarketingHeader() {
             return (
               <a
                 key={item.label + item.hash}
-                href={navHref(item.hash)}
+                href={navHref(item.hash, pathname)}
                 className={cn(
                   "font-[family-name:var(--font-inter)] text-xs font-semibold tracking-tight transition-opacity md:text-[0.8125rem] xl:text-sm",
                   active ? "text-[#FFEABB] opacity-100" : "text-muted-foreground hover:text-foreground",
@@ -148,7 +150,7 @@ export function MarketingHeader() {
                   {NAV_ITEMS.map((item) => (
                     <SheetClose asChild key={item.label + item.hash}>
                       <a
-                        href={navHref(item.hash)}
+                        href={navHref(item.hash, pathname)}
                         className="rounded-xl px-4 py-3.5 font-[family-name:var(--font-inter)] text-[0.9375rem] font-medium tracking-tight text-foreground transition-colors active:bg-[#1f1f1f]"
                       >
                         {item.label}

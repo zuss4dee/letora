@@ -21,6 +21,7 @@ import {
   saveOnboardingFocus,
   saveOnboardingIdentity,
   saveOnboardingSettingsEssentials,
+  skipOnboarding,
 } from "@/lib/actions/user-onboarding";
 import {
   FOCUS_OPTIONS,
@@ -28,16 +29,15 @@ import {
   parseStoredPrimaryGoals,
   type FocusOptionId,
 } from "@/lib/onboarding/priorities";
+import { isValidEmailOrEmpty } from "@/lib/validations/email";
 import { cn } from "@/lib/utils";
 
 const nextGlow =
   "bg-[#BD9952] text-[#141008] shadow-[0_0_22px_-2px_rgba(189,153,82,0.55),0_0_44px_-8px_rgba(189,153,82,0.28)] transition-[box-shadow,transform] hover:shadow-[0_0_32px_-2px_rgba(189,153,82,0.65),0_0_56px_-6px_rgba(189,153,82,0.35)] hover:brightness-[1.03] active:scale-[0.99] disabled:opacity-50 disabled:shadow-none";
 
-/** Empty is allowed; non-empty must look like an email (server Zod is authoritative). */
+/** Empty is allowed; non-empty must be a valid email (server Zod is authoritative). */
 function isOptionalEmailFieldOk(value: string): boolean {
-  const t = value.trim();
-  if (!t) return true;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
+  return isValidEmailOrEmpty(value);
 }
 
 function canProceedSettingsStep(
@@ -58,6 +58,9 @@ const slideVariants = {
 };
 
 export type OnboardingWizardStep = 0 | 1 | 2 | 3 | 4;
+
+/** Step 4: pick how to add tenants, then either manual form or import instructions + upload. */
+type TenantOnboardPhase = "choose" | "manual" | "import";
 
 const ONBOARDING_STEPS = [
   "Identity",
@@ -115,8 +118,10 @@ export function OnboardingWizard({
   const [tenantEmail, setTenantEmail] = useState("");
   const [tenantPhone, setTenantPhone] = useState("");
   const [tenantEntryMode, setTenantEntryMode] = useState<"single" | "import">("single");
+  const [tenantPhase, setTenantPhase] = useState<TenantOnboardPhase>("choose");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [tenantBusy, setTenantBusy] = useState(false);
+  const [skipBusy, setSkipBusy] = useState(false);
 
   const finishCheckoutSuccess = useCallback(async () => {
     const res = await completeOnboardingGate();
@@ -166,6 +171,7 @@ export function OnboardingWizard({
         }
         if (
           step === 4 &&
+          tenantPhase === "manual" &&
           tenantEntryMode === "single" &&
           tenantFullName.trim().length >= 2 &&
           tenantEmail.includes("@") &&
@@ -173,6 +179,10 @@ export function OnboardingWizard({
         ) {
           e.preventDefault();
           void submitTenant();
+        }
+        if (step === 4 && tenantPhase === "import" && tenantEntryMode === "import" && importFile) {
+          e.preventDefault();
+          void submitTenantImport();
         }
         return;
       }
@@ -196,6 +206,7 @@ export function OnboardingWizard({
         void submitProperty();
       } else if (
         step === 4 &&
+        tenantPhase === "manual" &&
         tenantEntryMode === "single" &&
         tenantFullName.trim().length >= 2 &&
         tenantEmail.includes("@") &&
@@ -203,6 +214,9 @@ export function OnboardingWizard({
       ) {
         e.preventDefault();
         void submitTenant();
+      } else if (step === 4 && tenantPhase === "import" && tenantEntryMode === "import" && importFile) {
+        e.preventDefault();
+        void submitTenantImport();
       }
     }
 
@@ -229,6 +243,8 @@ export function OnboardingWizard({
     tenantEmail,
     tenantPhone,
     tenantEntryMode,
+    tenantPhase,
+    importFile,
   ]);
 
   async function submitIdentity() {
@@ -315,6 +331,8 @@ export function OnboardingWizard({
         return;
       }
       setDir(1);
+      setTenantPhase("choose");
+      setImportFile(null);
       setStep(4);
     } finally {
       setPropertyBusy(false);
@@ -338,6 +356,25 @@ export function OnboardingWizard({
       router.refresh();
     } finally {
       setTenantBusy(false);
+    }
+  }
+
+  const stepBusy = identityBusy || focusBusy || settingsBusy || propertyBusy || tenantBusy;
+
+  async function handleSkipOnboarding() {
+    if (skipBusy || stepBusy) return;
+    setSkipBusy(true);
+    try {
+      const res = await skipOnboarding();
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      toast.info("You can finish setup from the dashboard checklist.");
+      router.replace("/dashboard");
+      router.refresh();
+    } finally {
+      setSkipBusy(false);
     }
   }
 
@@ -376,6 +413,16 @@ export function OnboardingWizard({
     if (step === 0) return;
     setDir(-1);
     setStep((s) => (s - 1) as OnboardingWizardStep);
+  }
+
+  function tenantStepBack() {
+    if (step !== 4) return;
+    if (tenantPhase !== "choose") {
+      setDir(-1);
+      setTenantPhase("choose");
+      return;
+    }
+    back();
   }
 
   const progress = ((step + 1) / TOTAL_ONBOARDING_STEPS) * 100;
@@ -906,7 +953,7 @@ export function OnboardingWizard({
 
             {step === 4 ? (
               <motion.section
-                key="tenant"
+                key={`tenant-${tenantPhase}`}
                 custom={dir}
                 variants={slideVariants}
                 initial="enter"
@@ -915,180 +962,312 @@ export function OnboardingWizard({
                 transition={{ type: "spring", stiffness: 380, damping: 38 }}
                 className="space-y-12"
               >
-                <div className="space-y-5">
-                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-[#BD9952]/90">
-                    First tenant
-                  </p>
-                  <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
-                    Add tenant profiles
-                  </h2>
-                  <p className="max-w-xl font-headline text-base font-light text-zinc-500">
-                    Add one person now, or import a list from a spreadsheet or document. We&apos;ll extract names and
-                    contacts where we can; you can fill anything missing later in{" "}
-                    <span className="text-zinc-400">Tenants</span>.
-                  </p>
-                </div>
+                {tenantPhase === "choose" ? (
+                  <>
+                    <div className="space-y-5">
+                      <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-[#BD9952]/90">
+                        First tenant
+                      </p>
+                      <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
+                        How do you want to add your tenant?
+                      </h2>
+                      <p className="max-w-xl font-headline text-base font-light leading-relaxed text-zinc-500">
+                        You don&apos;t need every detail from memory. Enter one person when you have it to hand, or bring
+                        a list from a spreadsheet or document and we&apos;ll create profiles for you — you can tidy
+                        anything missing later in <span className="text-zinc-400">Tenants</span>.
+                      </p>
+                    </div>
 
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <button
-                    type="button"
-                    onClick={() => setTenantEntryMode("single")}
-                    className={cn(
-                      "flex flex-col items-start gap-2 rounded-xl border px-4 py-4 text-left transition-colors",
-                      tenantEntryMode === "single"
-                        ? "border-[#BD9952]/50 bg-[#BD9952]/10"
-                        : "border-zinc-800 bg-zinc-950/30 hover:border-zinc-700",
-                    )}
-                  >
-                    <UserPlus className="size-5 text-[#BD9952]" aria-hidden />
-                    <span className="font-headline text-sm font-medium text-white">One tenant</span>
-                    <span className="font-headline text-xs font-light text-zinc-500">
-                      Enter name, email, and phone now.
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setTenantEntryMode("import")}
-                    className={cn(
-                      "flex flex-col items-start gap-2 rounded-xl border px-4 py-4 text-left transition-colors",
-                      tenantEntryMode === "import"
-                        ? "border-[#BD9952]/50 bg-[#BD9952]/10"
-                        : "border-zinc-800 bg-zinc-950/30 hover:border-zinc-700",
-                    )}
-                  >
-                    <FileSpreadsheet className="size-5 text-[#BD9952]" aria-hidden />
-                    <span className="font-headline text-sm font-medium text-white">Import a list</span>
-                    <span className="font-headline text-xs font-light text-zinc-500">
-                      CSV, TXT, PDF, or Word — we parse rows or use AI for documents.
-                    </span>
-                  </button>
-                </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTenantEntryMode("single");
+                          setTenantPhase("manual");
+                        }}
+                        className="flex flex-col items-start gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/30 px-5 py-6 text-left transition-colors hover:border-zinc-700"
+                      >
+                        <UserPlus className="size-6 text-[#BD9952]" aria-hidden />
+                        <span className="font-headline text-lg font-light tracking-tight text-white">Enter manually</span>
+                        <span className="font-headline text-sm font-light leading-relaxed text-zinc-500">
+                          Type full name, email, and phone when you&apos;re ready. You can edit this anytime.
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTenantEntryMode("import");
+                          setTenantPhase("import");
+                          setImportFile(null);
+                        }}
+                        className="flex flex-col items-start gap-3 rounded-2xl border border-zinc-800 bg-zinc-950/30 px-5 py-6 text-left transition-colors hover:border-zinc-700"
+                      >
+                        <FileSpreadsheet className="size-6 text-[#BD9952]" aria-hidden />
+                        <span className="font-headline text-lg font-light tracking-tight text-white">
+                          Import from a file
+                        </span>
+                        <span className="font-headline text-sm font-light leading-relaxed text-zinc-500">
+                          Upload CSV, TXT, PDF, or Word — we parse rows locally or use AI for documents.
+                        </span>
+                      </button>
+                    </div>
 
-                {tenantEntryMode === "single" ? (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="ob-t-name"
-                        className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500"
+                    <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                      <button
+                        type="button"
+                        onClick={tenantStepBack}
+                        className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-300"
                       >
-                        Full name
-                      </Label>
-                      <Input
-                        id="ob-t-name"
-                        value={tenantFullName}
-                        onChange={(e) => setTenantFullName(e.target.value)}
-                        autoComplete="name"
-                        placeholder="e.g. Alex Johnson"
-                        className={onboardingInputClass}
-                      />
+                        Back
+                      </button>
                     </div>
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="ob-t-email"
-                        className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500"
-                      >
-                        Email
-                      </Label>
-                      <Input
-                        id="ob-t-email"
-                        type="email"
-                        value={tenantEmail}
-                        onChange={(e) => setTenantEmail(e.target.value)}
-                        autoComplete="email"
-                        placeholder="tenant@email.com"
-                        className={onboardingInputClass}
-                      />
+                  </>
+                ) : null}
+
+                {tenantPhase === "manual" ? (
+                  <>
+                    <div className="space-y-5">
+                      <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-[#BD9952]/90">
+                        First tenant
+                      </p>
+                      <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
+                        Tenant details
+                      </h2>
+                      <p className="max-w-xl font-headline text-base font-light leading-relaxed text-zinc-500">
+                        Add the main tenant for this property. Everything here can be updated later from{" "}
+                        <span className="text-zinc-400">Tenants</span>.
+                      </p>
                     </div>
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="ob-t-phone"
-                        className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500"
-                      >
-                        Phone
-                      </Label>
-                      <Input
-                        id="ob-t-phone"
-                        type="tel"
-                        value={tenantPhone}
-                        onChange={(e) => setTenantPhone(e.target.value)}
-                        autoComplete="tel"
-                        placeholder="e.g. 07700 900000"
-                        className={onboardingInputClass}
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4 rounded-xl border border-zinc-800 bg-zinc-950/30 p-5">
-                    <div className="flex items-start gap-3">
-                      <Upload className="mt-0.5 size-5 shrink-0 text-[#BD9952]" aria-hidden />
-                      <div className="space-y-2 font-headline text-sm font-light text-zinc-400">
-                        <p>
-                          <strong className="font-medium text-zinc-200">CSV or TXT:</strong> columns for name, email, and
-                          phone (header row optional). Parsed on your server — no AI required.
-                        </p>
-                        <p>
-                          <strong className="font-medium text-zinc-200">PDF or Word:</strong> we send text to the AI to
-                          pull tenant rows. Requires <code className="text-zinc-500">ANTHROPIC_API_KEY</code> on the
-                          server.
-                        </p>
-                        <p className="text-xs text-zinc-500">Max file size 5 MB. Up to 50 tenants per import.</p>
+
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="ob-t-name"
+                          className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500"
+                        >
+                          Full name
+                        </Label>
+                        <Input
+                          id="ob-t-name"
+                          value={tenantFullName}
+                          onChange={(e) => setTenantFullName(e.target.value)}
+                          autoComplete="name"
+                          placeholder="e.g. Alex Johnson"
+                          className={onboardingInputClass}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="ob-t-email"
+                          className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500"
+                        >
+                          Email
+                        </Label>
+                        <Input
+                          id="ob-t-email"
+                          type="email"
+                          value={tenantEmail}
+                          onChange={(e) => setTenantEmail(e.target.value)}
+                          autoComplete="email"
+                          placeholder="tenant@email.com"
+                          className={onboardingInputClass}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="ob-t-phone"
+                          className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500"
+                        >
+                          Phone
+                        </Label>
+                        <Input
+                          id="ob-t-phone"
+                          type="tel"
+                          value={tenantPhone}
+                          onChange={(e) => setTenantPhone(e.target.value)}
+                          autoComplete="tel"
+                          placeholder="e.g. 07700 900000"
+                          className={onboardingInputClass}
+                        />
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="ob-tenant-import"
-                        className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500"
-                      >
-                        File
-                      </Label>
-                      <Input
-                        id="ob-tenant-import"
-                        type="file"
-                        accept=".csv,.txt,.pdf,.docx,application/pdf,text/csv,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                        className={cn(
-                          "h-12 cursor-pointer border-zinc-800 bg-zinc-950/40 px-3 font-headline text-sm font-light text-white file:mr-3 file:rounded-md file:border-0 file:bg-zinc-800 file:px-3 file:py-1.5 file:font-headline file:text-xs file:text-zinc-200",
-                        )}
-                        onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
-                      />
-                    </div>
-                  </div>
-                )}
 
-                <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                  <button
-                    type="button"
-                    onClick={back}
-                    className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-300"
-                  >
-                    Back
-                  </button>
-                  <Button
-                    type="button"
-                    disabled={
-                      tenantBusy ||
-                      (tenantEntryMode === "single" ? !canSubmitTenant : !canSubmitTenantImport)
-                    }
-                    onClick={() =>
-                      void (tenantEntryMode === "single" ? submitTenant() : submitTenantImport())
-                    }
-                    className={cn("h-14 rounded-full px-10 font-headline text-xs font-semibold uppercase tracking-[0.22em]", nextGlow)}
-                  >
-                    {tenantBusy ? (
-                      <Loader2 className="size-4 animate-spin" aria-hidden />
-                    ) : (
-                      <>
-                        {tenantEntryMode === "import" ? "Import & enter Letora" : "Enter Letora"}
-                        <ArrowRight className="ml-2 size-4 opacity-90" aria-hidden />
-                      </>
-                    )}
-                  </Button>
-                </div>
+                    <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                      <button
+                        type="button"
+                        onClick={tenantStepBack}
+                        className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-300"
+                      >
+                        Back
+                      </button>
+                      <Button
+                        type="button"
+                        disabled={tenantBusy || !canSubmitTenant}
+                        onClick={() => void submitTenant()}
+                        className={cn(
+                          "h-14 rounded-full px-10 font-headline text-xs font-semibold uppercase tracking-[0.22em]",
+                          nextGlow,
+                        )}
+                      >
+                        {tenantBusy ? (
+                          <Loader2 className="size-4 animate-spin" aria-hidden />
+                        ) : (
+                          <>
+                            Enter Letora
+                            <ArrowRight className="ml-2 size-4 opacity-90" aria-hidden />
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </>
+                ) : null}
+
+                {tenantPhase === "import" ? (
+                  <>
+                    <div className="space-y-5">
+                      <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-[#BD9952]/90">
+                        First tenant
+                      </p>
+                      <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
+                        Import your tenant list
+                      </h2>
+                      <p className="max-w-xl font-headline text-base font-light leading-relaxed text-zinc-500">
+                        Follow the steps below, then upload your file. We&apos;ll create tenant profiles; you can add or
+                        fix details in <span className="text-zinc-400">Tenants</span> afterwards.
+                      </p>
+                    </div>
+
+                    <ol className="list-none space-y-4 rounded-2xl border border-zinc-800 bg-zinc-950/30 p-6">
+                      <li className="flex gap-4">
+                        <span
+                          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#BD9952]/40 bg-[#BD9952]/10 font-headline text-xs font-semibold text-[#BD9952]"
+                          aria-hidden
+                        >
+                          1
+                        </span>
+                        <div className="space-y-1">
+                          <p className="font-headline text-sm font-medium text-zinc-200">Prepare your file</p>
+                          <p className="font-headline text-sm font-light leading-relaxed text-zinc-500">
+                            <strong className="font-medium text-zinc-400">CSV or TXT:</strong> include columns for name,
+                            email, and phone (a header row is optional). Rows are parsed on the server — no AI needed.
+                          </p>
+                          <p className="font-headline text-sm font-light leading-relaxed text-zinc-500">
+                            <strong className="font-medium text-zinc-400">PDF or Word:</strong> we extract tenant rows
+                            with AI. Your project needs <code className="text-zinc-600">ANTHROPIC_API_KEY</code> on the
+                            server.
+                          </p>
+                        </div>
+                      </li>
+                      <li className="flex gap-4">
+                        <span
+                          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#BD9952]/40 bg-[#BD9952]/10 font-headline text-xs font-semibold text-[#BD9952]"
+                          aria-hidden
+                        >
+                          2
+                        </span>
+                        <div className="space-y-1">
+                          <p className="font-headline text-sm font-medium text-zinc-200">Check size and scope</p>
+                          <p className="font-headline text-sm font-light leading-relaxed text-zinc-500">
+                            Keep the file under <strong className="font-medium text-zinc-400">5 MB</strong>. Lists are
+                            meant for roughly <strong className="font-medium text-zinc-400">up to 50 tenants</strong> per
+                            import — focus on people tied to the property you just added.
+                          </p>
+                        </div>
+                      </li>
+                      <li className="flex gap-4">
+                        <span
+                          className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#BD9952]/40 bg-[#BD9952]/10 font-headline text-xs font-semibold text-[#BD9952]"
+                          aria-hidden
+                        >
+                          3
+                        </span>
+                        <div className="space-y-1">
+                          <p className="font-headline text-sm font-medium text-zinc-200">Upload and finish</p>
+                          <p className="font-headline text-sm font-light leading-relaxed text-zinc-500">
+                            Choose your file below, then run the import. Duplicates and invalid rows are skipped;
+                            we&apos;ll tell you how many profiles were added.
+                          </p>
+                        </div>
+                      </li>
+                    </ol>
+
+                    <div className="space-y-3 rounded-xl border border-zinc-800 bg-zinc-950/30 p-5">
+                      <div className="flex items-start gap-3">
+                        <Upload className="mt-0.5 size-5 shrink-0 text-[#BD9952]" aria-hidden />
+                        <p className="font-headline text-sm font-light text-zinc-500">
+                          Accepted: <span className="text-zinc-400">.csv</span>, <span className="text-zinc-400">.txt</span>,{" "}
+                          <span className="text-zinc-400">.pdf</span>, <span className="text-zinc-400">.docx</span>
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="ob-tenant-import"
+                          className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500"
+                        >
+                          File
+                        </Label>
+                        <Input
+                          id="ob-tenant-import"
+                          type="file"
+                          accept=".csv,.txt,.pdf,.docx,application/pdf,text/csv,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                          className={cn(
+                            "h-12 cursor-pointer border-zinc-800 bg-zinc-950/40 px-3 font-headline text-sm font-light text-white file:mr-3 file:rounded-md file:border-0 file:bg-zinc-800 file:px-3 file:py-1.5 file:font-headline file:text-xs file:text-zinc-200",
+                          )}
+                          onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                      <button
+                        type="button"
+                        onClick={tenantStepBack}
+                        className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-300"
+                      >
+                        Back
+                      </button>
+                      <Button
+                        type="button"
+                        disabled={tenantBusy || !canSubmitTenantImport}
+                        onClick={() => void submitTenantImport()}
+                        className={cn(
+                          "h-14 rounded-full px-10 font-headline text-xs font-semibold uppercase tracking-[0.22em]",
+                          nextGlow,
+                        )}
+                      >
+                        {tenantBusy ? (
+                          <Loader2 className="size-4 animate-spin" aria-hidden />
+                        ) : (
+                          <>
+                            Import &amp; enter Letora
+                            <ArrowRight className="ml-2 size-4 opacity-90" aria-hidden />
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </>
+                ) : null}
               </motion.section>
             ) : null}
           </AnimatePresence>
         </div>
 
-        <div className="mt-auto shrink-0 pt-10 pb-2 md:pt-14 md:pb-4" aria-hidden />
+        <div className="mt-auto shrink-0 border-t border-zinc-900/90 pt-8 pb-4 md:pt-10 md:pb-6">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <button
+              type="button"
+              onClick={() => void handleSkipOnboarding()}
+              disabled={skipBusy || stepBusy}
+              className="font-headline text-[0.65rem] uppercase tracking-[0.2em] text-zinc-500 underline-offset-4 transition-colors hover:text-zinc-300 hover:underline disabled:opacity-40 disabled:hover:no-underline"
+            >
+              {skipBusy ? "Opening dashboard…" : "Skip for now — finish from the dashboard"}
+            </button>
+            <p className="max-w-md font-headline text-[0.65rem] font-light leading-relaxed text-zinc-600">
+              We&apos;ll show a short checklist on your home screen until your profile, first property, and first tenant
+              are in place.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { optionalEmailSchema } from "@/lib/validations/email";
+
 const sourceEnum = z.enum(["Rightmove", "Zoopla", "OnTheMarket", "Referral", "Direct"]);
 
 function preprocessInt(fallback: number, min: number, max?: number) {
@@ -14,7 +16,7 @@ export const userSettingsSchema = z.object({
   businessName: z.string().optional(),
   landlordName: z.string().optional(),
   contactPhone: z.string().optional(),
-  contactEmail: z.string().email("Enter a valid email").or(z.literal("")),
+  contactEmail: optionalEmailSchema,
   businessAddress: z.string().optional(),
   /** Legacy DB value `friendly_reminder` is accepted; UI may use `friendly_polite`. */
   rentChaserTone: z.enum([
@@ -39,7 +41,7 @@ export const userSettingsSchema = z.object({
   disqualifyNoMovein: z.boolean().default(false),
   leadQualifierCriteria: z.string().optional(),
   referencingAgencyName: z.string().optional(),
-  referencingAgencyEmail: z.string().email("Enter a valid email").or(z.literal("")),
+  referencingAgencyEmail: optionalEmailSchema,
   referencingAgencyNotes: z.string().optional(),
   autoSendReferencingEmails: z.boolean().default(false),
 });

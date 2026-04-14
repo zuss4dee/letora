@@ -74,7 +74,7 @@ export function LetoraLanding() {
               out.
             </p>
             <div className="pt-4">
-              <JewelryButton href="/#pricing" size="lg">
+              <JewelryButton href="/#pricing-plans" size="lg">
                 Try for free
               </JewelryButton>
             </div>

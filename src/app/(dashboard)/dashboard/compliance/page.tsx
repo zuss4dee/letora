@@ -24,18 +24,14 @@ export default async function CompliancePage({
   } = await supabase.auth.getUser();
 
   const userId = user?.id ?? null;
-  const [properties, records, onboardProperty] = await Promise.all([
+  const [properties, records, onboardProperty, portfolioSync] = await Promise.all([
     userId ? getProperties(userId) : Promise.resolve([]),
     userId ? getComplianceRecordsForUser(userId) : Promise.resolve([]),
     userId && onboardId ? getPropertyById(userId, onboardId) : Promise.resolve(null),
+    userId
+      ? syncAndGetPortfolioHealthAlerts(userId, supabase)
+      : Promise.resolve({ expired: [] as ExpiredComplianceItem[], alerts: [] as PortfolioHealthAlertRow[] }),
   ]);
-
-  const portfolioSync: {
-    expired: ExpiredComplianceItem[];
-    alerts: PortfolioHealthAlertRow[];
-  } = userId
-    ? await syncAndGetPortfolioHealthAlerts(userId, supabase)
-    : { expired: [], alerts: [] };
 
   const complianceSummary = computeCompliancePortfolioSummary(properties, records);
 

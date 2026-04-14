@@ -7,9 +7,11 @@ import { Loader2, Send } from "lucide-react";
 
 import { AgentQuickActions } from "@/components/dashboard/agent-quick-actions";
 import { AssistantConversationList } from "@/components/dashboard/assistant-conversation-list";
+import { WorkspaceSetupReminder } from "@/components/dashboard/workspace-setup-reminder";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { AssistantConversationListItem } from "@/lib/assistant-messages/store";
+import type { WorkspaceSetupPendingItem } from "@/lib/onboarding/workspace-setup";
 import { cn } from "@/lib/utils";
 
 export function AssistantLanding({
@@ -18,6 +20,7 @@ export function AssistantLanding({
   conversations = [],
   totalProperties,
   activeTenancies,
+  workspaceSetupChecklist = [],
 }: {
   greetingName: string;
   className?: string;
@@ -25,6 +28,8 @@ export function AssistantLanding({
   /** High-level portfolio counts — home dashboard only. */
   totalProperties?: number;
   activeTenancies?: number;
+  /** Bottom-of-page setup to-do — incomplete tasks only; each disappears as it’s completed. */
+  workspaceSetupChecklist?: WorkspaceSetupPendingItem[];
 }) {
   const router = useRouter();
   const [text, setText] = useState("");
@@ -174,6 +179,10 @@ export function AssistantLanding({
           Emails
         </Link>
       </div>
+
+      {workspaceSetupChecklist.length > 0 ? (
+        <WorkspaceSetupReminder items={workspaceSetupChecklist} className="mt-12" />
+      ) : null}
     </section>
   );
 }

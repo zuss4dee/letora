@@ -39,6 +39,8 @@ export type UserSettingsRow = UserSettingsInput & {
   onboardingPrimaryGoal?: string | null;
   /** Mercury product tour on dashboard home; persisted in `user_settings.has_seen_tour`. */
   hasSeenTour?: boolean;
+  /** When set, dashboard workspace setup checklist is hidden. */
+  onboardingSetupReminderDismissedAt?: string | null;
   /** Stripe subscription display name (e.g. Pro). */
   subscriptionPlan?: string | null;
   subscriptionStatus?: string | null;
@@ -52,7 +54,7 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
   const { data, error } = await supabase
     .from("user_settings")
     .select(
-      "id,user_id,stripe_customer_id,business_name,landlord_name,contact_phone,contact_email,business_address,rent_chaser_tone,first_chase_days,email_signoff,include_payment_plan,email_from_name,auto_send_rent_chaser,auto_send_maintenance_updates,auto_send_onboarding_emails,auto_send_lead_updates,auto_send_referencing_emails,referencing_agency_name,referencing_agency_email,referencing_agency_notes,rent_chaser_instructions,min_lead_score,preferred_sources,disqualify_no_movein,lead_qualifier_criteria,onboarding_status,onboarding_primary_goal,has_seen_tour,subscription_plan,subscription_status,subscription_period_end,subscription_trial_end",
+      "id,user_id,stripe_customer_id,business_name,landlord_name,contact_phone,contact_email,business_address,rent_chaser_tone,first_chase_days,email_signoff,include_payment_plan,email_from_name,auto_send_rent_chaser,auto_send_maintenance_updates,auto_send_onboarding_emails,auto_send_lead_updates,auto_send_referencing_emails,referencing_agency_name,referencing_agency_email,referencing_agency_notes,rent_chaser_instructions,min_lead_score,preferred_sources,disqualify_no_movein,lead_qualifier_criteria,onboarding_status,onboarding_primary_goal,onboarding_setup_reminder_dismissed_at,has_seen_tour,subscription_plan,subscription_status,subscription_period_end,subscription_trial_end",
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -98,6 +100,9 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
     onboardingStatus: parseOnboardingStatus((data as { onboarding_status?: string | null }).onboarding_status),
     onboardingPrimaryGoal: (data as { onboarding_primary_goal?: string | null }).onboarding_primary_goal ?? null,
     hasSeenTour: Boolean((data as { has_seen_tour?: boolean | null }).has_seen_tour),
+    onboardingSetupReminderDismissedAt:
+      (data as { onboarding_setup_reminder_dismissed_at?: string | null }).onboarding_setup_reminder_dismissed_at ??
+      null,
     subscriptionPlan: (data as { subscription_plan?: string | null }).subscription_plan ?? null,
     subscriptionStatus: (data as { subscription_status?: string | null }).subscription_status ?? null,
     subscriptionPeriodEnd: (data as { subscription_period_end?: string | null }).subscription_period_end ?? null,

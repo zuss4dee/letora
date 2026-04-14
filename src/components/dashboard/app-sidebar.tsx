@@ -39,21 +39,21 @@ type NavItem = { title: string; url: string; icon: React.ElementType };
 
 const mainItems: NavItem[] = [
   { title: "Home", url: "/dashboard", icon: Home },
-  { title: "Tenants", url: "/dashboard/tenants", icon: Users },
   { title: "Properties", url: "/dashboard/properties", icon: Building2 },
+  { title: "Tenants", url: "/dashboard/tenants", icon: Users },
 ];
 
 const workflowItems: NavItem[] = [
+  { title: "Tenancies", url: "/dashboard/tenancies", icon: Key },
+  { title: "Compliance", url: "/dashboard/compliance", icon: ClipboardCheck },
   { title: "Contracts", url: "/dashboard/contracts", icon: FileText },
   { title: "Maintenance", url: "/dashboard/maintenance", icon: Wrench },
-  { title: "Compliance", url: "/dashboard/compliance", icon: ClipboardCheck },
 ];
 
 const moreItems: NavItem[] = [
-  { title: "Tenancies", url: "/dashboard/tenancies", icon: Key },
   { title: "Rent Tracker", url: "/dashboard/rent-tracker", icon: CircleDollarSign },
-  { title: "Emails", url: "/dashboard/emails", icon: Mail },
   { title: "Leads", url: "/dashboard/leads", icon: UserPlus },
+  { title: "Emails", url: "/dashboard/emails", icon: Mail },
 ];
 
 function isActivePath(pathname: string, url: string) {
@@ -326,32 +326,6 @@ export function AppSidebar({
           <div className="min-h-0 overflow-hidden">
             <div className={cn("flex flex-col gap-0", !footerOpen && "pointer-events-none")}>
               <Link
-                href="/dashboard/help"
-                onClick={closeMobileNav}
-                className={cn(
-                  "mb-2 flex touch-manipulation items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
-                  isActivePath(pathname, "/dashboard/help")
-                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
-                )}
-              >
-                <HelpCircle className="size-5 stroke-[1.25]" aria-hidden />
-                Help
-              </Link>
-              <Link
-                href="/dashboard/activity"
-                onClick={closeMobileNav}
-                className={cn(
-                  "mb-2 flex touch-manipulation items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
-                  isActivePath(pathname, "/dashboard/activity")
-                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
-                )}
-              >
-                <History className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
-                History
-              </Link>
-              <Link
                 href="/dashboard/settings"
                 onClick={closeMobileNav}
                 className={cn(
@@ -376,6 +350,32 @@ export function AppSidebar({
               >
                 <CreditCard className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
                 Billing
+              </Link>
+              <Link
+                href="/dashboard/help"
+                onClick={closeMobileNav}
+                className={cn(
+                  "mb-2 flex touch-manipulation items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
+                  isActivePath(pathname, "/dashboard/help")
+                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
+                )}
+              >
+                <HelpCircle className="size-5 stroke-[1.25]" aria-hidden />
+                Help
+              </Link>
+              <Link
+                href="/dashboard/activity"
+                onClick={closeMobileNav}
+                className={cn(
+                  "mb-2 flex touch-manipulation items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
+                  isActivePath(pathname, "/dashboard/activity")
+                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
+                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
+                )}
+              >
+                <History className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
+                History
               </Link>
               <SidebarAgentActivityButton onBeforeOpen={closeMobileNav} />
               <div className="flex items-center gap-3 px-4 py-2">

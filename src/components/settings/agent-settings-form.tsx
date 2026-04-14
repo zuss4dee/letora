@@ -62,8 +62,8 @@ export function AgentSettingsForm({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [settingsTab, setSettingsTab] = useState<"agents" | "email">(() =>
-    searchParams.get("tab") === "email" ? "email" : "agents",
+  const [settingsTab, setSettingsTab] = useState<"general" | "email">(() =>
+    searchParams.get("tab") === "email" ? "email" : "general",
   );
 
   useEffect(() => {
@@ -74,6 +74,10 @@ export function AgentSettingsForm({
     resolver: zodResolver(userSettingsSchema) as Resolver<UserSettingsInput>,
     defaultValues: initialValues,
   });
+
+  useEffect(() => {
+    form.reset(initialValues);
+  }, [form, initialValues]);
   const [templates, setTemplates] = useState<ContractTemplateRow[]>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
   const [templatesEnabled, setTemplatesEnabled] = useState(false);
@@ -154,7 +158,7 @@ export function AgentSettingsForm({
     <form className="grid gap-4" onSubmit={form.handleSubmit(onSubmit)}>
       <Tabs
         value={settingsTab}
-        onValueChange={(v) => setSettingsTab(v as "agents" | "email")}
+        onValueChange={(v) => setSettingsTab(v as "general" | "email")}
         className="w-full gap-6"
       >
         <TabsList
@@ -162,10 +166,10 @@ export function AgentSettingsForm({
           className="h-auto w-full justify-start gap-0 rounded-none border-b border-border bg-transparent p-0 dark:border-[rgb(72_72_72_/0.12)] sm:w-auto sm:gap-8"
         >
           <TabsTrigger
-            value="agents"
+            value="general"
             className="rounded-none px-0 pb-3 text-muted-foreground after:bottom-0 after:h-[2px] after:bg-[#BD9952] data-[state=active]:text-foreground"
           >
-            Agents
+            Business &amp; operations
           </TabsTrigger>
           <TabsTrigger
             value="email"
@@ -175,7 +179,7 @@ export function AgentSettingsForm({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="agents" className="mt-0 flex flex-col gap-4 outline-none">
+        <TabsContent value="general" className="mt-0 flex flex-col gap-4 outline-none">
       <Card className={SETTINGS_CARD}>
         <CardHeader className={SETTINGS_HEADER}>
           <CardTitle className={SETTINGS_TITLE}>Business Profile</CardTitle>

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { Mail } from "lucide-react";
+import { ArrowLeft, Mail } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,11 +23,13 @@ import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { resendAuthEmailErrorForUser, signUpErrorForUser } from "@/lib/user-facing-errors";
 import { PLANS, type PlanKey } from "@/lib/stripe-plans";
+import { getBrowserAuthCallbackUrl } from "@/lib/auth/email-auth-redirect";
+import { requiredEmailSchema } from "@/lib/validations/email";
 
 const signupSchema = z
   .object({
     fullName: z.string().min(2, "Full name is required"),
-    email: z.string().email("Enter a valid email address"),
+    email: requiredEmailSchema,
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string().min(8, "Confirm your password"),
   })
@@ -36,11 +39,6 @@ const signupSchema = z
   });
 
 type SignupValues = z.infer<typeof signupSchema>;
-
-function authCallbackUrl(): string {
-  if (typeof window === "undefined") return "";
-  return `${window.location.origin}/auth/callback`;
-}
 
 function SignupEmailConfirmation({
   email,
@@ -66,10 +64,17 @@ function SignupEmailConfirmation({
     setResendSentHint(false);
     setIsResending(true);
     const supabase = createClient();
+    const redirectTo = getBrowserAuthCallbackUrl();
+    if (!redirectTo) {
+      setIsResending(false);
+      setResendError("Could not build a confirmation link. Refresh the page and try again.");
+      return;
+    }
+    const normalizedEmail = email.trim().toLowerCase();
     const { error } = await supabase.auth.resend({
       type: "signup",
-      email,
-      options: { emailRedirectTo: authCallbackUrl() },
+      email: normalizedEmail,
+      options: { emailRedirectTo: redirectTo },
     });
     setIsResending(false);
     if (error) {
@@ -153,10 +158,27 @@ function resolvePlanKeyFromSearch(planParam: string | null): PlanKey {
 }
 
 function SignupForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [emailConfirmationSent, setEmailConfirmationSent] = useState(false);
   const [pendingEmail, setPendingEmail] = useState<string | null>(null);
+  const [sessionUserEmail, setSessionUserEmail] = useState<string | null>(null);
+  const [sessionCheckDone, setSessionCheckDone] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getUser();
+      if (cancelled) return;
+      setSessionUserEmail(data.user?.email?.trim() ? data.user.email : null);
+      setSessionCheckDone(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const form = useForm<SignupValues>({
     resolver: zodResolver(signupSchema),
@@ -180,11 +202,17 @@ function SignupForm() {
     /** Enterprise flows talk to sales first — skip forced checkout metadata. */
     const pendingCheckoutPlan = intent === "enterprise" ? undefined : planKey;
 
+    const redirectTo = getBrowserAuthCallbackUrl();
+    if (!redirectTo) {
+      setSubmitError("Could not build a confirmation link. Refresh the page and try again.");
+      return;
+    }
+
     const { data, error } = await supabase.auth.signUp({
-      email: values.email,
+      email: values.email.trim().toLowerCase(),
       password: values.password,
       options: {
-        emailRedirectTo: authCallbackUrl(),
+        emailRedirectTo: redirectTo,
         data: {
           full_name: values.fullName,
           ...(pendingCheckoutPlan ? { pending_checkout_plan: pendingCheckoutPlan } : {}),
@@ -194,6 +222,13 @@ function SignupForm() {
 
     if (error) {
       setSubmitError(signUpErrorForUser(error));
+      return;
+    }
+
+    /** Supabase may return a user row with no identities when the email is already registered (no error set). */
+    const identities = data.user?.identities;
+    if (data.user && Array.isArray(identities) && identities.length === 0) {
+      setSubmitError("An account with this email already exists. Please sign in instead.");
       return;
     }
 
@@ -214,6 +249,54 @@ function SignupForm() {
   function handleUseDifferentEmail() {
     setEmailConfirmationSent(false);
     setPendingEmail(null);
+  }
+
+  if (!sessionCheckDone) {
+    return (
+      <div className="space-y-4" aria-busy>
+        <div className="h-6 animate-pulse rounded bg-muted/30" />
+        <div className="h-10 animate-pulse rounded bg-muted/20" />
+        <div className="h-10 animate-pulse rounded bg-muted/20" />
+      </div>
+    );
+  }
+
+  if (sessionUserEmail) {
+    return (
+      <div className="space-y-5 text-center">
+        <div className="space-y-1">
+          <h2 className="font-headline text-lg font-light tracking-tight text-foreground">You’re already signed in</h2>
+          <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">
+            This browser has an active Letora session{sessionUserEmail ? ` (${sessionUserEmail})` : ""}. Open your
+            workspace, or sign out if you need to use a different account.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-center">
+          <Button type="button" className={authPrimaryButtonClassName} onClick={() => router.push("/dashboard")}>
+            Go to dashboard
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="h-11 rounded-md font-[family-name:var(--font-inter)] text-[13px]"
+            onClick={async () => {
+              const supabase = createClient();
+              await supabase.auth.signOut();
+              setSessionUserEmail(null);
+              router.refresh();
+            }}
+          >
+            Sign out
+          </Button>
+        </div>
+        <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
+          Wrong place?{" "}
+          <Link href="/login" className="font-medium text-foreground underline-offset-4 hover:text-[#BD9952] hover:underline">
+            Sign in with another email
+          </Link>
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -340,7 +423,15 @@ function SignupForm() {
 export default function SignupPage() {
   return (
     <AuthSplitShell aside={<AuthEditorialAside variant="signup" />}>
-      <div className="w-full max-w-[380px] space-y-8">
+      <div className="w-full max-w-[380px]">
+        <Link
+          href="/"
+          className="mb-6 inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-4 shrink-0 stroke-[1.25]" aria-hidden />
+          Back to website
+        </Link>
+        <div className="space-y-8">
         <AuthBrandMark />
 
         <Suspense
@@ -354,6 +445,7 @@ export default function SignupPage() {
         >
           <SignupForm />
         </Suspense>
+        </div>
       </div>
     </AuthSplitShell>
   );

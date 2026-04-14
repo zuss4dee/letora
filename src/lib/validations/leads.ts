@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { requiredEmailSchema } from "@/lib/validations/email";
+
 const SOURCE_OPTIONS = [
   "Rightmove",
   "Zoopla",
@@ -17,7 +19,7 @@ export const LEAD_OPTION_NONE = "__none__" as const;
 
 export const addLeadSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  email: z.string().email("Valid email required"),
+  email: requiredEmailSchema,
   phone: z.string().optional(),
   propertyId: z
     .string()

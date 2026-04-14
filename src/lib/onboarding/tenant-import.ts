@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { runLLM } from "@/lib/llm/router";
+import { isValidEmailAddress } from "@/lib/validations/email";
 
 export type LooseTenantRow = {
   fullName: string;
@@ -39,8 +40,7 @@ export function normalizeLooseTenantRow(row: {
   if (fullName.length < 2) return null;
 
   const emailRaw = typeof row.email === "string" ? row.email.trim() : "";
-  const email =
-    emailRaw.length > 0 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw) ? emailRaw : null;
+  const email = emailRaw.length > 0 && isValidEmailAddress(emailRaw) ? emailRaw : null;
 
   const phoneRaw = typeof row.phone === "string" ? row.phone.replace(/\s+/g, " ").trim() : "";
   const digits = phoneRaw.replace(/[^\d+]/g, "");

@@ -36,6 +36,7 @@ import Link from "next/link";
 
 import { AgentSettingsForm } from "@/components/settings/agent-settings-form";
 import { DeleteAccountCard } from "@/components/settings/delete-account-card";
+import { mergeSettingsWithAuthHints } from "@/lib/auth/profile-hints";
 import { getUserSettings } from "@/lib/actions/user-settings";
 import { createClient } from "@/lib/supabase/server";
 import { type UserSettingsInput } from "@/lib/validations/user-settings";
@@ -73,7 +74,8 @@ export default async function SettingsPage() {
   } = await supabase.auth.getUser();
 
   const existing = user?.id ? await getUserSettings(user.id) : null;
-  const initialValues = existing ? { ...defaultValues, ...existing } : defaultValues;
+  const rowMerged = existing ? { ...defaultValues, ...existing } : defaultValues;
+  const initialValues = mergeSettingsWithAuthHints(rowMerged, user ?? null);
 
   return (
     <div className="@container/main relative flex flex-1 flex-col">
@@ -85,13 +87,13 @@ export default async function SettingsPage() {
         <header className="px-4 lg:px-6">
           <div className="max-w-2xl space-y-3">
             <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
-              Workspace
+              Account
             </p>
             <h1 className="font-headline text-3xl font-extralight tracking-[-0.04em] text-foreground md:text-[2.15rem] md:leading-tight">
               Settings
             </h1>
             <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">
-              Business profile, agent behaviour, and email automation — tuned to how you run tenancies. Billing lives on
+              Business profile, automation preferences, and email — tuned to how you run tenancies. Billing lives on
               the{" "}
               <Link href="/dashboard/billing" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
                 Billing

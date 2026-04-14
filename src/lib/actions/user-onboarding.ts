@@ -15,6 +15,7 @@ import {
   type LooseTenantRow,
 } from "@/lib/onboarding/tenant-import";
 import { createClient } from "@/lib/supabase/server";
+import { optionalEmailSchema } from "@/lib/validations/email";
 import { tenantSchema } from "@/lib/validations/tenant";
 import { userFacingError } from "@/lib/user-facing-errors";
 
@@ -117,19 +118,12 @@ export async function saveOnboardingFocus(input: {
   return { ok: true };
 }
 
-const optionalOnboardingEmail = z
-  .string()
-  .trim()
-  .refine((s) => s.length === 0 || z.string().email().safeParse(s).success, {
-    message: "Enter a valid email or leave this blank.",
-  });
-
 const onboardingSettingsEssentialsSchema = z.object({
   /** Company / portfolio label from step 0 — re-saved here so a partial upsert cannot leave business_name missing. */
   portfolioName: z.string().trim().optional(),
   landlordName: z.string().trim().min(2, "Enter the landlord or legal name."),
-  contactEmail: optionalOnboardingEmail,
-  referencingAgencyEmail: optionalOnboardingEmail,
+  contactEmail: optionalEmailSchema,
+  referencingAgencyEmail: optionalEmailSchema,
 });
 
 /** Step after focus — required profile fields used across emails and compliance. */
@@ -408,10 +402,80 @@ export async function importTenantsFromFileOnboarding(formData: FormData): Promi
   return { ok: true, added, skipped, needsDetailsLater };
 }
 
-/** Onboarding must be finished in order — skipping is disabled. */
+/**
+ * Exit the guided wizard and open the dashboard. Shows a checklist there until profile,
+ * first property, and first tenant exist (or the user dismisses the reminder).
+ */
 export async function skipOnboarding(): Promise<{ ok: true } | { ok: false; error: string }> {
-  return {
-    ok: false,
-    error: "Complete setup to use Letora — add your details, a property, and a tenant.",
-  };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const ts = new Date().toISOString();
+  const { data: existing, error: selErr } = await supabase
+    .from("user_settings")
+    .select("id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (selErr) {
+    console.error("[skipOnboarding]", selErr.message);
+    return { ok: false, error: "We couldn't update your account. Try again." };
+  }
+
+  if (existing) {
+    const { error } = await supabase
+      .from("user_settings")
+      .update({
+        onboarding_status: "completed",
+        onboarding_setup_reminder_dismissed_at: null,
+        updated_at: ts,
+      })
+      .eq("user_id", user.id);
+    if (error) {
+      return { ok: false, error: userFacingError(error.message, "We couldn't save your choice. Please try again.") };
+    }
+  } else {
+    const { error } = await supabase.from("user_settings").insert({
+      user_id: user.id,
+      onboarding_status: "completed",
+      onboarding_setup_reminder_dismissed_at: null,
+      updated_at: ts,
+    });
+    if (error) {
+      return { ok: false, error: userFacingError(error.message, "We couldn't save your choice. Please try again.") };
+    }
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/onboarding");
+  revalidatePath("/onboarding", "layout");
+  return { ok: true };
+}
+
+export async function dismissWorkspaceSetupReminder(): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("user_settings")
+    .update({
+      onboarding_setup_reminder_dismissed_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { ok: false, error: userFacingError(error.message, "We couldn't update that. Please try again.") };
+  }
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
+  return { ok: true };
 }

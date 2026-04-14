@@ -11,6 +11,12 @@ import {
   listAssistantMessagesForConversation,
 } from "@/lib/assistant-messages/store";
 import { getHomePortfolioSnapshot } from "@/lib/dashboard/home-snapshot";
+import {
+  buildWorkspaceSetupChecklist,
+  pendingWorkspaceSetupItems,
+  workspaceSetupChecklistHasIncomplete,
+} from "@/lib/onboarding/workspace-setup";
+import { getUserSettings } from "@/lib/actions/user-settings";
 import { createClient } from "@/lib/supabase/server";
 
 function deriveTitleFromFirstLine(text: string) {
@@ -60,6 +66,42 @@ export default async function DashboardPage({
     const homeMetrics =
       user?.id != null ? await getHomePortfolioSnapshot(user.id) : { totalProperties: 0, activeTenancies: 0 };
 
+    const settings = user?.id ? await getUserSettings(user.id) : null;
+    let tenantCount = 0;
+    let tenancyCount = 0;
+    let complianceCount = 0;
+    if (user?.id) {
+      const [tenantsRes, tenanciesRes, complianceRes] = await Promise.all([
+        supabase.from("tenants").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("tenancies").select("id", { count: "exact", head: true }),
+        supabase.from("compliance_records").select("id", { count: "exact", head: true }),
+      ]);
+      tenantCount = tenantsRes.count ?? 0;
+      tenancyCount = tenanciesRes.count ?? 0;
+      complianceCount = complianceRes.count ?? 0;
+    }
+
+    const setupChecklist = user?.id
+      ? buildWorkspaceSetupChecklist({
+          businessName: settings?.businessName,
+          landlordName: settings?.landlordName,
+          contactEmail: settings?.contactEmail,
+          emailFromName: settings?.emailFromName,
+          hasSeenTour: settings?.hasSeenTour === true,
+          propertyCount: homeMetrics.totalProperties,
+          tenantCount,
+          tenancyCount,
+          complianceCount,
+        })
+      : [];
+
+    const showSetupReminder =
+      Boolean(user?.id) &&
+      workspaceSetupChecklistHasIncomplete(setupChecklist) &&
+      !settings?.onboardingSetupReminderDismissedAt;
+
+    const setupChecklistToShow = showSetupReminder ? pendingWorkspaceSetupItems(setupChecklist) : [];
+
     return (
       <div className="relative flex min-h-0 flex-1 flex-col bg-background">
         <div className="mx-auto w-full max-w-7xl flex-1 px-6 pb-20 pt-6 md:px-16 md:pt-10">
@@ -69,6 +111,7 @@ export default async function DashboardPage({
               conversations={conversations}
               totalProperties={homeMetrics.totalProperties}
               activeTenancies={homeMetrics.activeTenancies}
+              workspaceSetupChecklist={setupChecklistToShow}
             />
           </div>
         </div>

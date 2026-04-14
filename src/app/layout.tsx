@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 
+import { AuthDeepLinkRecover } from "@/components/auth/auth-deeplink-recover";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -30,6 +31,7 @@ export default function RootLayout({
     >
       <body className={`${inter.className} min-h-full flex flex-col bg-background font-normal text-foreground`} suppressHydrationWarning>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} enableColorScheme>
+          <AuthDeepLinkRecover />
           {children}
           <Toaster richColors />
         </ThemeProvider>

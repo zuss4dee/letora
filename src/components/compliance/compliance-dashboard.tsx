@@ -253,7 +253,9 @@ export function ComplianceDashboard({
           <article
             key={p.id}
             className={cn(
-              "compliance-card-enter group/card relative flex flex-col overflow-hidden rounded-2xl border bg-card/90 shadow-[0_28px_56px_-32px_rgba(0,0,0,0.65)] ring-1 ring-inset",
+              // `self-start` avoids CSS grid row stretch: siblings were forced to the same height as an
+              // expanded card, leaving blank space under collapsed headers.
+              "compliance-card-enter group/card relative flex w-full max-w-full flex-col self-start overflow-hidden rounded-2xl border bg-card/90 shadow-[0_28px_56px_-32px_rgba(0,0,0,0.65)] ring-1 ring-inset",
               attention
                 ? "border-red-500/35 ring-red-500/20"
                 : "border-border/80 ring-white/[0.04] dark:ring-white/[0.06]",

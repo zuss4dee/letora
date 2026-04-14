@@ -19,9 +19,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import { classifySignInError, signInErrorMessageForOther } from "@/lib/user-facing-errors";
+import { isValidEmailAddress, requiredEmailSchema } from "@/lib/validations/email";
 
 const loginSchema = z.object({
-  email: z.string().email("Enter a valid email address"),
+  email: requiredEmailSchema,
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
@@ -32,8 +33,7 @@ const authAlertBoxClass =
 
 function safePrefillEmail(raw: string | null): string {
   if (!raw?.trim()) return "";
-  const parsed = z.string().email().safeParse(raw.trim());
-  return parsed.success ? parsed.data : "";
+  return isValidEmailAddress(raw) ? raw.trim() : "";
 }
 
 function LoginCallbackParamAlert({

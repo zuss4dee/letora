@@ -92,7 +92,10 @@ export function LetoraPricingSection() {
           </p>
         </div>
 
-        <div className="mt-16 grid min-w-0 grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+        <div
+          id="pricing-plans"
+          className="mt-16 grid min-w-0 scroll-mt-28 grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4"
+        >
           {allTiers.map((plan) => (
             <article
               key={plan.key}

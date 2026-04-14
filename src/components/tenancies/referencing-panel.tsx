@@ -27,6 +27,7 @@ import {
   TENANCY_OUTLINE_BTN,
   TENANCY_PRIMARY_BTN,
 } from "./tenancy-letora-surfaces";
+import { EMAIL_INVALID_MESSAGE, optionalEmailSchema } from "@/lib/validations/email";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -70,11 +71,14 @@ export function ReferencingPanel({
   const [override, setOverride] = useState(referencingAgencyEmailOverride ?? "");
   const [pending, startTransition] = useTransition();
 
-  const canSendHandoff =
-    hasDefaultReferencingAgencyEmail || override.trim().length > 0;
+  const overrideCheck = optionalEmailSchema.safeParse(override);
+  const overrideTrimmed = overrideCheck.success ? overrideCheck.data : "";
+  const hasValidNonEmptyOverride = overrideTrimmed.length > 0;
+
+  const canSendHandoff = hasDefaultReferencingAgencyEmail || hasValidNonEmptyOverride;
 
   const handoffRecipientEmail =
-    override.trim() || (defaultReferencingAgencyEmail ?? "").trim() || null;
+    hasValidNonEmptyOverride ? overrideTrimmed : (defaultReferencingAgencyEmail ?? "").trim() || null;
 
   async function refreshEvents() {
     const next = await getReferencingEvents(userId, tenancyId);
@@ -157,6 +161,11 @@ export function ReferencingPanel({
               size="sm"
               disabled={pending}
               onClick={() => {
+                const check = optionalEmailSchema.safeParse(override);
+                if (!check.success) {
+                  toast.error(check.error.issues[0]?.message ?? EMAIL_INVALID_MESSAGE);
+                  return;
+                }
                 startTransition(async () => {
                   const r = await updateReferencingAgencyOverride(tenancyId, override);
                   if (!r.ok) {
