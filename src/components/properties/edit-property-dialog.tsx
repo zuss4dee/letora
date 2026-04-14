@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 
+import { PropertyAddressFormSection } from "@/components/address/property-address-form-section";
 import { updateProperty } from "@/lib/actions/properties";
 import { type AddPropertyInput, propertySchema } from "@/lib/validations/property";
 import {
@@ -88,37 +89,12 @@ export function EditPropertyDialog({ propertyId, initial, triggerLabel = "Edit p
 
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className={DIALOG_FORM_STACK_CLASS}>
-            <div className={DIALOG_FIELD_CLASS}>
-              <Label htmlFor="ep-address">Street address</Label>
-              <Input id="ep-address" className="w-full" {...form.register("address")} />
-              {form.formState.errors.address?.message ? (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {form.formState.errors.address.message}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="grid w-full min-w-0 gap-4 sm:grid-cols-2">
-              <div className={DIALOG_FIELD_CLASS}>
-                <Label htmlFor="ep-postcode">Postcode</Label>
-                <Input id="ep-postcode" className="w-full" {...form.register("postcode")} />
-                {form.formState.errors.postcode?.message ? (
-                  <p className="text-xs text-red-600 dark:text-red-400">
-                    {form.formState.errors.postcode.message}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className={DIALOG_FIELD_CLASS}>
-                <Label htmlFor="ep-city">City</Label>
-                <Input id="ep-city" className="w-full" {...form.register("city")} />
-                {form.formState.errors.city?.message ? (
-                  <p className="text-xs text-red-600 dark:text-red-400">
-                    {form.formState.errors.city.message}
-                  </p>
-                ) : null}
-              </div>
-            </div>
+            <PropertyAddressFormSection
+              register={form.register}
+              setValue={form.setValue}
+              errors={form.formState.errors}
+              fieldIds={{ address: "ep-address", postcode: "ep-postcode", city: "ep-city" }}
+            />
 
             <div className="grid w-full min-w-0 gap-4 sm:grid-cols-2">
               <div className={DIALOG_FIELD_CLASS}>

@@ -7,6 +7,7 @@ import { useMemo, useState, type ReactElement } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 
 import { addProperty } from "@/lib/actions/properties";
+import { PropertyAddressFormSection } from "@/components/address/property-address-form-section";
 import { PropertyCreatedCompliancePrompt } from "@/components/properties/property-created-compliance-prompt";
 import { type AddPropertyInput, propertySchema } from "@/lib/validations/property";
 import {
@@ -118,58 +119,18 @@ export function AddPropertyDialog({ trigger }: { trigger?: ReactElement }) {
         <DialogHeader>
           <DialogTitle>Add property</DialogTitle>
           <DialogDescription>
-            Add a lettings property. Use the full street address tenants will recognise.
+            Search the map or add the address manually — use the full street address tenants will recognise.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={form.handleSubmit(onSubmit)}>
+               <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className={DIALOG_FORM_STACK_CLASS}>
-            <div className={DIALOG_FIELD_CLASS}>
-              <Label htmlFor="ap-address">Street address</Label>
-              <Input
-                id="ap-address"
-                className="w-full"
-                placeholder="e.g. 12 King Street"
-                {...form.register("address")}
-              />
-              {form.formState.errors.address?.message ? (
-                <p className="text-xs text-red-600 dark:text-red-400">
-                  {form.formState.errors.address.message}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="grid w-full min-w-0 gap-4 sm:grid-cols-2">
-              <div className={DIALOG_FIELD_CLASS}>
-                <Label htmlFor="ap-postcode">Postcode</Label>
-                <Input
-                  id="ap-postcode"
-                  className="w-full"
-                  placeholder="e.g. M1 1AA"
-                  {...form.register("postcode")}
-                />
-                {form.formState.errors.postcode?.message ? (
-                  <p className="text-xs text-red-600 dark:text-red-400">
-                    {form.formState.errors.postcode.message}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className={DIALOG_FIELD_CLASS}>
-                <Label htmlFor="ap-city">City</Label>
-                <Input
-                  id="ap-city"
-                  className="w-full"
-                  placeholder="e.g. Manchester"
-                  {...form.register("city")}
-                />
-                {form.formState.errors.city?.message ? (
-                  <p className="text-xs text-red-600 dark:text-red-400">
-                    {form.formState.errors.city.message}
-                  </p>
-                ) : null}
-              </div>
-            </div>
+            <PropertyAddressFormSection
+              register={form.register}
+              setValue={form.setValue}
+              errors={form.formState.errors}
+              fieldIds={{ address: "ap-address", postcode: "ap-postcode", city: "ap-city" }}
+            />
 
             <div className="grid w-full min-w-0 gap-4 sm:grid-cols-2">
               <div className={DIALOG_FIELD_CLASS}>

@@ -118,7 +118,7 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
                   <div className="col-span-4 flex items-center gap-6">
                     <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-sm bg-[#252626] grayscale transition-all duration-500 group-hover:grayscale-0">
                       <div className="absolute inset-0 bg-gradient-to-br from-[#2a2a2a] to-[#131313]" />
-                      <div className="absolute inset-0 flex items-center justify-center font-headline text-lg font-extralight text-muted-foreground">
+                      <div className="absolute inset-0 flex items-center justify-center font-headline text-lg font-extralight text-white/90">
                         {p.identityTitle.slice(0, 1)}
                       </div>
                     </div>

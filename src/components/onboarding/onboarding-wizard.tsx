@@ -6,8 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
+import { AddressMapPicker } from "@/components/address/address-map-picker";
+import { isGoogleMapsConfigured } from "@/components/address/load-google-maps";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   completeOnboardingGate,
   completeOnboardingWithProperty,
@@ -76,7 +79,10 @@ export function OnboardingWizard({
   const [identityBusy, setIdentityBusy] = useState(false);
   const [focusBusy, setFocusBusy] = useState(false);
 
-  const [addressLine, setAddressLine] = useState("");
+  const [propertyStreet, setPropertyStreet] = useState("");
+  const [propertyCity, setPropertyCity] = useState("");
+  const [propertyPostcode, setPropertyPostcode] = useState("");
+  const [addressManualOnly, setAddressManualOnly] = useState(() => !isGoogleMapsConfigured());
   const [propertyBusy, setPropertyBusy] = useState(false);
   const [skipBusy, setSkipBusy] = useState(false);
 
@@ -113,7 +119,12 @@ export function OnboardingWizard({
           e.preventDefault();
           void submitIdentity();
         }
-        if (step === 2 && addressLine.trim().length >= 5) {
+        if (
+          step === 2 &&
+          propertyStreet.trim().length >= 1 &&
+          propertyCity.trim().length >= 1 &&
+          propertyPostcode.trim().length >= 1
+        ) {
           e.preventDefault();
           void submitProperty();
         }
@@ -126,7 +137,12 @@ export function OnboardingWizard({
       } else if (step === 1 && focus) {
         e.preventDefault();
         void submitFocusAndContinue();
-      } else if (step === 2 && addressLine.trim().length >= 5) {
+      } else if (
+        step === 2 &&
+        propertyStreet.trim().length >= 1 &&
+        propertyCity.trim().length >= 1 &&
+        propertyPostcode.trim().length >= 1
+      ) {
         e.preventDefault();
         void submitProperty();
       }
@@ -139,7 +155,9 @@ export function OnboardingWizard({
     step,
     portfolioName,
     focus,
-    addressLine,
+    propertyStreet,
+    propertyCity,
+    propertyPostcode,
     identityBusy,
     focusBusy,
     propertyBusy,
@@ -196,9 +214,17 @@ export function OnboardingWizard({
   }
 
   async function submitProperty() {
+    if (!propertyStreet.trim() || !propertyCity.trim() || !propertyPostcode.trim()) {
+      toast.error("Enter street, city, and postcode.");
+      return;
+    }
     setPropertyBusy(true);
     try {
-      const res = await completeOnboardingWithProperty(addressLine);
+      const res = await completeOnboardingWithProperty({
+        address: propertyStreet.trim(),
+        city: propertyCity.trim(),
+        postcode: propertyPostcode.trim(),
+      });
       if (!res.ok) {
         toast.error(res.error);
         return;
@@ -218,6 +244,14 @@ export function OnboardingWizard({
 
   const progress = ((step + 1) / 3) * 100;
   const progressValue = Math.round(progress);
+
+  const onboardingInputClass =
+    "h-12 border-zinc-800 bg-zinc-950/40 px-4 font-headline text-base font-light text-white placeholder:text-zinc-600 focus-visible:border-[#BD9952]/45 focus-visible:ring-2 focus-visible:ring-[#BD9952]/15";
+
+  const canSubmitProperty =
+    propertyStreet.trim().length >= 1 &&
+    propertyCity.trim().length >= 1 &&
+    propertyPostcode.trim().length >= 1;
 
   return (
     <div className="relative min-h-svh overflow-hidden bg-black text-zinc-100">
@@ -434,17 +468,82 @@ export function OnboardingWizard({
                   </p>
                 </div>
 
-                <div className="space-y-4">
-                  <label htmlFor="quick-address" className="sr-only">
-                    Property address
-                  </label>
-                  <Input
-                    id="quick-address"
-                    value={addressLine}
-                    onChange={(e) => setAddressLine(e.target.value)}
-                    placeholder="Street, city, postcode…"
-                    className="h-16 border-zinc-800 bg-zinc-950/40 px-6 font-headline text-lg font-light text-white placeholder:text-zinc-600 focus-visible:border-[#BD9952]/45 focus-visible:ring-2 focus-visible:ring-[#BD9952]/15"
-                  />
+                <div className="space-y-5">
+                  {isGoogleMapsConfigured() ? (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <p className="font-headline text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
+                        Pick on map or type
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          id="onboarding-address-manual"
+                          type="checkbox"
+                          checked={addressManualOnly}
+                          onChange={(e) => setAddressManualOnly(e.target.checked)}
+                          className="size-3.5 rounded border-zinc-600 bg-zinc-950 accent-[#BD9952]"
+                        />
+                        <Label
+                          htmlFor="onboarding-address-manual"
+                          className="cursor-pointer font-headline text-xs font-normal text-zinc-500"
+                        >
+                          Add address manually
+                        </Label>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {!addressManualOnly && isGoogleMapsConfigured() ? (
+                    <AddressMapPicker
+                      onResolved={(v) => {
+                        setPropertyStreet(v.line1);
+                        setPropertyCity(v.city);
+                        setPropertyPostcode(v.postcode);
+                      }}
+                      mapClassName="border-zinc-800 bg-zinc-900/50"
+                      searchInputClassName={onboardingInputClass}
+                    />
+                  ) : null}
+
+                  <div className="space-y-3">
+                    <div className="space-y-2">
+                      <Label htmlFor="ob-street" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
+                        Street address
+                      </Label>
+                      <Input
+                        id="ob-street"
+                        value={propertyStreet}
+                        onChange={(e) => setPropertyStreet(e.target.value)}
+                        placeholder="e.g. 12 King Street"
+                        className={onboardingInputClass}
+                      />
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="ob-postcode" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
+                          Postcode
+                        </Label>
+                        <Input
+                          id="ob-postcode"
+                          value={propertyPostcode}
+                          onChange={(e) => setPropertyPostcode(e.target.value)}
+                          placeholder="e.g. M1 1AA"
+                          className={onboardingInputClass}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="ob-city" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
+                          City
+                        </Label>
+                        <Input
+                          id="ob-city"
+                          value={propertyCity}
+                          onChange={(e) => setPropertyCity(e.target.value)}
+                          placeholder="e.g. Manchester"
+                          className={onboardingInputClass}
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
@@ -457,7 +556,7 @@ export function OnboardingWizard({
                   </button>
                   <Button
                     type="button"
-                    disabled={propertyBusy || addressLine.trim().length < 5}
+                    disabled={propertyBusy || !canSubmitProperty}
                     onClick={() => void submitProperty()}
                     className={cn("h-14 rounded-full px-10 font-headline text-xs font-semibold uppercase tracking-[0.22em]", nextGlow)}
                   >

@@ -109,29 +109,53 @@ export async function saveOnboardingFocus(input: {
   return { ok: true };
 }
 
+const onboardingAddressSchema = z.object({
+  address: z.string().trim().min(1, "Street address is required"),
+  city: z.string().trim().min(1, "City is required"),
+  postcode: z.string().trim().min(1, "Postcode is required"),
+});
+
 /**
  * Step 3 — create first property and finish onboarding.
+ * Pass structured fields from the map/manual form, or a single line (parsed with the mock UK splitter).
  */
-export async function completeOnboardingWithProperty(addressLine: string): Promise<
-  { ok: true; propertyId: string } | { ok: false; error: string }
-> {
+export async function completeOnboardingWithProperty(
+  input: { address: string; city: string; postcode: string } | string,
+): Promise<{ ok: true; propertyId: string } | { ok: false; error: string }> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Not authenticated" };
 
-  const trimmed = addressLine.trim();
-  if (trimmed.length < 5) {
-    return { ok: false, error: "Enter a full address so we can create the property." };
+  let line1: string;
+  let postcode: string;
+  let city: string;
+
+  if (typeof input === "string") {
+    const trimmed = input.trim();
+    if (trimmed.length < 5) {
+      return { ok: false, error: "Enter a full address so we can create the property." };
+    }
+    const resolved = mockResolveUkAddress(trimmed);
+    line1 = resolved.line1;
+    postcode = resolved.postcode;
+    city = resolved.city;
+  } else {
+    const parsed = onboardingAddressSchema.safeParse(input);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0]?.message ?? "Enter street, city, and postcode.";
+      return { ok: false, error: first };
+    }
+    line1 = parsed.data.address;
+    city = parsed.data.city;
+    postcode = parsed.data.postcode;
   }
 
-  const resolved = mockResolveUkAddress(trimmed);
-
   const result = await addProperty({
-    address: resolved.line1,
-    postcode: resolved.postcode,
-    city: resolved.city,
+    address: line1,
+    postcode,
+    city,
     propertyType: "House",
     bedrooms: 2,
     bathrooms: 1,

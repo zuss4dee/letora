@@ -16,7 +16,6 @@ import {
 } from "@/lib/actions/compliance";
 import type { ComplianceType } from "@/lib/compliance/types";
 import type { PropertyRow } from "@/lib/actions/properties";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 const ALL_CERT_ROWS: { type: ComplianceType; label: string; hint: string }[] = [
   { type: "EPC", label: "EPC", hint: "Energy performance certificate" },
@@ -124,21 +123,14 @@ export function ComplianceDashboard({
   /** Signed URL from last upload so View works without router.refresh(). */
   const [viewUrlByKey, setViewUrlByKey] = useState<Record<string, string>>({});
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-  const isMobile = useIsMobile();
-  /** Mobile: collapsible cards; desktop: always show full card. */
+  /** Collapsed by default: header shows address + attention; expand for certificate rows. */
   const [expandedById, setExpandedById] = useState<Record<string, boolean>>({});
 
-  const isCardExpanded = (propertyId: string, index: number) => {
-    if (!isMobile) return true;
-    const v = expandedById[propertyId];
-    if (v !== undefined) return v;
-    return index === 0;
-  };
+  const isCardExpanded = (propertyId: string) => expandedById[propertyId] === true;
 
-  const toggleCard = (propertyId: string, index: number) => {
-    if (!isMobile) return;
+  const toggleCard = (propertyId: string) => {
     setExpandedById((m) => {
-      const cur = m[propertyId] ?? index === 0;
+      const cur = m[propertyId] === true;
       return { ...m, [propertyId]: !cur };
     });
   };
@@ -254,7 +246,7 @@ export function ComplianceDashboard({
         const sub = p.city ? p.city : null;
         const attention = propertyNeedsAttention(records, p.id, p.hasGasSupply);
         const rows = certRowsForProperty(p.hasGasSupply);
-        const expanded = isCardExpanded(p.id, cardIndex);
+        const expanded = isCardExpanded(p.id);
         const panelId = `compliance-property-${p.id}`;
 
         return (
@@ -287,45 +279,24 @@ export function ComplianceDashboard({
                 </div>
               ) : null}
 
-              {isMobile ? (
-                <button
-                  type="button"
-                  id={`${panelId}-trigger`}
-                  aria-expanded={expanded}
-                  aria-controls={panelId}
-                  aria-label={expanded ? "Collapse certificates for this property" : "Expand certificates for this property"}
-                  onClick={() => toggleCard(p.id, cardIndex)}
-                  className={cn(
-                    "flex w-full touch-manipulation items-start justify-between gap-3 border-b border-border/50 pb-5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#BD9952]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                    attention && "pr-24 sm:pr-28",
-                  )}
-                >
-                  <header className="min-w-0 flex-1">
-                    <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]">
-                      Registered property
-                    </p>
-                    <h2 className="mt-2 font-headline text-xl font-light leading-snug tracking-tight text-foreground">
-                      {title}
-                    </h2>
-                    {sub ? (
-                      <p className="mt-1.5 font-headline text-sm font-light leading-snug text-muted-foreground">{sub}</p>
-                    ) : null}
-                  </header>
-                  <span
-                    className={cn(
-                      "mt-1 flex size-10 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/30 text-muted-foreground transition-transform duration-200",
-                      expanded && "rotate-180",
-                    )}
-                    aria-hidden
-                  >
-                    <ChevronDown className="size-5 stroke-[1.5]" />
-                  </span>
-                </button>
-              ) : (
-                <header
-                  id={`${panelId}-trigger`}
-                  className={cn("mb-6 border-b border-border/50 pb-5", attention && "pr-24 sm:pr-28")}
-                >
+              <button
+                type="button"
+                id={`${panelId}-trigger`}
+                aria-expanded={expanded}
+                aria-controls={panelId}
+                aria-label={
+                  expanded
+                    ? "Collapse certificates and compliance details for this property"
+                    : "Expand to view certificates and compliance details for this property"
+                }
+                onClick={() => toggleCard(p.id)}
+                className={cn(
+                  "flex w-full touch-manipulation items-start justify-between gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#BD9952]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  expanded ? "border-b border-border/50 pb-5" : "pb-1",
+                  attention && "pr-24 sm:pr-28",
+                )}
+              >
+                <header className="min-w-0 flex-1">
                   <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]">
                     Registered property
                   </p>
@@ -336,15 +307,24 @@ export function ComplianceDashboard({
                     <p className="mt-1.5 font-headline text-sm font-light leading-snug text-muted-foreground">{sub}</p>
                   ) : null}
                 </header>
-              )}
+                <span
+                  className={cn(
+                    "mt-1 flex size-10 shrink-0 items-center justify-center rounded-lg border border-border/60 bg-muted/30 text-muted-foreground transition-transform duration-200",
+                    expanded && "rotate-180",
+                  )}
+                  aria-hidden
+                >
+                  <ChevronDown className="size-5 stroke-[1.5]" />
+                </span>
+              </button>
 
               <div
                 id={panelId}
                 role="region"
                 aria-labelledby={`${panelId}-trigger`}
-                className={cn(!expanded && isMobile && "hidden")}
+                hidden={!expanded}
               >
-              <ul className={cn("flex flex-col gap-4", isMobile ? "mt-0" : "mt-0")}>
+              <ul className="mt-4 flex flex-col gap-4">
               {rows.map((row) => {
                   const rec = recordFor(records, p.id, row.type);
                   const value = rec?.expiryDate ?? "";

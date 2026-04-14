@@ -16,6 +16,7 @@ import {
 import { saveSettings } from "@/lib/actions/user-settings";
 import { type UserSettingsInput, userSettingsSchema } from "@/lib/validations/user-settings";
 
+import { BusinessAddressBlock } from "@/components/address/business-address-block";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -200,10 +201,12 @@ export function AgentSettingsForm({
               <Input id="contactPhone" {...form.register("contactPhone")} />
             </div>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="businessAddress">Business Address</Label>
-            <Textarea id="businessAddress" {...form.register("businessAddress")} />
-          </div>
+          <BusinessAddressBlock
+            id="businessAddress"
+            value={form.watch("businessAddress") ?? ""}
+            onChange={(v) => form.setValue("businessAddress", v, { shouldDirty: true, shouldValidate: true })}
+            error={form.formState.errors.businessAddress?.message}
+          />
         </CardContent>
       </Card>
 
