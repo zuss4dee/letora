@@ -59,7 +59,7 @@ export async function middleware(request: NextRequest) {
 
   if ((isLoginRoute || isSignupRoute) && user) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = "/auth/continue";
     url.search = "";
     const redirect = NextResponse.redirect(url);
     mergeResponseCookies(response, redirect);
@@ -70,5 +70,13 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup", "/onboarding", "/onboarding/:path*"],
+  matcher: [
+    "/dashboard/:path*",
+    "/login",
+    "/signup",
+    "/onboarding",
+    "/onboarding/:path*",
+    "/auth/callback",
+    "/auth/continue",
+  ],
 };

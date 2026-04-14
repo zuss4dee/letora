@@ -109,7 +109,8 @@ function LoginForm() {
       return;
     }
 
-    router.replace(nextPath);
+    const continueUrl = `/auth/continue?next=${encodeURIComponent(nextPath)}`;
+    router.replace(continueUrl);
     router.refresh();
   }
 

@@ -175,6 +175,11 @@ function SignupForm() {
     setSubmitError(null);
     const supabase = createClient();
 
+    const planKey = resolvePlanKeyFromSearch(searchParams.get("plan"));
+    const intent = searchParams.get("intent");
+    /** Enterprise flows talk to sales first — skip forced checkout metadata. */
+    const pendingCheckoutPlan = intent === "enterprise" ? undefined : planKey;
+
     const { data, error } = await supabase.auth.signUp({
       email: values.email,
       password: values.password,
@@ -182,6 +187,7 @@ function SignupForm() {
         emailRedirectTo: authCallbackUrl(),
         data: {
           full_name: values.fullName,
+          ...(pendingCheckoutPlan ? { pending_checkout_plan: pendingCheckoutPlan } : {}),
         },
       },
     });
@@ -192,7 +198,6 @@ function SignupForm() {
     }
 
     if (data.session) {
-      const planKey = resolvePlanKeyFromSearch(searchParams.get("plan"));
       const priceId = PLANS[planKey].priceId?.trim();
       if (!priceId) {
         setSubmitError("Checkout isn’t available right now. Please try again later or contact support.");

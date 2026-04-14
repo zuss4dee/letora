@@ -51,9 +51,14 @@ export function resolvePlanKeyFromStripeSubscription(sub: {
 
 const PAYING_STATUSES = new Set(["active", "trialing", "past_due"]);
 
-function isSubscriptionEntitled(status: string | null | undefined): boolean {
+/** Exported for billing gates (auth continue, middleware). */
+export function isPayingPlatformSubscription(status: string | null | undefined): boolean {
   if (!status) return false;
   return PAYING_STATUSES.has(status);
+}
+
+function isSubscriptionEntitled(status: string | null | undefined): boolean {
+  return isPayingPlatformSubscription(status);
 }
 
 export type UserPlanSettings = {

@@ -4,6 +4,7 @@ import { createServiceRoleClient } from "@/lib/supabase/admin";
 
 import { PLANS } from "@/lib/stripe-plans";
 import { resolvePlanKeyFromStripeSubscription } from "@/lib/plan-limits";
+import { PENDING_CHECKOUT_PLAN_META_KEY } from "@/lib/stripe/pending-checkout";
 import { stripe } from "@/lib/stripe";
 
 const PG_UNIQUE_VIOLATION = "23505";
@@ -92,6 +93,27 @@ async function handleCheckoutSessionCompleted(
   await syncPlatformSubscriptionToUserSettings(supabase, userId, sub, {
     stripeCustomerId: stripeCustomerId ?? undefined,
   });
+
+  try {
+    const { data: authUser, error: authErr } = await supabase.auth.admin.getUserById(userId);
+    if (authErr || !authUser?.user) {
+      return;
+    }
+    const meta = { ...((authUser.user.user_metadata ?? {}) as Record<string, unknown>) };
+    if (!(PENDING_CHECKOUT_PLAN_META_KEY in meta)) {
+      return;
+    }
+    delete meta[PENDING_CHECKOUT_PLAN_META_KEY];
+    const { error: updErr } = await supabase.auth.admin.updateUserById(userId, { user_metadata: meta });
+    if (updErr) {
+      logWebhookIssue("clear pending_checkout_plan failed", { sessionId: session.id, message: updErr.message });
+    }
+  } catch (e) {
+    logWebhookIssue("clear pending_checkout_plan exception", {
+      sessionId: session.id,
+      message: e instanceof Error ? e.message : String(e),
+    });
+  }
 }
 
 async function handleInvoicePaid(
