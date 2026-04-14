@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
@@ -162,7 +163,15 @@ function LoginForm() {
 
   return (
     <AuthSplitShell aside={<AuthEditorialAside variant="login" />}>
-      <div className="w-full max-w-[380px] space-y-8">
+      <div className="w-full max-w-[380px]">
+        <Link
+          href="/"
+          className="mb-6 inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-4 shrink-0 stroke-[1.25]" aria-hidden />
+          Back to website
+        </Link>
+        <div className="space-y-8">
         <AuthBrandMark />
 
         <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)}>
@@ -233,6 +242,7 @@ function LoginForm() {
               Sign up
             </Link>
           </p>
+        </div>
         </div>
       </div>
     </AuthSplitShell>
