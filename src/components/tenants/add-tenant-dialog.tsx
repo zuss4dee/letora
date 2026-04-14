@@ -138,7 +138,7 @@ export function AddTenantDialog({ trigger }: { trigger?: ReactElement }) {
 
             <div className="grid w-full min-w-0 gap-4 sm:grid-cols-2">
               <div className={DIALOG_FIELD_CLASS}>
-                <Label htmlFor="tn-dob">Date of birth</Label>
+                <Label htmlFor="tn-dob">Date of birth (optional)</Label>
                 <Input id="tn-dob" className="w-full" type="date" {...form.register("dateOfBirth")} />
                 {form.formState.errors.dateOfBirth?.message ? (
                   <p className="text-xs text-red-600 dark:text-red-400">

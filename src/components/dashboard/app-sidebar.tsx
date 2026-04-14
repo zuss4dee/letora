@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 
 import { SidebarAgentActivityButton } from "@/components/dashboard/sidebar-agent-activity-button";
+import { getSidebarPlanStatusCompact } from "@/lib/billing/subscription-display";
 import { cn } from "@/lib/utils";
 import {
   Sidebar,
@@ -60,6 +61,27 @@ function isActivePath(pathname: string, url: string) {
     return pathname === "/dashboard" || pathname === "/dashboard/";
   }
   return pathname === url || pathname.startsWith(`${url}/`);
+}
+
+/** Sidebar “presence” dot: green glow = active paid subscription, amber = trial, etc. */
+function planPresenceStyles(subscriptionStatus: string | null | undefined): {
+  dot: string;
+  ping?: string;
+} {
+  const st = subscriptionStatus?.toLowerCase() ?? "";
+  if (st === "active") {
+    return {
+      dot: "bg-emerald-400 shadow-[0_0_10px_3px_rgba(52,211,153,0.75),0_0_22px_8px_rgba(16,185,129,0.28)]",
+      ping: "bg-emerald-400",
+    };
+  }
+  if (st === "trialing") return { dot: "bg-amber-400", ping: "bg-amber-300" };
+  if (st === "past_due") return { dot: "bg-orange-500" };
+  if (st === "inactive" || st === "canceled" || st === "cancelled" || st === "unpaid") {
+    return { dot: "bg-zinc-500" };
+  }
+  if (!st) return { dot: "bg-zinc-400" };
+  return { dot: "bg-sky-500", ping: "bg-sky-400" };
 }
 
 type AttentionItem = { url: string; title: string; ariaLabel: string };
@@ -152,6 +174,10 @@ export function AppSidebar({
   userEmail,
   complianceAttention,
   maintenanceAttention,
+  subscriptionPlan = null,
+  subscriptionStatus = null,
+  subscriptionPeriodEnd = null,
+  subscriptionTrialEnd = null,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   userEmail?: string | null;
@@ -159,6 +185,10 @@ export function AppSidebar({
   complianceAttention?: boolean;
   /** Active urgent safety alerts (last 7 days, non-resolved) — red dot on Maintenance. */
   maintenanceAttention?: boolean;
+  subscriptionPlan?: string | null;
+  subscriptionStatus?: string | null;
+  subscriptionPeriodEnd?: string | null;
+  subscriptionTrialEnd?: string | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -195,6 +225,15 @@ export function AppSidebar({
     router.refresh();
   }
 
+  const subFields = {
+    subscriptionPlan,
+    subscriptionStatus,
+    subscriptionPeriodEnd,
+    subscriptionTrialEnd,
+  };
+  const planStatusLine = getSidebarPlanStatusCompact(subFields);
+  const presence = planPresenceStyles(subscriptionStatus);
+
   return (
     <Sidebar
       collapsible="offcanvas"
@@ -211,6 +250,33 @@ export function AppSidebar({
             Architectural Management
           </p>
         </Link>
+        <div className="mt-4 border-t border-sidebar-border/70 px-2 pt-3">
+          <div
+            className="flex min-w-0 items-center gap-2.5"
+            title={planStatusLine}
+            aria-label={`Plan status: ${planStatusLine}`}
+          >
+            <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden>
+              {presence.ping ? (
+                <span
+                  className={cn(
+                    "absolute inline-flex h-full w-full animate-ping rounded-full opacity-40",
+                    presence.ping,
+                  )}
+                />
+              ) : null}
+              <span
+                className={cn(
+                  "relative inline-flex h-2.5 w-2.5 rounded-full ring-2 ring-sidebar",
+                  presence.dot,
+                )}
+              />
+            </span>
+            <p className="min-w-0 font-headline text-[0.75rem] font-medium leading-snug text-foreground">
+              {planStatusLine}
+            </p>
+          </div>
+        </div>
         <Link
           href="/dashboard/properties"
           onClick={closeMobileNav}

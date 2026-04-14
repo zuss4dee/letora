@@ -7,18 +7,16 @@ import { addProperty } from "@/lib/actions/properties";
 import { addTenant } from "@/lib/actions/tenants";
 import { mockResolveUkAddress } from "@/lib/onboarding/mock-address";
 import type { OnboardingStatus } from "@/lib/onboarding/status";
+import { focusSelectionSchema, serializePrimaryGoals } from "@/lib/onboarding/priorities";
+import {
+  extractTenantsWithLlmFromText,
+  extractTextFromTenantImportFile,
+  parseLooseTenantsFromDelimitedText,
+  type LooseTenantRow,
+} from "@/lib/onboarding/tenant-import";
 import { createClient } from "@/lib/supabase/server";
 import { tenantSchema } from "@/lib/validations/tenant";
 import { userFacingError } from "@/lib/user-facing-errors";
-
-/** UI values → stored onboarding_primary_goal slugs (existing column). */
-const focusSchema = z.enum(["automate_rent", "legal_compliance", "lead_management"]);
-
-const goalStorageMap: Record<z.infer<typeof focusSchema>, string> = {
-  automate_rent: "automate_rent",
-  legal_compliance: "stay_compliant",
-  lead_management: "find_leads",
-};
 
 async function setUserOnboardingStatus(userId: string, status: OnboardingStatus) {
   const supabase = await createClient();
@@ -73,9 +71,9 @@ export async function saveOnboardingIdentity(input: {
   return { ok: true };
 }
 
-/** Step 2 — focus cards; moves pipeline to property step. */
+/** Step 2 — prioritisation (1–4 selections); upserts so saves succeed even if the row was missing. */
 export async function saveOnboardingFocus(input: {
-  focus: string;
+  focusIds: string[];
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await createClient();
   const {
@@ -83,42 +81,60 @@ export async function saveOnboardingFocus(input: {
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Not authenticated" };
 
-  const parsed = focusSchema.safeParse(input.focus);
+  const parsed = focusSelectionSchema.safeParse([...new Set(input.focusIds)]);
   if (!parsed.success) {
-    return { ok: false, error: "Choose a focus." };
+    const msg = parsed.error.issues[0]?.message ?? "Choose between 1 and 4 priorities.";
+    return { ok: false, error: msg };
   }
 
-  const stored = goalStorageMap[parsed.data];
+  const storedJson = serializePrimaryGoals(parsed.data);
+  const ts = new Date().toISOString();
 
-  const { data: row } = await supabase.from("user_settings").select("user_id").eq("user_id", user.id).maybeSingle();
-  if (!row) {
-    return { ok: false, error: "Complete the previous step first." };
+  // Use `property_pending` (not `settings_pending`) so saves work on DBs that only allow the
+  // original check constraint: profile_pending | property_pending | completed.
+  const { error } = await supabase.from("user_settings").upsert(
+    {
+      user_id: user.id,
+      onboarding_primary_goal: storedJson,
+      onboarding_status: "property_pending",
+      updated_at: ts,
+    },
+    { onConflict: "user_id" },
+  );
+
+  if (error) {
+    console.error("[saveOnboardingFocus]", error.code, error.message);
+    return {
+      ok: false,
+      error: userFacingError(
+        error.message,
+        "We couldn't save your priorities. Please check your connection and try again.",
+      ),
+    };
   }
-
-  const { error } = await supabase
-    .from("user_settings")
-    .update({
-      onboarding_primary_goal: stored,
-      onboarding_status: "settings_pending",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", user.id);
-
-  if (error)
-    return { ok: false, error: userFacingError(error.message, "We couldn't save your details. Please try again.") };
 
   revalidatePath("/onboarding");
   return { ok: true };
 }
 
+const optionalOnboardingEmail = z
+  .string()
+  .trim()
+  .refine((s) => s.length === 0 || z.string().email().safeParse(s).success, {
+    message: "Enter a valid email or leave this blank.",
+  });
+
 const onboardingSettingsEssentialsSchema = z.object({
+  /** Company / portfolio label from step 0 — re-saved here so a partial upsert cannot leave business_name missing. */
+  portfolioName: z.string().trim().optional(),
   landlordName: z.string().trim().min(2, "Enter the landlord or legal name."),
-  contactEmail: z.string().trim().email("Enter a valid agency contact email."),
-  referencingAgencyEmail: z.string().trim().email("Enter a valid referencing / agency email."),
+  contactEmail: optionalOnboardingEmail,
+  referencingAgencyEmail: optionalOnboardingEmail,
 });
 
 /** Step after focus — required profile fields used across emails and compliance. */
 export async function saveOnboardingSettingsEssentials(input: {
+  portfolioName?: string;
   landlordName: string;
   contactEmail: string;
   referencingAgencyEmail: string;
@@ -135,24 +151,26 @@ export async function saveOnboardingSettingsEssentials(input: {
     return { ok: false, error: first };
   }
 
-  const { data: row } = await supabase.from("user_settings").select("user_id").eq("user_id", user.id).maybeSingle();
-  if (!row) {
-    return { ok: false, error: "Complete the previous step first." };
+  const ts = new Date().toISOString();
+  const portfolio = parsed.data.portfolioName?.trim() ?? "";
+  const payload: Record<string, unknown> = {
+    user_id: user.id,
+    landlord_name: parsed.data.landlordName.trim(),
+    contact_email: parsed.data.contactEmail.trim() || null,
+    referencing_agency_email: parsed.data.referencingAgencyEmail.trim() || null,
+    onboarding_status: "property_pending",
+    updated_at: ts,
+  };
+  if (portfolio.length >= 2) {
+    payload.business_name = portfolio;
   }
 
-  const { error } = await supabase
-    .from("user_settings")
-    .update({
-      landlord_name: parsed.data.landlordName.trim(),
-      contact_email: parsed.data.contactEmail.trim(),
-      referencing_agency_email: parsed.data.referencingAgencyEmail.trim(),
-      onboarding_status: "property_pending",
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", user.id);
+  const { error } = await supabase.from("user_settings").upsert(payload, { onConflict: "user_id" });
 
-  if (error)
+  if (error) {
+    console.error("[saveOnboardingSettingsEssentials]", error.message);
     return { ok: false, error: userFacingError(error.message, "We couldn't save your details. Please try again.") };
+  }
 
   revalidatePath("/onboarding");
   return { ok: true };
@@ -217,7 +235,9 @@ export async function completeOnboardingWithProperty(
     return { ok: false, error: result.error };
   }
 
-  const statusRes = await setUserOnboardingStatus(user.id, "tenant_pending");
+  // Stay on `property_pending` until a tenant exists. Older DBs may not allow `tenant_pending`
+  // on the onboarding_status check; step routing uses property/tenant counts instead.
+  const statusRes = await setUserOnboardingStatus(user.id, "property_pending");
   if (!statusRes.ok) {
     return { ok: false, error: statusRes.error };
   }
@@ -285,6 +305,107 @@ export async function completeOnboardingWithFirstTenant(formData: unknown): Prom
   revalidatePath("/onboarding");
   revalidatePath("/onboarding", "layout");
   return { ok: true };
+}
+
+async function insertLooseTenantForUser(userId: string, row: LooseTenantRow): Promise<boolean> {
+  const supabase = await createClient();
+  const { error } = await supabase.from("tenants").insert({
+    id: crypto.randomUUID(),
+    user_id: userId,
+    full_name: row.fullName,
+    email: row.email,
+    phone: row.phone,
+    date_of_birth: null,
+    right_to_rent_status: "pending",
+  });
+  if (error) {
+    console.error("[insertLooseTenantForUser]", error.message);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Import tenants from CSV, TXT, PDF, or DOCX during onboarding.
+ * CSV/TSV is parsed locally; other formats use AI (ANTHROPIC_API_KEY) when needed.
+ */
+export async function importTenantsFromFileOnboarding(formData: FormData): Promise<
+  | { ok: true; added: number; skipped: number; needsDetailsLater: number }
+  | { ok: false; error: string }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const { count: propertyCount, error: pcErr } = await supabase
+    .from("properties")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  if (pcErr || !propertyCount || propertyCount < 1) {
+    return { ok: false, error: "Add a property before importing tenants." };
+  }
+
+  const file = formData.get("file");
+  if (!file || !(file instanceof File)) {
+    return { ok: false, error: "Choose a file to import." };
+  }
+
+  const buf = Buffer.from(await file.arrayBuffer());
+  const extracted = await extractTextFromTenantImportFile(buf, file.name, file.type || "");
+  if (!extracted.ok) return { ok: false, error: extracted.error };
+
+  const lower = file.name.toLowerCase();
+  let rows: LooseTenantRow[] = [];
+
+  if (lower.endsWith(".csv") || lower.endsWith(".txt")) {
+    rows = parseLooseTenantsFromDelimitedText(extracted.text);
+  }
+
+  if (rows.length === 0) {
+    const llm = await extractTenantsWithLlmFromText(extracted.text);
+    if (!llm.ok) return { ok: false, error: llm.error };
+    rows = llm.rows;
+  }
+
+  const seen = new Set<string>();
+  let added = 0;
+  let skipped = 0;
+  let needsDetailsLater = 0;
+
+  for (const row of rows) {
+    const key = `${row.fullName.toLowerCase()}|${(row.email ?? "").toLowerCase()}|${(row.phone ?? "").replace(/\s/g, "")}`;
+    if (seen.has(key)) {
+      skipped += 1;
+      continue;
+    }
+    seen.add(key);
+
+    if (!row.email || !row.phone) {
+      needsDetailsLater += 1;
+    }
+
+    const inserted = await insertLooseTenantForUser(user.id, row);
+    if (inserted) added += 1;
+    else skipped += 1;
+  }
+
+  if (added < 1) {
+    return { ok: false, error: "No tenants could be saved. Check the file or add one manually." };
+  }
+
+  const statusRes = await setUserOnboardingStatus(user.id, "completed");
+  if (!statusRes.ok) return { ok: false, error: statusRes.error };
+
+  revalidatePath("/dashboard/tenants");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/onboarding");
+  revalidatePath("/onboarding", "layout");
+
+  return { ok: true, added, skipped, needsDetailsLater };
 }
 
 /** Onboarding must be finished in order — skipping is disabled. */

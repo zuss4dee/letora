@@ -40,6 +40,11 @@ async function syncPlatformSubscriptionToUserSettings(
   const planKey = resolvePlanKeyFromStripeSubscription(sub);
   const subscription_plan = planKey ? PLANS[planKey].name : null;
 
+  const trialEndIso =
+    sub.trial_end != null && sub.trial_end > 0
+      ? new Date(sub.trial_end * 1000).toISOString()
+      : null;
+
   await supabase
     .from("user_settings")
     .update({
@@ -48,6 +53,7 @@ async function syncPlatformSubscriptionToUserSettings(
       subscription_status: sub.status,
       subscription_plan,
       subscription_period_end: new Date(sub.current_period_end * 1000).toISOString(),
+      subscription_trial_end: sub.status === "trialing" ? trialEndIso : null,
       ...(opts?.stripeCustomerId ? { stripe_customer_id: opts.stripeCustomerId } : {}),
     })
     .eq("user_id", userId);
@@ -470,6 +476,8 @@ export async function POST(req: NextRequest) {
               subscription_status: "inactive",
               subscription_plan: null,
               stripe_subscription_id: null,
+              subscription_period_end: null,
+              subscription_trial_end: null,
             })
             .eq("user_id", userId);
         }

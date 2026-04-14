@@ -39,6 +39,11 @@ export type UserSettingsRow = UserSettingsInput & {
   onboardingPrimaryGoal?: string | null;
   /** Mercury product tour on dashboard home; persisted in `user_settings.has_seen_tour`. */
   hasSeenTour?: boolean;
+  /** Stripe subscription display name (e.g. Pro). */
+  subscriptionPlan?: string | null;
+  subscriptionStatus?: string | null;
+  subscriptionPeriodEnd?: string | null;
+  subscriptionTrialEnd?: string | null;
 };
 
 export async function getUserSettings(userId: string): Promise<UserSettingsRow | null> {
@@ -47,7 +52,7 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
   const { data, error } = await supabase
     .from("user_settings")
     .select(
-      "id,user_id,stripe_customer_id,business_name,landlord_name,contact_phone,contact_email,business_address,rent_chaser_tone,first_chase_days,email_signoff,include_payment_plan,email_from_name,auto_send_rent_chaser,auto_send_maintenance_updates,auto_send_onboarding_emails,auto_send_lead_updates,auto_send_referencing_emails,referencing_agency_name,referencing_agency_email,referencing_agency_notes,rent_chaser_instructions,min_lead_score,preferred_sources,disqualify_no_movein,lead_qualifier_criteria,onboarding_status,onboarding_primary_goal,has_seen_tour",
+      "id,user_id,stripe_customer_id,business_name,landlord_name,contact_phone,contact_email,business_address,rent_chaser_tone,first_chase_days,email_signoff,include_payment_plan,email_from_name,auto_send_rent_chaser,auto_send_maintenance_updates,auto_send_onboarding_emails,auto_send_lead_updates,auto_send_referencing_emails,referencing_agency_name,referencing_agency_email,referencing_agency_notes,rent_chaser_instructions,min_lead_score,preferred_sources,disqualify_no_movein,lead_qualifier_criteria,onboarding_status,onboarding_primary_goal,has_seen_tour,subscription_plan,subscription_status,subscription_period_end,subscription_trial_end",
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -93,6 +98,10 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
     onboardingStatus: parseOnboardingStatus((data as { onboarding_status?: string | null }).onboarding_status),
     onboardingPrimaryGoal: (data as { onboarding_primary_goal?: string | null }).onboarding_primary_goal ?? null,
     hasSeenTour: Boolean((data as { has_seen_tour?: boolean | null }).has_seen_tour),
+    subscriptionPlan: (data as { subscription_plan?: string | null }).subscription_plan ?? null,
+    subscriptionStatus: (data as { subscription_status?: string | null }).subscription_status ?? null,
+    subscriptionPeriodEnd: (data as { subscription_period_end?: string | null }).subscription_period_end ?? null,
+    subscriptionTrialEnd: (data as { subscription_trial_end?: string | null }).subscription_trial_end ?? null,
   };
 }
 
@@ -151,11 +160,28 @@ export async function saveSettings(formData: unknown) {
 
   const values = parsed.data;
 
+  const { data: existingProfile } = await supabase
+    .from("user_settings")
+    .select("business_name, landlord_name")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  /** Avoid wiping names when the form was empty (e.g. stale defaults) but onboarding already saved them. */
+  function coalesceName(formVal: string | undefined, dbVal: string | null | undefined): string | null {
+    const t = (formVal ?? "").trim();
+    if (t.length > 0) return t;
+    const e = (dbVal ?? "").trim();
+    return e.length > 0 ? e : null;
+  }
+
+  const business_name = coalesceName(values.businessName, existingProfile?.business_name);
+  const landlord_name = coalesceName(values.landlordName, existingProfile?.landlord_name);
+
   const { error } = await supabase.from("user_settings").upsert(
     {
       user_id: user.id,
-      business_name: values.businessName || null,
-      landlord_name: values.landlordName || null,
+      business_name,
+      landlord_name,
       contact_phone: values.contactPhone || null,
       contact_email: values.contactEmail || null,
       business_address: values.businessAddress || null,

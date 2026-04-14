@@ -203,7 +203,10 @@ export function AddressMapPicker({
           {hint}
         </p>
       ) : (
-        <p className="text-xs text-muted-foreground">Click the map or choose a search result to fill the address fields.</p>
+        <p className="text-xs text-muted-foreground">
+          Type in the search box for suggestions, click the map, or use the street field below — suggestions appear as you type
+          when a Maps key is configured.
+        </p>
       )}
     </div>
   );

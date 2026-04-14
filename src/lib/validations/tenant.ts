@@ -4,7 +4,8 @@ export const tenantSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   email: z.string().email("Enter a valid email address"),
   phone: z.string().min(7, "Enter a valid phone number"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  /** Omit or leave empty when unknown — stored as null in the database. */
+  dateOfBirth: z.string().optional(),
   rightToRentStatus: z.enum(["pending", "verified", "failed"]),
 });
 

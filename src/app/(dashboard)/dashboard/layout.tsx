@@ -30,13 +30,15 @@ export default async function DashboardShellLayout({ children }: { children: Rea
   let complianceAttention = false;
   let maintenanceAttention = false;
   let showMercuryTour = false;
+  let settings: Awaited<ReturnType<typeof getUserSettings>> = null;
   if (userId) {
-    const [settings, onboardingGate, cAtt, mAtt] = await Promise.all([
+    const [loadedSettings, onboardingGate, cAtt, mAtt] = await Promise.all([
       getUserSettings(userId),
       getOnboardingStatusForGate(userId),
       getComplianceExpiredSidebarAttention(userId),
       getMaintenanceSafetySidebarAttention(userId),
     ]);
+    settings = loadedSettings;
     if (!isOnboardingMarkedComplete(onboardingGate)) {
       redirect("/onboarding");
     }
@@ -61,6 +63,10 @@ export default async function DashboardShellLayout({ children }: { children: Rea
             userEmail={userEmail}
             complianceAttention={complianceAttention}
             maintenanceAttention={maintenanceAttention}
+            subscriptionPlan={settings?.subscriptionPlan ?? null}
+            subscriptionStatus={settings?.subscriptionStatus ?? null}
+            subscriptionPeriodEnd={settings?.subscriptionPeriodEnd ?? null}
+            subscriptionTrialEnd={settings?.subscriptionTrialEnd ?? null}
           />
           <SidebarInset className="bg-background">
             {userId ? <ReferencingInboundRealtimeListener userId={userId} /> : null}

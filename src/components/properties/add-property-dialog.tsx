@@ -126,6 +126,7 @@ export function AddPropertyDialog({ trigger }: { trigger?: ReactElement }) {
                <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className={DIALOG_FORM_STACK_CLASS}>
             <PropertyAddressFormSection
+              control={form.control}
               register={form.register}
               setValue={form.setValue}
               errors={form.formState.errors}

@@ -1,13 +1,15 @@
 "use client";
 
 import { useCallback, useId, useState } from "react";
-import type { FieldErrors, Path, UseFormRegister, UseFormSetValue } from "react-hook-form";
+import type { Control, FieldErrors, FieldValues, Path, UseFormRegister, UseFormSetValue } from "react-hook-form";
+import { Controller } from "react-hook-form";
 
 import { DIALOG_FIELD_CLASS } from "@/lib/ui/dialog-form";
 import { cn } from "@/lib/utils";
 
 import { AddressMapPicker } from "./address-map-picker";
 import { isGoogleMapsConfigured } from "./load-google-maps";
+import { PlacesStreetAutocomplete } from "./places-street-autocomplete";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,7 +20,11 @@ type AddressFields = {
   city: string;
 };
 
-type Props<T extends AddressFields> = {
+const streetInputClass =
+  "h-8 w-full min-w-0 rounded-lg border border-input bg-transparent px-2.5 py-1 text-base transition-colors outline-none placeholder:text-placeholder-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:bg-input/50 disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:disabled:bg-input/80 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40";
+
+type Props<T extends AddressFields & FieldValues> = {
+  control: Control<T>;
   register: UseFormRegister<T>;
   setValue: UseFormSetValue<T>;
   errors: FieldErrors<T>;
@@ -28,7 +34,8 @@ type Props<T extends AddressFields> = {
   className?: string;
 };
 
-export function PropertyAddressFormSection<T extends AddressFields>({
+export function PropertyAddressFormSection<T extends AddressFields & FieldValues>({
+  control,
   register,
   setValue,
   errors,
@@ -82,8 +89,29 @@ export function PropertyAddressFormSection<T extends AddressFields>({
 
       <div className={DIALOG_FIELD_CLASS}>
         <Label htmlFor={fieldIds.address}>Street address</Label>
-        <Input id={fieldIds.address} className="w-full" {...register("address" as Path<T>)} />
+        {mapsAvailable && !manualOnly ? (
+          <Controller
+            name={"address" as Path<T>}
+            control={control}
+            render={({ field }) => (
+              <PlacesStreetAutocomplete
+                id={fieldIds.address}
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                onPlaceSelected={(v) => applyResolved({ line1: v.line1, city: v.city, postcode: v.postcode })}
+                placeholder="Start typing — pick a suggestion to fill city and postcode"
+                invalid={Boolean(errAddr)}
+                className={cn(streetInputClass, errAddr && "aria-invalid")}
+              />
+            )}
+          />
+        ) : (
+          <Input id={fieldIds.address} className="w-full" {...register("address" as Path<T>)} />
+        )}
         {errAddr ? <p className="text-xs text-red-600 dark:text-red-400">{errAddr}</p> : null}
+        {mapsAvailable && !manualOnly ? (
+          <p className="text-[11px] text-muted-foreground">Suggestions appear as you type (UK addresses).</p>
+        ) : null}
       </div>
 
       <div className="grid w-full min-w-0 gap-4 sm:grid-cols-2">
@@ -101,7 +129,7 @@ export function PropertyAddressFormSection<T extends AddressFields>({
 
       {manualOnly || !mapsAvailable ? null : (
         <p className="text-[11px] text-muted-foreground">
-          You can still edit street, postcode, and city after using the map.
+          You can still edit street, postcode, and city after using the map or a suggestion.
         </p>
       )}
     </div>

@@ -301,13 +301,16 @@ export async function addTenant(formData: unknown) {
 
   const values = parsed.data;
 
+  const dob =
+    values.dateOfBirth && values.dateOfBirth.trim().length > 0 ? values.dateOfBirth.trim() : null;
+
   const { error } = await supabase.from("tenants").insert({
     id: crypto.randomUUID(),
     user_id: user.id,
     full_name: values.fullName,
     email: values.email,
     phone: values.phone,
-    date_of_birth: values.dateOfBirth,
+    date_of_birth: dob,
     right_to_rent_status: values.rightToRentStatus,
   });
 
