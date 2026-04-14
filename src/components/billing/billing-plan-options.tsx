@@ -22,10 +22,10 @@ export function BillingPlanOptions({
           <div
             key={key}
             className={cn(
-              "flex flex-col rounded-xl border p-5",
+              "flex flex-col rounded-xl border p-5 shadow-sm",
               p.highlighted
-                ? "border-[#FFEABB]/35 bg-[linear-gradient(180deg,rgba(27,27,27,0.98)_0%,rgba(19,19,19,0.99)_100%)] ring-1 ring-[#FFEABB]/15"
-                : "border-[#4F4632]/20 bg-[#161616]/80",
+                ? "border-[#BD9952]/40 bg-gradient-to-b from-amber-50/95 via-card to-card ring-1 ring-[#BD9952]/20 dark:border-[#FFEABB]/35 dark:bg-[linear-gradient(180deg,rgba(27,27,27,0.98)_0%,rgba(19,19,19,0.99)_100%)] dark:ring-[#FFEABB]/15 dark:shadow-[0_0_40px_-12px_rgba(255,234,187,0.15)]"
+                : "border-border bg-card dark:border-[#4F4632]/20 dark:bg-[#161616]/80 dark:shadow-none",
             )}
           >
             <div className="mb-4 space-y-1">

@@ -13,10 +13,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   completeOnboardingGate,
+  completeOnboardingWithFirstTenant,
   completeOnboardingWithProperty,
   saveOnboardingFocus,
   saveOnboardingIdentity,
-  skipOnboarding,
+  saveOnboardingSettingsEssentials,
 } from "@/lib/actions/user-onboarding";
 import { cn } from "@/lib/utils";
 
@@ -57,14 +58,22 @@ function mapStoredGoalToFocus(
   return null;
 }
 
+export type OnboardingWizardStep = 0 | 1 | 2 | 3 | 4;
+
 export function OnboardingWizard({
   initialStep,
   defaultPortfolioName = "",
   storedPrimaryGoal = null,
+  defaultLandlordName = "",
+  defaultContactEmail = "",
+  defaultReferencingAgencyEmail = "",
 }: {
-  initialStep: 0 | 1 | 2;
+  initialStep: OnboardingWizardStep;
   defaultPortfolioName?: string;
   storedPrimaryGoal?: string | null;
+  defaultLandlordName?: string;
+  defaultContactEmail?: string;
+  defaultReferencingAgencyEmail?: string;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -79,12 +88,22 @@ export function OnboardingWizard({
   const [identityBusy, setIdentityBusy] = useState(false);
   const [focusBusy, setFocusBusy] = useState(false);
 
+  const [landlordName, setLandlordName] = useState(defaultLandlordName);
+  const [contactEmail, setContactEmail] = useState(defaultContactEmail);
+  const [referencingAgencyEmail, setReferencingAgencyEmail] = useState(defaultReferencingAgencyEmail);
+  const [settingsBusy, setSettingsBusy] = useState(false);
+
   const [propertyStreet, setPropertyStreet] = useState("");
   const [propertyCity, setPropertyCity] = useState("");
   const [propertyPostcode, setPropertyPostcode] = useState("");
   const [addressManualOnly, setAddressManualOnly] = useState(() => !isGoogleMapsConfigured());
   const [propertyBusy, setPropertyBusy] = useState(false);
-  const [skipBusy, setSkipBusy] = useState(false);
+
+  const [tenantFullName, setTenantFullName] = useState("");
+  const [tenantEmail, setTenantEmail] = useState("");
+  const [tenantPhone, setTenantPhone] = useState("");
+  const [tenantDob, setTenantDob] = useState("");
+  const [tenantBusy, setTenantBusy] = useState(false);
 
   const finishCheckoutSuccess = useCallback(async () => {
     const res = await completeOnboardingGate();
@@ -92,7 +111,7 @@ export function OnboardingWizard({
       toast.error(res.error);
       return;
     }
-    router.replace("/dashboard");
+    toast.success("Payment received. Continue below to finish setup.");
     router.refresh();
   }, [router]);
 
@@ -108,7 +127,7 @@ export function OnboardingWizard({
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== "Enter" || e.repeat || e.defaultPrevented) return;
-      if (identityBusy || focusBusy || propertyBusy || skipBusy) return;
+      if (identityBusy || focusBusy || settingsBusy || propertyBusy || tenantBusy) return;
 
       const target = e.target as HTMLElement | null;
       if (target?.closest("textarea")) return;
@@ -121,12 +140,31 @@ export function OnboardingWizard({
         }
         if (
           step === 2 &&
+          landlordName.trim().length >= 2 &&
+          contactEmail.includes("@") &&
+          referencingAgencyEmail.includes("@")
+        ) {
+          e.preventDefault();
+          void submitSettings();
+        }
+        if (
+          step === 3 &&
           propertyStreet.trim().length >= 1 &&
           propertyCity.trim().length >= 1 &&
           propertyPostcode.trim().length >= 1
         ) {
           e.preventDefault();
           void submitProperty();
+        }
+        if (
+          step === 4 &&
+          tenantFullName.trim().length >= 2 &&
+          tenantEmail.includes("@") &&
+          tenantPhone.trim().length >= 7 &&
+          tenantDob.trim().length >= 1
+        ) {
+          e.preventDefault();
+          void submitTenant();
         }
         return;
       }
@@ -139,12 +177,29 @@ export function OnboardingWizard({
         void submitFocusAndContinue();
       } else if (
         step === 2 &&
+        landlordName.trim().length >= 2 &&
+        contactEmail.includes("@") &&
+        referencingAgencyEmail.includes("@")
+      ) {
+        e.preventDefault();
+        void submitSettings();
+      } else if (
+        step === 3 &&
         propertyStreet.trim().length >= 1 &&
         propertyCity.trim().length >= 1 &&
         propertyPostcode.trim().length >= 1
       ) {
         e.preventDefault();
         void submitProperty();
+      } else if (
+        step === 4 &&
+        tenantFullName.trim().length >= 2 &&
+        tenantEmail.includes("@") &&
+        tenantPhone.trim().length >= 7 &&
+        tenantDob.trim().length >= 1
+      ) {
+        e.preventDefault();
+        void submitTenant();
       }
     }
 
@@ -160,24 +215,17 @@ export function OnboardingWizard({
     propertyPostcode,
     identityBusy,
     focusBusy,
+    settingsBusy,
     propertyBusy,
-    skipBusy,
+    tenantBusy,
+    landlordName,
+    contactEmail,
+    referencingAgencyEmail,
+    tenantFullName,
+    tenantEmail,
+    tenantPhone,
+    tenantDob,
   ]);
-
-  async function handleSkipForNow() {
-    setSkipBusy(true);
-    try {
-      const res = await skipOnboarding();
-      if (!res.ok) {
-        toast.error(res.error);
-        return;
-      }
-      router.replace("/dashboard");
-      router.refresh();
-    } finally {
-      setSkipBusy(false);
-    }
-  }
 
   async function submitIdentity() {
     setIdentityBusy(true);
@@ -213,6 +261,25 @@ export function OnboardingWizard({
     }
   }
 
+  async function submitSettings() {
+    setSettingsBusy(true);
+    try {
+      const res = await saveOnboardingSettingsEssentials({
+        landlordName,
+        contactEmail,
+        referencingAgencyEmail,
+      });
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      setDir(1);
+      setStep(3);
+    } finally {
+      setSettingsBusy(false);
+    }
+  }
+
   async function submitProperty() {
     if (!propertyStreet.trim() || !propertyCity.trim() || !propertyPostcode.trim()) {
       toast.error("Enter street, city, and postcode.");
@@ -229,20 +296,41 @@ export function OnboardingWizard({
         toast.error(res.error);
         return;
       }
+      setDir(1);
+      setStep(4);
+    } finally {
+      setPropertyBusy(false);
+    }
+  }
+
+  async function submitTenant() {
+    setTenantBusy(true);
+    try {
+      const res = await completeOnboardingWithFirstTenant({
+        fullName: tenantFullName.trim(),
+        email: tenantEmail.trim(),
+        phone: tenantPhone.trim(),
+        dateOfBirth: tenantDob.trim(),
+        rightToRentStatus: "pending",
+      });
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
       router.replace("/dashboard");
       router.refresh();
     } finally {
-      setPropertyBusy(false);
+      setTenantBusy(false);
     }
   }
 
   function back() {
     if (step === 0) return;
     setDir(-1);
-    setStep((s) => (s - 1) as 0 | 1 | 2);
+    setStep((s) => (s - 1) as OnboardingWizardStep);
   }
 
-  const progress = ((step + 1) / 3) * 100;
+  const progress = ((step + 1) / 5) * 100;
   const progressValue = Math.round(progress);
 
   const onboardingInputClass =
@@ -252,6 +340,17 @@ export function OnboardingWizard({
     propertyStreet.trim().length >= 1 &&
     propertyCity.trim().length >= 1 &&
     propertyPostcode.trim().length >= 1;
+
+  const canSubmitSettings =
+    landlordName.trim().length >= 2 &&
+    contactEmail.includes("@") &&
+    referencingAgencyEmail.includes("@");
+
+  const canSubmitTenant =
+    tenantFullName.trim().length >= 2 &&
+    tenantEmail.includes("@") &&
+    tenantPhone.trim().length >= 7 &&
+    tenantDob.trim().length >= 1;
 
   return (
     <div className="relative min-h-svh overflow-hidden bg-black text-zinc-100">
@@ -267,7 +366,7 @@ export function OnboardingWizard({
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={progressValue}
-            aria-valuetext={`Step ${step + 1} of 3`}
+            aria-valuetext={`Step ${step + 1} of 5`}
             aria-label="Setup progress"
             className="absolute inset-y-0 left-0 h-full rounded-none bg-gradient-to-r from-[#6e5a2a] via-[#BD9952] to-[#f5edd8]"
             style={{
@@ -446,6 +545,100 @@ export function OnboardingWizard({
 
             {step === 2 ? (
               <motion.section
+                key="settings"
+                custom={dir}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ type: "spring", stiffness: 380, damping: 38 }}
+                className="space-y-12"
+              >
+                <div className="space-y-5">
+                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-[#BD9952]/90">
+                    Essentials
+                  </p>
+                  <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
+                    Landlord &amp; agency details
+                  </h2>
+                  <p className="max-w-xl font-headline text-base font-light text-zinc-500">
+                    We use these on notices, referencing, and outbound email. You can refine everything later in Settings.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ob-landlord" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
+                      Full landlord / legal name
+                    </Label>
+                    <Input
+                      id="ob-landlord"
+                      value={landlordName}
+                      onChange={(e) => setLandlordName(e.target.value)}
+                      autoComplete="name"
+                      placeholder="e.g. Jane Smith"
+                      className={onboardingInputClass}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ob-contact-email" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
+                      Agency contact email
+                    </Label>
+                    <Input
+                      id="ob-contact-email"
+                      type="email"
+                      value={contactEmail}
+                      onChange={(e) => setContactEmail(e.target.value)}
+                      autoComplete="email"
+                      placeholder="e.g. office@youragency.co.uk"
+                      className={onboardingInputClass}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ob-ref-email" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
+                      Referencing / agency email
+                    </Label>
+                    <Input
+                      id="ob-ref-email"
+                      type="email"
+                      value={referencingAgencyEmail}
+                      onChange={(e) => setReferencingAgencyEmail(e.target.value)}
+                      autoComplete="email"
+                      placeholder="e.g. referencing@youragency.co.uk"
+                      className={onboardingInputClass}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                  <button
+                    type="button"
+                    onClick={back}
+                    className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-300"
+                  >
+                    Back
+                  </button>
+                  <Button
+                    type="button"
+                    disabled={settingsBusy || !canSubmitSettings}
+                    onClick={() => void submitSettings()}
+                    className={cn("h-14 rounded-full px-10 font-headline text-xs font-semibold uppercase tracking-[0.22em]", nextGlow)}
+                  >
+                    {settingsBusy ? (
+                      <Loader2 className="size-4 animate-spin" aria-hidden />
+                    ) : (
+                      <>
+                        Next
+                        <ArrowRight className="ml-2 size-4 opacity-90" aria-hidden />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </motion.section>
+            ) : null}
+
+            {step === 3 ? (
+              <motion.section
                 key="property"
                 custom={dir}
                 variants={slideVariants}
@@ -564,6 +757,113 @@ export function OnboardingWizard({
                       <Loader2 className="size-4 animate-spin" aria-hidden />
                     ) : (
                       <>
+                        Next
+                        <ArrowRight className="ml-2 size-4 opacity-90" aria-hidden />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </motion.section>
+            ) : null}
+
+            {step === 4 ? (
+              <motion.section
+                key="tenant"
+                custom={dir}
+                variants={slideVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ type: "spring", stiffness: 380, damping: 38 }}
+                className="space-y-12"
+              >
+                <div className="space-y-5">
+                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-[#BD9952]/90">
+                    First tenant
+                  </p>
+                  <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
+                    Add a tenant profile
+                  </h2>
+                  <p className="max-w-xl font-headline text-base font-light text-zinc-500">
+                    At least one tenant is required to use tenancies, rent tracking, and onboarding tools. You can add
+                    tenancies and more detail next in the dashboard.
+                  </p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ob-t-name" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
+                      Full name
+                    </Label>
+                    <Input
+                      id="ob-t-name"
+                      value={tenantFullName}
+                      onChange={(e) => setTenantFullName(e.target.value)}
+                      autoComplete="name"
+                      placeholder="e.g. Alex Johnson"
+                      className={onboardingInputClass}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ob-t-email" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
+                      Email
+                    </Label>
+                    <Input
+                      id="ob-t-email"
+                      type="email"
+                      value={tenantEmail}
+                      onChange={(e) => setTenantEmail(e.target.value)}
+                      autoComplete="email"
+                      placeholder="tenant@email.com"
+                      className={onboardingInputClass}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ob-t-phone" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
+                      Phone
+                    </Label>
+                    <Input
+                      id="ob-t-phone"
+                      type="tel"
+                      value={tenantPhone}
+                      onChange={(e) => setTenantPhone(e.target.value)}
+                      autoComplete="tel"
+                      placeholder="e.g. 07700 900000"
+                      className={onboardingInputClass}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ob-t-dob" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
+                      Date of birth
+                    </Label>
+                    <Input
+                      id="ob-t-dob"
+                      type="date"
+                      value={tenantDob}
+                      onChange={(e) => setTenantDob(e.target.value)}
+                      className={onboardingInputClass}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
+                  <button
+                    type="button"
+                    onClick={back}
+                    className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-300"
+                  >
+                    Back
+                  </button>
+                  <Button
+                    type="button"
+                    disabled={tenantBusy || !canSubmitTenant}
+                    onClick={() => void submitTenant()}
+                    className={cn("h-14 rounded-full px-10 font-headline text-xs font-semibold uppercase tracking-[0.22em]", nextGlow)}
+                  >
+                    {tenantBusy ? (
+                      <Loader2 className="size-4 animate-spin" aria-hidden />
+                    ) : (
+                      <>
                         Enter Letora
                         <ArrowRight className="ml-2 size-4 opacity-90" aria-hidden />
                       </>
@@ -575,17 +875,7 @@ export function OnboardingWizard({
           </AnimatePresence>
         </div>
 
-        <div className="mt-auto flex shrink-0 justify-center pt-10 pb-2 md:pt-14 md:pb-4">
-          <button
-            type="button"
-            aria-label="Skip onboarding and open the dashboard"
-            disabled={skipBusy || identityBusy || focusBusy || propertyBusy}
-            onClick={() => void handleSkipForNow()}
-            className="font-headline text-[0.6875rem] font-light tracking-[0.04em] text-zinc-500 transition-colors hover:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {skipBusy ? "Opening…" : "Skip for now"}
-          </button>
-        </div>
+        <div className="mt-auto shrink-0 pt-10 pb-2 md:pt-14 md:pb-4" aria-hidden />
       </div>
     </div>
   );

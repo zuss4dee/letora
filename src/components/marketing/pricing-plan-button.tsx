@@ -86,7 +86,7 @@ export function PricingPlanSubscribeButton({
           "group inline-flex w-full items-center justify-center gap-2 rounded-full py-3 pl-5 pr-4 text-sm font-semibold transition-all disabled:opacity-70",
           highlighted
             ? "bg-gradient-to-br from-[#FFEABB] to-[#FFC800] text-[#3e2e00] shadow-[0_0_32px_-8px_rgba(255,234,187,0.4)] hover:shadow-[0_0_40px_-6px_rgba(255,234,187,0.55)]"
-            : "border border-[#4F4632]/35 bg-[#1a1a1a] text-foreground hover:border-[#4F4632]/55 hover:bg-[#222]",
+            : "border border-[#BD9952]/35 bg-card text-foreground hover:border-[#BD9952]/55 hover:bg-muted dark:border-[#4F4632]/35 dark:bg-[#1a1a1a] dark:hover:border-[#4F4632]/55 dark:hover:bg-[#222]",
         )}
       >
         {loading ? <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden /> : null}
@@ -102,7 +102,9 @@ export function PricingPlanSubscribeButton({
         ) : null}
       </button>
       {error ? (
-        <p className="mt-2 text-center font-[family-name:var(--font-inter)] text-xs text-red-400/90">{error}</p>
+        <p className="mt-2 text-center font-[family-name:var(--font-inter)] text-xs text-red-600 dark:text-red-400/90">
+          {error}
+        </p>
       ) : null}
     </div>
   );
@@ -125,7 +127,7 @@ export function PricingPlanLinkCta({
         "group inline-flex w-full items-center justify-center gap-2 rounded-full py-3 pl-5 pr-4 text-sm font-semibold transition-all",
         highlighted
           ? "bg-gradient-to-br from-[#FFEABB] to-[#FFC800] text-[#3e2e00] shadow-[0_0_32px_-8px_rgba(255,234,187,0.4)] hover:shadow-[0_0_40px_-6px_rgba(255,234,187,0.55)]"
-          : "border border-[#4F4632]/35 bg-[#1a1a1a] text-foreground hover:border-[#4F4632]/55 hover:bg-[#222]",
+          : "border border-[#BD9952]/35 bg-card text-foreground hover:border-[#BD9952]/55 hover:bg-muted dark:border-[#4F4632]/35 dark:bg-[#1a1a1a] dark:hover:border-[#4F4632]/55 dark:hover:bg-[#222]",
       )}
     >
       <span>{children}</span>

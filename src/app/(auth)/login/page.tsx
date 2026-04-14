@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -29,6 +29,35 @@ type LoginValues = z.infer<typeof loginSchema>;
 
 const authAlertBoxClass =
   "rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2.5 text-xs font-normal text-destructive dark:border-[#BB5551]/35 dark:bg-[#1a1210]/90 dark:text-[#e8a8a4]";
+
+function safePrefillEmail(raw: string | null): string {
+  if (!raw?.trim()) return "";
+  const parsed = z.string().email().safeParse(raw.trim());
+  return parsed.success ? parsed.data : "";
+}
+
+function LoginCallbackParamAlert({
+  reason,
+  message,
+}: {
+  reason: string | null;
+  message: string | null;
+}) {
+  const detail = message?.trim() || reason?.trim();
+  if (!detail) {
+    return (
+      <p className={authAlertBoxClass} role="alert">
+        We couldn&apos;t finish signing you in from your email link. Enter your password below, or try requesting a new
+        confirmation email from the sign-up page.
+      </p>
+    );
+  }
+  return (
+    <p className={authAlertBoxClass} role="alert">
+      {detail.length > 220 ? `${detail.slice(0, 217)}…` : detail}
+    </p>
+  );
+}
 
 function LoginAuthAlert({ error }: { error: { message: string; code?: string } }) {
   const kind = classifySignInError(error);
@@ -82,16 +111,33 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const nextPath = useMemo(() => searchParams.get("next") ?? "/dashboard", [searchParams]);
 
+  const prefillEmail = useMemo(() => {
+    const fromQuery =
+      searchParams.get("email") ?? searchParams.get("prefill_email") ?? searchParams.get("login_hint");
+    return safePrefillEmail(fromQuery);
+  }, [searchParams]);
+
+  const callbackAuthError = useMemo(() => searchParams.get("auth_error"), [searchParams]);
+  const callbackReason = useMemo(() => searchParams.get("reason"), [searchParams]);
+  const callbackMessage = useMemo(() => searchParams.get("message"), [searchParams]);
+
   const [authError, setAuthError] = useState<{ message: string; code?: string } | null>(null);
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      email: prefillEmail,
       password: "",
     },
     mode: "onSubmit",
   });
+
+  useEffect(() => {
+    form.reset({
+      email: prefillEmail,
+      password: "",
+    });
+  }, [prefillEmail, form]);
 
   const isSubmitting = form.formState.isSubmitting;
 
@@ -120,6 +166,10 @@ function LoginForm() {
         <AuthBrandMark />
 
         <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)}>
+          {callbackAuthError === "callback" ? (
+            <LoginCallbackParamAlert reason={callbackReason} message={callbackMessage} />
+          ) : null}
+
           <div className="space-y-2">
             <Label htmlFor="email" className="font-[family-name:var(--font-inter)] text-xs font-medium text-muted-foreground">
               Email

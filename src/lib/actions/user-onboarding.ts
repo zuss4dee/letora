@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { addProperty } from "@/lib/actions/properties";
+import { addTenant } from "@/lib/actions/tenants";
 import { mockResolveUkAddress } from "@/lib/onboarding/mock-address";
 import type { OnboardingStatus } from "@/lib/onboarding/status";
 import { createClient } from "@/lib/supabase/server";
+import { tenantSchema } from "@/lib/validations/tenant";
 import { userFacingError } from "@/lib/user-facing-errors";
 
 /** UI values → stored onboarding_primary_goal slugs (existing column). */
@@ -97,6 +99,53 @@ export async function saveOnboardingFocus(input: {
     .from("user_settings")
     .update({
       onboarding_primary_goal: stored,
+      onboarding_status: "settings_pending",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", user.id);
+
+  if (error)
+    return { ok: false, error: userFacingError(error.message, "We couldn't save your details. Please try again.") };
+
+  revalidatePath("/onboarding");
+  return { ok: true };
+}
+
+const onboardingSettingsEssentialsSchema = z.object({
+  landlordName: z.string().trim().min(2, "Enter the landlord or legal name."),
+  contactEmail: z.string().trim().email("Enter a valid agency contact email."),
+  referencingAgencyEmail: z.string().trim().email("Enter a valid referencing / agency email."),
+});
+
+/** Step after focus — required profile fields used across emails and compliance. */
+export async function saveOnboardingSettingsEssentials(input: {
+  landlordName: string;
+  contactEmail: string;
+  referencingAgencyEmail: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const parsed = onboardingSettingsEssentialsSchema.safeParse(input);
+  if (!parsed.success) {
+    const first = parsed.error.issues[0]?.message ?? "Check the highlighted fields.";
+    return { ok: false, error: first };
+  }
+
+  const { data: row } = await supabase.from("user_settings").select("user_id").eq("user_id", user.id).maybeSingle();
+  if (!row) {
+    return { ok: false, error: "Complete the previous step first." };
+  }
+
+  const { error } = await supabase
+    .from("user_settings")
+    .update({
+      landlord_name: parsed.data.landlordName.trim(),
+      contact_email: parsed.data.contactEmail.trim(),
+      referencing_agency_email: parsed.data.referencingAgencyEmail.trim(),
       onboarding_status: "property_pending",
       updated_at: new Date().toISOString(),
     })
@@ -168,7 +217,7 @@ export async function completeOnboardingWithProperty(
     return { ok: false, error: result.error };
   }
 
-  const statusRes = await setUserOnboardingStatus(user.id, "completed");
+  const statusRes = await setUserOnboardingStatus(user.id, "tenant_pending");
   if (!statusRes.ok) {
     return { ok: false, error: statusRes.error };
   }
@@ -182,16 +231,16 @@ export async function completeOnboardingWithProperty(
   return { ok: true, propertyId: result.propertyId };
 }
 
-/** Stripe checkout return (legacy) — marks onboarding complete if they land here after pay. */
+/**
+ * Stripe checkout return on `/onboarding?checkout=success` — payment is confirmed in Stripe;
+ * onboarding completion still requires property + tenant + settings (no longer auto-completes here).
+ */
 export async function completeOnboardingGate(): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Not authenticated" };
-
-  const res = await setUserOnboardingStatus(user.id, "completed");
-  if (!res.ok) return { ok: false, error: res.error };
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard", "layout");
@@ -200,7 +249,48 @@ export async function completeOnboardingGate(): Promise<{ ok: true } | { ok: fal
   return { ok: true };
 }
 
-/** User chose to explore the app without finishing setup — clears the gate like completing the flow. */
+/** First tenant profile — marks onboarding complete when at least one property already exists. */
+export async function completeOnboardingWithFirstTenant(formData: unknown): Promise<
+  { ok: true } | { ok: false; error: string }
+> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const { count: propertyCount, error: pcErr } = await supabase
+    .from("properties")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
+
+  if (pcErr || !propertyCount || propertyCount < 1) {
+    return { ok: false, error: "Add a property before adding a tenant." };
+  }
+
+  const parsed = tenantSchema.safeParse(formData);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid tenant details." };
+  }
+
+  const tenantRes = await addTenant(parsed.data);
+  if (!tenantRes.ok) return { ok: false, error: tenantRes.error };
+
+  const statusRes = await setUserOnboardingStatus(user.id, "completed");
+  if (!statusRes.ok) return { ok: false, error: statusRes.error };
+
+  revalidatePath("/dashboard/tenants");
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "layout");
+  revalidatePath("/onboarding");
+  revalidatePath("/onboarding", "layout");
+  return { ok: true };
+}
+
+/** Onboarding must be finished in order — skipping is disabled. */
 export async function skipOnboarding(): Promise<{ ok: true } | { ok: false; error: string }> {
-  return completeOnboardingGate();
+  return {
+    ok: false,
+    error: "Complete setup to use Letora — add your details, a property, and a tenant.",
+  };
 }
