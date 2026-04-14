@@ -4,6 +4,7 @@ import type { EmailOtpType } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+import { exchangeSupabaseAuthCode, verifySupabaseEmailOtp } from "@/lib/actions/auth-callback";
 import { createClient } from "@/lib/supabase/client";
 
 /** Values Supabase may send on `redirect_to` after /auth/v1/verify (email confirmation, etc.). */
@@ -29,6 +30,16 @@ function buildContinuePath(nextParam: string | null): string {
   return "/auth/continue";
 }
 
+/** Avoid exposing low-level Supabase copy (PKCE storage, etc.) on the login screen. */
+function userSafeCallbackErrorMessage(raw: string | undefined): string | undefined {
+  if (!raw?.trim()) return undefined;
+  const m = raw.toLowerCase();
+  if (m.includes("pkce") || m.includes("code verifier")) {
+    return "This link has expired or was opened in another browser or device than where you started. Sign in with your email and password, or request a new confirmation email from the sign-up page.";
+  }
+  return raw.length > 220 ? `${raw.slice(0, 217)}…` : raw;
+}
+
 function redirectToLogin(
   router: ReturnType<typeof useRouter>,
   opts: { reason?: string; message?: string; emailHint?: string },
@@ -36,14 +47,16 @@ function redirectToLogin(
   const q = new URLSearchParams();
   q.set("auth_error", "callback");
   if (opts.reason) q.set("reason", opts.reason.slice(0, 200));
-  if (opts.message) q.set("message", opts.message.slice(0, 200));
+  const safe = userSafeCallbackErrorMessage(opts.message);
+  if (safe) q.set("message", safe.slice(0, 320));
   if (opts.emailHint) q.set("email", opts.emailHint.slice(0, 320));
   router.replace(`/login?${q.toString()}`);
 }
 
 /**
  * Finishes email confirmation / OAuth: PKCE `code` in query and/or implicit tokens in the hash.
- * Persists session via Supabase browser client (cookie storage), then sends the user to `/auth/continue`.
+ * PKCE `code` and `token_hash` flows call server actions so the session is written from the request
+ * cookies (code verifier). Hash fragment tokens still use the browser client (`setSession`).
  */
 export function AuthCallbackClient() {
   const router = useRouter();
@@ -54,7 +67,6 @@ export function AuthCallbackClient() {
     let cancelled = false;
 
     async function run() {
-      const supabase = createClient();
       const nextParam = searchParams.get("next");
       const continuePath = buildContinuePath(nextParam);
 
@@ -102,29 +114,27 @@ export function AuthCallbackClient() {
 
       try {
         if (tokenHash && otpType) {
-          const { error } = await supabase.auth.verifyOtp({
-            type: otpType,
-            token_hash: tokenHash,
-          });
-          if (error) {
-            console.error("[auth/callback] verifyOtp:", error.message);
+          const res = await verifySupabaseEmailOtp({ token_hash: tokenHash, type: otpType });
+          if (!res.ok) {
+            console.error("[auth/callback] verifyOtp:", res.error);
             if (!cancelled) {
               setStatus("error");
-              redirectToLogin(router, { reason: "verify_otp_failed", message: error.message });
+              redirectToLogin(router, { reason: "verify_otp_failed", message: res.error });
             }
             return;
           }
         } else if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) {
-            console.error("[auth/callback] exchangeCodeForSession:", error.message);
+          const res = await exchangeSupabaseAuthCode(code);
+          if (!res.ok) {
+            console.error("[auth/callback] exchangeCodeForSession:", res.error);
             if (!cancelled) {
               setStatus("error");
-              redirectToLogin(router, { reason: "exchange_failed", message: error.message });
+              redirectToLogin(router, { reason: "exchange_failed", message: res.error });
             }
             return;
           }
         } else if (accessToken && refreshToken) {
+          const supabase = createClient();
           const { error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
@@ -139,6 +149,8 @@ export function AuthCallbackClient() {
           }
         }
 
+        const supabase = createClient();
+        await router.refresh();
         const {
           data: { session },
         } = await supabase.auth.getSession();

@@ -278,7 +278,7 @@ function MessageBubble({
   const bubbleText = cn(
     "whitespace-pre-wrap [word-break:normal] break-words [overflow-wrap:anywhere]",
     role === "assistant"
-      ? "text-base font-semibold leading-relaxed text-foreground"
+      ? "text-base font-normal leading-relaxed text-foreground"
       : "text-[0.9375rem] font-normal leading-[1.65] text-foreground",
   );
   if (role === "assistant") {
