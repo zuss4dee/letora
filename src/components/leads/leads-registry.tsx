@@ -196,13 +196,13 @@ export function LeadsRegistry({
         <div className="absolute left-1/4 top-24 size-96 rounded-full bg-[#BD9952]/[0.03] blur-3xl" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-7xl flex-1 px-6 pb-24 pt-6 md:px-12 md:pt-8">
-        <header className="mb-10 flex flex-col gap-6 border-b border-border pb-10 md:flex-row md:items-end md:justify-between">
+      <div className="relative mx-auto w-full max-w-7xl flex-1 px-4 pb-8 pt-4 sm:px-6 md:px-12 md:pb-24 md:pt-8">
+        <header className="mb-6 flex flex-col gap-4 border-b border-border pb-6 md:mb-10 md:flex-row md:items-end md:justify-between md:pb-10">
           <div className="max-w-2xl">
-            <h1 className="font-headline text-4xl font-extralight tracking-tight text-foreground md:text-[2.75rem]">
+            <h1 className="font-headline text-2xl font-extralight tracking-tight text-foreground sm:text-3xl md:text-[2.75rem]">
               Lead Management
             </h1>
-            <p className="mt-4 font-[family-name:var(--font-inter)] text-lg font-light tracking-wide text-muted-foreground">
+            <p className="mt-3 hidden font-[family-name:var(--font-inter)] text-base font-light tracking-wide text-muted-foreground sm:block md:text-lg">
               Track prospective tenants and inquiries across your global portfolio with precision.
             </p>
           </div>
@@ -220,7 +220,7 @@ export function LeadsRegistry({
           />
         </header>
 
-        <section className="mb-10 grid grid-cols-2 gap-4 md:grid-cols-4">
+        <section className="mb-6 grid grid-cols-2 gap-3 md:mb-10 md:grid-cols-4 md:gap-4">
           <div className="border border-border bg-card p-5 transition-colors hover:bg-muted/70 dark:hover:bg-[#1F2020]/80">
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Total leads
@@ -292,7 +292,57 @@ export function LeadsRegistry({
           </div>
         </div>
 
-        <div className="overflow-hidden border border-border bg-card">
+        <ul className="mb-4 space-y-3 md:hidden">
+          {slice.length === 0 ? (
+            <li className="rounded-sm border border-border bg-card px-4 py-10 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
+              No leads match this view.
+            </li>
+          ) : (
+            slice.map((lead) => {
+              const { line1, line2 } = splitPropertyAddress(lead.propertyAddress);
+              const pill = pipelinePill(lead.status);
+              return (
+                <li key={`m-${lead.id}`} className="rounded-sm border border-border bg-card p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#484848]/10 bg-[#252626] text-[10px] font-bold text-foreground">
+                        {initials(lead.name)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground">{lead.name}</p>
+                        <p className="truncate font-[family-name:var(--font-inter)] text-[11px] font-light text-muted-foreground">
+                          {line1}
+                          {line2 ? ` · ${line2}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <span
+                      className={cn(
+                        "inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 font-[family-name:var(--font-inter)] text-[9px] font-bold uppercase tracking-widest",
+                        pill.className,
+                      )}
+                    >
+                      {pill.label}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+                    <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
+                      {formatDateAdded(lead.createdAt)}
+                    </p>
+                    <LeadRowActions
+                      leadId={lead.id}
+                      status={lead.status}
+                      qualifiedStatus={lead.qualifiedStatus}
+                      variant="menu"
+                    />
+                  </div>
+                </li>
+              );
+            })
+          )}
+        </ul>
+
+        <div className="hidden overflow-hidden border border-border bg-card md:block">
           <div className="flex items-center justify-between border-b border-border/80 px-8 py-5">
             <h2 className="font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
               Active inquiries
@@ -451,6 +501,32 @@ export function LeadsRegistry({
             </div>
           </div>
         </div>
+
+        {pageCount > 1 ? (
+          <div className="mt-4 flex items-center justify-between gap-2 md:hidden">
+            <button
+              type="button"
+              aria-label="Previous page"
+              disabled={safePage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="rounded-sm border border-border p-2 text-muted-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-30"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              {displayFrom}–{displayTo} of {total}
+            </p>
+            <button
+              type="button"
+              aria-label="Next page"
+              disabled={safePage >= pageCount}
+              onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+              className="rounded-sm border border-border p-2 text-muted-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-30"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   );

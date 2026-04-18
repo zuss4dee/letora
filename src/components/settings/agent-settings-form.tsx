@@ -185,7 +185,7 @@ export function AgentSettingsForm({
           <CardTitle className={SETTINGS_TITLE}>Business Profile</CardTitle>
         </CardHeader>
         <CardContent className={`${SETTINGS_CONTENT} grid gap-4`}>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="grid min-w-0 gap-2">
               <Label htmlFor="businessName">Business Name</Label>
               <Input id="businessName" {...form.register("businessName")} />
@@ -195,7 +195,7 @@ export function AgentSettingsForm({
               <Input id="landlordName" {...form.register("landlordName")} />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="grid min-w-0 gap-2">
               <Label htmlFor="contactEmail">Contact Email</Label>
               <Input id="contactEmail" type="email" {...form.register("contactEmail")} />
@@ -219,7 +219,7 @@ export function AgentSettingsForm({
           <CardTitle className={SETTINGS_TITLE}>Rent Chaser Agent Settings</CardTitle>
         </CardHeader>
         <CardContent className={`${SETTINGS_CONTENT} grid gap-4`}>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="grid min-w-0 gap-2">
               <Label>Communication Tone</Label>
               <Select

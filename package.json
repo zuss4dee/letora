@@ -9,7 +9,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "typecheck:diagnostics": "tsc --noEmit --diagnostics",
     "test": "vitest run",

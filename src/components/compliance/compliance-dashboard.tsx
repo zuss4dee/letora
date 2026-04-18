@@ -273,7 +273,7 @@ export function ComplianceDashboard({
               aria-hidden
             />
 
-            <div className="relative p-6 pt-5">
+            <div className="relative p-4 pt-4 sm:p-6 sm:pt-5">
               {attention ? (
                 <div className="pointer-events-none absolute right-4 top-4 flex items-center gap-1.5 rounded-full border border-red-400/40 bg-red-500/10 px-2.5 py-1 font-headline text-[0.6rem] font-semibold uppercase tracking-[0.14em] text-red-800 dark:text-red-200">
                   <ShieldAlert className="size-3.5 shrink-0" aria-hidden />
@@ -302,7 +302,7 @@ export function ComplianceDashboard({
                   <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]">
                     Registered property
                   </p>
-                  <h2 className="mt-2 font-headline text-xl font-light leading-snug tracking-tight text-foreground">
+                  <h2 className="mt-2 font-headline text-base font-light leading-snug tracking-tight text-foreground sm:text-xl">
                     {title}
                   </h2>
                   {sub ? (
@@ -356,7 +356,7 @@ export function ComplianceDashboard({
                       ) : null}
 
                       {/* Flex + container queries: narrow widths always stack copy above controls (no grid overlap). */}
-                      <div className="relative isolate flex flex-col gap-4 p-4 pl-5 @[28rem]/cert:flex-row @[28rem]/cert:items-start @[28rem]/cert:gap-5 @[32rem]/cert:gap-6">
+                      <div className="relative isolate flex flex-col gap-3 p-3 pl-4 sm:gap-4 sm:p-4 sm:pl-5 @[28rem]/cert:flex-row @[28rem]/cert:items-start @[28rem]/cert:gap-5 @[32rem]/cert:gap-6">
                         <div className="min-w-0 flex-1 space-y-2">
                           <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
                             <span className="font-headline text-[0.95rem] font-medium leading-tight tracking-tight text-foreground">

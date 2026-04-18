@@ -93,6 +93,7 @@ export function SiteHeader() {
       <div className="flex w-full items-center justify-between gap-4 px-4 lg:px-12">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <SidebarTrigger className="-ml-1 text-muted-foreground hover:bg-accent hover:text-secondary md:hidden" />
+          <span className="font-headline truncate text-sm font-light text-foreground md:hidden">{current}</span>
           <div className="hidden min-w-0 items-center gap-2 md:flex">
             <span className="font-headline text-sm font-light text-muted-foreground">{parent}</span>
             <span className="text-muted-foreground" aria-hidden>

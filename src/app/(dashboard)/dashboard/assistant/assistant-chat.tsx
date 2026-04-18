@@ -307,7 +307,7 @@ function MessageBubble({
     <div className={cn("flex w-full min-w-0", isUser ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "min-w-0 rounded-2xl px-4 py-3 font-headline shadow-none",
+          "min-w-0 rounded-2xl px-3 py-2.5 font-headline shadow-none sm:px-4 sm:py-3",
           compact ? "w-full max-w-full" : "max-w-[min(100%,40rem)]",
           isUser
             ? "border border-secondary/35 bg-secondary/10 text-foreground dark:border-[#BD9952]/22 dark:bg-[#1a1610] dark:text-slate-100"
@@ -832,7 +832,7 @@ export function AssistantChat({
               </div>
             ) : null}
 
-            <div className="shrink-0 border-t border-border bg-background/95 px-5 py-4 lg:px-8 lg:py-5 dark:bg-[#0a0a0a]/95">
+            <div className="shrink-0 border-t border-border bg-background/95 px-4 py-3 sm:px-5 sm:py-4 lg:px-8 lg:py-5 dark:bg-[#0a0a0a]/95">
               <form
                 className="mx-auto flex w-full max-w-[40rem] flex-col gap-3 sm:flex-row sm:items-end"
                 onSubmit={(e) => {

@@ -42,13 +42,13 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
 
   return (
     <div className="relative min-h-0 flex-1 bg-background">
-      <section className="px-6 pb-32 pt-2 md:px-12 md:pt-4">
-        <div className="mb-16 flex flex-col items-start justify-between gap-8 md:mb-20 md:flex-row md:items-end">
+      <section className="px-4 pb-6 pt-2 sm:px-6 md:px-12 md:pb-32 md:pt-4">
+        <div className="mb-8 flex flex-col items-start justify-between gap-4 sm:gap-8 md:mb-20 md:flex-row md:items-end">
           <div>
-            <h1 className="font-headline text-4xl font-extralight tracking-[0.05em] text-foreground sm:text-5xl">
+            <h1 className="font-headline text-2xl font-extralight tracking-[0.05em] text-foreground sm:text-3xl md:text-5xl">
               Managed Properties
             </h1>
-            <div className="mt-4 flex items-center gap-4">
+            <div className="mt-3 hidden items-center gap-4 sm:flex">
               <span className="h-px w-12 bg-[#BD9952]" aria-hidden />
               <p className="font-[family-name:var(--font-inter)] text-sm uppercase tracking-widest text-muted-foreground">
                 Portfolio overview • {quarterLabel()}
@@ -96,7 +96,62 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
           </div>
         ) : (
           <>
-            <div className="space-y-1">
+            <div className="md:hidden">
+              <ul className="space-y-3">
+                {rows.map((p) => (
+                  <li key={p.id}>
+                    <Link
+                      href={`/dashboard/properties/${p.id}`}
+                      className="group block rounded-sm border border-border/80 bg-card px-4 py-4 transition-colors hover:border-[#BD9952]/60 hover:bg-muted/60 active:bg-muted/80"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <h3 className="font-headline truncate text-base font-light text-foreground">
+                            {p.identityTitle}
+                          </h3>
+                          <p className="mt-1 truncate font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-muted-foreground">
+                            {p.identitySubline}
+                          </p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          {p.maintenanceState === "attention" ? (
+                            <AlertTriangle className="size-3.5 text-[#BB5551]" aria-hidden />
+                          ) : (
+                            <CheckCircle2 className="size-3.5 text-[#BD9952]" aria-hidden />
+                          )}
+                          <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-muted-foreground">
+                            {p.maintenanceState === "attention" ? "Attention" : "Optimal"}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="mt-4 grid grid-cols-2 gap-3 border-t border-border/60 pt-3">
+                        <div>
+                          <p className="font-[family-name:var(--font-inter)] text-[0.55rem] uppercase tracking-widest text-muted-foreground">
+                            Occupancy
+                          </p>
+                          <p className="mt-1 font-headline text-lg font-light text-foreground">
+                            {p.occupancyPct.toFixed(p.occupancyPct === 100 ? 0 : 1)}%
+                          </p>
+                        </div>
+                        <div>
+                          <p className="font-[family-name:var(--font-inter)] text-[0.55rem] uppercase tracking-widest text-muted-foreground">
+                            Yield
+                          </p>
+                          <p className="mt-1 font-headline text-lg font-light text-foreground">
+                            {p.yieldPctLabel}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="mt-3 truncate font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-muted-foreground">
+                        {p.lastActionTitle} · {formatRelativeEn(p.lastActionAt)}
+                      </p>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="hidden space-y-1 md:block">
               <div className="mb-4 grid grid-cols-12 border-b border-border/80 px-6 py-4 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                 <div className="col-span-4">Property identity</div>
                 <div className="col-span-2 text-center">Occupancy</div>
@@ -179,7 +234,7 @@ export function ManagedPropertiesRegistry({ rows }: { rows: PropertyPortfolioRow
               ))}
             </div>
 
-            <div className="mt-24 grid grid-cols-1 gap-12 lg:grid-cols-12">
+            <div className="mt-12 hidden grid-cols-1 gap-12 sm:grid md:mt-24 lg:grid-cols-12">
               <div className="rounded-sm border-b-2 border-[#BD9952]/20 bg-muted/80 p-10 ring-1 ring-border dark:bg-[#1F2020] lg:col-span-5 lg:p-12">
                 <h4 className="mb-8 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
                   Portfolio health intelligence

@@ -139,6 +139,7 @@ export default async function RentTrackerPage() {
                       <CardTitle>Active tenancies</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
+                      <div className="-mx-6 overflow-x-auto px-6 md:mx-0 md:overflow-visible md:px-0">
                       <Table>
                         <TableHeader>
                           <TableRow className="hover:bg-transparent">
@@ -196,6 +197,7 @@ export default async function RentTrackerPage() {
                           )}
                         </TableBody>
                       </Table>
+                      </div>
                     </CardContent>
                   </Card>
 
@@ -204,6 +206,7 @@ export default async function RentTrackerPage() {
                       <CardTitle>This month&apos;s payments</CardTitle>
                     </CardHeader>
                     <CardContent className="pt-0">
+                      <div className="-mx-6 overflow-x-auto px-6 md:mx-0 md:overflow-visible md:px-0">
                       <Table>
                         <TableHeader>
                           <TableRow className="hover:bg-transparent">
@@ -266,6 +269,7 @@ export default async function RentTrackerPage() {
                           )}
                         </TableBody>
                       </Table>
+                      </div>
                     </CardContent>
                   </Card>
                 </div>

@@ -135,18 +135,18 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
 
   return (
     <div className="relative min-h-0 flex-1 bg-background">
-      <div className="mx-auto w-full max-w-6xl px-6 pb-28 pt-2 md:px-12">
-        <header className="mb-12 max-w-6xl">
-          <h1 className="font-headline mb-2 text-4xl font-extralight tracking-tight text-foreground sm:text-5xl">
+      <div className="mx-auto w-full max-w-6xl px-4 pb-8 pt-2 sm:px-6 md:px-12 md:pb-28">
+        <header className="mb-6 max-w-6xl md:mb-12">
+          <h1 className="font-headline mb-2 text-2xl font-extralight tracking-tight text-foreground sm:text-3xl md:text-5xl">
             Tenant Registry
           </h1>
-          <p className="max-w-xl font-[family-name:var(--font-inter)] font-light tracking-wide text-muted-foreground">
+          <p className="hidden max-w-xl font-[family-name:var(--font-inter)] font-light tracking-wide text-muted-foreground sm:block">
             Curating the residency lifecycle across your premium portfolio with clinical precision and oversight.
           </p>
         </header>
 
-        <div className="mb-8 flex max-w-6xl flex-col items-end justify-between gap-6 md:flex-row">
-          <div className="flex w-full flex-wrap items-center gap-8 md:gap-10">
+        <div className="mb-6 flex max-w-6xl flex-col items-end justify-between gap-4 md:mb-8 md:flex-row md:gap-6">
+          <div className="flex w-full flex-nowrap items-center gap-4 overflow-x-auto md:flex-wrap md:gap-10">
             {tabs.map((t) => {
               const active = tab === t.id;
               return (
@@ -172,7 +172,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
               );
             })}
           </div>
-          <div className="flex w-full shrink-0 justify-end gap-12 md:w-auto">
+          <div className="hidden w-full shrink-0 justify-end gap-12 md:flex md:w-auto">
             <div className="text-right">
               <p className="mb-1 font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
                 Total active
@@ -192,7 +192,41 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-sm bg-card">
+        <ul className="space-y-3 md:hidden">
+          {pageRows.length === 0 ? (
+            <li className="rounded-sm bg-card px-4 py-10 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
+              No tenants in this view yet.
+            </li>
+          ) : (
+            pageRows.map((row) => (
+              <li key={`m-${row.id}`} className="rounded-sm bg-card p-4">
+                <Link href={`/dashboard/tenants/${row.id}`} className="block">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted font-[family-name:var(--font-inter)] text-[11px] font-semibold text-foreground dark:border-[#484848]/30 dark:bg-[#474646] dark:text-[#d2d0cf]">
+                        {initials(row.fullName)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate font-[family-name:var(--font-inter)] text-sm font-semibold text-foreground">
+                          {row.fullName ?? "—"}
+                        </p>
+                        <p className="truncate font-[family-name:var(--font-inter)] text-xs font-light text-muted-foreground">
+                          {row.propertyLine1 ?? row.propertyAddress ?? row.email ?? "—"}
+                        </p>
+                      </div>
+                    </div>
+                    <RentStatusPill status={row.rentStatus} />
+                  </div>
+                  <p className="mt-3 border-t border-border/60 pt-3 font-[family-name:var(--font-inter)] text-[11px] tracking-wide text-muted-foreground">
+                    {leaseTermLine(row.leaseStartDate, row.leaseEndDate)} · {leaseDurationLabel(row.leaseMonths)}
+                  </p>
+                </Link>
+              </li>
+            ))
+          )}
+        </ul>
+
+        <div className="hidden overflow-hidden rounded-sm bg-card md:block">
           <div className="w-full overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
@@ -313,7 +347,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
         trigger={
           <button
             type="button"
-            className="fixed bottom-10 right-6 z-40 flex items-center gap-4 rounded-sm bg-gradient-to-br from-[#C9C6C5] to-[#474646] px-5 py-4 font-[family-name:var(--font-inter)] text-sm font-bold uppercase tracking-widest text-[#414040] shadow-2xl transition-all hover:brightness-110 md:bottom-12 md:right-12"
+            className="fixed bottom-10 right-6 z-40 hidden items-center gap-4 rounded-sm bg-gradient-to-br from-[#C9C6C5] to-[#474646] px-5 py-4 font-[family-name:var(--font-inter)] text-sm font-bold uppercase tracking-widest text-[#414040] shadow-2xl transition-all hover:brightness-110 md:bottom-12 md:right-12 md:flex"
           >
             <UserPlus className="size-5 shrink-0" strokeWidth={1.75} aria-hidden />
             Onboard tenant

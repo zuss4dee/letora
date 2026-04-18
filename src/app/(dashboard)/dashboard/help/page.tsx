@@ -22,7 +22,7 @@ export default async function DashboardHelpPage() {
           <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
             Workspace
           </p>
-          <h1 className="font-headline text-3xl font-extralight tracking-[-0.04em] text-foreground md:text-[2.15rem] md:leading-tight">
+          <h1 className="font-headline text-2xl font-extralight tracking-[-0.04em] text-foreground sm:text-3xl md:text-[2.15rem] md:leading-tight">
             Help
           </h1>
           <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">

@@ -238,10 +238,10 @@ export function RentTrackerRegistry({
 
         <header className="flex flex-col gap-6 border-b border-border pb-8 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="font-headline text-4xl font-extralight leading-none tracking-[-0.02em] text-foreground md:text-[3.5rem]">
+            <h1 className="font-headline text-2xl font-extralight leading-none tracking-[-0.02em] text-foreground sm:text-3xl md:text-[3.5rem]">
               Rent Tracker
             </h1>
-            <p className="mt-4 font-[family-name:var(--font-inter)] text-sm uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="mt-3 hidden font-[family-name:var(--font-inter)] text-sm uppercase tracking-[0.2em] text-muted-foreground sm:block">
               Portfolio payment intelligence
             </p>
           </div>

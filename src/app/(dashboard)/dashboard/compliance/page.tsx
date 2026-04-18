@@ -59,15 +59,15 @@ export default async function CompliancePage({
         />
       </div>
 
-      <div className="relative mx-auto w-full max-w-7xl flex-1 px-4 py-10 md:px-8 md:py-12 lg:px-12">
+      <div className="relative mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8 md:py-12 lg:px-12">
         {userId ? (
           <ComplianceOverviewSection
-            className="compliance-card-enter mb-10 max-w-5xl"
+            className="compliance-card-enter mb-6 max-w-5xl md:mb-10"
             portfolioAlerts={portfolioSync.alerts}
             summary={complianceSummary}
           />
         ) : null}
-        <header className="compliance-card-enter mb-12 max-w-3xl space-y-5" style={{ animationDelay: "60ms" }}>
+        <header className="compliance-card-enter mb-6 max-w-3xl space-y-3 md:mb-12 md:space-y-5" style={{ animationDelay: "60ms" }}>
           <div className="flex items-center gap-3">
             <span className="h-px w-10 bg-gradient-to-r from-[#BD9952] to-transparent" aria-hidden />
             <p className="font-headline text-[0.68rem] font-semibold uppercase tracking-[0.28em] text-[#BD9952]">
@@ -75,14 +75,14 @@ export default async function CompliancePage({
             </p>
           </div>
           <div className="space-y-3">
-            <h1 className="font-headline text-4xl font-extralight tracking-[-0.045em] text-foreground md:text-5xl md:leading-[1.08]">
+            <h1 className="font-headline text-2xl font-extralight tracking-[-0.045em] text-foreground sm:text-3xl md:text-5xl md:leading-[1.08]">
               Compliance
-              <span className="block text-lg font-light tracking-normal text-muted-foreground md:inline md:text-2xl md:font-extralight">
+              <span className="block text-base font-light tracking-normal text-muted-foreground md:inline md:text-2xl md:font-extralight">
                 {" "}
                 <span className="text-[#BD9952]/90">·</span> certificate register
               </span>
             </h1>
-            <p className="font-headline max-w-xl text-base font-light leading-relaxed text-muted-foreground md:text-[1.05rem]">
+            <p className="font-headline hidden max-w-xl text-base font-light leading-relaxed text-muted-foreground sm:block md:text-[1.05rem]">
               EPC, gas safety, and electrical (EICR) in one ledger. Set expiries, attach PDFs, and see what needs an
               engineer before it becomes a liability.
             </p>

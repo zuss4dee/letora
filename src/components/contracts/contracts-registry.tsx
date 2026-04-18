@@ -252,17 +252,17 @@ export function ContractsRegistry({
 
   return (
     <div className="min-h-0 flex-1 bg-background">
-      <div className="mx-auto max-w-7xl px-6 pb-36 pt-8 md:px-10 md:pt-16">
-        <div className="mb-12 flex flex-col gap-1">
-          <h1 className="font-[family-name:var(--font-inter)] text-[2.75rem] font-bold tracking-[-0.04em] text-foreground">
+      <div className="mx-auto max-w-7xl px-4 pb-8 pt-6 sm:px-6 md:px-10 md:pb-36 md:pt-16">
+        <div className="mb-6 flex flex-col gap-1 md:mb-12">
+          <h1 className="font-[family-name:var(--font-inter)] text-2xl font-bold tracking-[-0.04em] text-foreground sm:text-3xl md:text-[2.75rem]">
             Contracts
           </h1>
-          <p className="font-[family-name:var(--font-inter)] text-sm tracking-tight text-muted-foreground">
+          <p className="hidden font-[family-name:var(--font-inter)] text-sm tracking-tight text-muted-foreground sm:block">
             Manage tenancy agreements and document workflows.
           </p>
         </div>
 
-        <div className="mb-10 flex flex-wrap items-center gap-6 border-b border-border md:gap-8">
+        <div className="mb-6 flex flex-nowrap items-center gap-4 overflow-x-auto border-b border-border pb-0 md:mb-10 md:flex-wrap md:gap-8 md:overflow-visible">
           {tabs.map((t) => {
             const active = tab === t.id;
             const count =
@@ -316,7 +316,47 @@ export function ContractsRegistry({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-border bg-card dark:border-[#3f4949]/10 dark:bg-[#161513]">
+        <ul className="space-y-3 md:hidden">
+          {pageRows.length === 0 ? (
+            <li className="rounded-xl border border-border bg-card px-4 py-10 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground dark:border-[#3f4949]/10 dark:bg-[#161513]">
+              No contracts in this view.
+            </li>
+          ) : (
+            pageRows.map((c) => (
+              <li
+                key={c.id}
+                className="rounded-xl border border-border bg-card p-4 dark:border-[#3f4949]/10 dark:bg-[#161513]"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted font-[family-name:var(--font-inter)] text-xs font-bold text-teal-700 dark:bg-[#2b2a28] dark:text-[#85d3da]">
+                      {initials(c.tenantName)}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate font-[family-name:var(--font-inter)] text-sm font-medium text-foreground">
+                        {c.tenantName ?? "—"}
+                      </p>
+                      <p className="truncate font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
+                        {c.propertyLine1 ?? c.propertyAddress ?? "—"}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="shrink-0">
+                    <StatusPill c={c} />
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3 dark:border-[#3f4949]/10">
+                  <p className="font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
+                    {formatCreated(c.createdAt)}
+                  </p>
+                  <RowActions c={c} />
+                </div>
+              </li>
+            ))
+          )}
+        </ul>
+
+        <div className="hidden overflow-hidden rounded-xl border border-border bg-card dark:border-[#3f4949]/10 dark:bg-[#161513] md:block">
           <table className="w-full border-collapse text-left">
             <thead>
               <tr className="bg-muted/70 dark:bg-[#1d1b1a]/50">
@@ -441,7 +481,7 @@ export function ContractsRegistry({
         </div>
       </div>
 
-      <div className="fixed bottom-10 left-1/2 z-40 flex -translate-x-1/2 items-center gap-6 rounded-xl border border-border bg-card/95 px-6 py-4 shadow-2xl backdrop-blur-xl dark:border-[#3f4949]/20 dark:bg-[#363433]/80 md:gap-8">
+      <div className="fixed bottom-10 left-1/2 z-40 hidden -translate-x-1/2 items-center gap-6 rounded-xl border border-border bg-card/95 px-6 py-4 shadow-2xl backdrop-blur-xl dark:border-[#3f4949]/20 dark:bg-[#363433]/80 md:flex md:gap-8">
         <div className="flex items-center gap-3 border-r border-border pr-6 dark:border-[#3f4949]/20">
           <div className="size-2 rounded-full bg-[#f7b8a0]" aria-hidden />
           <p className="font-[family-name:var(--font-inter)] text-xs font-medium text-foreground">

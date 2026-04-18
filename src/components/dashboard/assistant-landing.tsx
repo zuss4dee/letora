@@ -75,18 +75,18 @@ export function AssistantLanding({
       </p>
       {typeof totalProperties === "number" && typeof activeTenancies === "number" ? (
         <div
-          className="mt-6 border-b border-border/60 pb-6"
+          className="mt-4 border-b border-border/60 pb-4 md:mt-6 md:pb-6"
           data-mercury-tour="portfolio"
         >
           <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
             Portfolio snapshot
           </p>
-          <div className="mt-4 flex flex-wrap gap-8">
+          <div className="mt-3 flex flex-wrap gap-4 md:mt-4 md:gap-8">
           <div>
             <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Total properties
             </p>
-            <p className="mt-1.5 font-headline text-2xl font-extralight tabular-nums text-foreground">
+            <p className="mt-1 font-headline text-xl font-extralight tabular-nums text-foreground md:mt-1.5 md:text-2xl">
               {totalProperties}
             </p>
           </div>
@@ -94,7 +94,7 @@ export function AssistantLanding({
             <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
               Active tenancies
             </p>
-            <p className="mt-1.5 font-headline text-2xl font-extralight tabular-nums text-foreground">
+            <p className="mt-1 font-headline text-xl font-extralight tabular-nums text-foreground md:mt-1.5 md:text-2xl">
               {activeTenancies}
             </p>
           </div>
@@ -103,14 +103,14 @@ export function AssistantLanding({
       ) : null}
       <h1
         className={cn(
-          "font-headline text-[1.65rem] font-extralight leading-[1.15] tracking-[-0.03em] text-foreground sm:text-3xl",
-          typeof totalProperties === "number" && typeof activeTenancies === "number" ? "mt-8" : "mt-6",
+          "font-headline text-xl font-extralight leading-[1.15] tracking-[-0.03em] text-foreground sm:text-2xl md:text-3xl",
+          typeof totalProperties === "number" && typeof activeTenancies === "number" ? "mt-5 md:mt-8" : "mt-4 md:mt-6",
         )}
       >
         What needs attention?
       </h1>
 
-      <form onSubmit={handleSubmit} className="mt-10 w-full" data-mercury-tour="assistant-input">
+      <form onSubmit={handleSubmit} className="mt-6 w-full md:mt-10" data-mercury-tour="assistant-input">
         <div className="rounded-2xl border border-border bg-card p-1 shadow-sm transition-[border-color,box-shadow] duration-200 ease-out dark:border-white/[0.08] dark:bg-[#111]/90 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
           <div className="rounded-[0.875rem] bg-background px-5 py-5 transition-colors duration-200 ease-out sm:px-6 sm:py-6 dark:bg-[#0d0d0d]">
             <label htmlFor="assistant-landing-input" className="sr-only">
@@ -147,7 +147,7 @@ export function AssistantLanding({
             </div>
           </div>
         </div>
-        <p className="mt-3 font-headline text-[0.65rem] text-muted-foreground">
+        <p className="mt-3 hidden font-headline text-[0.65rem] text-muted-foreground md:block">
           Enter to send · Shift+Enter for a new line
         </p>
       </form>

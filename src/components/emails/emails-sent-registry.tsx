@@ -121,18 +121,18 @@ export function EmailsSentRegistry({
         aria-hidden
       />
 
-      <div className="relative z-[1] mx-auto w-full max-w-7xl flex-1 px-6 pb-24 pt-6 md:px-12 md:pt-10">
-        <header className="mb-12 max-w-3xl">
-          <h1 className="font-headline text-[2.75rem] font-extralight leading-none tracking-tight text-foreground md:text-[3.5rem]">
+      <div className="relative z-[1] mx-auto w-full max-w-7xl flex-1 px-4 pb-8 pt-4 sm:px-6 md:px-12 md:pb-24 md:pt-10">
+        <header className="mb-6 max-w-3xl md:mb-12">
+          <h1 className="font-headline text-2xl font-extralight leading-none tracking-tight text-foreground sm:text-3xl md:text-[3.5rem]">
             Emails Sent
           </h1>
-          <p className="mt-4 max-w-xl font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
+          <p className="mt-3 hidden max-w-xl font-[family-name:var(--font-inter)] text-sm text-muted-foreground sm:block">
             A clinical log of all outgoing property management communications and tenant notices.
           </p>
         </header>
 
-        <div className="mb-10 flex flex-col gap-4 border-b border-border/80 pb-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-wrap gap-8">
+        <div className="mb-6 flex flex-col gap-3 border-b border-border/80 pb-3 md:mb-10 md:flex-row md:items-center md:justify-between md:pb-4">
+          <div className="flex flex-nowrap gap-4 overflow-x-auto md:flex-wrap md:gap-8">
             {tabs.map((t) => (
               <button
                 key={t.id}
@@ -208,7 +208,41 @@ export function EmailsSentRegistry({
           />
         </div>
 
-        <div className="space-y-0.5">
+        <ul className="space-y-3 md:hidden">
+          {slice.length === 0 ? (
+            <li className="rounded-sm bg-card px-4 py-10 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
+              No messages in this view.
+            </li>
+          ) : (
+            slice.map((row) => (
+              <li
+                key={`m-${row.source}-${row.id}`}
+                className="rounded-sm bg-card p-4"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-medium text-foreground">{row.recipientName}</p>
+                    <p className="truncate text-[11px] text-muted-foreground">{row.recipientEmail}</p>
+                  </div>
+                  <StatusPill status={row.uiStatus} />
+                </div>
+                <p className="mt-3 line-clamp-2 text-[13px] text-muted-foreground">{row.subject}</p>
+                <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
+                  <span className="text-[11px] font-light text-muted-foreground">
+                    {formatSentDate(row.sentAt)}
+                  </span>
+                  <EmailDraftViewButton
+                    subject={row.subject}
+                    body={row.body}
+                    buttonClassName="border-[#484848]/30 bg-transparent font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#BD9952] hover:border-[#BD9952]/50 hover:bg-[#BD9952]/5 hover:text-[#BD9952]"
+                  />
+                </div>
+              </li>
+            ))
+          )}
+        </ul>
+
+        <div className="hidden space-y-0.5 md:block">
           <div className="grid grid-cols-12 items-center rounded-t-sm bg-card px-6 py-4">
             <div className="col-span-3 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
               Recipient

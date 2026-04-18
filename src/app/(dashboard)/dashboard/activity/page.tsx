@@ -80,6 +80,7 @@ export default async function ActivityPage() {
               <CardTitle>Recent Activity</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
+              <div className="-mx-6 overflow-x-auto px-6 md:mx-0 md:overflow-visible md:px-0">
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
@@ -130,6 +131,7 @@ export default async function ActivityPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </div>

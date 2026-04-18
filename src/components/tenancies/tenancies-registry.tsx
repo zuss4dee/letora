@@ -247,13 +247,13 @@ export function TenanciesRegistry({
         <div className="absolute bottom-0 right-0 size-[28rem] rounded-full bg-[#BD9952]/[0.06] blur-3xl dark:bg-[#1a1a1a]/80" />
       </div>
 
-      <div className="relative mx-auto w-full max-w-7xl flex-1 px-6 pb-24 pt-6 md:px-12 md:pt-8">
-        <header className="flex flex-col gap-6 border-b border-border pb-8 md:flex-row md:items-end md:justify-between">
+      <div className="relative mx-auto w-full max-w-7xl flex-1 px-4 pb-8 pt-4 sm:px-6 md:px-12 md:pb-24 md:pt-8">
+        <header className="flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-end md:justify-between md:pb-8">
           <div>
-            <h1 className="font-headline text-3xl font-extralight tracking-tight text-foreground md:text-4xl">
+            <h1 className="font-headline text-2xl font-extralight tracking-tight text-foreground sm:text-3xl md:text-4xl">
               Tenancies
             </h1>
-            <p className="mt-2 max-w-xl font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-2 hidden max-w-xl font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground sm:block">
               Manage onboarding, payments, and arrears for your premium portfolio across 12 jurisdictions.
             </p>
           </div>
@@ -273,7 +273,7 @@ export function TenanciesRegistry({
           />
         </header>
 
-        <section className="mb-10 grid grid-cols-2 gap-6 border-b border-border/80 py-10 md:grid-cols-4 md:gap-10">
+        <section className="mb-6 grid grid-cols-2 gap-3 border-b border-border/80 py-6 md:mb-10 md:gap-10 md:grid-cols-4 md:py-10">
           <div className="rounded-sm border border-border bg-card/80 p-4 backdrop-blur-sm">
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Total active
@@ -327,7 +327,91 @@ export function TenanciesRegistry({
           </div>
         </section>
 
-        <div className="overflow-hidden rounded-sm border border-border bg-card/90">
+        <ul className="space-y-3 md:hidden">
+          {slice.length === 0 ? (
+            <li className="rounded-sm border border-border bg-card/90 px-4 py-10 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
+              No tenancies yet.
+            </li>
+          ) : (
+            slice.map((t) => {
+              const amount = t.monthlyRent ?? 0;
+              const { line1, line2 } = splitPropertyAddress(t.propertyAddress);
+              const { ui, arrears, payment } = paymentForTenancy(t.id, paymentByTenancy);
+              const defaultPay =
+                payment && (payment.amountDue ?? 0) - (payment.amountPaid ?? 0) > 0
+                  ? (payment.amountDue ?? 0) - (payment.amountPaid ?? 0)
+                  : amount;
+              return (
+                <li
+                  key={`m-${t.id}`}
+                  className="rounded-sm border border-border bg-card/90 p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div
+                        className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted font-[family-name:var(--font-inter)] text-[11px] font-semibold text-[#BD9952]"
+                        aria-hidden
+                      >
+                        {initials(t.tenantFullName)}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {t.tenantFullName ?? "—"}
+                        </p>
+                        <p className="truncate font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
+                          {line1}
+                          {line2 ? ` · ${line2}` : ""}
+                        </p>
+                      </div>
+                    </div>
+                    <StatusBadge kind={ui} />
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border/60 pt-3">
+                    <div>
+                      <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Monthly rent
+                      </p>
+                      <p className="mt-1 font-headline text-sm font-light tabular-nums text-foreground">
+                        {gbp.format(amount)}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
+                        Arrears
+                      </p>
+                      <p className="mt-1 font-headline text-sm font-light tabular-nums">
+                        {arrears != null && arrears > 0 ? (
+                          <span className="text-[#ee7d77]">{gbp.format(arrears)}</span>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center justify-end gap-3">
+                    <Link
+                      href={`/dashboard/tenancies/${t.id}`}
+                      className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#BD9952] hover:underline"
+                    >
+                      View
+                    </Link>
+                    {userId ? (
+                      <LogPaymentDialog
+                        tenancyId={t.id}
+                        rentPaymentId={payment?.id}
+                        defaultAmountPaid={defaultPay}
+                        triggerLabel="Pay"
+                        triggerClassName="border-[#484848]/40 bg-transparent text-[10px] uppercase tracking-widest text-foreground hover:border-[#BD9952]/50 hover:text-[#BD9952]"
+                      />
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })
+          )}
+        </ul>
+
+        <div className="hidden overflow-hidden rounded-sm border border-border bg-card/90 md:block">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[880px] border-collapse text-left">
               <thead>
@@ -510,11 +594,37 @@ export function TenanciesRegistry({
             </div>
           </div>
         </div>
+
+        {pageCount > 1 ? (
+          <div className="mt-4 flex items-center justify-between gap-2 md:hidden">
+            <button
+              type="button"
+              aria-label="Previous page"
+              disabled={safePage <= 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              className="rounded-sm border border-border p-2 text-muted-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-30"
+            >
+              <ChevronLeft className="size-4" />
+            </button>
+            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+              {displayFrom}-{displayTo} of {total}
+            </p>
+            <button
+              type="button"
+              aria-label="Next page"
+              disabled={safePage >= pageCount}
+              onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
+              className="rounded-sm border border-border p-2 text-muted-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-30"
+            >
+              <ChevronRight className="size-4" />
+            </button>
+          </div>
+        ) : null}
       </div>
 
       <Link
         href="/dashboard"
-        className="fixed bottom-8 right-8 z-30 flex size-12 items-center justify-center rounded-sm border border-[#BD9952]/30 bg-card text-[#BD9952] shadow-[0_0_20px_rgba(189,153,82,0.2)] transition hover:border-[#BD9952]/60 hover:shadow-[0_0_28px_rgba(189,153,82,0.35)]"
+        className="fixed bottom-8 right-8 z-30 hidden size-12 items-center justify-center rounded-sm border border-[#BD9952]/30 bg-card text-[#BD9952] shadow-[0_0_20px_rgba(189,153,82,0.2)] transition hover:border-[#BD9952]/60 hover:shadow-[0_0_28px_rgba(189,153,82,0.35)] md:flex"
         aria-label="Open intelligence assistant"
       >
         <Sparkles className="size-5" strokeWidth={1.5} />
