@@ -1,0 +1,4 @@
+property_address,city,postcode,tenant_name,tenant_email,tenant_phone,monthly_rent,start_date,move_in_date,end_date,deposit_amount
+"12 Oak Street, Flat 3",London,E2 7AA,Alex Stone,alex.stone@example.com,+447000111222,1850,2026-05-01,2026-05-01,2027-04-30,1850
+"48 Kingsway Avenue",Manchester,M1 4BT,Priya Patel,priya.patel@example.com,+447000111223,1250,2026-06-15,2026-06-15,2027-06-14,1250
+"92 Harbour Road",Brighton,BN1 2PQ,Sam Walters,sam.walters@example.com,,1600,2026-05-20,2026-05-20,,1600

@@ -18,6 +18,7 @@ import {
   Mail,
   PlusCircle,
   Settings,
+  Upload,
   UserPlus,
   Users,
   Wrench,
@@ -53,6 +54,7 @@ const workflowItems: NavItem[] = [
 const moreItems: NavItem[] = [
   { title: "Rent Tracker", url: "/dashboard/rent-tracker", icon: CircleDollarSign },
   { title: "Leads", url: "/dashboard/leads", icon: UserPlus },
+  { title: "Import", url: "/dashboard/import", icon: Upload },
   { title: "Emails", url: "/dashboard/emails", icon: Mail },
 ];
 

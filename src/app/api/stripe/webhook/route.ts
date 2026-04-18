@@ -3,7 +3,7 @@ import Stripe from "stripe";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
 
 import { PLANS } from "@/lib/stripe-plans";
-import { resolvePlanKeyFromStripeSubscription } from "@/lib/plan-limits";
+import { isPayingPlatformSubscription, resolvePlanKeyFromStripeSubscription } from "@/lib/plan-limits";
 import { PENDING_CHECKOUT_PLAN_META_KEY } from "@/lib/stripe/pending-checkout";
 import { stripe } from "@/lib/stripe";
 
@@ -45,6 +45,17 @@ async function syncPlatformSubscriptionToUserSettings(
       ? new Date(sub.trial_end * 1000).toISOString()
       : null;
 
+  // Once Stripe confirms a paying status, the user has effectively "chosen" their plan
+  // and provided a card on file. Lift the plan-selection gate immediately so they
+  // are not bounced back to /onboarding/plan after returning from Checkout.
+  const nowIso = new Date().toISOString();
+  const subscriptionChosenFields = isPayingPlatformSubscription(sub.status)
+    ? {
+        subscription_chosen_at: nowIso,
+        ...(planKey ? { subscription_chosen_plan: planKey } : {}),
+      }
+    : {};
+
   await supabase
     .from("user_settings")
     .update({
@@ -54,6 +65,7 @@ async function syncPlatformSubscriptionToUserSettings(
       subscription_plan,
       subscription_period_end: new Date(sub.current_period_end * 1000).toISOString(),
       subscription_trial_end: sub.status === "trialing" ? trialEndIso : null,
+      ...subscriptionChosenFields,
       ...(opts?.stripeCustomerId ? { stripe_customer_id: opts.stripeCustomerId } : {}),
     })
     .eq("user_id", userId);

@@ -27,6 +27,7 @@ const crumbMap: { prefix: string; label: string }[] = [
   { prefix: "/dashboard/contracts", label: "Contracts" },
   { prefix: "/dashboard/emails", label: "Emails" },
   { prefix: "/dashboard/leads", label: "Leads" },
+  { prefix: "/dashboard/import", label: "Import" },
   { prefix: "/dashboard/agents", label: "Agents" },
   { prefix: "/dashboard/activity", label: "History" },
   { prefix: "/dashboard/billing", label: "Billing" },
@@ -132,6 +133,9 @@ export function SiteHeader() {
               <DropdownMenuSeparator className="bg-border" />
               <DropdownMenuItem asChild className="focus:bg-accent">
                 <Link href="/dashboard/leads">Leads inbox</Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild className="focus:bg-accent">
+                <Link href="/dashboard/import">Batch import</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild className="focus:bg-accent">
                 <Link href="/dashboard/emails">Emails</Link>

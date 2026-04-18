@@ -29,6 +29,19 @@ function isReadOnlyTool(name: CEOToolName): boolean {
   return (READ_ONLY_TOOLS as readonly string[]).includes(name)
 }
 
+/**
+ * Cheap CSV row counter for the confirmation preview — strips header + blank lines.
+ * Does NOT try to validate the schema; `bulk_onboard_tenants` executor does that.
+ */
+function countCsvRows(csvText: string): number {
+  const lines = csvText
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 0)
+  if (lines.length <= 1) return 0
+  return lines.length - 1
+}
+
 export function getLatestUserContent(messages: readonly CEOMessageLike[]): string {
   for (let i = messages.length - 1; i >= 0; i--) {
     if (messages[i].role === "user") return messages[i].content
@@ -190,6 +203,11 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
         return `• **Start tenant onboarding**${
           c.input.onboarding_for ? ` for **${c.input.onboarding_for}**` : ""
         } (may create tenancy records, checklist tasks, and welcome communications)`
+      case "bulk_onboard_tenants": {
+        const rowCount = countCsvRows(c.input.csv_text ?? "")
+        const label = rowCount > 0 ? `${rowCount} row${rowCount === 1 ? "" : "s"}` : "CSV rows"
+        return `• **Bulk onboard ${label}** (creates property/tenant/tenancy records and kicks off the onboarding agent — welcome emails, ID / Right-to-Rent / references tasks)`
+      }
       case "send_referencing_handoff": {
         const tn = c.input.tenant_name?.trim()
         if (tn) {

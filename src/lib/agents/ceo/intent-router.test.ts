@@ -120,4 +120,23 @@ describe("routeCEOIntent — tenant list phrasing", () => {
     expect(hint).toContain("get_compliance_summary");
     expect(hint).toContain("compliance_records");
   });
+
+  it("routes “bulk import these tenants” to bulk_onboard_tenants", () => {
+    const r = routeCEOIntent("bulk import these tenants from my spreadsheet");
+    expect(r.wantsBulkOnboarding).toBe(true);
+    expect(r.recommendedTools[0]).toBe("bulk_onboard_tenants");
+    const hint = formatRouterHintForSystem(r);
+    expect(hint).toContain("bulk_onboard_tenants");
+    expect(hint).toContain("csv_text");
+  });
+
+  it("routes pasted CSV header (property_address + tenant_name + monthly_rent) to bulk_onboard_tenants", () => {
+    const csvText = [
+      "property_address,tenant_name,tenant_email,monthly_rent,start_date",
+      "12 Oak St,Alex,alex@example.com,1800,2026-05-01",
+    ].join("\n");
+    const r = routeCEOIntent(`Onboard these please:\n${csvText}`);
+    expect(r.wantsBulkOnboarding).toBe(true);
+    expect(r.recommendedTools).toContain("bulk_onboard_tenants");
+  });
 });

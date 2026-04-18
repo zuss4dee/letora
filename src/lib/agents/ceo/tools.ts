@@ -5,6 +5,7 @@ export type CEOToolName =
   | "get_leads_summary"
   | "search_properties"
   | "start_tenant_onboarding"
+  | "bulk_onboard_tenants"
   | "send_referencing_handoff"
   | "prepare_referencing"
   | "dispatch_maintenance_request"
@@ -28,6 +29,7 @@ export const CEO_TOOL_NAMES: readonly CEOToolName[] = [
   "get_leads_summary",
   "search_properties",
   "start_tenant_onboarding",
+  "bulk_onboard_tenants",
   "send_referencing_handoff",
   "prepare_referencing",
   "dispatch_maintenance_request",
@@ -156,6 +158,27 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
         },
       },
       required: [],
+    },
+  },
+  {
+    name: "bulk_onboard_tenants",
+    description:
+      "Batch onboard many tenancies at once from a single CSV or list of rows. One row per tenancy. Creates property + tenant + tenancy records as needed and kicks off the tenant-onboarding agent (welcome email, 8 onboarding tasks) for each row. Idempotent: rows that already have an active tenancy are skipped, not duplicated. **Preview only when `preview=true`**; actual writes need user confirmation. Use when the user says things like 'import tenants', 'onboard these 20', 'bulk upload tenants', or pastes a CSV in chat.",
+    input_schema: {
+      type: "object",
+      properties: {
+        csv_text: {
+          type: "string",
+          description:
+            "CSV (or TSV) text with header row. Required columns: property_address, tenant_name, tenant_email, monthly_rent, start_date. Optional: city, postcode, tenant_phone, move_in_date, end_date, deposit_amount. Max 100 rows.",
+        },
+        preview: {
+          type: "boolean",
+          description:
+            "When true, only classifies rows (new vs matched vs error vs skip) and returns a preview — no writes. Default false — the tool writes after user confirmation.",
+        },
+      },
+      required: ["csv_text"],
     },
   },
   {

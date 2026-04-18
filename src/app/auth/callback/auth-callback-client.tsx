@@ -33,11 +33,49 @@ function buildContinuePath(nextParam: string | null): string {
 /** Avoid exposing low-level Supabase copy (PKCE storage, etc.) on the login screen. */
 function userSafeCallbackErrorMessage(raw: string | undefined): string | undefined {
   if (!raw?.trim()) return undefined;
-  const m = raw.toLowerCase();
-  if (m.includes("pkce") || m.includes("code verifier")) {
-    return "This link has expired or was opened in another browser or device than where you started. Sign in with your email and password, or request a new confirmation email from the sign-up page.";
-  }
   return raw.length > 220 ? `${raw.slice(0, 217)}…` : raw;
+}
+
+/**
+ * Map low-level Supabase callback errors to a friendly category for the login page banner.
+ *
+ * - `already_signed_in`  — link was already consumed (clicked from email on a different device,
+ *                          PKCE code_verifier missing, flow_state expired, invalid_grant). The
+ *                          user already has an account; they just need to sign in below.
+ * - `expired`            — confirmation/magic link genuinely expired or was malformed.
+ * - `callback`           — generic catch-all for true failures we can't classify.
+ */
+type CallbackErrorKind = "already_signed_in" | "expired" | "callback";
+
+function classifyCallbackError(opts: { reason?: string; message?: string }): CallbackErrorKind {
+  const r = opts.reason?.toLowerCase() ?? "";
+  const m = opts.message?.toLowerCase() ?? "";
+
+  if (
+    r === "no_session" ||
+    m.includes("pkce") ||
+    m.includes("code verifier") ||
+    m.includes("code_verifier") ||
+    m.includes("flow_state") ||
+    m.includes("flow state") ||
+    m.includes("invalid_grant") ||
+    m.includes("invalid grant") ||
+    m.includes("bad_code_verifier")
+  ) {
+    return "already_signed_in";
+  }
+
+  if (
+    m.includes("expired") ||
+    m.includes("token has expired") ||
+    m.includes("invalid otp") ||
+    r === "invalid_confirmation_link" ||
+    r === "verify_otp_failed"
+  ) {
+    return "expired";
+  }
+
+  return "callback";
 }
 
 function redirectToLogin(
@@ -45,7 +83,7 @@ function redirectToLogin(
   opts: { reason?: string; message?: string; emailHint?: string },
 ) {
   const q = new URLSearchParams();
-  q.set("auth_error", "callback");
+  q.set("auth_error", classifyCallbackError(opts));
   if (opts.reason) q.set("reason", opts.reason.slice(0, 200));
   const safe = userSafeCallbackErrorMessage(opts.message);
   if (safe) q.set("message", safe.slice(0, 320));

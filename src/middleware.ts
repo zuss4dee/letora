@@ -16,6 +16,7 @@ export async function middleware(request: NextRequest) {
   const isLoginRoute = pathname === "/login";
   const isSignupRoute = pathname === "/signup";
   const isOnboardingRoute = pathname === "/onboarding" || pathname.startsWith("/onboarding/");
+  const isPlanGateRoute = pathname === "/onboarding/plan";
   const isMarketingRoot = pathname === "/";
   const isPricingRoute = pathname === "/pricing";
 
@@ -55,30 +56,57 @@ export async function middleware(request: NextRequest) {
   }
 
   /**
-   * Onboarding gate: `user_settings.onboarding_status` must be `completed` before using /dashboard.
-   * Skip when already on /onboarding (avoid redirect loop).
+   * Plan + onboarding gates for authenticated users. Order matters:
+   *   1. Plan-selection gate — they must have explicitly picked Starter/Pro/Portfolio
+   *      (subscription_chosen_at IS NOT NULL) before they can reach /dashboard or
+   *      the rest of the onboarding wizard.
+   *   2. Onboarding completeness gate — `user_settings.onboarding_status = 'completed'`
+   *      is required for /dashboard.
+   *
+   * We only read user_settings once per request and skip the lookup entirely on
+   * non-gated routes.
    */
-  if (user && isDashboardRoute && !isOnboardingRoute) {
+  const needsGateLookup =
+    user && (isDashboardRoute || (isOnboardingRoute && !isPlanGateRoute));
+
+  if (needsGateLookup) {
     const { data: row, error } = await supabase
       .from("user_settings")
-      .select("onboarding_status")
+      .select("onboarding_status, subscription_chosen_at")
       .eq("user_id", user.id)
       .maybeSingle();
 
     if (error) {
-      console.error("[middleware] user_settings onboarding_status:", error.message);
+      console.error("[middleware] user_settings gate lookup:", error.message);
     }
 
-    const raw = (row as { onboarding_status?: string | null } | null)?.onboarding_status;
-    const isComplete = typeof raw === "string" && raw.trim() === "completed";
+    const settings = row as
+      | { onboarding_status?: string | null; subscription_chosen_at?: string | null }
+      | null;
 
-    if (!isComplete) {
+    const hasChosenPlan = Boolean(settings?.subscription_chosen_at);
+
+    if (!hasChosenPlan) {
       const url = request.nextUrl.clone();
-      url.pathname = "/onboarding";
+      url.pathname = "/onboarding/plan";
       url.search = "";
       const redirect = NextResponse.redirect(url);
       mergeResponseCookies(response, redirect);
       return redirect;
+    }
+
+    if (isDashboardRoute) {
+      const raw = settings?.onboarding_status;
+      const isComplete = typeof raw === "string" && raw.trim() === "completed";
+
+      if (!isComplete) {
+        const url = request.nextUrl.clone();
+        url.pathname = "/onboarding";
+        url.search = "";
+        const redirect = NextResponse.redirect(url);
+        mergeResponseCookies(response, redirect);
+        return redirect;
+      }
     }
   }
 

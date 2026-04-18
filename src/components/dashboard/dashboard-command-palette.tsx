@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   Mail,
   Settings,
+  Upload,
   UserPlus,
   Users,
   Wrench,
@@ -145,6 +146,10 @@ function CommandPaletteDialog({
           <CommandItem onSelect={() => closeThen(() => router.push("/dashboard/leads"))}>
             <UserPlus className="size-4 opacity-60" aria-hidden />
             Leads
+          </CommandItem>
+          <CommandItem onSelect={() => closeThen(() => router.push("/dashboard/import"))}>
+            <Upload className="size-4 opacity-60" aria-hidden />
+            Batch import
           </CommandItem>
           <CommandItem onSelect={() => closeThen(() => router.push("/dashboard/rent-tracker"))}>
             <Key className="size-4 opacity-60" aria-hidden />

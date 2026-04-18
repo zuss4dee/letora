@@ -755,6 +755,9 @@ interface ToolCallArgs {
   override?: boolean | string;
   /** send_contract */
   contract_id?: string;
+  /** bulk_onboard_tenants */
+  csv_text?: string;
+  preview?: string;
 }
 
 function normalizePipelineStatus(value: unknown): string {
@@ -1623,6 +1626,85 @@ export async function executeCEOTool(
         tenant_id: tenantId,
         tenancy_id: newTenancyId,
         ...result,
+      });
+    }
+    case "bulk_onboard_tenants": {
+      const csvText = args.csv_text?.trim();
+      if (!csvText) {
+        return JSON.stringify({
+          error:
+            "Paste a CSV in `csv_text`. Required columns: property_address, tenant_name, tenant_email, monthly_rent, start_date.",
+        });
+      }
+
+      const { parseBatchOnboardingCsv, extractBatchOnboardingRowsWithLlmFromText } = await import(
+        "@/lib/onboarding/tenant-import"
+      );
+      const { prepareBatchOnboarding, runBatchOnboarding } = await import(
+        "@/lib/onboarding/batch-onboard"
+      );
+
+      let rows = parseBatchOnboardingCsv(csvText);
+      if (rows.length === 0) {
+        const llm = await extractBatchOnboardingRowsWithLlmFromText(csvText);
+        if (!llm.ok) {
+          return JSON.stringify({
+            error:
+              "Couldn't parse any rows. Expected header: property_address, tenant_name, tenant_email, monthly_rent, start_date.",
+          });
+        }
+        rows = llm.rows;
+      }
+
+      const prepared = await prepareBatchOnboarding(rows, userId, supabase);
+      const previewOnly = /^(1|true|yes)$/i.test(args.preview?.trim() ?? "");
+
+      const previewRows = prepared.rows.slice(0, 10).map((r) => ({
+        row: r.rowIndex + 1,
+        property: r.raw.propertyAddress,
+        tenant: r.raw.tenantFullName,
+        email: r.raw.tenantEmail,
+        monthly_rent: r.raw.monthlyRent,
+        start_date: r.raw.startDate,
+        status: r.tags.join("+"),
+        errors: r.raw.rowErrors,
+      }));
+
+      if (previewOnly) {
+        return JSON.stringify({
+          mode: "preview",
+          summary: prepared.summary,
+          preview_rows: previewRows,
+        });
+      }
+
+      if (prepared.summary.actionableRows === 0) {
+        return JSON.stringify({
+          mode: "nothing_to_do",
+          summary: prepared.summary,
+          preview_rows: previewRows,
+          note:
+            prepared.summary.validationErrors > 0
+              ? "Every row has validation errors. Fix the CSV and try again."
+              : "All rows are already onboarded — nothing new to create.",
+        });
+      }
+
+      const runResult = await runBatchOnboarding(prepared, userId, supabase);
+
+      return JSON.stringify({
+        mode: "executed",
+        batch_id: runResult.batchId,
+        totals: runResult.totals,
+        summary: prepared.summary,
+        preview_rows: previewRows,
+        outcomes_preview: runResult.outcomes.slice(0, 10).map((o) => ({
+          row: o.rowIndex + 1,
+          status: o.status,
+          tenancy_id: o.tenancyId,
+          email_status: o.emailStatus,
+          error: o.error ?? null,
+        })),
       });
     }
     case "send_referencing_handoff": {

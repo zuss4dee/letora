@@ -38,6 +38,10 @@ export type CEOIntentRoute = {
    * “Continue/resume onboarding” — prioritize **start_tenant_onboarding** (resume JSON) over generic copy / navigation-only.
    */
   wantsContinueOnboarding: boolean
+  /**
+   * “Import these tenants”, “onboard these 20”, pasted CSV — prioritize **bulk_onboard_tenants** over single-tenant onboarding.
+   */
+  wantsBulkOnboarding: boolean
   needsClarification: boolean
   clarificationQuestion: string | null
 }
@@ -311,6 +315,33 @@ function detectContinueOnboardingResume(normalized: string): boolean {
 }
 
 /**
+ * Detect a bulk/batch onboarding request. We match either:
+ *   - explicit intent words (import, bulk, batch, mass) near tenants/properties/onboard, OR
+ *   - a pasted CSV header line that uses our required columns.
+ */
+function detectBulkOnboardingRequest(normalized: string, rawMessage: string): boolean {
+  const intentWords =
+    /\b(bulk|batch|import|upload|mass|multiple|many|all\s+of\s+these)\b/i
+  const targetWords = /\b(tenants?|tenancies?|properties|portfolio|onboard|onboarding|csv|spreadsheet|list)\b/i
+  if (intentWords.test(normalized) && targetWords.test(normalized)) return true
+
+  if (/\b(onboard|import|add)\b\s+(?:these|the)?\s*\d+\s+(?:tenants?|tenancies?|properties)\b/i.test(normalized)) {
+    return true
+  }
+
+  if (/\bhere'?s?\s+(?:my\s+|a\s+)?csv\b/i.test(normalized)) return true
+
+  // Pasted CSV header with our required columns.
+  const lower = rawMessage.toLowerCase()
+  const hasAddressCol = /property[_\s-]?address|property,|address,/.test(lower)
+  const hasTenantCol = /tenant[_\s-]?name|tenant_email|tenant,/.test(lower)
+  const hasRentCol = /monthly[_\s-]?rent|\brent,/.test(lower)
+  if (hasAddressCol && hasTenantCol && hasRentCol) return true
+
+  return false
+}
+
+/**
  * Maps natural-language property-management phrasing to internal tools and safety hints.
  */
 export function routeCEOIntent(userMessage: string): CEOIntentRoute {
@@ -321,7 +352,11 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
   const wantsContinueOnboarding =
     detectContinueOnboardingResume(normalized) ||
     (/\b(continue|resume)\b/i.test(normalized) && /\bonboarding\s+for\b/i.test(normalized))
+  const wantsBulkOnboarding = detectBulkOnboardingRequest(normalized, trimmed)
   const scores = scoreMessage(normalized)
+  if (wantsBulkOnboarding) {
+    scores.onboarding += 3
+  }
   const totalScore = Object.values(scores).reduce((a, b) => a + b, 0)
 
   if (totalScore <= 0) {
@@ -346,25 +381,36 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
         wantsOnboardingByPlainName: false,
         wantsReferencingStatus: true,
         wantsContinueOnboarding: false,
+        wantsBulkOnboarding: false,
         needsClarification: false,
         clarificationQuestion: null,
       }
     }
 
     return {
-      primaryIntent: wantsOnboardingByPlainName || wantsContinueOnboarding ? "onboarding" : "portfolio",
+      primaryIntent:
+        wantsBulkOnboarding || wantsOnboardingByPlainName || wantsContinueOnboarding
+          ? "onboarding"
+          : "portfolio",
       secondaryIntents: [],
-      confidence: wantsOnboardingByPlainName || wantsContinueOnboarding ? 0.45 : 0,
-      recommendedTools:
-        wantsOnboardingByPlainName || wantsContinueOnboarding ? ["start_tenant_onboarding"] : [],
+      confidence:
+        wantsBulkOnboarding || wantsOnboardingByPlainName || wantsContinueOnboarding ? 0.45 : 0,
+      recommendedTools: wantsBulkOnboarding
+        ? ["bulk_onboard_tenants"]
+        : wantsOnboardingByPlainName || wantsContinueOnboarding
+          ? ["start_tenant_onboarding"]
+          : [],
       confirmationRequired:
-        wantsOnboardingByPlainName || wantsContinueOnboarding
-          ? toolsRequireUserConfirmation(classifyCEOIntent(normalized), ["start_tenant_onboarding"])
-          : false,
+        wantsBulkOnboarding
+          ? toolsRequireUserConfirmation(classifyCEOIntent(normalized), ["bulk_onboard_tenants"])
+          : wantsOnboardingByPlainName || wantsContinueOnboarding
+            ? toolsRequireUserConfirmation(classifyCEOIntent(normalized), ["start_tenant_onboarding"])
+            : false,
       wantsLeadQualification,
       wantsOnboardingByPlainName,
       wantsReferencingStatus: false,
       wantsContinueOnboarding,
+      wantsBulkOnboarding,
       needsClarification,
       clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
     }
@@ -440,6 +486,16 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     )
   }
 
+  if (wantsBulkOnboarding) {
+    recommendedTools = uniqueToolsOrdered(
+      [
+        "bulk_onboard_tenants",
+        ...recommendedTools.filter((t) => t !== "bulk_onboard_tenants"),
+      ],
+      6,
+    )
+  }
+
   const wantsCompliancePriority =
     /\b(compliance|epc|gas\s+safety|electric(?:al)?\s+safety|eicr|landlord\s+cert|safety\s+cert|certificate\s+expir|expired\s+cert|expiring\s+cert|legal\s+safety)\b/i.test(
       normalized,
@@ -483,6 +539,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     wantsOnboardingByPlainName,
     wantsReferencingStatus,
     wantsContinueOnboarding,
+    wantsBulkOnboarding,
     needsClarification,
     clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
   }
@@ -554,6 +611,12 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
   if (route.wantsContinueOnboarding) {
     lines.push(
       "- **Required (continue/resume onboarding):** Call **start_tenant_onboarding** with **onboarding_for** when they named a tenant; otherwise **list_tenants** then **start_tenant_onboarding**. Summarize **pending_task_names**, **tasks_complete**/**tasks_total**, and **referencing_complete** from that JSON (or from **resolve_onboarding_navigation** if you also used it) — do **not** invent a generic checklist. **resolve_onboarding_navigation** is for the **Open onboarding** button only; it is not a substitute for **start_tenant_onboarding** resume data.",
+    )
+  }
+
+  if (route.wantsBulkOnboarding) {
+    lines.push(
+      "- **Required (bulk / batch onboarding):** Call **bulk_onboard_tenants** with **csv_text** copied verbatim from the user's message. On the first turn, set **preview=true** and summarize the `summary` counters (`newProperties`, `matchedProperties`, `validationErrors`, `skippedActiveTenancies`, `actionableRows`) plus a few `preview_rows`. Do **not** call **start_tenant_onboarding** for individual rows when a CSV is present — the executor fans out per row. Ask the user to confirm before running the actual import (drop `preview`).",
     )
   }
 

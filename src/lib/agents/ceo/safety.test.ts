@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { classifyCEOIntent, normalizeCEOToolInput, toolsRequireUserConfirmation } from "./safety";
+import {
+  buildConfirmationMessage,
+  classifyCEOIntent,
+  normalizeCEOToolInput,
+  toolsRequireUserConfirmation,
+} from "./safety";
 import type { CEOToolName } from "./tools";
 
 describe("CEO safety confirmation gating", () => {
@@ -49,6 +54,35 @@ describe("CEO safety confirmation gating", () => {
   it("classifies 'where is X a tenant' as read_only so it does not trigger draft_contract", () => {
     expect(classifyCEOIntent("where is Alexis a tenant?")).toBe("read_only");
     expect(classifyCEOIntent("where is john a tenant")).toBe("read_only");
+  });
+});
+
+describe("bulk_onboard_tenants safety", () => {
+  it("requires confirmation (is treated as a mutating tool)", () => {
+    const intent = classifyCEOIntent("onboard these tenants from the csv");
+    const tools: CEOToolName[] = ["bulk_onboard_tenants"];
+    expect(toolsRequireUserConfirmation(intent, tools)).toBe(true);
+  });
+
+  it("confirmation preview mentions the row count when csv has rows", () => {
+    const csv = [
+      "property_address,tenant_name,tenant_email,monthly_rent,start_date",
+      "12 Oak St,Alex,alex@example.com,1800,2026-05-01",
+      "13 Elm St,Priya,priya@example.com,1600,2026-06-01",
+    ].join("\n");
+    const msg = buildConfirmationMessage({
+      v: 1,
+      toolCalls: [{ name: "bulk_onboard_tenants", input: { csv_text: csv } }],
+    });
+    expect(msg).toContain("Bulk onboard 2 rows");
+  });
+
+  it("confirmation preview falls back to generic label when csv is empty", () => {
+    const msg = buildConfirmationMessage({
+      v: 1,
+      toolCalls: [{ name: "bulk_onboard_tenants", input: { csv_text: "" } }],
+    });
+    expect(msg).toContain("Bulk onboard CSV rows");
   });
 });
 
