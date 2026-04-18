@@ -32,47 +32,30 @@ type LoginValues = z.infer<typeof loginSchema>;
 const authAlertBoxClass =
   "rounded-md border border-destructive/25 bg-destructive/10 px-3 py-2.5 text-xs font-normal text-destructive dark:border-[#BB5551]/35 dark:bg-[#1a1210]/90 dark:text-[#e8a8a4]";
 
-/** Calm, on-brand info banner — used when the email link is fine but already consumed. */
-const authInfoBoxClass =
-  "rounded-md border border-[#BD9952]/35 bg-[#BD9952]/10 px-3 py-2.5 text-xs font-normal text-[#a67c2c] dark:border-[#BD9952]/35 dark:bg-[#BD9952]/[0.07] dark:text-[#BD9952]";
-
 function safePrefillEmail(raw: string | null): string {
   if (!raw?.trim()) return "";
   return isValidEmailAddress(raw) ? raw.trim() : "";
 }
 
 function LoginCallbackParamAlert({
-  kind,
+  reason,
+  message,
 }: {
-  kind: "already_signed_in" | "expired" | "callback";
+  reason: string | null;
+  message: string | null;
 }) {
-  if (kind === "already_signed_in") {
-    return (
-      <p className={authInfoBoxClass} role="status">
-        You&apos;re verified. Sign in below with your email and password to continue.
-      </p>
-    );
-  }
-
-  if (kind === "expired") {
+  const detail = message?.trim() || reason?.trim();
+  if (!detail) {
     return (
       <p className={authAlertBoxClass} role="alert">
-        This sign-in link has expired. Enter your email and password below, or request a new link from the{" "}
-        <Link
-          href="/signup"
-          className="font-medium underline-offset-4 hover:underline"
-        >
-          sign-up page
-        </Link>
-        .
+        We couldn&apos;t finish signing you in from your email link. Enter your password below, or try requesting a new
+        confirmation email from the sign-up page.
       </p>
     );
   }
-
   return (
     <p className={authAlertBoxClass} role="alert">
-      We couldn&apos;t finish signing you in from your email link. Enter your password below, or try requesting a new
-      confirmation email from the sign-up page.
+      {detail.length > 220 ? `${detail.slice(0, 217)}…` : detail}
     </p>
   );
 }
@@ -136,6 +119,8 @@ function LoginForm() {
   }, [searchParams]);
 
   const callbackAuthError = useMemo(() => searchParams.get("auth_error"), [searchParams]);
+  const callbackReason = useMemo(() => searchParams.get("reason"), [searchParams]);
+  const callbackMessage = useMemo(() => searchParams.get("message"), [searchParams]);
 
   const [authError, setAuthError] = useState<{ message: string; code?: string } | null>(null);
 
@@ -190,10 +175,8 @@ function LoginForm() {
         <AuthBrandMark />
 
         <form className="space-y-5" onSubmit={form.handleSubmit(onSubmit)}>
-          {callbackAuthError === "already_signed_in" ||
-          callbackAuthError === "expired" ||
-          callbackAuthError === "callback" ? (
-            <LoginCallbackParamAlert kind={callbackAuthError} />
+          {callbackAuthError === "callback" ? (
+            <LoginCallbackParamAlert reason={callbackReason} message={callbackMessage} />
           ) : null}
 
           <div className="space-y-2">

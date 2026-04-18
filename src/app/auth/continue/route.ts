@@ -32,29 +32,18 @@ export async function GET(request: NextRequest) {
 
   const { data: settings } = await supabase
     .from("user_settings")
-    .select("subscription_status, subscription_chosen_at")
+    .select("subscription_status")
     .eq("user_id", user.id)
     .maybeSingle();
 
-  const settingsRow = settings as
-    | { subscription_status?: string | null; subscription_chosen_at?: string | null }
-    | null;
-  const subStatus = settingsRow?.subscription_status ?? null;
-  const hasChosenPlan = Boolean(settingsRow?.subscription_chosen_at);
+  const subStatus =
+    (settings as { subscription_status?: string | null } | null)?.subscription_status ?? null;
 
   if (gate.ok && pending && !isPayingPlatformSubscription(subStatus)) {
     const checkout = checkoutUrlForPendingPlan(request.nextUrl.origin, pending);
     if (checkout) {
       return NextResponse.redirect(checkout);
     }
-  }
-
-  // Hard plan-selection gate: a brand-new user who hasn't picked Starter or paid for Pro
-  // must visit /onboarding/plan first. The middleware enforces this too, but doing it
-  // here avoids a second redirect hop when bouncing off /login or /signup.
-  if (!hasChosenPlan) {
-    const url = new URL("/onboarding/plan", request.url);
-    return NextResponse.redirect(url);
   }
 
   return NextResponse.redirect(new URL(nextPath, request.url));

@@ -35,11 +35,14 @@ function inferInitialStep(
   hasBusinessName: boolean,
   settingsComplete: boolean,
   propertyCount: number,
+  tenantCount: number,
 ): OnboardingWizardStep {
+  if (status === "tenant_pending") return 4;
   if (status === "settings_pending") return 2;
-  if (status === "property_pending" || status === "tenant_pending") {
+  if (status === "property_pending") {
     if (!settingsComplete) return 2;
     if (propertyCount < 1) return 3;
+    if (tenantCount < 1) return 4;
     return 3;
   }
   if (status === "profile_pending" && hasBusinessName) return 1;
@@ -59,11 +62,12 @@ export default async function OnboardingPage() {
   const settings = await getUserSettings(user.id);
   const status = settings?.onboardingStatus ?? "profile_pending";
 
-  const { count: propertyCountRaw } = await supabase
-    .from("properties")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
+  const [{ count: propertyCountRaw }, { count: tenantCountRaw }] = await Promise.all([
+    supabase.from("properties").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+    supabase.from("tenants").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+  ]);
   const propertyCount = propertyCountRaw ?? 0;
+  const tenantCount = tenantCountRaw ?? 0;
 
   const onboardingGate = await getOnboardingStatusForGate(user.id);
   if (
@@ -71,6 +75,7 @@ export default async function OnboardingPage() {
     !isWorkspaceSetupIncomplete({
       landlordName: settings?.landlordName,
       propertyCount,
+      tenantCount,
     })
   ) {
     redirect("/dashboard");
@@ -84,6 +89,7 @@ export default async function OnboardingPage() {
     hasBusinessName,
     settingsComplete,
     propertyCount,
+    tenantCount,
   );
 
   return (

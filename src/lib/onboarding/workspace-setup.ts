@@ -1,16 +1,12 @@
-/**
- * Core gate for the guided onboarding wizard: landlord name + first property.
- * Tenants are added later from the Tenants page or batch-import — not inside the wizard —
- * so they're surfaced in the dashboard checklist instead of trapping users on /onboarding.
- */
+/** Core gate: landlord, first property, first tenant (onboarding / skip behaviour). */
 export function isWorkspaceSetupIncomplete(input: {
   landlordName: string | null | undefined;
   propertyCount: number;
-  /** Kept for API compatibility with the dashboard checklist input shape; intentionally unused here. */
-  tenantCount?: number;
+  tenantCount: number;
 }): boolean {
   if (!input.landlordName?.trim()) return true;
   if (input.propertyCount < 1) return true;
+  if (input.tenantCount < 1) return true;
   return false;
 }
 
