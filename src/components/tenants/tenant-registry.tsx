@@ -54,13 +54,18 @@ function needsRenewalSoon(endIso: string | null, withinDays = 90): boolean {
   return end <= limit && end >= now;
 }
 
+/** Default “Active” tab: roster + in-flight tenancies; hide only clearly ended leases (matches tenancies-registry intent). */
+function showOnDefaultActiveTab(r: TenantRow): boolean {
+  if (!r.tenancyId) return true;
+  const s = (r.tenancyStatus ?? "").toLowerCase();
+  if (s === "ended" || s === "terminated" || s === "past" || s === "inactive") return false;
+  return true;
+}
+
 function filterTenants(tab: TabId, rows: TenantRow[]): TenantRow[] {
   switch (tab) {
     case "active":
-      return rows.filter((r) => {
-        const s = (r.tenancyStatus ?? "").toLowerCase();
-        return !r.tenancyId || s === "active";
-      });
+      return rows.filter(showOnDefaultActiveTab);
     case "arrears":
       return rows.filter((r) => r.rentStatus === "overdue");
     case "move_ins":
@@ -108,10 +113,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
   const [tab, setTab] = useState<TabId>("active");
   const [page, setPage] = useState(0);
 
-  const totalActive = useMemo(
-    () => tenants.filter((r) => (r.tenancyStatus ?? "").toLowerCase() === "active").length,
-    [tenants],
-  );
+  const totalActive = useMemo(() => tenants.filter(showOnDefaultActiveTab).length, [tenants]);
   const pendingReview = useMemo(
     () =>
       tenants.filter(

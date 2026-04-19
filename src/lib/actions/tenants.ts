@@ -28,29 +28,80 @@ export type TenantRow = {
   createdAt: string | null;
 };
 
+type TenancyEmbedRow = {
+  id?: string;
+  status?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  onboarding_status?: string | null;
+  properties?: { address?: string | null; city?: string | null; property_type?: string | null } | null;
+  rent_payments?: Array<{ status?: string | null; due_date?: string | null }> | null;
+};
+
 export async function getTenants(userId: string): Promise<TenantRow[]> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  // Two-step load: PostgREST only discovers `tenants.tenancies(...)` when
+  // `tenancies.tenant_id` FK targets `tenants.id`. If the DB still links to
+  // `tenant_profiles` or has no FK, a nested select returns PGRST200.
+  const { data: tenantRows, error: tenantErr } = await supabase
     .from("tenants")
-    .select(
-      `id,full_name,email,phone,right_to_rent_status,created_at,
-      tenancies(
-        id,
-        status,
-        start_date,
-        end_date,
-        onboarding_status,
-        properties(address,city,property_type),
-        rent_payments(status,due_date)
-      )`,
-    )
+    .select("id,full_name,email,phone,right_to_rent_status,created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
 
-  if (error) return [];
+  if (tenantErr) {
+    console.error("[getTenants] tenants", {
+      message: tenantErr.message,
+      code: tenantErr.code,
+      details: tenantErr.details,
+    });
+    return [];
+  }
 
-  return (data ?? []).map((row) => mapTenantListRow(row));
+  const tenants = tenantRows ?? [];
+  if (tenants.length === 0) return [];
+
+  const ids = tenants.map((t) => String(t.id));
+  const { data: tenancyRows, error: tenancyErr } = await supabase
+    .from("tenancies")
+    .select(
+      `tenant_id,
+      id,
+      status,
+      start_date,
+      end_date,
+      onboarding_status,
+      properties(address,city,property_type),
+      rent_payments(status,due_date)`,
+    )
+    .in("tenant_id", ids);
+
+  if (tenancyErr) {
+    console.error("[getTenants] tenancies", {
+      message: tenancyErr.message,
+      code: tenancyErr.code,
+      details: tenancyErr.details,
+    });
+  }
+
+  const byTenantId = new Map<string, TenancyEmbedRow[]>();
+  for (const raw of tenancyRows ?? []) {
+    const row = raw as { tenant_id?: string | null } & TenancyEmbedRow;
+    const tid = row.tenant_id;
+    if (!tid) continue;
+    const { tenant_id: _tid, ...embed } = row;
+    const list = byTenantId.get(tid) ?? [];
+    list.push(embed);
+    byTenantId.set(tid, list);
+  }
+
+  return tenants.map((row) =>
+    mapTenantListRow({
+      ...row,
+      tenancies: byTenantId.get(String(row.id)) ?? [],
+    }),
+  );
 }
 
 function pickPrimaryTenancy(
@@ -190,21 +241,26 @@ export async function getTenantById(userId: string, tenantId: string): Promise<T
 
   const { data, error } = await supabase
     .from("tenants")
-    .select(
-      "id,full_name,email,phone,date_of_birth,right_to_rent_status,created_at,tenancies(id,status,start_date,property_id,properties(address))",
-    )
+    .select("id,full_name,email,phone,date_of_birth,right_to_rent_status,created_at")
     .eq("id", tenantId)
     .eq("user_id", userId)
     .maybeSingle();
 
   if (error || !data) return null;
 
-  const rawTenancies = data.tenancies;
-  const tenList = Array.isArray(rawTenancies)
-    ? rawTenancies
-    : rawTenancies
-      ? [rawTenancies]
-      : [];
+  const { data: tenancyRows, error: tenancyErr } = await supabase
+    .from("tenancies")
+    .select("id,status,start_date,property_id,properties(address)")
+    .eq("tenant_id", tenantId);
+
+  if (tenancyErr) {
+    console.error("[getTenantById] tenancies", {
+      message: tenancyErr.message,
+      code: tenancyErr.code,
+    });
+  }
+
+  const tenList = tenancyRows ?? [];
 
   const tenancies = tenList.map((t) => {
     const row = t as {
@@ -314,11 +370,38 @@ export async function addTenant(formData: unknown) {
     right_to_rent_status: values.rightToRentStatus,
   });
 
-  if (error)
+  if (error) {
+    const raw = error.message ?? "";
+    const code = error.code ?? "";
+
+    console.error("[addTenant]", { code, message: raw, details: error.details });
+
+    if (code === "23505" || /duplicate key|unique constraint/i.test(raw)) {
+      return {
+        ok: false as const,
+        error:
+          "A tenant with this email already exists for your account. Edit that profile or use a different email.",
+      };
+    }
+    if (code === "42501" || /row-level security/i.test(raw)) {
+      return {
+        ok: false as const,
+        error: "We couldn’t authorize that save with your current session. Refresh the page and try again.",
+      };
+    }
+    if (/relation ["']public\.tenants["'] does not exist|could not find the table.*tenants/i.test(raw)) {
+      return {
+        ok: false as const,
+        error:
+          "The tenant database table is missing or out of date. Apply pending Supabase migrations (tenants / tenant_profiles rename), then try again.",
+      };
+    }
+
     return {
       ok: false as const,
-      error: userFacingError(error.message, "We couldn't save that tenant. Please try again."),
+      error: userFacingError(raw, "We couldn't save that tenant. Please try again."),
     };
+  }
 
   revalidatePath("/dashboard/tenants");
   return { ok: true as const };
@@ -351,11 +434,29 @@ export async function updateTenant(tenantId: string, formData: unknown) {
     .eq("id", tenantId)
     .eq("user_id", user.id);
 
-  if (error)
+  if (error) {
+    const raw = error.message ?? "";
+    const code = error.code ?? "";
+    console.error("[updateTenant]", { code, message: raw, details: error.details });
+
+    if (code === "23505" || /duplicate key|unique constraint/i.test(raw)) {
+      return {
+        ok: false as const,
+        error: "Another tenant already uses this email. Choose a different email address.",
+      };
+    }
+    if (code === "42501" || /row-level security/i.test(raw)) {
+      return {
+        ok: false as const,
+        error: "We couldn’t authorize that save with your current session. Refresh the page and try again.",
+      };
+    }
+
     return {
       ok: false as const,
-      error: userFacingError(error.message, "We couldn't save that tenant. Please try again."),
+      error: userFacingError(raw, "We couldn't save that tenant. Please try again."),
     };
+  }
 
   revalidatePath("/dashboard/tenants");
   revalidatePath(`/dashboard/tenants/${tenantId}`);

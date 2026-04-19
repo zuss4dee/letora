@@ -3,9 +3,13 @@ import { redirect } from "next/navigation";
 
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { getOnboardingStatusForGate, getUserSettings } from "@/lib/actions/user-settings";
+import { syncLegacyOnboardingAfterTenantStepRemoved } from "@/lib/actions/user-onboarding";
 import { isOnboardingMarkedComplete } from "@/lib/onboarding/status";
 import type { OnboardingStatus } from "@/lib/onboarding/status";
-import type { OnboardingWizardStep } from "@/components/onboarding/onboarding-wizard";
+import {
+  LANDLORD_ONBOARDING_WIZARD_LAST_STEP_INDEX,
+  type OnboardingWizardStep,
+} from "@/lib/onboarding/landlord-wizard";
 import type { UserSettingsRow } from "@/lib/actions/user-settings";
 import { createClient } from "@/lib/supabase/server";
 import { displayNameFromUserMetadata } from "@/lib/auth/profile-hints";
@@ -35,15 +39,11 @@ function inferInitialStep(
   hasBusinessName: boolean,
   settingsComplete: boolean,
   propertyCount: number,
-  tenantCount: number,
 ): OnboardingWizardStep {
-  if (status === "tenant_pending") return 4;
   if (status === "settings_pending") return 2;
   if (status === "property_pending") {
     if (!settingsComplete) return 2;
-    if (propertyCount < 1) return 3;
-    if (tenantCount < 1) return 4;
-    return 3;
+    return LANDLORD_ONBOARDING_WIZARD_LAST_STEP_INDEX;
   }
   if (status === "profile_pending" && hasBusinessName) return 1;
   return 0;
@@ -59,15 +59,19 @@ export default async function OnboardingPage() {
     redirect("/login?next=/onboarding");
   }
 
+  const legacy = await syncLegacyOnboardingAfterTenantStepRemoved();
+  if (legacy.ok && legacy.didComplete) {
+    redirect("/dashboard");
+  }
+
   const settings = await getUserSettings(user.id);
   const status = settings?.onboardingStatus ?? "profile_pending";
 
-  const [{ count: propertyCountRaw }, { count: tenantCountRaw }] = await Promise.all([
-    supabase.from("properties").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-    supabase.from("tenants").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-  ]);
+  const { count: propertyCountRaw } = await supabase
+    .from("properties")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", user.id);
   const propertyCount = propertyCountRaw ?? 0;
-  const tenantCount = tenantCountRaw ?? 0;
 
   const onboardingGate = await getOnboardingStatusForGate(user.id);
   if (
@@ -75,7 +79,6 @@ export default async function OnboardingPage() {
     !isWorkspaceSetupIncomplete({
       landlordName: settings?.landlordName,
       propertyCount,
-      tenantCount,
     })
   ) {
     redirect("/dashboard");
@@ -84,13 +87,7 @@ export default async function OnboardingPage() {
   const hasBusinessName = Boolean(settings?.businessName?.trim());
   const defaultLandlordName = landlordNameForOnboarding(settings, user);
   const settingsComplete = areSettingsEssentialsComplete(settings);
-  const initialStep = inferInitialStep(
-    status,
-    hasBusinessName,
-    settingsComplete,
-    propertyCount,
-    tenantCount,
-  );
+  const initialStep = inferInitialStep(status, hasBusinessName, settingsComplete, propertyCount);
 
   return (
     <Suspense fallback={<div className="min-h-svh bg-black" aria-hidden />}>

@@ -13,7 +13,7 @@ export async function createClient() {
 
   const cookieStore = await cookies();
 
-  return createServerClient(supabaseUrl, supabaseAnonKey, {
+  const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -29,5 +29,11 @@ export async function createClient() {
       },
     },
   });
+
+  // @supabase/ssr sets skipAutoInitialize on the auth client. Loading the session from
+  // cookies ensures PostgREST requests include the JWT so RLS sees auth.uid() on writes.
+  await supabase.auth.getSession();
+
+  return supabase;
 }
 

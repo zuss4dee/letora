@@ -57,16 +57,17 @@ export async function createPlatformCheckoutSession(
       metadata: { supabase_user_id: user.id },
     });
     customerId = customer.id;
-    const { error: upsertError } = await supabase.from("user_settings").upsert(
-      {
-        user_id: user.id,
+    console.log("[createPlatformCheckoutSession] user before stripe_customer_id update", user);
+    const { error: updateError } = await supabase
+      .from("user_settings")
+      .update({
         stripe_customer_id: customerId,
         updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" },
-    );
-    if (upsertError) {
-      console.error("user_settings upsert (stripe_customer_id):", upsertError);
+      })
+      .eq("user_id", user.id);
+    console.log("[createPlatformCheckoutSession] user_settings update result", { customerId, updateError });
+    if (updateError) {
+      console.error("user_settings update (stripe_customer_id):", updateError);
       return { error: "Could not save billing profile. Try again.", status: 500 };
     }
   }

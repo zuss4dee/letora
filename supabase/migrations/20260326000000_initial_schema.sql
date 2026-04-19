@@ -1,7 +1,7 @@
 -- Initial Letora schema (core landlord tables) + strict RLS
 
 create table if not exists public.properties (
-  id uuid primary key,
+  id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users (id),
   address text,
   postcode text,
@@ -15,7 +15,7 @@ create table if not exists public.properties (
 );
 
 create table if not exists public.tenant_profiles (
-  id uuid primary key,
+  id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users (id),
   full_name text,
   email text,
@@ -27,7 +27,7 @@ create table if not exists public.tenant_profiles (
 );
 
 create table if not exists public.tenancies (
-  id uuid primary key,
+  id uuid primary key default gen_random_uuid(),
   property_id uuid references public.properties (id),
   tenant_id uuid references public.tenant_profiles (id),
   start_date date,
@@ -54,7 +54,7 @@ create table if not exists public.rent_payments (
 );
 
 create table if not exists public.maintenance_requests (
-  id uuid primary key,
+  id uuid primary key default gen_random_uuid(),
   tenancy_id uuid references public.tenancies (id),
   reported_by_tenant boolean default false,
   description text,
@@ -68,7 +68,7 @@ create table if not exists public.maintenance_requests (
 );
 
 create table if not exists public.leads (
-  id uuid primary key,
+  id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users (id),
   property_id uuid references public.properties (id),
   name text,
@@ -83,7 +83,7 @@ create table if not exists public.leads (
 );
 
 create table if not exists public.agent_activity_log (
-  id uuid primary key,
+  id uuid primary key default gen_random_uuid(),
   user_id uuid references auth.users (id),
   agent_name text,
   action_taken text,

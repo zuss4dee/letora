@@ -67,16 +67,13 @@ export default async function DashboardPage({
       user?.id != null ? await getHomePortfolioSnapshot(user.id) : { totalProperties: 0, activeTenancies: 0 };
 
     const settings = user?.id ? await getUserSettings(user.id) : null;
-    let tenantCount = 0;
     let tenancyCount = 0;
     let complianceCount = 0;
     if (user?.id) {
-      const [tenantsRes, tenanciesRes, complianceRes] = await Promise.all([
-        supabase.from("tenants").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      const [tenanciesRes, complianceRes] = await Promise.all([
         supabase.from("tenancies").select("id", { count: "exact", head: true }),
         supabase.from("compliance_records").select("id", { count: "exact", head: true }),
       ]);
-      tenantCount = tenantsRes.count ?? 0;
       tenancyCount = tenanciesRes.count ?? 0;
       complianceCount = complianceRes.count ?? 0;
     }
@@ -89,7 +86,6 @@ export default async function DashboardPage({
           emailFromName: settings?.emailFromName,
           hasSeenTour: settings?.hasSeenTour === true,
           propertyCount: homeMetrics.totalProperties,
-          tenantCount,
           tenancyCount,
           complianceCount,
         })

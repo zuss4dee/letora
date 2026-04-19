@@ -4,19 +4,11 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { addProperty } from "@/lib/actions/properties";
-import { addTenant } from "@/lib/actions/tenants";
 import { mockResolveUkAddress } from "@/lib/onboarding/mock-address";
 import type { OnboardingStatus } from "@/lib/onboarding/status";
 import { focusSelectionSchema, serializePrimaryGoals } from "@/lib/onboarding/priorities";
-import {
-  extractTenantsWithLlmFromText,
-  extractTextFromTenantImportFile,
-  parseLooseTenantsFromDelimitedText,
-  type LooseTenantRow,
-} from "@/lib/onboarding/tenant-import";
 import { createClient } from "@/lib/supabase/server";
 import { optionalEmailSchema } from "@/lib/validations/email";
-import { tenantSchema } from "@/lib/validations/tenant";
 import { userFacingError } from "@/lib/user-facing-errors";
 
 async function setUserOnboardingStatus(userId: string, status: OnboardingStatus) {
@@ -229,9 +221,7 @@ export async function completeOnboardingWithProperty(
     return { ok: false, error: result.error };
   }
 
-  // Stay on `property_pending` until a tenant exists. Older DBs may not allow `tenant_pending`
-  // on the onboarding_status check; step routing uses property/tenant counts instead.
-  const statusRes = await setUserOnboardingStatus(user.id, "property_pending");
+  const statusRes = await setUserOnboardingStatus(user.id, "completed");
   if (!statusRes.ok) {
     return { ok: false, error: statusRes.error };
   }
@@ -247,7 +237,7 @@ export async function completeOnboardingWithProperty(
 
 /**
  * Stripe checkout return on `/onboarding?checkout=success` — payment is confirmed in Stripe;
- * onboarding completion still requires property + tenant + settings (no longer auto-completes here).
+ * guided onboarding finishes after first property (tenants from the dashboard).
  */
 export async function completeOnboardingGate(): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await createClient();
@@ -263,69 +253,12 @@ export async function completeOnboardingGate(): Promise<{ ok: true } | { ok: fal
   return { ok: true };
 }
 
-/** First tenant profile — marks onboarding complete when at least one property already exists. */
-export async function completeOnboardingWithFirstTenant(formData: unknown): Promise<
-  { ok: true } | { ok: false; error: string }
-> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: "Not authenticated" };
-
-  const { count: propertyCount, error: pcErr } = await supabase
-    .from("properties")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
-
-  if (pcErr || !propertyCount || propertyCount < 1) {
-    return { ok: false, error: "Add a property before adding a tenant." };
-  }
-
-  const parsed = tenantSchema.safeParse(formData);
-  if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid tenant details." };
-  }
-
-  const tenantRes = await addTenant(parsed.data);
-  if (!tenantRes.ok) return { ok: false, error: tenantRes.error };
-
-  const statusRes = await setUserOnboardingStatus(user.id, "completed");
-  if (!statusRes.ok) return { ok: false, error: statusRes.error };
-
-  revalidatePath("/dashboard/tenants");
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard", "layout");
-  revalidatePath("/onboarding");
-  revalidatePath("/onboarding", "layout");
-  return { ok: true };
-}
-
-async function insertLooseTenantForUser(userId: string, row: LooseTenantRow): Promise<boolean> {
-  const supabase = await createClient();
-  const { error } = await supabase.from("tenants").insert({
-    id: crypto.randomUUID(),
-    user_id: userId,
-    full_name: row.fullName,
-    email: row.email,
-    phone: row.phone,
-    date_of_birth: null,
-    right_to_rent_status: "pending",
-  });
-  if (error) {
-    console.error("[insertLooseTenantForUser]", error.message);
-    return false;
-  }
-  return true;
-}
-
 /**
- * Import tenants from CSV, TXT, PDF, or DOCX during onboarding.
- * CSV/TSV is parsed locally; other formats use AI (ANTHROPIC_API_KEY) when needed.
+ * Users left on `property_pending` from older flows: if landlord details and a first property
+ * already exist, mark onboarding completed so they can use the dashboard.
  */
-export async function importTenantsFromFileOnboarding(formData: FormData): Promise<
-  | { ok: true; added: number; skipped: number; needsDetailsLater: number }
-  | { ok: false; error: string }
+export async function syncLegacyOnboardingAfterTenantStepRemoved(): Promise<
+  { ok: true; didComplete: boolean } | { ok: false; error: string }
 > {
   const supabase = await createClient();
   const {
@@ -333,78 +266,39 @@ export async function importTenantsFromFileOnboarding(formData: FormData): Promi
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Not authenticated" };
 
-  const { count: propertyCount, error: pcErr } = await supabase
+  const { data: row } = await supabase
+    .from("user_settings")
+    .select("onboarding_status, landlord_name")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  const status = (row as { onboarding_status?: string | null } | null)?.onboarding_status ?? "profile_pending";
+  const landlordName = (row as { landlord_name?: string | null } | null)?.landlord_name;
+
+  const { count } = await supabase
     .from("properties")
     .select("id", { count: "exact", head: true })
     .eq("user_id", user.id);
+  const propertyCount = count ?? 0;
+  const settingsComplete = Boolean(landlordName?.trim());
 
-  if (pcErr || !propertyCount || propertyCount < 1) {
-    return { ok: false, error: "Add a property before importing tenants." };
+  if (status === "property_pending" && settingsComplete && propertyCount >= 1) {
+    const statusRes = await setUserOnboardingStatus(user.id, "completed");
+    if (!statusRes.ok) return { ok: false, error: statusRes.error };
+
+    revalidatePath("/onboarding");
+    revalidatePath("/onboarding", "layout");
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard", "layout");
+    return { ok: true, didComplete: true };
   }
 
-  const file = formData.get("file");
-  if (!file || !(file instanceof File)) {
-    return { ok: false, error: "Choose a file to import." };
-  }
-
-  const buf = Buffer.from(await file.arrayBuffer());
-  const extracted = await extractTextFromTenantImportFile(buf, file.name, file.type || "");
-  if (!extracted.ok) return { ok: false, error: extracted.error };
-
-  const lower = file.name.toLowerCase();
-  let rows: LooseTenantRow[] = [];
-
-  if (lower.endsWith(".csv") || lower.endsWith(".txt")) {
-    rows = parseLooseTenantsFromDelimitedText(extracted.text);
-  }
-
-  if (rows.length === 0) {
-    const llm = await extractTenantsWithLlmFromText(extracted.text);
-    if (!llm.ok) return { ok: false, error: llm.error };
-    rows = llm.rows;
-  }
-
-  const seen = new Set<string>();
-  let added = 0;
-  let skipped = 0;
-  let needsDetailsLater = 0;
-
-  for (const row of rows) {
-    const key = `${row.fullName.toLowerCase()}|${(row.email ?? "").toLowerCase()}|${(row.phone ?? "").replace(/\s/g, "")}`;
-    if (seen.has(key)) {
-      skipped += 1;
-      continue;
-    }
-    seen.add(key);
-
-    if (!row.email || !row.phone) {
-      needsDetailsLater += 1;
-    }
-
-    const inserted = await insertLooseTenantForUser(user.id, row);
-    if (inserted) added += 1;
-    else skipped += 1;
-  }
-
-  if (added < 1) {
-    return { ok: false, error: "No tenants could be saved. Check the file or add one manually." };
-  }
-
-  const statusRes = await setUserOnboardingStatus(user.id, "completed");
-  if (!statusRes.ok) return { ok: false, error: statusRes.error };
-
-  revalidatePath("/dashboard/tenants");
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard", "layout");
-  revalidatePath("/onboarding");
-  revalidatePath("/onboarding", "layout");
-
-  return { ok: true, added, skipped, needsDetailsLater };
+  return { ok: true, didComplete: false };
 }
 
 /**
  * Exit the guided wizard and open the dashboard. Shows a checklist there until profile,
- * first property, and first tenant exist (or the user dismisses the reminder).
+ * first property, and remaining setup items exist (or the user dismisses the reminder).
  */
 export async function skipOnboarding(): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await createClient();

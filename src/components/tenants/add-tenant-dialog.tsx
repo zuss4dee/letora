@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type ReactElement } from "react";
+import { useMemo, useRef, useState, type ReactElement } from "react";
 import { useForm } from "react-hook-form";
 
 import { addTenant } from "@/lib/actions/tenants";
@@ -38,6 +38,7 @@ export function AddTenantDialog({ trigger }: { trigger?: ReactElement }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const submitLock = useRef(false);
 
   const defaultValues = useMemo<AddTenantInput>(
     () => ({
@@ -59,15 +60,21 @@ export function AddTenantDialog({ trigger }: { trigger?: ReactElement }) {
   const isSubmitting = form.formState.isSubmitting;
 
   async function onSubmit(values: AddTenantInput) {
+    if (submitLock.current) return;
+    submitLock.current = true;
     setSubmitError(null);
-    const result = await addTenant(values);
-    if (!result.ok) {
-      setSubmitError(result.error);
-      return;
+    try {
+      const result = await addTenant(values);
+      if (!result.ok) {
+        setSubmitError(result.error);
+        return;
+      }
+      form.reset(defaultValues);
+      setOpen(false);
+      router.refresh();
+    } finally {
+      submitLock.current = false;
     }
-    form.reset(defaultValues);
-    setOpen(false);
-    router.refresh();
   }
 
   return (

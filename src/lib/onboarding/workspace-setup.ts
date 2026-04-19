@@ -1,12 +1,10 @@
-/** Core gate: landlord, first property, first tenant (onboarding / skip behaviour). */
+/** Core gate for leaving /onboarding: landlord name + first property. Further setup is optional checklist items on the dashboard. */
 export function isWorkspaceSetupIncomplete(input: {
   landlordName: string | null | undefined;
   propertyCount: number;
-  tenantCount: number;
 }): boolean {
   if (!input.landlordName?.trim()) return true;
   if (input.propertyCount < 1) return true;
-  if (input.tenantCount < 1) return true;
   return false;
 }
 
@@ -29,7 +27,6 @@ export type WorkspaceSetupChecklistInput = {
   emailFromName: string | null | undefined;
   hasSeenTour: boolean;
   propertyCount: number;
-  tenantCount: number;
   tenancyCount: number;
   complianceCount: number;
 };
@@ -60,13 +57,6 @@ export function buildWorkspaceSetupChecklist(input: WorkspaceSetupChecklistInput
     label: "Add your first property",
     href: "/dashboard/properties",
     done: input.propertyCount >= 1,
-  });
-
-  items.push({
-    id: "tenant",
-    label: "Add your first tenant",
-    href: "/dashboard/tenants",
-    done: input.tenantCount >= 1,
   });
 
   items.push({
