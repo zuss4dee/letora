@@ -69,13 +69,16 @@ export default async function DashboardPage({
     const settings = user?.id ? await getUserSettings(user.id) : null;
     let tenancyCount = 0;
     let complianceCount = 0;
+    let tenantCount = 0;
     if (user?.id) {
-      const [tenanciesRes, complianceRes] = await Promise.all([
+      const [tenanciesRes, complianceRes, tenantsRes] = await Promise.all([
         supabase.from("tenancies").select("id", { count: "exact", head: true }),
         supabase.from("compliance_records").select("id", { count: "exact", head: true }),
+        supabase.from("tenants").select("id", { count: "exact", head: true }),
       ]);
       tenancyCount = tenanciesRes.count ?? 0;
       complianceCount = complianceRes.count ?? 0;
+      tenantCount = tenantsRes.count ?? 0;
     }
 
     const setupChecklist = user?.id
@@ -83,9 +86,12 @@ export default async function DashboardPage({
           businessName: settings?.businessName,
           landlordName: settings?.landlordName,
           contactEmail: settings?.contactEmail,
+          contactPhone: settings?.contactPhone,
+          businessAddress: settings?.businessAddress,
           emailFromName: settings?.emailFromName,
           hasSeenTour: settings?.hasSeenTour === true,
           propertyCount: homeMetrics.totalProperties,
+          tenantCount,
           tenancyCount,
           complianceCount,
         })

@@ -1,4 +1,4 @@
-/** Core gate for leaving /onboarding: landlord name + first property. Further setup is optional checklist items on the dashboard. */
+/** Core gate for leaving /onboarding: landlord name + first property. After that, the dashboard “Finish your setup” card lists verifiable must-dos (contact, address, referencing, tenants, tenancies, compliance, etc.). */
 export function isWorkspaceSetupIncomplete(input: {
   landlordName: string | null | undefined;
   propertyCount: number;
@@ -24,9 +24,12 @@ export type WorkspaceSetupChecklistInput = {
   businessName: string | null | undefined;
   landlordName: string | null | undefined;
   contactEmail: string | null | undefined;
+  contactPhone: string | null | undefined;
+  businessAddress: string | null | undefined;
   emailFromName: string | null | undefined;
   hasSeenTour: boolean;
   propertyCount: number;
+  tenantCount: number;
   tenancyCount: number;
   complianceCount: number;
 };
@@ -52,11 +55,34 @@ export function buildWorkspaceSetupChecklist(input: WorkspaceSetupChecklistInput
     done: landlordContactDone,
   });
 
+  const phoneDigits = (input.contactPhone?.replace(/\D/g, "") ?? "").length;
+  items.push({
+    id: "landlord_phone",
+    label: "Add a phone number for urgent contact (calls and SMS)",
+    href: "/dashboard/settings",
+    done: phoneDigits >= 8,
+  });
+
+  const addressOk = (input.businessAddress?.trim() ?? "").length >= 8;
+  items.push({
+    id: "business_address",
+    label: "Add your business or correspondence address",
+    href: "/dashboard/settings",
+    done: addressOk,
+  });
+
   items.push({
     id: "property",
     label: "Add your first property",
     href: "/dashboard/properties",
     done: input.propertyCount >= 1,
+  });
+
+  items.push({
+    id: "first_tenant",
+    label: "Add at least one tenant profile",
+    href: "/dashboard/tenants",
+    done: input.tenantCount >= 1,
   });
 
   items.push({
