@@ -26,6 +26,8 @@ export async function POST(request: Request) {
     return Response.json({ ok: false, error: "CRON_SECRET not configured" }, { status: 501 });
   }
   const token = bearerToken(request);
+  console.log("route expected prefix", secret.slice(0, 12), "len", secret.length);
+  console.log("route got prefix", (token ?? "").slice(0, 12), "len", (token ?? "").length);
   if (token !== secret) {
     return new Response("Unauthorized", { status: 401 });
   }
