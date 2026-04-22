@@ -56,6 +56,29 @@ export async function getPendingAgentApprovals(): Promise<AgentApprovalRow[]> {
   return (data ?? []) as AgentApprovalRow[];
 }
 
+export async function getPendingApprovalsForTenancy(tenancyId: string): Promise<AgentApprovalRow[]> {
+  const actor = await getActor();
+  if (!actor) return [];
+
+  const { data, error } = await actor.supabase
+    .from("agent_approvals")
+    .select(
+      "id,user_id,agent_run_id,agent_type,title,summary,action_type,target_type,target_id,payload,evidence,status,decided_by,decided_at,deny_reason,executed_at,created_at",
+    )
+    .eq("user_id", actor.userId)
+    .eq("status", "pending")
+    .eq("target_type", "tenancy")
+    .eq("target_id", tenancyId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.warn("[getPendingApprovalsForTenancy]", error.message);
+    return [];
+  }
+
+  return (data ?? []) as AgentApprovalRow[];
+}
+
 export async function createAgentApproval(
   input: CreateAgentApprovalInput,
   opts?: { supabase?: SupabaseClient; userId?: string },

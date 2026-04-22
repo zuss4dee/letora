@@ -1,11 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type ReactElement } from "react";
+import { useMemo, useRef, useState, type ReactElement } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 
 import { addTenancy } from "@/lib/actions/tenancies";
+import { getPendingApprovalsForTenancy } from "@/lib/actions/agent-approvals";
 import { type AddTenancyInput, addTenancySchema } from "@/lib/validations/tenancy";
 import {
   DIALOG_FIELD_CLASS,
@@ -15,6 +17,7 @@ import {
 } from "@/lib/ui/dialog-form";
 
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -46,6 +49,8 @@ export function AddTenancyDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [postCreate, setPostCreate] = useState<{ hasPendingApproval: boolean } | null>(null);
+  const wasOpenRef = useRef(false);
 
   const defaultValues = useMemo<AddTenancyInput>(
     () => ({
@@ -68,6 +73,18 @@ export function AddTenancyDialog({
 
   const isSubmitting = form.formState.isSubmitting;
 
+  function handleOpenChange(next: boolean) {
+    if (next && !wasOpenRef.current) {
+      setSubmitError(null);
+      form.reset(defaultValues);
+    } else if (!next) {
+      setPostCreate(null);
+      setSubmitError(null);
+    }
+    wasOpenRef.current = next;
+    setOpen(next);
+  }
+
   async function onSubmit(values: AddTenancyInput) {
     setSubmitError(null);
     const result = await addTenancy(values);
@@ -75,14 +92,22 @@ export function AddTenancyDialog({
       setSubmitError(result.error);
       return;
     }
-    setOpen(false);
+    setOpen(true);
     router.refresh();
+
+    let pending = await getPendingApprovalsForTenancy(result.tenancyId);
+    if (pending.length === 0) {
+      await new Promise((r) => setTimeout(r, 800));
+      pending = await getPendingApprovalsForTenancy(result.tenancyId);
+    }
+
+    setPostCreate({ hasPendingApproval: pending.length > 0 });
   }
 
   const disabled = properties.length === 0 || tenants.length === 0;
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         {trigger ?? (
           <Button
@@ -95,13 +120,41 @@ export function AddTenancyDialog({
       </DialogTrigger>
       <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
         <DialogHeader>
-          <DialogTitle>Add tenancy</DialogTitle>
+          <DialogTitle>{postCreate ? "Tenancy added" : "Add tenancy"}</DialogTitle>
           <DialogDescription>
-            Link a tenant to a property and set rent terms. Property and tenant are shown by address
-            and name.
+            {postCreate
+              ? "You can review any onboarding approvals from here or use Approvals in the sidebar."
+              : "Link a tenant to a property and set rent terms. Property and tenant are shown by address and name."}
           </DialogDescription>
         </DialogHeader>
 
+        {postCreate ? (
+          <div className={DIALOG_FORM_STACK_CLASS}>
+            <Card>
+              <CardHeader className="border-b py-3">
+                <CardTitle className="text-base font-medium leading-snug">
+                  {postCreate.hasPendingApproval
+                    ? "Onboarding is ready and waiting for approval"
+                    : "Tenancy created successfully. If onboarding needs approval, you’ll find it in Approvals."}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4 pt-4">
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" asChild className="bg-indigo-600 text-white hover:bg-indigo-700">
+                    <Link href="/dashboard/approvals">Open Approvals</Link>
+                  </Button>
+                  <DialogClose asChild>
+                    <Button type="button" variant="outline">
+                      Done
+                    </Button>
+                  </DialogClose>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        ) : null}
+
+        {!postCreate ? (
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className={DIALOG_FORM_STACK_CLASS}>
             <div className={DIALOG_FIELD_CLASS}>
@@ -240,6 +293,7 @@ export function AddTenancyDialog({
             </Button>
           </div>
         </form>
+        ) : null}
       </DialogContent>
     </Dialog>
   );

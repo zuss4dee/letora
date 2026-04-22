@@ -177,8 +177,10 @@ export async function addTenancy(formData: unknown) {
 
   const values = parsed.data;
 
+  const tenancyId = crypto.randomUUID();
+
   const { error } = await supabase.from("tenancies").insert({
-    id: crypto.randomUUID(),
+    id: tenancyId,
     property_id: values.propertyId,
     tenant_id: values.tenantId,
     start_date: values.startDate,
@@ -197,7 +199,7 @@ export async function addTenancy(formData: unknown) {
 
   revalidatePath("/dashboard/tenancies");
   revalidatePath("/dashboard/rent-tracker");
-  return { ok: true as const };
+  return { ok: true as const, tenancyId };
 }
 
 export async function getThisMonthPayments(userId: string): Promise<RentPaymentRow[]> {
