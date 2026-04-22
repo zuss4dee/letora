@@ -15,6 +15,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import {
+  BadgeCheck,
   Bot,
   Building2,
   CircleDollarSign,
@@ -82,6 +83,11 @@ const data = {
       title: "Agents",
       url: "/dashboard/settings?agentRuns=1",
       icon: <Bot />,
+    },
+    {
+      title: "Approvals",
+      url: "/dashboard/approvals",
+      icon: <BadgeCheck />,
     },
     {
       title: "Settings",

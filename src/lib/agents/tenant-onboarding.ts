@@ -3,11 +3,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { recordAgentRunStep } from "@/lib/agents/audit";
 import { loadAgentContext } from "@/lib/agents/context-loader";
 import { assertStepBudget } from "@/lib/agents/ota-loop";
+import { createAgentApproval } from "@/lib/actions/agent-approvals";
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { sendEmailTool } from "@/lib/tools/send-email";
 import { createClient } from "@/lib/supabase/server";
 
 const OTA_MAX = 5;
+const REQUIRE_APPROVAL_FOR_WELCOME_EMAIL = true;
 
 export type TenantOnboardingResult = {
   success: boolean;
@@ -472,15 +474,63 @@ export async function runTenantOnboardingAgent(
 
   const agentRunId = insertedRun.id as string;
 
-  const sendResult = await sendEmailTool(supabase, userId, agentRunId, {
-    to: ctx.tenantEmail,
-    toName: ctx.tenantName,
-    subject,
-    body,
-    html,
-    agentType: "onboarding",
-    templateType: "welcome",
-  });
+  let sendResult: {
+    sent: boolean;
+    error?: string | null;
+    emailLogId?: string | null;
+    message?: string;
+  };
+  let approvalId: string | null = null;
+
+  if (REQUIRE_APPROVAL_FOR_WELCOME_EMAIL) {
+    const approval = await createAgentApproval(
+      {
+        agentRunId,
+        agentType: "tenant_onboarding",
+        title: "Approve tenant welcome email",
+        summary: "The onboarding agent wants to send the welcome email to the tenant.",
+        actionType: "send_onboarding_email",
+        targetType: "tenancy",
+        targetId: tenancyId,
+        payload: {
+          tenancyId,
+          userId,
+        },
+        evidence: {
+          tenantName: ctx.tenantName,
+          tenantEmail: ctx.tenantEmail,
+          propertyAddress: ctx.propertyAddress,
+          subject,
+        },
+      },
+      { supabase, userId },
+    );
+    if (!approval.ok) {
+      return {
+        success: false,
+        agentRunId,
+        tasksCreated: 0,
+        emailStatus: "failed",
+        message: approval.error,
+      };
+    }
+    approvalId = approval.id;
+    sendResult = {
+      sent: false,
+      emailLogId: null,
+      message: "Welcome email awaiting approval",
+    };
+  } else {
+    sendResult = await sendEmailTool(supabase, userId, agentRunId, {
+      to: ctx.tenantEmail,
+      toName: ctx.tenantName,
+      subject,
+      body,
+      html,
+      agentType: "onboarding",
+      templateType: "welcome",
+    });
+  }
 
   const emailStatus: TenantOnboardingResult["emailStatus"] = sendResult.sent
     ? "sent"
@@ -615,9 +665,11 @@ export async function runTenantOnboardingAgent(
   await supabase
     .from("agent_runs")
     .update({
-      status: "completed",
+      status: REQUIRE_APPROVAL_FOR_WELCOME_EMAIL ? "pending" : "completed",
       payload: {
         ...payload,
+        approvalId,
+        approvalRequiredForWelcomeEmail: REQUIRE_APPROVAL_FOR_WELCOME_EMAIL,
         emailLogId: sendResult.emailLogId,
         sent: sendResult.sent,
         tasksCreated: taskRows.length,
