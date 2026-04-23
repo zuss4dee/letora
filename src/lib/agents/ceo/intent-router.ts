@@ -42,12 +42,20 @@ export type CEOIntentRoute = {
    * “Import these tenants”, “onboard these 20”, pasted CSV — prioritize **bulk_onboard_tenants** over single-tenant onboarding.
    */
   wantsBulkOnboarding: boolean
+  /**
+   * “Create a new tenant + tenancy” flow from chat, then onboarding.
+   */
+  wantsCreateTenantTenancy: boolean
+  /**
+   * Broad “what needs attention / what next / update / blocked” — load dashboard + maintenance + compliance and answer with operator prioritization.
+   */
+  wantsOperationalBrief: boolean
   needsClarification: boolean
   clarificationQuestion: string | null
 }
 
 const INTENT_LABELS: Record<CEOPropertyIntentId, string> = {
-  rent_collection: "rent collection / chasing overdue rent",
+  rent_collection: "overdue rent chase (draft emails — Approvals before send; not payment collection)",
   rent_status: "rent status & arrears",
   maintenance: "maintenance & repairs",
   maintenance_dispatch: "maintenance dispatch / contractor coordination",
@@ -198,6 +206,11 @@ const ROUTE_PATTERNS: ReadonlyArray<{
     weight: 2.2,
     re: /\b(what\s+needs\s+my\s+attention|what'?s\s+going\s+on|portfolio|big\s+picture|summary|dashboard|today|this\s+week|everything\s+ok|catch\s+me\s+up)\b/i,
   },
+  {
+    id: "portfolio",
+    weight: 2.15,
+    re: /\b(what\s+needs\s+attention|what\s+should\s+i\s+do|give\s+me\s+an\s+update|anything\s+pending|what'?s\s+pending|what'?s\s+blocked|where\s+should\s+i\s+focus|priorities|priority\b)\b/i,
+  },
   // “List my active tenants” has words between list and tenants — keep patterns broad.
   {
     id: "tenants",
@@ -341,21 +354,41 @@ function detectBulkOnboardingRequest(normalized: string, rawMessage: string): bo
   return false
 }
 
+/** Detect explicit request to create brand-new tenant + tenancy in chat. */
+function detectCreateTenantTenancyRequest(normalized: string): boolean {
+  const hasCreate = /\b(create|add|set\s*up|onboard)\b/i.test(normalized)
+  const hasTenant = /\b(new\s+tenant|tenant\s+record|tenant)\b/i.test(normalized)
+  const hasTenancy = /\b(tenancy|lease)\b/i.test(normalized)
+  return hasCreate && hasTenant && hasTenancy
+}
+
+/** “What needs attention”, “what next”, “update”, “blocked”, etc. — portfolio-style operational brief. */
+function detectOperationalBriefRequest(normalized: string): boolean {
+  return /\b(what\s+needs\s+(?:my\s+)?attention|what\s+should\s+i\s+do(?:\s+next)?|what'?s\s+next|what\s+to\s+do\s+next|what'?s\s+pending|what\s+is\s+pending|what'?s\s+blocked|what\s+is\s+blocked|give\s+me\s+an\s+update|status\s+update|catch\s+me\s+up|anything\s+i\s+need\s+to\s+do|anything\s+pending|portfolio\s+health|where\s+should\s+i\s+focus|priorities|priority\b|big\s+picture|what'?s\s+going\s+on)\b/i.test(
+    normalized,
+  )
+}
+
 /**
  * Maps natural-language property-management phrasing to internal tools and safety hints.
  */
 export function routeCEOIntent(userMessage: string): CEOIntentRoute {
   const trimmed = userMessage.trim()
   const normalized = normalizeForRouting(trimmed)
+  const wantsOperationalBrief = detectOperationalBriefRequest(normalized)
   const wantsLeadQualification = /\bqualify\b/i.test(normalized) && /\bleads?\b/i.test(normalized)
   const wantsReferencingStatusEarly = detectReferencingStatusQuestion(normalized)
   const wantsContinueOnboarding =
     detectContinueOnboardingResume(normalized) ||
     (/\b(continue|resume)\b/i.test(normalized) && /\bonboarding\s+for\b/i.test(normalized))
   const wantsBulkOnboarding = detectBulkOnboardingRequest(normalized, trimmed)
+  const wantsCreateTenantTenancy = detectCreateTenantTenancyRequest(normalized)
   const scores = scoreMessage(normalized)
   if (wantsBulkOnboarding) {
     scores.onboarding += 3
+  }
+  if (wantsCreateTenantTenancy) {
+    scores.onboarding += 2.7
   }
   const totalScore = Object.values(scores).reduce((a, b) => a + b, 0)
 
@@ -382,6 +415,8 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
         wantsReferencingStatus: true,
         wantsContinueOnboarding: false,
         wantsBulkOnboarding: false,
+        wantsCreateTenantTenancy: false,
+        wantsOperationalBrief,
         needsClarification: false,
         clarificationQuestion: null,
       }
@@ -397,12 +432,18 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
         wantsBulkOnboarding || wantsOnboardingByPlainName || wantsContinueOnboarding ? 0.45 : 0,
       recommendedTools: wantsBulkOnboarding
         ? ["bulk_onboard_tenants"]
+        : wantsCreateTenantTenancy
+          ? ["create_tenant_and_tenancy"]
         : wantsOnboardingByPlainName || wantsContinueOnboarding
           ? ["start_tenant_onboarding"]
-          : [],
+          : wantsOperationalBrief
+            ? ["get_dashboard_summary", "get_maintenance_summary", "get_compliance_summary"]
+            : [],
       confirmationRequired:
         wantsBulkOnboarding
           ? toolsRequireUserConfirmation(classifyCEOIntent(normalized), ["bulk_onboard_tenants"])
+          : wantsCreateTenantTenancy
+            ? toolsRequireUserConfirmation(classifyCEOIntent(normalized), ["create_tenant_and_tenancy"])
           : wantsOnboardingByPlainName || wantsContinueOnboarding
             ? toolsRequireUserConfirmation(classifyCEOIntent(normalized), ["start_tenant_onboarding"])
             : false,
@@ -411,6 +452,8 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
       wantsReferencingStatus: false,
       wantsContinueOnboarding,
       wantsBulkOnboarding,
+      wantsCreateTenantTenancy,
+      wantsOperationalBrief,
       needsClarification,
       clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
     }
@@ -496,6 +539,16 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     )
   }
 
+  if (wantsCreateTenantTenancy) {
+    recommendedTools = uniqueToolsOrdered(
+      [
+        "create_tenant_and_tenancy",
+        ...recommendedTools.filter((t) => t !== "create_tenant_and_tenancy"),
+      ],
+      6,
+    )
+  }
+
   const wantsCompliancePriority =
     /\b(compliance|epc|gas\s+safety|electric(?:al)?\s+safety|eicr|landlord\s+cert|safety\s+cert|certificate\s+expir|expired\s+cert|expiring\s+cert|legal\s+safety)\b/i.test(
       normalized,
@@ -505,6 +558,18 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
       [
         "get_compliance_summary",
         ...recommendedTools.filter((t) => t !== "get_compliance_summary"),
+      ],
+      6,
+    )
+  }
+
+  if (wantsOperationalBrief) {
+    recommendedTools = uniqueToolsOrdered(
+      [
+        "get_dashboard_summary",
+        "get_maintenance_summary",
+        "get_compliance_summary",
+        ...recommendedTools,
       ],
       6,
     )
@@ -523,7 +588,8 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     trimmed.length <= 600 &&
     !isAffirmativeShort(trimmed) &&
     !wantsReferencingStatus &&
-    !wantsContinueOnboarding
+    !wantsContinueOnboarding &&
+    !wantsOperationalBrief
 
   const wantsOnboardingByPlainName =
     detectOnboardingByPlainName(normalized) &&
@@ -540,6 +606,8 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     wantsReferencingStatus,
     wantsContinueOnboarding,
     wantsBulkOnboarding,
+    wantsCreateTenantTenancy,
+    wantsOperationalBrief,
     needsClarification,
     clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
   }
@@ -567,7 +635,8 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
     route.needsClarification &&
     !route.wantsOnboardingByPlainName &&
     !route.wantsReferencingStatus &&
-    !route.wantsContinueOnboarding
+    !route.wantsContinueOnboarding &&
+    !route.wantsOperationalBrief
   ) {
     return ""
   }
@@ -576,7 +645,8 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
     route.recommendedTools.length === 0 &&
     !route.wantsOnboardingByPlainName &&
     !route.wantsReferencingStatus &&
-    !route.wantsContinueOnboarding
+    !route.wantsContinueOnboarding &&
+    !route.wantsOperationalBrief
   ) {
     return ""
   }
@@ -620,6 +690,18 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
     )
   }
 
+  if (route.wantsCreateTenantTenancy) {
+    lines.push(
+      "- **Required (new tenant + tenancy creation):** Call **create_tenant_and_tenancy** when the user asks to onboard a brand-new tenant. Pass collected fields: **tenant_name**, **tenant_email**, **property_id** (or **property_query**), **start_date** (YYYY-MM-DD), **monthly_rent**. If the tool returns **blocked_by**, ask only for those missing fields (minimum blocker). If it returns **property_ambiguous**, present candidates and ask for one property confirmation only. Do not redirect to manual Leads/Tenants pages unless the tool reports an actual backend blocker.",
+    )
+  }
+
+  if (route.wantsOperationalBrief) {
+    lines.push(
+      "- **Required (operational brief / what next):** The user asked for a portfolio-style update. Call **get_dashboard_summary**, **get_maintenance_summary**, and **get_compliance_summary** in parallel this turn (unless they already narrowed to one domain). Structure the reply: (1) **Top priority** — one line, (2) **Why** — one sentence; every claim tied to a JSON field you saw, (3) **1–3 items needing review** — use names/addresses from JSON when available; include **/dashboard/approvals** when approval-gated comms may be waiting (chat tools do not list each approval row; do not invent counts, ages, or queue order), (4) **Blockers** — JSON-backed; if several rows share one root cause, state that **shared blocker** once (not the same blocker repeated per row), (5) optional **Pattern to watch** — one short hedged line **only** when the **same** blocker or theme appears on **multiple** rows in **this** turn’s data (see **Recurring patterns and snapshot scope**); omit if unsupported — **no** long-term trends or chat memory, (6) **One recommended next action**. **Within-bucket ranking:** use severity rules in the system prompt (overdue days, amounts, **priority**, **email_sent**, missing emails) **only** where those fields exist; if you cannot rank inside a bucket, say so and fall back to category priority + Approvals.",
+    )
+  }
+
   if (route.primaryIntent === "compliance" || route.secondaryIntents.includes("compliance")) {
     lines.push(
       "- **Required (compliance / certificates):** Call **get_compliance_summary** this turn. Data lives in **compliance_records** (per property), not in maintenance tickets. Do **not** answer compliance questions using **get_maintenance_summary** alone.",
@@ -633,7 +715,8 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
 
   lines.push(
     `- If the user’s wording spans multiple intents, choose a sensible primary action and briefly acknowledge secondary topics in your reply.`,
-    `- Safety: approximate confirmation requirement for this tool mix: **${route.confirmationRequired ? "yes — follow platform confirmation rules before send/change actions" : "reads and drafts can proceed per policy"}**.`,
+    `- **Control plane:** Respect action tiers in the system prompt (autonomous / notify / approval required / forbidden). Route **pending approval** work to **/dashboard/approvals**; never imply tenant payment collection or payouts.`,
+    `- Safety: approximate confirmation requirement for this tool mix: **${route.confirmationRequired ? "yes — chat confirmation before the batch runs; Approvals still applies when tools return pending_approval" : "reads and notify-tier tools can proceed per policy"}**.`,
   )
 
   return lines.join("\n")

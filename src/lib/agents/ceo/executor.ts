@@ -12,7 +12,11 @@ import {
   resolveTenantProfileForAccount,
   sanitizeIlikeNameFragment,
 } from "@/lib/agents/ceo/resolve-tenant-profile";
+import { createAgentApproval } from "@/lib/actions/agent-approvals";
+import { enqueueMoveInEmailApproval } from "@/lib/onboarding/move-in-email-approval";
 import { runReferencingHandoffForUser } from "@/lib/actions/referencing";
+import type { ApproveMaintenanceDispatchEvidence, CreateAgentApprovalContract } from "@/lib/approvals/types";
+import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import {
   type PropertyRowForMatch,
   resolvePropertyRowsForDraftHint,
@@ -739,6 +743,10 @@ interface ToolCallArgs {
   start_date?: string;
   /** search_properties */
   query?: string;
+  /** create_tenant_and_tenancy */
+  property_query?: string;
+  tenant_email?: string;
+  monthly_rent?: string;
   limit?: string | number;
   issue_title?: string;
   issue_description?: string;
@@ -1275,7 +1283,7 @@ export async function executeCEOTool(
 
       return JSON.stringify({
         month,
-        message: `Processed ${results.length} rent chase run(s). Drafts are saved; sends follow your auto-send settings.`,
+        message: `Processed ${results.length} rent chase run(s). Chase emails need approval in Approvals before they send (one email per approval).`,
         chased: results.length,
         results: results.map((r) => ({
           tenant_name: r.tenantName,
@@ -1393,6 +1401,227 @@ export async function executeCEOTool(
             : null,
       });
     }
+    case "create_tenant_and_tenancy": {
+      const tenantName = sanitizeTenantName(args.tenant_name?.trim() ?? "");
+      const tenantEmail = (args.tenant_email ?? "").trim().toLowerCase();
+      const propertyIdArg = (args.property_id ?? "").trim();
+      const propertyQuery = (args.property_query ?? "").trim();
+      const startDate = (args.start_date ?? "").trim();
+      const monthlyRentRaw = (args.monthly_rent ?? "").trim();
+
+      const missingFields: string[] = [];
+      if (!tenantName) missingFields.push("tenant_name");
+      if (!tenantEmail) missingFields.push("tenant_email");
+      if (!propertyIdArg && !propertyQuery) missingFields.push("property");
+      if (!startDate) missingFields.push("start_date");
+      if (!monthlyRentRaw) missingFields.push("monthly_rent");
+      if (missingFields.length > 0) {
+        return JSON.stringify({
+          code: "missing_create_fields",
+          error: "Missing required fields to create tenant and tenancy.",
+          blocked_by: missingFields,
+          message: `Ready to create once you provide: ${missingFields.join(", ")}.`,
+          what_i_have: {
+            tenant_name: tenantName || null,
+            tenant_email: tenantEmail || null,
+            property_id: propertyIdArg || null,
+            property_query: propertyQuery || null,
+            start_date: startDate || null,
+            monthly_rent: monthlyRentRaw || null,
+          },
+        });
+      }
+
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+        return JSON.stringify({
+          code: "invalid_start_date",
+          error: "Start date must be in YYYY-MM-DD format.",
+          blocked_by: ["start_date"],
+          message: "Ready to continue once you provide the start date in YYYY-MM-DD format.",
+          what_i_have: { start_date: startDate },
+        });
+      }
+
+      const monthlyRent = Number(monthlyRentRaw.replace(/,/g, ""));
+      if (!Number.isFinite(monthlyRent) || monthlyRent <= 0) {
+        return JSON.stringify({
+          code: "invalid_monthly_rent",
+          error: "Monthly rent must be a positive number.",
+          blocked_by: ["monthly_rent"],
+          message: "Ready to continue once you confirm the monthly rent as a number.",
+          what_i_have: { monthly_rent: monthlyRentRaw },
+        });
+      }
+
+      let propertyId = propertyIdArg;
+      let propertyLabel = "";
+      if (propertyId) {
+        const { data: propertyById } = await supabase
+          .from("properties")
+          .select("id, address, city")
+          .eq("id", propertyId)
+          .eq("user_id", userId)
+          .maybeSingle();
+        if (!propertyById) {
+          return JSON.stringify({
+            code: "property_not_found",
+            error: "I could not match that property on your account.",
+            blocked_by: ["property"],
+            message: "Ready to continue once you confirm the property address or postcode.",
+          });
+        }
+        propertyLabel = [propertyById.address, propertyById.city].filter(Boolean).join(", ");
+      } else {
+        const { data: allProps } = await supabase
+          .from("properties")
+          .select("id, address, city, postcode, monthly_rent")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(250);
+        const ranked = rankPropertySearch(propertyQuery, (allProps ?? []) as PropertySearchRow[], 5);
+        if (ranked.candidates.length === 0) {
+          return JSON.stringify({
+            code: "property_not_found",
+            error: "I could not match that property on your account.",
+            blocked_by: ["property"],
+            message: "Ready to continue once you confirm the property address or postcode.",
+            what_i_have: { property_query: propertyQuery },
+          });
+        }
+        if (ranked.candidates.length > 1) {
+          return JSON.stringify({
+            code: "property_ambiguous",
+            error: "More than one property matches your request.",
+            blocked_by: ["property_confirmation"],
+            message: "Ready to continue once you confirm the correct property.",
+            candidates: ranked.candidates.map((r) => ({
+              id: r.id,
+              label: labelPropertyRow(r),
+              address: r.address,
+              city: r.city,
+              postcode: r.postcode,
+            })),
+          });
+        }
+        propertyId = ranked.candidates[0]!.id;
+        propertyLabel = labelPropertyRow(ranked.candidates[0]!);
+      }
+
+      let tenantId: string;
+      let createdTenant = false;
+      const { data: byEmail } = await supabase
+        .from("tenants")
+        .select("id, full_name, email")
+        .eq("user_id", userId)
+        .eq("email", tenantEmail)
+        .limit(2);
+      if ((byEmail?.length ?? 0) > 1) {
+        return JSON.stringify({
+          code: "tenant_email_ambiguous",
+          error: "More than one tenant profile uses this email address.",
+          blocked_by: ["tenant_confirmation"],
+          message: "Ready to continue once you confirm which tenant profile to use.",
+          candidates: byEmail?.map((t) => ({ id: t.id, full_name: t.full_name, email: t.email })) ?? [],
+        });
+      }
+      if (byEmail && byEmail.length === 1) {
+        tenantId = byEmail[0]!.id as string;
+      } else {
+        const { data: byName } = await supabase
+          .from("tenants")
+          .select("id, full_name, email")
+          .eq("user_id", userId)
+          .ilike("full_name", tenantName)
+          .limit(2);
+        if ((byName?.length ?? 0) > 1) {
+          return JSON.stringify({
+            code: "tenant_name_ambiguous",
+            error: "More than one tenant matches that name.",
+            blocked_by: ["tenant_confirmation"],
+            message: "Ready to continue once you confirm which tenant profile to use.",
+            candidates: byName?.map((t) => ({ id: t.id, full_name: t.full_name, email: t.email })) ?? [],
+          });
+        }
+        if (byName && byName.length === 1) {
+          tenantId = byName[0]!.id as string;
+          // Keep existing tenant but backfill email if missing.
+          if (!String(byName[0]!.email ?? "").trim()) {
+            await supabase
+              .from("tenants")
+              .update({ email: tenantEmail, updated_at: new Date().toISOString() })
+              .eq("id", tenantId)
+              .eq("user_id", userId);
+          }
+        } else {
+          tenantId = crypto.randomUUID();
+          const { error: tenantInsertErr } = await supabase.from("tenants").insert({
+            id: tenantId,
+            user_id: userId,
+            full_name: tenantName,
+            email: tenantEmail,
+          });
+          if (tenantInsertErr) {
+            return JSON.stringify({
+              code: "tenant_create_failed",
+              error: `Could not create tenant profile: ${tenantInsertErr.message}`,
+            });
+          }
+          createdTenant = true;
+        }
+      }
+
+      const { data: existingTenancy } = await supabase
+        .from("tenancies")
+        .select("id, status")
+        .eq("tenant_id", tenantId)
+        .eq("property_id", propertyId)
+        .in("status", ["active", "in_progress", "pending"])
+        .maybeSingle();
+
+      let tenancyId: string;
+      let createdTenancy = false;
+      if (existingTenancy) {
+        tenancyId = existingTenancy.id as string;
+      } else {
+        tenancyId = crypto.randomUUID();
+        const endDate = addOneYearIsoDate(startDate);
+        const { error: tenancyErr } = await supabase.from("tenancies").insert({
+          id: tenancyId,
+          property_id: propertyId,
+          tenant_id: tenantId,
+          start_date: startDate,
+          end_date: endDate,
+          monthly_rent: monthlyRent,
+          deposit_amount: monthlyRent,
+          status: "active",
+        });
+        if (tenancyErr) {
+          return JSON.stringify({
+            code: "tenancy_create_failed",
+            error: `Could not create tenancy: ${tenancyErr.message}`,
+          });
+        }
+        createdTenancy = true;
+      }
+
+      const onboarding = await runTenantOnboardingAgent(tenancyId, userId, supabase);
+      return JSON.stringify({
+        mode: "create_tenant_and_tenancy",
+        tenant_id: tenantId,
+        tenancy_id: tenancyId,
+        property_id: propertyId,
+        tenant_name: tenantName,
+        tenant_email: tenantEmail,
+        property_label: propertyLabel || null,
+        start_date: startDate,
+        monthly_rent: monthlyRent,
+        created_tenant: createdTenant,
+        created_tenancy: createdTenancy,
+        reused_tenant: !createdTenant,
+        reused_tenancy: !createdTenancy,
+        ...onboarding,
+      });
+    }
     case "start_tenant_onboarding": {
       const tenancyId = args.tenancy_id?.trim();
       if (tenancyId) {
@@ -1438,8 +1667,15 @@ export async function executeCEOTool(
         const rows = (tenRows ?? []) as TenancyRowForOnboarding[];
         if (rows.length === 0) {
           return JSON.stringify({
-            error:
-              "No tenancy found for this tenant on your account. Create a tenancy first (tenant + property + start date) or use the dashboard.",
+            code: "missing_tenancy_for_tenant",
+            error: "No active tenancy found for this tenant yet.",
+            message:
+              "Ready to create tenancy. I still need the property and tenancy start date to continue.",
+            blocked_by: ["property", "start_date"],
+            what_i_have: {
+              tenant_name: resolved.full_name,
+              tenant_id: resolved.tenantId,
+            },
             tenant_id: resolved.tenantId,
             full_name: resolved.full_name,
           });
@@ -1449,10 +1685,16 @@ export async function executeCEOTool(
         const picked = pickTenancyForOnboarding(rows, args.onboarding_property_hint, accountPropertyCount);
         if (picked.status === "ambiguous" || picked.status === "fall_through") {
           return JSON.stringify({
+            code: picked.status === "ambiguous" ? "property_ambiguous" : "property_hint_not_matched",
             error:
               picked.status === "ambiguous"
-                ? "Multiple tenancies match — pick a property hint or tenancy."
-                : "No tenancy matched that hint — try a clearer street or postcode.",
+                ? "More than one property matches this tenant."
+                : "The property hint did not match a tenancy for this tenant.",
+            message:
+              picked.status === "ambiguous"
+                ? "Ready to continue once you confirm the correct property."
+                : "Ready to continue once you send a clearer property hint.",
+            blocked_by: ["property_confirmation"],
             tenant_id: resolved.tenantId,
             full_name: resolved.full_name,
             tenant_resolved_via: resolved.resolved_via,
@@ -1494,8 +1736,10 @@ export async function executeCEOTool(
         }
         if (!propertyRow) {
           return JSON.stringify({
-            error:
-              "Property not found for this account. Call search_properties with the address or postcode to get the correct property UUID.",
+            code: "property_not_found",
+            error: "I could not match that property on your account.",
+            message: "Ready to continue once you confirm the property address or postcode.",
+            blocked_by: ["property"],
           });
         }
 
@@ -1508,8 +1752,10 @@ export async function executeCEOTool(
           .maybeSingle();
         if (dup) {
           return JSON.stringify({
-            error:
-              "An active tenancy already exists for this tenant and property. Use tenancy_id with start_tenant_onboarding, or open /dashboard/tenancies.",
+            code: "tenancy_already_exists",
+            error: "An active tenancy already exists for this tenant and property.",
+            message: "Ready to continue onboarding on the existing tenancy.",
+            next_action: "open_existing_tenancy_onboarding",
             tenancy_id: dup.id,
           });
         }
@@ -1546,9 +1792,25 @@ export async function executeCEOTool(
       const leadId = args.lead_id?.trim();
       const createFromLead = parseBoolArg(args.auto_create_tenant_and_tenancy);
       if (!leadId || !createFromLead) {
+        const missingFields: string[] = [];
+        if (!tenantIdNew) missingFields.push("tenant");
+        if (!propertyIdNew) missingFields.push("property");
+        if (!startDateNew) missingFields.push("start_date");
         return JSON.stringify({
-          error:
-            "Provide `onboarding_for` (tenant name — no UUIDs), or `tenancy_id`, or `tenant_id` + `property_id` + `start_date`, or `lead_id` with `auto_create_tenant_and_tenancy=true`. Optional `onboarding_property_hint` disambiguates multiple tenancies. Use search_properties for property UUIDs when creating a new tenancy.",
+          code: "missing_create_fields",
+          error: "Missing required fields to create tenant + tenancy in this step.",
+          message:
+            missingFields.length > 0
+              ? `Ready to create once you provide: ${missingFields.join(", ")}.`
+              : "Ready to create once you confirm whether this should be from a lead or direct tenant details.",
+          blocked_by: missingFields,
+          next_action:
+            "Use create_tenant_and_tenancy for brand-new tenant creation from chat, or provide lead_id + auto_create_tenant_and_tenancy=true for lead conversion.",
+          what_i_have: {
+            tenant: tenantIdNew ?? null,
+            property_id: propertyIdNew ?? null,
+            start_date: startDateNew ?? null,
+          },
         });
       }
 
@@ -1565,7 +1827,10 @@ export async function executeCEOTool(
       const propertyId = (args.property_id?.trim() || lead.property_id || "") as string;
       if (!propertyId) {
         return JSON.stringify({
-          error: "Property is required to create tenancy from lead. Provide property_id or ensure lead has property_id.",
+          code: "missing_property_for_lead_conversion",
+          error: "Property is required before I can create tenancy from this lead.",
+          message: "Ready to continue once you confirm the property for this lead.",
+          blocked_by: ["property"],
         });
       }
 
@@ -1576,7 +1841,12 @@ export async function executeCEOTool(
         .eq("user_id", userId)
         .maybeSingle();
       if (!property) {
-        return JSON.stringify({ error: "Property not found for this account." });
+        return JSON.stringify({
+          code: "property_not_found",
+          error: "I could not match that property on your account.",
+          message: "Ready to continue once you confirm the property address or postcode.",
+          blocked_by: ["property"],
+        });
       }
 
       const tenantId = crypto.randomUUID();
@@ -1951,39 +2221,90 @@ export async function executeCEOTool(
       const contractorName = args.contractor_name?.trim() || "Contractor";
       const requestedChannel = args.dispatch_channel ?? "email";
       let contractorDispatch:
-        | { sent: boolean; emailLogId: string; message: string; error?: string }
+        | {
+            sent: boolean;
+            emailLogId: string;
+            message: string;
+            error?: string;
+            pending_approval?: boolean;
+          }
         | null = null;
 
+      const propRaw = tenancy.properties as { user_id: string; address: string | null } | { user_id: string; address: string | null }[];
+      const propertyRow = Array.isArray(propRaw) ? propRaw[0] : propRaw;
+      const tenantRaw = tenancy.tenants as { id: string; full_name: string | null; email: string | null } | { id: string; full_name: string | null; email: string | null }[];
+      const tenantRow = Array.isArray(tenantRaw) ? tenantRaw[0] : tenantRaw;
+      const propertyAddress =
+        normalizePropertyAddressLabel(propertyRow?.address?.trim() ?? "") || "Unknown property";
+      const tenantNameForEvidence = tenantRow?.full_name?.trim() ?? null;
+
+      const dispatchEmailSubject = `Maintenance dispatch: ${args.issue_title?.trim() || "New issue"}`;
+      const dispatchEmailBody = [
+        `A maintenance request has been raised.`,
+        `Category: ${classified.category}`,
+        `Priority: ${classified.priority}`,
+        "",
+        `Issue details:`,
+        fullDescription,
+      ].join("\n");
+
       if (requestedChannel !== "sms" && contractorEmail) {
-        contractorDispatch = await sendEmailTool(supabase, userId, triage.agentRunId, {
-          to: contractorEmail,
-          toName: contractorName,
-          agentType: "maintenance",
-          subject: `Maintenance dispatch: ${args.issue_title?.trim() || "New issue"}`,
-          body: [
-            `A maintenance request has been raised.`,
-            `Category: ${classified.category}`,
-            `Priority: ${classified.priority}`,
-            "",
-            `Issue details:`,
-            fullDescription,
-          ].join("\n"),
-        });
+        const evidence: ApproveMaintenanceDispatchEvidence = {
+          maintenanceRequestId: requestId,
+          propertyId: (tenancy.property_id as string | null) ?? null,
+          propertyAddress,
+          tenantName: tenantNameForEvidence,
+          category: classified.category,
+          priority: classified.priority,
+          contractorName,
+          contractorEmail,
+          emailSubject: dispatchEmailSubject,
+          dispatchPreview:
+            dispatchEmailBody.length > 400 ? `${dispatchEmailBody.slice(0, 397)}…` : dispatchEmailBody,
+        };
 
-        void saveEmailDraft(supabase, userId, {
-          subject: `Maintenance dispatch: ${args.issue_title?.trim() || "New issue"}`,
-          body: fullDescription,
-        });
+        const approval = await createAgentApproval(
+          {
+            agentRunId: triage.agentRunId,
+            agentType: "maintenance_dispatch",
+            title: `Approve contractor dispatch — ${args.issue_title?.trim() || "Maintenance"}`,
+            summary: `${propertyAddress} · ${contractorName} · ${classified.priority}`,
+            actionType: "approve_maintenance_dispatch",
+            targetType: "maintenance_request",
+            targetId: requestId,
+            payload: {
+              userId,
+              maintenanceRequestId: requestId,
+              tenancyId,
+              propertyId: (tenancy.property_id as string | null) ?? null,
+              contractorEmail,
+              contractorName,
+              emailSubject: dispatchEmailSubject,
+              emailBody: dispatchEmailBody,
+              category: classified.category,
+              priority: classified.priority,
+            },
+            evidence,
+          } satisfies CreateAgentApprovalContract,
+          { supabase, userId },
+        );
 
-        await supabase
-          .from("maintenance_requests")
-          .update({
-            contractor_name: contractorName,
-            contractor_email: contractorEmail,
-            status: "in_progress",
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", requestId);
+        if (!approval.ok) {
+          return JSON.stringify({
+            error: approval.error,
+            maintenance_request_id: requestId,
+            category: classified.category,
+            priority: classified.priority,
+            triage,
+          });
+        }
+
+        contractorDispatch = {
+          sent: false,
+          emailLogId: "",
+          message: "Contractor dispatch is pending your approval in Approvals.",
+          pending_approval: true,
+        };
       }
 
       return JSON.stringify({
@@ -1996,8 +2317,10 @@ export async function executeCEOTool(
           requestedChannel === "sms"
             ? "SMS dispatch requested but SMS transport is not yet implemented in-app; no SMS sent."
             : requestedChannel === "both"
-              ? "Email dispatch attempted; SMS not yet implemented."
-              : "Email dispatch handled based on provided contractor details and settings.",
+              ? "Email dispatch pending approval (SMS not yet implemented)."
+              : contractorEmail
+                ? "Contractor email will send after you approve the dispatch in Approvals."
+                : "No contractor email provided — log the issue only; assign a contractor from the maintenance screen if needed.",
       });
     }
     case "generate_property_listing": {
@@ -3065,90 +3388,22 @@ export async function executeCEOTool(
           });
         }
 
-        const { data: tenancyRow, error: tenancyErr } = await supabase
-          .from("tenancies")
-          .select("id, tenant_id, property_id")
-          .eq("id", resolvedTenancyId)
-          .maybeSingle();
-
-        if (tenancyErr || !tenancyRow) {
-          return JSON.stringify({ success: false, message: "Tenancy not found." });
-        }
-
-        const { data: propertyRow } = await supabase
-          .from("properties")
-          .select("id, user_id, address, city")
-          .eq("id", tenancyRow.property_id as string)
-          .maybeSingle();
-
-        if (!propertyRow || (propertyRow as { user_id: string }).user_id !== userId) {
-          return JSON.stringify({ success: false, message: "Tenancy not found or not on your account." });
-        }
-
-        const { data: tenantRow } = await supabase
-          .from("tenants")
-          .select("id, full_name, email")
-          .eq("id", tenancyRow.tenant_id as string)
-          .maybeSingle();
-
-        const tenantEmail = tenantRow?.email?.trim();
-        if (!tenantEmail) {
-          return JSON.stringify({ success: false, message: "Tenant email is missing — cannot send move-in instructions." });
-        }
-
-        const tenantDisplay = tenantRow?.full_name?.trim() || "Tenant";
-        const propertyAddr = [
-          (propertyRow as { address?: string | null }).address,
-          (propertyRow as { city?: string | null }).city,
-        ]
-          .filter(Boolean)
-          .join(", ");
-
-        const emailResult = await sendEmailTool(supabase, userId, null, {
-          to: tenantEmail,
-          toName: tenantDisplay,
-          subject: `Move-in instructions — ${propertyAddr || "your tenancy"}`,
-          body: [
-            `Hi ${tenantDisplay},`,
-            "",
-            `Here are your move-in instructions for ${propertyAddr || "the property"}.`,
-            "",
-            "Your landlord will share keys, meter readings, and any building rules separately if needed.",
-            "",
-            "If you have questions before move-in day, reply to this email.",
-            "",
-            "Kind regards,",
-            "Letora",
-          ].join("\n"),
-          agentType: "onboarding",
-          forceSend: true,
-        });
-
-        if (!emailResult.sent) {
+        const enq = await enqueueMoveInEmailApproval(supabase, resolvedTenancyId, userId, { agentRunId: null });
+        if (!enq.ok) {
           const failResult = {
             success: false,
-            message: emailResult.message,
-            error: emailResult.error ?? null,
-            email_log_id: emailResult.emailLogId || null,
+            message: enq.error,
           };
           void logAgentActivity(supabase, userId, "send_move_in_email", args as Record<string, unknown>, failResult, false);
           return JSON.stringify(failResult);
         }
 
-        const completedAt = new Date().toISOString();
-        await supabase
-          .from("onboarding_tasks")
-          .update({ status: "complete", completed_at: completedAt })
-          .eq("tenancy_id", resolvedTenancyId)
-          .eq("user_id", userId)
-          .eq("task_name", "Send move-in instructions email")
-          .eq("status", "pending");
-
         const okResult = {
           success: true,
-          message: `Move-in instructions sent to ${tenantDisplay} at ${tenantEmail}.`,
-          email_log_id: emailResult.emailLogId,
+          pending_approval: true,
+          approval_id: enq.id,
           tenancy_id: resolvedTenancyId,
+          message: "Move-in instructions email is awaiting your approval in Approvals.",
         };
         void logAgentActivity(supabase, userId, "send_move_in_email", args as Record<string, unknown>, okResult, true);
         return JSON.stringify(okResult);

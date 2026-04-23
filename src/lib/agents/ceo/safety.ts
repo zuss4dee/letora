@@ -216,6 +216,17 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
         return `• **Nurture a lead** (advance pipeline step${c.input.lead_id ? ` for lead **${c.input.lead_id.slice(0, 8)}…**` : ""}${c.input.step ? ` — **${c.input.step}**` : ""}; may draft/send email)`
       case "decide_lead_application":
         return `• **Approve or reject applicant** (final decision on a lead in applied stage${c.input.decision ? ` — **${c.input.decision}**` : ""})`
+      case "create_tenant_and_tenancy": {
+        const detailLines: string[] = []
+        if (c.input.tenant_name?.trim()) detailLines.push(`Tenant: **${c.input.tenant_name.trim()}**`)
+        if (c.input.tenant_email?.trim()) detailLines.push(`Email: **${c.input.tenant_email.trim()}**`)
+        if (c.input.property_id?.trim()) detailLines.push(`Property ID: **${c.input.property_id.trim()}**`)
+        if (c.input.property_query?.trim()) detailLines.push(`Property query: **${c.input.property_query.trim()}**`)
+        if (c.input.start_date?.trim()) detailLines.push(`Start date (YYYY-MM-DD): **${c.input.start_date.trim()}**`)
+        if (c.input.monthly_rent?.trim()) detailLines.push(`Monthly rent: **${c.input.monthly_rent.trim()}**`)
+        const detail = detailLines.length > 0 ? `\n${detailLines.join("\n")}` : ""
+        return `• **Create tenant + tenancy, then start onboarding**${detail}\n  This may create records (or safely reuse existing matches), then queue onboarding/welcome-email approval flows where applicable. Reply **yes** only if these values are correct.`
+      }
       case "start_tenant_onboarding": {
         const detailLines: string[] = []
         if (c.input.onboarding_for?.trim()) {

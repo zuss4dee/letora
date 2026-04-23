@@ -4,6 +4,7 @@ export type CEOToolName =
   | "get_maintenance_summary"
   | "get_leads_summary"
   | "search_properties"
+  | "create_tenant_and_tenancy"
   | "start_tenant_onboarding"
   | "bulk_onboard_tenants"
   | "send_referencing_handoff"
@@ -28,6 +29,7 @@ export const CEO_TOOL_NAMES: readonly CEOToolName[] = [
   "get_maintenance_summary",
   "get_leads_summary",
   "search_properties",
+  "create_tenant_and_tenancy",
   "start_tenant_onboarding",
   "bulk_onboard_tenants",
   "send_referencing_handoff",
@@ -55,7 +57,7 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
   {
     name: "chase_rent",
     description:
-      "Chase overdue and past-due rent using the same pipeline as the Rent Tracker agent: drafts/sends emails via email logs per user auto-send settings, and records agent runs.",
+      "Run the rent chaser for a month: **drafts** overdue-tenant chase emails and records agent runs. Tenant chase emails are **approval-gated** — they appear in **Approvals** and send only after the landlord approves (check per-result **email_sent**). Does **not** collect rent or move money.",
     input_schema: {
       type: "object",
       properties: {
@@ -114,9 +116,45 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "create_tenant_and_tenancy",
+    description:
+      "Create a brand-new tenant and tenancy from chat, then start onboarding on that tenancy. Use this when the user asks to onboard a new tenant and no tenant profile exists yet. Idempotent: reuses an existing tenant by email/name when uniquely matched, and reuses an existing active tenancy for that tenant+property instead of duplicating rows. If required fields are missing or property matches are ambiguous, the tool returns a minimal blocker with exactly what to ask next.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tenant_name: {
+          type: "string",
+          description: "Tenant full name.",
+        },
+        tenant_email: {
+          type: "string",
+          description: "Tenant email address used for onboarding communications.",
+        },
+        property_id: {
+          type: "string",
+          description: "Property UUID from search_properties or prior context.",
+        },
+        property_query: {
+          type: "string",
+          description:
+            "Address/city/postcode text when property_id is unknown. The tool resolves a unique property or returns candidates.",
+        },
+        start_date: {
+          type: "string",
+          description: "Tenancy start date in YYYY-MM-DD format.",
+        },
+        monthly_rent: {
+          type: "string",
+          description: "Monthly rent amount (e.g. 1850).",
+        },
+      },
+      required: [],
+    },
+  },
+  {
     name: "start_tenant_onboarding",
     description:
-      "Start onboarding: (1) **onboarding_for** — tenant’s full name (plain English; the server resolves tenant + tenancy). **Always use this when the user gives a person’s name** — never tell them UUIDs are required first. (2) tenancy_id, (3) tenant_id + property_id + start_date, or (4) lead_id + auto_create_tenant_and_tenancy. If multiple tenancies exist, use onboarding_property_hint or tenancy_id from list_tenants.",
+      "Start onboarding for an **existing** tenant/tenancy: (1) **onboarding_for** — tenant’s full name (plain English; server resolves tenant + tenancy), (2) tenancy_id, (3) tenant_id + property_id + start_date, or (4) lead_id + auto_create_tenant_and_tenancy. If multiple tenancies exist, use onboarding_property_hint or tenancy_id from list_tenants. For a **brand-new tenant + tenancy** from chat, prefer **create_tenant_and_tenancy**.",
     input_schema: {
       type: "object",
       properties: {
@@ -230,7 +268,7 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
   {
     name: "dispatch_maintenance_request",
     description:
-      "Log a new maintenance issue, classify severity/category, and optionally assign + draft/send contractor communication.",
+      "Log and classify a maintenance issue. If **contractor_email** is set, contractor email is **approval-gated** (pending in **Approvals** until approved). Without contractor email, logs the ticket only — no contractor **sent**.",
     input_schema: {
       type: "object",
       properties: {
@@ -513,7 +551,7 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
   {
     name: "send_move_in_email",
     description:
-      "Email the tenant move-in instructions for a tenancy. Pass **tenancy_id** or **tenant_name** to resolve the tenancy. Sends via Resend (respects onboarding auto-send; uses force send). Marks the checklist task **Send move-in instructions email** complete when the send succeeds.",
+      "Queue move-in instructions email for a tenancy for landlord approval in Approvals. Pass **tenancy_id** or **tenant_name** to resolve the tenancy. After approval, the email sends via Resend and the checklist task **Send move-in instructions email** is marked complete.",
     input_schema: {
       type: "object",
       properties: {

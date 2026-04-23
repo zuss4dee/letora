@@ -101,9 +101,9 @@ export async function resolveTenantProfileForAccount(
     return {
       ok: false,
       body: {
-        error:
-          "Tenant not found for this account. Call list_tenants and use the exact id (UUID) from the tenant row.",
-        hint: "If you used a name, no profile matched — check spelling or use the UUID from /dashboard/tenants.",
+        code: "tenant_not_found_by_name",
+        error: "No tenant profile matched that name on this account.",
+        hint: "Ready to continue once you confirm the tenant full name (or share the tenant UUID if you already have it).",
       },
     };
   }
@@ -111,8 +111,9 @@ export async function resolveTenantProfileForAccount(
     return {
       ok: false,
       body: {
-        error:
-          "Multiple tenants matched that name — pass the exact tenant_id UUID from list_tenants.",
+        code: "tenant_name_ambiguous",
+        error: "More than one tenant matches that name.",
+        hint: "Confirm which tenant you mean and I will continue.",
         candidates: data.map((r) => ({ id: r.id, full_name: r.full_name })),
       },
     };

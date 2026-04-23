@@ -12,8 +12,10 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
     "State whether there are any new leads, then give pending/qualified/disqualified counts and a short list of recent lead names when helpful.",
   search_properties:
     "List matching properties with their **id** (UUID), human-readable label, and hint if multiple matches — tell the user to pick the right one before mutating tools. Never treat a unit number as a UUID.",
+  create_tenant_and_tenancy:
+    "Use operational create-flow wording. Structure as: **Created**, **Drafted**, **Pending approval**, **Blocked**, **Next action** (omit empty sections). If **created_tenant** true say **Created tenant record**; if **created_tenancy** true say **Created tenancy**; if reused flags are true, say reused existing record(s) instead of created. If onboarding result shows email draft/approval, keep send claims truthful: only **sent** when JSON confirms. For **blocked_by** arrays, ask only for the smallest missing field and do not send broad dashboard/manual instructions. For **property_ambiguous**, present **candidates** cleanly and ask for one confirmation.",
   start_tenant_onboarding:
-    "Structure the reply with these headings (plain lines, no Markdown): Created — Drafted — Pending approval — Blocked — Next action. Only omit empty sections. **Created:** e.g. **Created tenancy** when **mode** is **tenant_and_property** or **lead_conversion** (new row); **Created tenant record** when **lead_conversion** created a new tenant profile. If JSON or **message** clearly indicates a **new property** row was created in this flow, add **Created property record** as its own bullet (do not bury in parentheses). **Drafted:** welcome email is **drafted** when **emailStatus** is **draft** or **message** implies a draft exists. **Pending approval:** when **message** contains **awaiting approval** / approval gate for welcome email, or **emailStatus** is **draft** and approval is required — say welcome email is **pending approval** in Approvals (**/dashboard/approvals**); do **not** say the tenant email was **sent** unless **emailStatus** is **sent** (or tool explicitly confirms send). **Blocked:** **success** false, **error**, missing tenant email, validation failures — say **Blocked** and why. **Next action:** one concrete step (e.g. approve welcome email, pick property from **candidates**, call **search_properties**). If **mode** is **resume**, follow **ceo_resume_hint** and **pending_task_names**; when **referencing_complete** is true, do **not** say referencing is still blocking. If the tool returned **candidates** (multiple tenancies), ask for street/city — do **not** claim a single tenancy was onboarded. Do **not** say **done successfully** or that everything completed unless every part succeeded and there is no operator follow-up (no pending approval, no blocked line). **Letora has no tenant-facing portal**; tenants are reached by **email**; checklist tasks are for the **landlord** in the dashboard.",
+    "Structure blocked/create replies as: Ready to create — Blocked by — What I already have — Next action (plus Created/Drafted/Pending approval when applicable). Ask for the **minimum blocker only** from JSON fields like **blocked_by**, **missing_fields**, or explicit **code**. Examples: if only tenant email is missing, ask only for email; if property is ambiguous, show clean **candidates** and ask for one confirmation; if start date/rent format is invalid, ask only for corrected normalized value (YYYY-MM-DD for dates). Avoid long manual dashboard instructions unless unavoidable. **Created:** include **Created tenant record**, **Created tenancy**, and explicit **Created property record** when JSON indicates each happened. **Drafted/Pending approval:** welcome email is drafted/pending approval unless JSON confirms **emailStatus: sent**. **Blocked:** state one operational blocker in plain language without exposing internal limitations. **Next action:** exactly one next step. If **mode** is **resume**, follow **ceo_resume_hint** and **pending_task_names**; when **referencing_complete** is true, do not claim referencing is pending.",
   bulk_onboard_tenants:
     "If **mode** is **preview**, summarize **summary.total**, **summary.newProperties**, **summary.matchedProperties**, **summary.existingTenants**, **summary.skippedActiveTenancies**, **summary.validationErrors**, and call out a few **preview_rows**. Ask the user to confirm before running the real import. If **mode** is **executed**, lead with **totals.succeeded / totals.total** onboarded, plus **totals.skipped** and **totals.failed**; mention tenants get welcome emails + onboarding tasks. If **mode** is **nothing_to_do**, repeat the **note** and suggest fixing the CSV or removing duplicates. Never paste raw JSON.",
   send_referencing_handoff:
@@ -69,6 +71,13 @@ export function wrapToolResultForModel(toolName: CEOToolName, raw: string): stri
           "Mandatory for start_tenant_onboarding: never mention a tenant portal, tenant app, or tenant login. Do **not** emit `<action …/>` tags; the UI supplies **Open onboarding** from tool JSON when **tenancy_id** is present. Never claim the welcome email was **sent** unless **emailStatus** / JSON confirms send.",
         ]
       : []
+  const createTenantTenancyExtra =
+    toolName === "create_tenant_and_tenancy"
+      ? [
+          "",
+          "Mandatory for create_tenant_and_tenancy: when **blocked_by** exists, ask only for those missing field(s) — do not give broad manual dashboard instructions. If **property_ambiguous**, present concise candidate labels and ask for one confirmation. If records were reused (**reused_tenant** / **reused_tenancy**), say reused instead of created.",
+        ]
+      : []
   const referencingHandoffExtra =
     toolName === "send_referencing_handoff"
       ? [
@@ -89,6 +98,7 @@ export function wrapToolResultForModel(toolName: CEOToolName, raw: string): stri
     `Summarize for the landlord with this focus: ${focus}`,
     ...qualifyExtra,
     ...onboardingExtra,
+    ...createTenantTenancyExtra,
     ...referencingHandoffExtra,
     ...chaseRentExtra,
     "",

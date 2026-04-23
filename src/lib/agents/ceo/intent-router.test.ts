@@ -73,6 +73,16 @@ describe("routeCEOIntent — tenant list phrasing", () => {
     expect(hint).toContain("Do **not** tell the user the system only accepts UUIDs");
   });
 
+  it("routes new tenant + tenancy requests to create_tenant_and_tenancy", () => {
+    const r = routeCEOIntent("Onboard a tenant for me and create the tenancy for the new tenant");
+    expect(r.primaryIntent).toBe("onboarding");
+    expect(r.wantsCreateTenantTenancy).toBe(true);
+    expect(r.recommendedTools[0]).toBe("create_tenant_and_tenancy");
+    const hint = formatRouterHintForSystem(r);
+    expect(hint).toContain("create_tenant_and_tenancy");
+    expect(hint).toContain("minimum blocker");
+  });
+
   it("routes referencing status questions to prepare_referencing (regex “references?” missed “referencing”)", () => {
     const r = routeCEOIntent("What's the referencing update for Alexis?");
     expect(r.wantsReferencingStatus).toBe(true);
@@ -128,6 +138,17 @@ describe("routeCEOIntent — tenant list phrasing", () => {
     const hint = formatRouterHintForSystem(r);
     expect(hint).toContain("bulk_onboard_tenants");
     expect(hint).toContain("csv_text");
+  });
+
+  it("sets wantsOperationalBrief and injects dashboard tools for “what should I do next”", () => {
+    const r = routeCEOIntent("What should I do next?");
+    expect(r.wantsOperationalBrief).toBe(true);
+    expect(r.recommendedTools).toContain("get_dashboard_summary");
+    expect(r.recommendedTools).toContain("get_maintenance_summary");
+    expect(r.recommendedTools).toContain("get_compliance_summary");
+    const hint = formatRouterHintForSystem(r);
+    expect(hint).toContain("operational brief");
+    expect(hint).toContain("/dashboard/approvals");
   });
 
   it("routes pasted CSV header (property_address + tenant_name + monthly_rent) to bulk_onboard_tenants", () => {
