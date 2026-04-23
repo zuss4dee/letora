@@ -17,6 +17,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:resend": "node --env-file=.env.local scripts/send-resend-test.mjs",
+    "seed:demo:benue": "npx --yes tsx scripts/seed-benue-demo-account.ts",
     "remotion:studio": "remotion studio remotion/index.ts",
     "remotion:render": "remotion render remotion/index.ts LaunchVideo out/launch.mp4"
   },
