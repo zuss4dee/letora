@@ -1268,7 +1268,8 @@ export async function executeCEOTool(
       if (results.length === 0) {
         return JSON.stringify({
           month,
-          message: "No chaseable rent payments for this period (or none match the selected month).",
+          message:
+            "No bulk rent-chase set was created for this period. Check individual overdue tenancies before deciding next action.",
           chased: 0,
           results: [],
         });
