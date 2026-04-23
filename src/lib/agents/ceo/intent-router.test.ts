@@ -93,19 +93,31 @@ describe("routeCEOIntent — tenant list phrasing", () => {
     expect(hint).toContain("recent_inbound_mail");
   });
 
-  it("sets wantsContinueOnboarding for “continue onboarding” and prioritizes start_tenant_onboarding", () => {
+  it("routes “continue onboarding” as read-first state inspection", () => {
     const r = routeCEOIntent("continue onboarding for Alexis");
     expect(r.wantsContinueOnboarding).toBe(true);
-    expect(r.recommendedTools[0]).toBe("start_tenant_onboarding");
+    expect(r.wantsOnboardingStateInspection).toBe(true);
+    expect(r.recommendedTools[0]).toBe("resolve_onboarding_navigation");
+    expect(r.recommendedTools).not.toContain("start_tenant_onboarding");
     const hint = formatRouterHintForSystem(r);
-    expect(hint).toContain("start_tenant_onboarding");
-    expect(hint).toContain("pending_task_names");
+    expect(hint).toContain("read-first");
+    expect(hint).toContain("current stage");
   });
 
   it("normalizes onbosrding typo so onboarding routing still works", () => {
     const r = routeCEOIntent("continue onbosrding for Alexis");
     expect(r.wantsContinueOnboarding).toBe(true);
     expect(r.wantsOnboardingByPlainName).toBe(true);
+    expect(r.wantsOnboardingStateInspection).toBe(true);
+  });
+
+  it("routes onboarding next-action question to read-first tools", () => {
+    const r = routeCEOIntent("What is the next onboarding action for Joseph Prince?");
+    expect(r.primaryIntent).toBe("onboarding");
+    expect(r.wantsOnboardingStateInspection).toBe(true);
+    expect(r.recommendedTools[0]).toBe("resolve_onboarding_navigation");
+    expect(r.recommendedTools).not.toContain("create_tenant_and_tenancy");
+    expect(r.recommendedTools).not.toContain("start_tenant_onboarding");
   });
 
   it("routes 'where is Alexis a tenant' to tenants intent with list_tenants", () => {

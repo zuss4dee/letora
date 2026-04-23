@@ -64,6 +64,15 @@ export function classifyCEOIntent(latestUserText: string): CEOIntent {
     return "confirmation_required"
   }
 
+  /** Read-first onboarding state checks should not immediately trigger mutating confirmation UX. */
+  if (
+    /\b(next\s+onboarding\s+action|what\s+stage\s+is|what\s+is\s+blocking|what'?s\s+blocking|what'?s\s+left|remaining\s+onboarding|continue\s+.*onboarding|resume\s+.*onboarding)\b/.test(
+      t,
+    )
+  ) {
+    return "draft_suggest"
+  }
+
   if (
     /\b(send|resend|dispatch|onboard|start\s+onboarding|blast|transmit|actually\s+send|go\s+ahead\s+and\s+send|email\s+them\s+now|mark\s+.*\s+resolved|mark\s+as\s+resolved|close\s+the\s+tickets?|delete\s+|remove\s+permanently|cancel\s+the\s+|finalize\s+and\s+send)\b/.test(
       t,

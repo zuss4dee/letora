@@ -858,6 +858,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
 
   /** Same pattern as referencing: prefetch resume JSON so the model cannot “invent” missing tenants. */
   let onboardingPrefetchRaw: string | null = null;
+  let onboardingStatePrefetchRaw: string | null = null;
   const inferredTenantName = inferTenantOrContractNameFromConversation(contextMessages);
   const inferredPropertyHint = inferPropertyAddressHintFromConversation(contextMessages);
   const inferredPropertyHintFromUser = inferPropertyAddressHintFromUserMessagesOnly(contextMessages);
@@ -876,9 +877,20 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
     (/\b(create|add|set\s+up)\b/i.test(latestUser) && /\b(tenant|tenancy)\b/i.test(latestUser)) ||
     (/\bonboard\b/i.test(latestUser) && /\bcreate\b/i.test(latestUser) && /\btenancy\b/i.test(latestUser));
 
+  if (route.wantsOnboardingStateInspection && inferredTenantName) {
+    onboardingStatePrefetchRaw = await executeCEOTool(
+      "resolve_onboarding_navigation",
+      { tenant_name: inferredTenantName },
+      userId,
+      supabase,
+    );
+    effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n**Server-fetched onboarding state snapshot (read-first; authoritative):**\n${onboardingStatePrefetchRaw}\n\nFor “what next / stage / blocker” onboarding questions: return current stage, completed steps, blocker (if any), and next valid step first. Do not start/restart onboarding or create tenant/tenancy records unless this snapshot proves no existing tenancy/onboarding and the landlord explicitly asks you to proceed.`;
+  }
+
   const wantsOnboardingPrefetch =
     Boolean(inferredTenantName) &&
     !route.wantsReferencingStatus &&
+    !route.wantsOnboardingStateInspection &&
     !looksLikeNewTenantTenancyCreation &&
     (route.wantsContinueOnboarding ||
       route.wantsOnboardingByPlainName ||

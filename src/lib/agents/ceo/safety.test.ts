@@ -68,6 +68,12 @@ describe("CEO safety confirmation gating", () => {
     expect(toolsRequireUserConfirmation(intent, ["draft_contract"])).toBe(false);
   });
 
+  it("treats onboarding next-action questions as draft_suggest (read-first)", () => {
+    const intent = classifyCEOIntent("What is the next onboarding action for Joseph Prince?");
+    expect(intent).toBe("draft_suggest");
+    expect(toolsRequireUserConfirmation(intent, ["resolve_onboarding_navigation"])).toBe(false);
+  });
+
   it("classifies 'where is X a tenant' as read_only so it does not trigger draft_contract", () => {
     expect(classifyCEOIntent("where is Alexis a tenant?")).toBe("read_only");
     expect(classifyCEOIntent("where is john a tenant")).toBe("read_only");

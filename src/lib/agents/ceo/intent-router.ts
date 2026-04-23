@@ -39,6 +39,11 @@ export type CEOIntentRoute = {
    */
   wantsContinueOnboarding: boolean
   /**
+   * Read-first onboarding status questions ("next action", "what stage", "what is blocking", "continue")
+   * should inspect current state before proposing any mutation.
+   */
+  wantsOnboardingStateInspection: boolean
+  /**
    * “Import these tenants”, “onboard these 20”, pasted CSV — prioritize **bulk_onboard_tenants** over single-tenant onboarding.
    */
   wantsBulkOnboarding: boolean
@@ -327,6 +332,13 @@ function detectContinueOnboardingResume(normalized: string): boolean {
   return /\b(continue|resume|carry\s+on)\s+(?:with\s+)?(?:the\s+)?onboarding\b/i.test(normalized)
 }
 
+/** Read-first onboarding state checks. */
+function detectOnboardingStateInspection(normalized: string): boolean {
+  return /\b(next\s+onboarding\s+action|next\s+action\s+for|what\s+stage\s+is|what\s+is\s+blocking|what'?s\s+blocking|what'?s\s+left|remaining\s+onboarding|continue\s+.*onboarding|resume\s+.*onboarding)\b/i.test(
+    normalized,
+  )
+}
+
 /**
  * Detect a bulk/batch onboarding request. We match either:
  *   - explicit intent words (import, bulk, batch, mass) near tenants/properties/onboard, OR
@@ -381,6 +393,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
   const wantsContinueOnboarding =
     detectContinueOnboardingResume(normalized) ||
     (/\b(continue|resume)\b/i.test(normalized) && /\bonboarding\s+for\b/i.test(normalized))
+  const wantsOnboardingStateInspection = detectOnboardingStateInspection(normalized)
   const wantsBulkOnboarding = detectBulkOnboardingRequest(normalized, trimmed)
   const wantsCreateTenantTenancy = detectCreateTenantTenancyRequest(normalized)
   const scores = scoreMessage(normalized)
@@ -414,6 +427,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
         wantsOnboardingByPlainName: false,
         wantsReferencingStatus: true,
         wantsContinueOnboarding: false,
+        wantsOnboardingStateInspection: false,
         wantsBulkOnboarding: false,
         wantsCreateTenantTenancy: false,
         wantsOperationalBrief,
@@ -434,6 +448,8 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
         ? ["bulk_onboard_tenants"]
         : wantsCreateTenantTenancy
           ? ["create_tenant_and_tenancy"]
+        : wantsOnboardingStateInspection
+          ? ["resolve_onboarding_navigation", "get_contracts", "prepare_referencing"]
         : wantsOnboardingByPlainName || wantsContinueOnboarding
           ? ["start_tenant_onboarding"]
           : wantsOperationalBrief
@@ -444,6 +460,8 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
           ? toolsRequireUserConfirmation(classifyCEOIntent(normalized), ["bulk_onboard_tenants"])
           : wantsCreateTenantTenancy
             ? toolsRequireUserConfirmation(classifyCEOIntent(normalized), ["create_tenant_and_tenancy"])
+          : wantsOnboardingStateInspection
+            ? false
           : wantsOnboardingByPlainName || wantsContinueOnboarding
             ? toolsRequireUserConfirmation(classifyCEOIntent(normalized), ["start_tenant_onboarding"])
             : false,
@@ -451,6 +469,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
       wantsOnboardingByPlainName,
       wantsReferencingStatus: false,
       wantsContinueOnboarding,
+      wantsOnboardingStateInspection,
       wantsBulkOnboarding,
       wantsCreateTenantTenancy,
       wantsOperationalBrief,
@@ -520,10 +539,38 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
   }
 
   if (wantsContinueOnboarding) {
+    const continuePriorityTools: CEOToolName[] = wantsOnboardingStateInspection
+      ? ["resolve_onboarding_navigation", "get_contracts", "prepare_referencing"]
+      : ["start_tenant_onboarding"]
     recommendedTools = uniqueToolsOrdered(
       [
-        "start_tenant_onboarding",
-        ...recommendedTools.filter((t) => t !== "start_tenant_onboarding"),
+        ...continuePriorityTools,
+        ...recommendedTools.filter(
+          (t) =>
+            t !== "start_tenant_onboarding" &&
+            t !== "resolve_onboarding_navigation" &&
+            t !== "get_contracts" &&
+            t !== "prepare_referencing",
+        ),
+      ],
+      6,
+    )
+  }
+
+  if (wantsOnboardingStateInspection) {
+    recommendedTools = uniqueToolsOrdered(
+      [
+        "resolve_onboarding_navigation",
+        "get_contracts",
+        "prepare_referencing",
+        ...recommendedTools.filter(
+          (t) =>
+            t !== "resolve_onboarding_navigation" &&
+            t !== "get_contracts" &&
+            t !== "prepare_referencing" &&
+            t !== "start_tenant_onboarding" &&
+            t !== "create_tenant_and_tenancy",
+        ),
       ],
       6,
     )
@@ -605,6 +652,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     wantsOnboardingByPlainName,
     wantsReferencingStatus,
     wantsContinueOnboarding,
+    wantsOnboardingStateInspection,
     wantsBulkOnboarding,
     wantsCreateTenantTenancy,
     wantsOperationalBrief,
@@ -636,6 +684,7 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
     !route.wantsOnboardingByPlainName &&
     !route.wantsReferencingStatus &&
     !route.wantsContinueOnboarding &&
+    !route.wantsOnboardingStateInspection &&
     !route.wantsOperationalBrief
   ) {
     return ""
@@ -646,6 +695,7 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
     !route.wantsOnboardingByPlainName &&
     !route.wantsReferencingStatus &&
     !route.wantsContinueOnboarding &&
+    !route.wantsOnboardingStateInspection &&
     !route.wantsOperationalBrief
   ) {
     return ""
@@ -678,9 +728,15 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
     )
   }
 
-  if (route.wantsContinueOnboarding) {
+  if (route.wantsContinueOnboarding && !route.wantsOnboardingStateInspection) {
     lines.push(
       "- **Required (continue/resume onboarding):** Call **start_tenant_onboarding** with **onboarding_for** when they named a tenant; otherwise **list_tenants** then **start_tenant_onboarding**. Summarize **pending_task_names**, **tasks_complete**/**tasks_total**, and **referencing_complete** from that JSON (or from **resolve_onboarding_navigation** if you also used it) — do **not** invent a generic checklist. **resolve_onboarding_navigation** is for the **Open onboarding** button only; it is not a substitute for **start_tenant_onboarding** resume data.",
+    )
+  }
+
+  if (route.wantsOnboardingStateInspection) {
+    lines.push(
+      "- **Required (onboarding next-step / stage / blocker):** Start read-first. Call **resolve_onboarding_navigation** (plus **get_contracts** and **prepare_referencing** when useful) to inspect current tenancy/onboarding/contract state before any mutation. Return: current stage, completed steps, blocker (if any), and next valid action. Do **not** call **start_tenant_onboarding** or **create_tenant_and_tenancy** unless inspection proves no tenancy/onboarding exists and the user asks you to proceed.",
     )
   }
 

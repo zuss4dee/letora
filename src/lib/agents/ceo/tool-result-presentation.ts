@@ -49,7 +49,7 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
   list_tenants:
     "Give the count and a short bullet list of names (and property if clear); avoid dumping the full table.",
   resolve_onboarding_navigation:
-    "If ok=true, the JSON includes **pending_task_names**, **referencing_complete**, **tasks_complete**/**tasks_total** (same as resume). Summarize **only** those fields — do **not** invent a generic “welcome / move-in / tenancy agreement” list. If **referencing_complete** is true, do **not** say referencing is still pending. Give the **Open onboarding** button (UI). If needs_tenant or multiple_tenants, ask which tenant or use chips. If multiple_tenancies, ask them to pick the right property. Do not paste raw JSON.",
+    "For next-step onboarding questions, use this read-first shape: **current stage** → **completed steps** → **blocker (if any)** → **next valid action**. If ok=true, rely on **pending_task_names**, **referencing_complete**, **tasks_complete**/**tasks_total** only — do not invent a generic checklist. If **referencing_complete** is true, do not claim referencing is pending. Offer execution only after the landlord explicitly says proceed. Give the **Open onboarding** button (UI). If needs_tenant or multiple_tenants, ask which tenant or use chips. If multiple_tenancies, ask them to pick the right property. Do not paste raw JSON.",
 }
 
 /**
