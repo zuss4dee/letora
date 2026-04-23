@@ -1,4 +1,9 @@
-export type AgentId = "rent_chaser" | "tenant_onboarding" | "maintenance_agent";
+export type AgentId =
+  | "rent_chaser"
+  | "tenant_onboarding"
+  | "maintenance_agent"
+  | "lead_qualifier"
+  | "contract_drafter";
 
 export type AgentRegistryEntry = {
   id: AgentId;
@@ -34,6 +39,16 @@ export const AGENT_REGISTRY: Record<AgentId, AgentRegistryEntry> = {
       "maintenance_agent/skills/tenant_acknowledgement.md",
       "maintenance_agent/skills/landlord_summary.md",
     ],
+  },
+  lead_qualifier: {
+    id: "lead_qualifier",
+    agentsMd: "lead_qualifier/agents.md",
+    skillPaths: ["_shared/tools.md"],
+  },
+  contract_drafter: {
+    id: "contract_drafter",
+    agentsMd: "contract_drafter/agents.md",
+    skillPaths: ["_shared/tools.md"],
   },
 };
 

@@ -154,6 +154,7 @@ Adapt this template for the new tenancy details, keeping the landlord's preferre
   const result = await model.generateContent(prompt);
   const contractText = result.response.text();
 
+  // Deprecation: prefer `agent_runs` for new writes; `agent_actions` is legacy. See control-plane blueprint.
   const { data: action } = await supabase
     .from("agent_actions")
     .insert({

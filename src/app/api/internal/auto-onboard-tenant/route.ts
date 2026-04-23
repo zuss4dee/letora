@@ -1,5 +1,6 @@
 import { runTenantOnboardingAgent } from "@/lib/agents/tenant-onboarding";
 import { createServiceRoleClient } from "@/lib/supabase/admin";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -21,6 +22,48 @@ type AutoOnboardBody = {
   rent_amount?: unknown;
   move_in_date?: string | null;
 };
+
+function logAutoOnboardEvent(payload: Record<string, unknown>) {
+  console.error(`[auto-onboard-tenant] ${JSON.stringify(payload)}`);
+}
+
+async function recordAutoOnboardSkip(
+  supabase: SupabaseClient,
+  opts: {
+    userId: string;
+    tenancyId: string;
+    tenantId: string;
+    runCorrelationId: string;
+    reason: string;
+    detail?: Record<string, unknown>;
+  },
+): Promise<void> {
+  const rowPayload: Record<string, unknown> = {
+    output: "auto_onboard_skip",
+    skip_reason: opts.reason,
+    tenancy_id: opts.tenancyId,
+    tenant_id: opts.tenantId,
+    run_correlation_id: opts.runCorrelationId,
+  };
+  if (opts.detail) rowPayload.detail = opts.detail;
+
+  const { error } = await supabase.from("agent_runs").insert({
+    user_id: opts.userId,
+    agent_type: "tenant_onboarding",
+    status: "skipped",
+    payload: rowPayload,
+  });
+  if (error) {
+    logAutoOnboardEvent({
+      event: "skip_row_insert_failed",
+      message: error.message,
+      skip_reason: opts.reason,
+      tenancy_id: opts.tenancyId,
+      tenant_id: opts.tenantId,
+      run_correlation_id: opts.runCorrelationId,
+    });
+  }
+}
 
 export async function POST(request: Request) {
   const secret = process.env.CRON_SECRET;
@@ -47,12 +90,18 @@ export async function POST(request: Request) {
 
   const tenancyId = body.tenancy_id?.trim();
   const tenantId = body.tenant_id?.trim();
-  const landlordId = body.landlord_id?.trim();
 
-  if (!tenancyId || !tenantId || !landlordId) {
-    return new Response("tenancy_id, tenant_id, and landlord_id are required", { status: 400 });
+  if (!tenancyId || !tenantId) {
+    logAutoOnboardEvent({
+      event: "auto_onboard_reject",
+      reason: "missing_tenancy_or_tenant_id",
+      tenancy_id: tenancyId ?? null,
+      tenant_id: tenantId ?? null,
+    });
+    return new Response("tenancy_id and tenant_id are required", { status: 400 });
   }
 
+  const runCorrelationId = crypto.randomUUID();
   const supabase = createServiceRoleClient();
 
   const { data: tenancy, error: tenancyErr } = await supabase
@@ -62,18 +111,61 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (tenancyErr || !tenancy) {
+    logAutoOnboardEvent({
+      event: "auto_onboard_reject",
+      reason: "tenancy_not_found",
+      tenancy_id: tenancyId,
+      tenant_id: tenantId,
+      run_correlation_id: runCorrelationId,
+      detail: tenancyErr?.message ?? null,
+    });
     return Response.json({ ok: false, error: tenancyErr?.message ?? "Tenancy not found" }, { status: 400 });
   }
 
   const propRaw = tenancy.properties as unknown;
-  const property = (Array.isArray(propRaw) ? propRaw[0] : propRaw) as { user_id?: string } | null;
-  const ownerId = property?.user_id;
+  const property = (Array.isArray(propRaw) ? propRaw[0] : propRaw) as { user_id?: string | null } | null;
+  const ownerRaw = property?.user_id;
+  const ownerId = typeof ownerRaw === "string" && ownerRaw.trim() !== "" ? ownerRaw.trim() : null;
 
-  if (ownerId !== landlordId) {
+  if (!ownerId) {
+    logAutoOnboardEvent({
+      event: "auto_onboard_skip",
+      reason: "property_owner_null",
+      tenancy_id: tenancyId,
+      tenant_id: tenantId,
+      run_correlation_id: runCorrelationId,
+    });
+    return Response.json({ ok: false, error: "Property has no owner user_id" }, { status: 400 });
+  }
+
+  /** Authoritative landlord for onboarding = property owner (matches `runTenantOnboardingAgent`). */
+  const landlordId = ownerId;
+
+  const claimedLandlord =
+    typeof body.landlord_id === "string" && body.landlord_id.trim() !== ""
+      ? body.landlord_id.trim()
+      : null;
+  if (claimedLandlord && claimedLandlord !== landlordId) {
+    await recordAutoOnboardSkip(supabase, {
+      userId: landlordId,
+      tenancyId,
+      tenantId,
+      runCorrelationId,
+      reason: "landlord_claim_mismatch",
+      detail: { claimed_landlord_id: claimedLandlord, property_owner_id: landlordId },
+    });
     return new Response("Forbidden", { status: 403 });
   }
 
   if ((tenancy as { tenant_id?: string }).tenant_id !== tenantId) {
+    await recordAutoOnboardSkip(supabase, {
+      userId: landlordId,
+      tenancyId,
+      tenantId,
+      runCorrelationId,
+      reason: "tenancy_tenant_id_mismatch",
+      detail: { tenancy_tenant_id: (tenancy as { tenant_id?: string }).tenant_id ?? null },
+    });
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -84,10 +176,31 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (tenantErr || !tenant) {
+    logAutoOnboardEvent({
+      event: "auto_onboard_reject",
+      reason: "tenant_not_found",
+      tenancy_id: tenancyId,
+      tenant_id: tenantId,
+      run_correlation_id: runCorrelationId,
+      detail: tenantErr?.message ?? null,
+    });
     return Response.json({ ok: false, error: tenantErr?.message ?? "Tenant not found" }, { status: 400 });
   }
 
-  if ((tenant as { user_id?: string }).user_id !== landlordId) {
+  /**
+   * Align with `runTenantOnboardingAgent`: workspace is scoped by property owner only.
+   * Legacy/import rows may have `tenants.user_id` null; treat as landlord-owned unless explicitly another user.
+   */
+  const tenantUserIdRaw = (tenant as { user_id?: string | null }).user_id;
+  if (tenantUserIdRaw != null && tenantUserIdRaw.trim() !== "" && tenantUserIdRaw !== landlordId) {
+    await recordAutoOnboardSkip(supabase, {
+      userId: landlordId,
+      tenancyId,
+      tenantId,
+      runCorrelationId,
+      reason: "tenant_user_id_foreign_to_landlord",
+      detail: { tenant_user_id: tenantUserIdRaw },
+    });
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -98,19 +211,33 @@ export async function POST(request: Request) {
       user_id: landlordId,
       agent_type: "tenant_onboarding",
       status: "skipped",
-      payload: { output: "skipped:no-email" },
+      payload: {
+        output: "auto_onboard_skip",
+        skip_reason: "no_tenant_email",
+        tenancy_id: tenancyId,
+        tenant_id: tenantId,
+        run_correlation_id: runCorrelationId,
+      },
     });
     return new Response("skipped:no-email", { status: 200 });
   }
 
   try {
-    const result = await runTenantOnboardingAgent(tenancyId, landlordId, supabase);
+    const result = await runTenantOnboardingAgent(tenancyId, landlordId, supabase, {
+      runCorrelationId,
+    });
     if (!result.success) {
       await supabase.from("agent_runs").insert({
         user_id: landlordId,
         agent_type: "tenant_onboarding",
         status: "error",
-        payload: { output: result.message ?? "run failed" },
+        payload: {
+          output: result.message ?? "run failed",
+          skip_reason: "agent_run_failed",
+          tenancy_id: tenancyId,
+          tenant_id: tenantId,
+          run_correlation_id: runCorrelationId,
+        },
       });
       return Response.json(
         { ok: false, message: result.message },
@@ -125,12 +252,24 @@ export async function POST(request: Request) {
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    console.error("[auto-onboard-tenant]", msg);
+    logAutoOnboardEvent({
+      event: "auto_onboard_exception",
+      tenancy_id: tenancyId,
+      tenant_id: tenantId,
+      run_correlation_id: runCorrelationId,
+      message: msg,
+    });
     await supabase.from("agent_runs").insert({
       user_id: landlordId,
       agent_type: "tenant_onboarding",
       status: "error",
-      payload: { output: msg },
+      payload: {
+        output: msg,
+        skip_reason: "exception",
+        tenancy_id: tenancyId,
+        tenant_id: tenantId,
+        run_correlation_id: runCorrelationId,
+      },
     });
     return Response.json({ ok: false, error: msg }, { status: 500 });
   }

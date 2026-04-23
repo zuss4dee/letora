@@ -177,7 +177,8 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
                         Related emails
                       </CardTitle>
                       <p className="font-[family-name:var(--font-inter)] text-sm font-normal text-muted-foreground">
-                        Tenant acknowledgement and landlord summary (via maintenance agent).
+                        Tenant acknowledgement, landlord summary, and contractor dispatch emails after you approve them
+                        in Approvals.
                       </p>
                     </CardHeader>
                     <CardContent className="pt-0">

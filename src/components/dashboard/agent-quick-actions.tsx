@@ -57,7 +57,7 @@ export function AgentQuickActions() {
         <QuickChip
           icon={<Mail className="size-3.5" aria-hidden />}
           label="Rent Chaser"
-          description="Draft overdue rent chase emails"
+          description="Draft chases — sends only after your approval"
           onClick={() => void runRentChaser()}
           busy={isRentRunning}
         />

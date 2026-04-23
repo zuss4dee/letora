@@ -128,6 +128,8 @@ export async function runLeadQualifierAgent(
       reasoning: analysis.reasoning,
     };
 
+    // Deprecation: prefer `agent_runs` (and a shared `recordAgentOutcome`) for new specialist
+    // persistence; `agent_actions` is legacy until reads are migrated. See control-plane blueprint.
     const { data: action, error: insertError } = await supabase
       .from("agent_actions")
       .insert({

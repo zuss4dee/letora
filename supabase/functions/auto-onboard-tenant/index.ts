@@ -63,6 +63,16 @@ Deno.serve(async (req: Request) => {
   });
 
   const text = await res.text();
+  console.log(
+    JSON.stringify({
+      event: "auto_onboard_edge_forward",
+      tenancy_id: body.tenancy_id ?? null,
+      tenant_id: body.tenant_id ?? null,
+      landlord_id: body.landlord_id ?? null,
+      status: res.status,
+      body_preview: text.slice(0, 240),
+    }),
+  );
   return new Response(text, {
     status: res.status,
     headers: {

@@ -27,6 +27,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "tenancyId is required" }, { status: 400 });
   }
 
+  // Traceability: pass `{ runCorrelationId: crypto.randomUUID() }` as the 4th argument to
+  // `runTenantOnboardingAgent` when correlating manual runs with auto-onboard (optional follow-up).
   const result = await runTenantOnboardingAgent(tenancyId, user.id);
 
   await logAgentActivity(supabase, {

@@ -7,11 +7,17 @@ import { Loader2, Send } from "lucide-react";
 
 import { AgentQuickActions } from "@/components/dashboard/agent-quick-actions";
 import { AssistantConversationList } from "@/components/dashboard/assistant-conversation-list";
+import {
+  PendingApprovalsInbox,
+  type PendingApprovalInboxItem,
+} from "@/components/dashboard/pending-approvals-inbox";
 import { WorkspaceSetupReminder } from "@/components/dashboard/workspace-setup-reminder";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { AssistantConversationListItem } from "@/lib/assistant-messages/store";
 import type { WorkspaceSetupPendingItem } from "@/lib/onboarding/workspace-setup";
+import type { ApprovalQueueStats } from "@/lib/approvals/queue-stats";
+import { MvpOperationsStrip, type MvpOperationsSnapshot } from "@/components/dashboard/mvp-operations-strip";
 import { cn } from "@/lib/utils";
 
 export function AssistantLanding({
@@ -21,6 +27,10 @@ export function AssistantLanding({
   totalProperties,
   activeTenancies,
   workspaceSetupChecklist = [],
+  pendingApprovalsPreview = [],
+  pendingApprovalsTotal = 0,
+  pendingApprovalsQueueStats = null,
+  mvpOperationsSnapshot = null,
 }: {
   greetingName: string;
   className?: string;
@@ -30,6 +40,11 @@ export function AssistantLanding({
   activeTenancies?: number;
   /** Bottom-of-page setup to-do — incomplete tasks only; each disappears as it’s completed. */
   workspaceSetupChecklist?: WorkspaceSetupPendingItem[];
+  /** Command-centre queue: latest pending agent approvals (home only). */
+  pendingApprovalsPreview?: PendingApprovalInboxItem[];
+  pendingApprovalsTotal?: number;
+  pendingApprovalsQueueStats?: ApprovalQueueStats | null;
+  mvpOperationsSnapshot?: MvpOperationsSnapshot | null;
 }) {
   const router = useRouter();
   const [text, setText] = useState("");
@@ -73,6 +88,12 @@ export function AssistantLanding({
       <p className="font-headline text-[0.65rem] font-medium uppercase tracking-[0.28em] text-muted-foreground">
         {greetingName}
       </p>
+      {mvpOperationsSnapshot ? (
+        <MvpOperationsStrip
+          snapshot={mvpOperationsSnapshot}
+          className={typeof totalProperties === "number" && typeof activeTenancies === "number" ? "mt-5 md:mt-6" : "mt-4 md:mt-5"}
+        />
+      ) : null}
       {typeof totalProperties === "number" && typeof activeTenancies === "number" ? (
         <div
           className="mt-4 border-b border-border/60 pb-4 md:mt-6 md:pb-6"
@@ -101,13 +122,25 @@ export function AssistantLanding({
           </div>
         </div>
       ) : null}
+
+      <PendingApprovalsInbox
+        total={pendingApprovalsTotal}
+        items={pendingApprovalsPreview}
+        queueStats={pendingApprovalsQueueStats ?? undefined}
+        className={
+          typeof totalProperties === "number" && typeof activeTenancies === "number"
+            ? "mt-5 md:mt-6"
+            : "mt-4 md:mt-5"
+        }
+      />
+
       <h1
         className={cn(
           "font-headline text-xl font-extralight leading-[1.15] tracking-[-0.03em] text-foreground sm:text-2xl md:text-3xl",
           typeof totalProperties === "number" && typeof activeTenancies === "number" ? "mt-5 md:mt-8" : "mt-4 md:mt-6",
         )}
       >
-        What needs attention?
+        What needs your review?
       </h1>
 
       <form onSubmit={handleSubmit} className="mt-6 w-full md:mt-10" data-mercury-tour="assistant-input">

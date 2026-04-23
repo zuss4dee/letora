@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
+  BadgeCheck,
   Building2,
   ChevronDown,
   CircleDollarSign,
@@ -36,7 +37,14 @@ import {
 } from "@/components/ui/sidebar";
 import { createClient } from "@/lib/supabase/client";
 
-type NavItem = { title: string; url: string; icon: React.ElementType };
+type NavItem = {
+  title: string;
+  url: string;
+  icon: React.ElementType;
+  badgeCount?: number;
+  /** Optional context for the count badge (e.g. aging queue). */
+  badgeTitle?: string;
+};
 
 const mainItems: NavItem[] = [
   { title: "Home", url: "/dashboard", icon: Home },
@@ -44,7 +52,7 @@ const mainItems: NavItem[] = [
   { title: "Tenants", url: "/dashboard/tenants", icon: Users },
 ];
 
-const workflowItems: NavItem[] = [
+const workflowItemsBase: NavItem[] = [
   { title: "Tenancies", url: "/dashboard/tenancies", icon: Key },
   { title: "Compliance", url: "/dashboard/compliance", icon: ClipboardCheck },
   { title: "Contracts", url: "/dashboard/contracts", icon: FileText },
@@ -130,7 +138,16 @@ function NavSection({
                 )}
               >
                 <Icon className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
-                <span className="min-w-0 flex-1">{item.title}</span>
+                <span className="min-w-0 flex-1 truncate">{item.title}</span>
+                {item.badgeCount != null && item.badgeCount > 0 ? (
+                  <span
+                    className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/10 px-1 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold tabular-nums text-amber-950 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-100"
+                    aria-label={`${item.badgeCount} items pending approval`}
+                    title={item.badgeTitle}
+                  >
+                    {item.badgeCount > 99 ? "99+" : item.badgeCount}
+                  </span>
+                ) : null}
                 {showDot && attention ? (
                   <span
                     className="size-1.5 shrink-0 rounded-full bg-red-500"
@@ -180,6 +197,8 @@ export function AppSidebar({
   subscriptionStatus = null,
   subscriptionPeriodEnd = null,
   subscriptionTrialEnd = null,
+  pendingApprovalsCount = 0,
+  pendingApprovalsBadgeTitle = null,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   userEmail?: string | null;
@@ -191,10 +210,53 @@ export function AppSidebar({
   subscriptionStatus?: string | null;
   subscriptionPeriodEnd?: string | null;
   subscriptionTrialEnd?: string | null;
+  /** Pending agent approvals — subtle count badge on Approvals (Workflow). */
+  pendingApprovalsCount?: number;
+  /** Shown as native tooltip on the approvals badge when the queue has aging items. */
+  pendingApprovalsBadgeTitle?: string | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
+  const [livePendingApprovalCount, setLivePendingApprovalCount] = React.useState(pendingApprovalsCount);
+
+  React.useEffect(() => {
+    setLivePendingApprovalCount(pendingApprovalsCount);
+  }, [pendingApprovalsCount]);
+
+  const refreshPendingApprovalCount = React.useCallback(async () => {
+    const supabase = createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user?.id) return;
+
+    const { count, error } = await supabase
+      .from("agent_approvals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("status", "pending");
+
+    if (error) {
+      console.warn("[AppSidebar] pending approvals count", error.message);
+      return;
+    }
+
+    setLivePendingApprovalCount(count ?? 0);
+  }, []);
+
+  React.useEffect(() => {
+    void refreshPendingApprovalCount();
+  }, [pathname, refreshPendingApprovalCount]);
+
+  React.useEffect(() => {
+    function onVisibility() {
+      if (document.visibilityState === "visible") void refreshPendingApprovalCount();
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [refreshPendingApprovalCount]);
+
   const closeMobileNav = React.useCallback(() => {
     if (isMobile) setOpenMobile(false);
   }, [isMobile, setOpenMobile]);
@@ -235,6 +297,17 @@ export function AppSidebar({
   };
   const planStatusLine = getSidebarPlanStatusCompact(subFields);
   const presence = planPresenceStyles(subscriptionStatus);
+
+  const workflowItems: NavItem[] = [
+    ...workflowItemsBase,
+    {
+      title: "Approvals",
+      url: "/dashboard/approvals",
+      icon: BadgeCheck,
+      badgeCount: livePendingApprovalCount > 0 ? livePendingApprovalCount : undefined,
+      badgeTitle: pendingApprovalsBadgeTitle ?? undefined,
+    },
+  ];
 
   return (
     <Sidebar

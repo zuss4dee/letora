@@ -16,6 +16,8 @@ import {
   pendingWorkspaceSetupItems,
   workspaceSetupChecklistHasIncomplete,
 } from "@/lib/onboarding/workspace-setup";
+import { getPendingAgentApprovals } from "@/lib/actions/agent-approvals";
+import { computeApprovalQueueStats } from "@/lib/approvals/queue-stats";
 import { getUserSettings } from "@/lib/actions/user-settings";
 import { createClient } from "@/lib/supabase/server";
 
@@ -104,6 +106,54 @@ export default async function DashboardPage({
 
     const setupChecklistToShow = showSetupReminder ? pendingWorkspaceSetupItems(setupChecklist) : [];
 
+    const pendingApprovals = user?.id ? await getPendingAgentApprovals() : [];
+    const pendingApprovalsQueueStats = computeApprovalQueueStats(pendingApprovals);
+
+    let onboardingRuns7d = 0;
+    let approvalsCompleted7d = 0;
+    if (user?.id) {
+      const weekAgoIso = new Date(Date.now() - 7 * 86400000).toISOString();
+      const [runsRes, completedRes] = await Promise.all([
+        supabase
+          .from("agent_runs")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("agent_type", "tenant_onboarding")
+          .gte("created_at", weekAgoIso),
+        supabase
+          .from("agent_approvals")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", user.id)
+          .eq("status", "executed")
+          .gte("executed_at", weekAgoIso),
+      ]);
+      onboardingRuns7d = runsRes.count ?? 0;
+      approvalsCompleted7d = completedRes.count ?? 0;
+    }
+
+    const maintenanceDispatchPendingCount =
+      pendingApprovalsQueueStats.byActionType.approve_maintenance_dispatch ?? 0;
+
+    const mvpOperationsSnapshot =
+      user?.id != null
+        ? {
+            onboardingRuns7d,
+            pendingApprovalCount: pendingApprovals.length,
+            maintenanceDispatchPendingCount,
+            approvalsCompleted7d,
+          }
+        : null;
+
+    const pendingApprovalsPreview = pendingApprovals.slice(0, 3).map((a) => ({
+      id: a.id,
+      title: a.title,
+      summary: a.summary,
+      action_type: a.action_type,
+      created_at: a.created_at,
+      target_type: a.target_type,
+      target_id: a.target_id,
+    }));
+
     return (
       <div className="relative flex min-h-0 flex-1 flex-col bg-background">
         <div className="mx-auto w-full max-w-7xl flex-1 px-6 pb-20 pt-6 md:px-16 md:pt-10">
@@ -114,6 +164,10 @@ export default async function DashboardPage({
               totalProperties={homeMetrics.totalProperties}
               activeTenancies={homeMetrics.activeTenancies}
               workspaceSetupChecklist={setupChecklistToShow}
+              pendingApprovalsTotal={pendingApprovals.length}
+              pendingApprovalsPreview={pendingApprovalsPreview}
+              pendingApprovalsQueueStats={pendingApprovalsQueueStats}
+              mvpOperationsSnapshot={mvpOperationsSnapshot}
             />
           </div>
         </div>

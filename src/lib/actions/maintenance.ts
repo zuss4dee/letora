@@ -320,6 +320,10 @@ export async function resolveMaintenanceRequest(requestId: string): Promise<void
   revalidatePath(`/dashboard/maintenance/${requestId}`);
 }
 
+/**
+ * Records contractor name and email on the request (workspace / bookkeeping only).
+ * Does **not** send email. Outbound contractor email is approval-gated under Approvals (assistant dispatch with contractor email).
+ */
 export async function assignContractor(
   requestId: string,
   data: { contractorName: string; contractorEmail: string },
@@ -387,10 +391,31 @@ export async function assignContractor(
   revalidatePath(`/dashboard/maintenance/${requestId}`);
 }
 
-/** Form action: `action={assignContractorForm.bind(null, requestId)}` — wraps {@link assignContractor} for use with `useFormStatus`. */
-export async function assignContractorForm(requestId: string, formData: FormData): Promise<void> {
-  await assignContractor(requestId, {
-    contractorName: String(formData.get("contractorName") ?? ""),
-    contractorEmail: String(formData.get("contractorEmail") ?? ""),
-  });
+export type AssignContractorFormState =
+  | { ok: true; message: string }
+  | { ok: false; error: string }
+  | null;
+
+/** Server action for {@link AssignContractorForm} — returns state for toasts; includes hidden `_requestId`. */
+export async function assignContractorFormState(
+  _prev: AssignContractorFormState,
+  formData: FormData,
+): Promise<AssignContractorFormState> {
+  const requestId = String(formData.get("_requestId") ?? "").trim();
+  if (!requestId) {
+    return { ok: false, error: "Missing request reference." };
+  }
+  try {
+    await assignContractor(requestId, {
+      contractorName: String(formData.get("contractorName") ?? ""),
+      contractorEmail: String(formData.get("contractorEmail") ?? ""),
+    });
+    return {
+      ok: true,
+      message:
+        "Details saved. No email was sent — contractor emails only go out after you approve a dispatch in Approvals.",
+    };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Could not save contractor details" };
+  }
 }

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import Link from "next/link";
+import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
+import { toast } from "sonner";
 
-import { assignContractorForm } from "@/lib/actions/maintenance";
+import { assignContractorFormState } from "@/lib/actions/maintenance";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
@@ -36,6 +38,17 @@ export function AssignContractorForm({
   status: string | null;
 }) {
   const [editing, setEditing] = useState(false);
+  const [state, formAction] = useActionState(assignContractorFormState, null);
+
+  useEffect(() => {
+    if (state?.ok) {
+      toast.success(state.message);
+      setEditing(false);
+    } else if (state && state.ok === false) {
+      toast.error(state.error);
+    }
+  }, [state]);
+
   const s = (status ?? "").toLowerCase();
   const isResolved = s === "resolved";
   const hasContractor = Boolean(contractorName?.trim() || contractorEmail?.trim());
@@ -44,7 +57,15 @@ export function AssignContractorForm({
   return (
     <Card>
       <CardHeader className="border-b">
-        <CardTitle className="text-base">Contractor</CardTitle>
+        <CardTitle className="text-base">Contractor on file</CardTitle>
+        <CardDescription className="font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground">
+          Saves who is handling this job on your workspace only. It does <span className="font-medium text-foreground/90">not</span>{" "}
+          email the contractor. Outbound contractor messages use{" "}
+          <Link href="/dashboard/approvals" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
+            Approvals
+          </Link>{" "}
+          (e.g. dispatch from the assistant with a contractor email).
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 pt-4 text-sm">
         {isResolved ? (
@@ -82,7 +103,8 @@ export function AssignContractorForm({
         ) : null}
 
         {showForm ? (
-          <form action={assignContractorForm.bind(null, requestId)} className="space-y-4">
+          <form action={formAction} className="space-y-4">
+            <input type="hidden" name="_requestId" value={requestId} />
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="contractor-name">Contractor name</Label>
@@ -122,7 +144,7 @@ export function AssignContractorForm({
                   Cancel
                 </Button>
               ) : null}
-              <SubmitButton label="Assign contractor" pendingLabel="Assigning…" />
+              <SubmitButton label="Save contractor details" pendingLabel="Saving…" />
             </div>
           </form>
         ) : null}

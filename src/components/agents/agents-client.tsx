@@ -5,8 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { saveContractDraft, saveRentChaserDraft } from "@/lib/actions/agents";
-import { sendEmailDraft } from "@/lib/actions/email-drafts";
+import { saveContractDraft } from "@/lib/actions/agents";
 import { updateLeadQualifiedStatus } from "@/lib/actions/leads";
 
 import { Badge } from "@/components/ui/badge";
@@ -45,8 +44,7 @@ type RentDraft = {
   daysOverdue?: number;
   emailSubject?: string;
   emailBody?: string;
-  draftId?: string;
-  sent?: boolean;
+  emailSent?: boolean;
 };
 
 type LeadQualifierResult = {
@@ -135,7 +133,6 @@ export function AgentsClient() {
   const [rentDrafts, setRentDrafts] = useState<RentDraft[]>([]);
   const [copiedRentIndex, setCopiedRentIndex] = useState<number | null>(null);
   const [copiedSubjectIndex, setCopiedSubjectIndex] = useState<number | null>(null);
-  const [sendingRentIndex, setSendingRentIndex] = useState<number | null>(null);
 
   const [isLeadRunning, setIsLeadRunning] = useState(false);
   const [showLeadDialog, setShowLeadDialog] = useState(false);
@@ -187,23 +184,9 @@ export function AgentsClient() {
         return;
       }
 
-      const savedDrafts = await Promise.all(
-        nextDrafts.map(async (d) => {
-          try {
-            const { draftId } = await saveRentChaserDraft({
-              tenantEmail: d.tenantEmail ?? "",
-              tenantName: d.tenantName ?? "",
-              subject: d.emailSubject ?? "",
-              body: d.emailBody ?? "",
-            });
-            return { ...d, draftId };
-          } catch {
-            return d;
-          }
-        }),
-      );
-      setRentDrafts(savedDrafts);
+      setRentDrafts(nextDrafts);
       setShowRentDialog(true);
+      toast.success("Review chases below, then approve in Approvals to send.");
     } catch {
       toast.error("Something went wrong");
     } finally {
@@ -293,20 +276,6 @@ export function AgentsClient() {
     await navigator.clipboard.writeText(contractResult.contractText);
     setCopiedContract(true);
     setTimeout(() => setCopiedContract(false), 1200);
-  }
-
-  async function onSendRentDraft(draftId: string, index: number) {
-    setSendingRentIndex(index);
-    try {
-      await sendEmailDraft(draftId);
-      setRentDrafts((prev) =>
-        prev.map((d, i) => (i === index ? { ...d, sent: true } : d)),
-      );
-    } catch {
-      toast.error("Failed to send");
-    } finally {
-      setSendingRentIndex(null);
-    }
   }
 
   async function onApplyLead(row: LeadQualifierResult) {
@@ -472,8 +441,11 @@ export function AgentsClient() {
       <Dialog open={showRentDialog} onOpenChange={setShowRentDialog}>
         <DialogContent className="h-[90vh] max-w-[95vw] overflow-auto sm:max-w-[95vw]">
           <DialogHeader>
-            <DialogTitle>Rent Chaser Draft Emails</DialogTitle>
-            <DialogDescription>Review generated drafts before sending.</DialogDescription>
+            <DialogTitle>Rent chaser — review</DialogTitle>
+            <DialogDescription>
+              Proposed emails stay in <strong className="font-medium text-foreground">Approvals</strong> until you
+              approve; sending runs only from there so logs stay consistent.
+            </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4">
             {rentDrafts.map((draft, index) => (
@@ -514,39 +486,33 @@ export function AgentsClient() {
                       {draft.emailBody ?? "No email body generated."}
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => void onCopyRentBody(draft.emailBody ?? "", index)}
-                    >
-                      {copiedRentIndex === index ? "Copied!" : "Copy body"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="default"
-                      disabled={
-                        !draft.draftId || draft.sent === true || sendingRentIndex === index
-                      }
-                      onClick={() => void onSendRentDraft(draft.draftId!, index)}
-                      className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-                    >
-                      {sendingRentIndex === index ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Sending…
-                        </>
-                      ) : draft.sent ? (
-                        "Sent ✓"
-                      ) : (
-                        "Send email"
-                      )}
-                    </Button>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => void onCopyRentBody(draft.emailBody ?? "", index)}
+                      >
+                        {copiedRentIndex === index ? "Copied!" : "Copy body"}
+                      </Button>
+                    </div>
+                    <p className="font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
+                      {draft.emailSent
+                        ? "This chase email was already sent."
+                        : draft.tenantEmail?.trim()
+                          ? "Pending approval — open Approvals to approve or deny; the email sends only after approval."
+                          : "No tenant email on file for this chase."}
+                    </p>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" asChild>
+              <Link href="/dashboard/approvals">Open Approvals</Link>
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

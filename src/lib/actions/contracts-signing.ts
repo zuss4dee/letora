@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { userFacingError } from "@/lib/user-facing-errors";
+import { enqueueMoveInEmailApproval } from "@/lib/onboarding/move-in-email-approval";
 
 export async function confirmMoveIn(
   contractId: string,
@@ -47,13 +48,23 @@ export async function confirmMoveIn(
       .update({ onboarding_status: "active", status: "active" })
       .eq("id", tenancyId);
 
-    const { sendMoveInInstructionsEmail } = await import("@/lib/onboarding/send-move-in-email");
-    await sendMoveInInstructionsEmail(supabase, tenancyId, user.id);
+    const moveInApproval = await enqueueMoveInEmailApproval(supabase, tenancyId, user.id, { agentRunId: null });
+    if (!moveInApproval.ok) {
+      return {
+        ok: false,
+        error: userFacingError(
+          moveInApproval.error,
+          "Move-in was confirmed but we could not queue the move-in email for approval. Try again from Approvals or contact support.",
+        ),
+      };
+    }
   }
 
   revalidatePath(`/dashboard/contracts/${contractId}`);
   revalidatePath("/dashboard/contracts");
   revalidatePath("/dashboard/tenancies");
+  revalidatePath("/dashboard/approvals");
+  revalidatePath("/dashboard");
   return { ok: true };
 }
 

@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
+import { runTenantOnboardingAgent } from "@/lib/agents/tenant-onboarding";
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
+import { createServiceRoleClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import {
   addTenancySchema,
@@ -196,6 +198,27 @@ export async function addTenancy(formData: unknown) {
       ok: false as const,
       error: userFacingError(error.message, "We couldn't complete that action. Please try again."),
     };
+
+  /**
+   * Same onboarding entry as the DB trigger → Edge → internal route, but invoked inline so a tenancy
+   * still enrolls when pg_net / Edge / env is slow or misconfigured. If the trigger path already
+   * completed, `runTenantOnboardingAgent` returns the resume path (no duplicate work).
+   */
+  try {
+    const runCorrelationId = crypto.randomUUID();
+    const admin = createServiceRoleClient();
+    const onboard = await runTenantOnboardingAgent(tenancyId, user.id, admin, { runCorrelationId });
+    if (!onboard.success) {
+      console.error(
+        `[addTenancy] auto-onboarding failed tenancyId=${tenancyId} message=${onboard.message ?? "unknown"}`,
+      );
+    }
+  } catch (err) {
+    console.error(
+      `[addTenancy] auto-onboarding exception tenancyId=${tenancyId}`,
+      err instanceof Error ? err.message : String(err),
+    );
+  }
 
   revalidatePath("/dashboard/tenancies");
   revalidatePath("/dashboard/rent-tracker");

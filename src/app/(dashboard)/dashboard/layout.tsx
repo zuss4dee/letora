@@ -15,6 +15,8 @@ import { getMaintenanceSafetySidebarAttention } from "@/lib/actions/safety-alert
 import { getOnboardingStatusForGate, getUserSettings } from "@/lib/actions/user-settings";
 import { isOnboardingMarkedComplete } from "@/lib/onboarding/status";
 import { getAgentRuns } from "@/lib/actions/agents";
+import { getPendingAgentApprovals } from "@/lib/actions/agent-approvals";
+import { computeApprovalQueueStats } from "@/lib/approvals/queue-stats";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function DashboardShellLayout({ children }: { children: ReactNode }) {
@@ -26,6 +28,12 @@ export default async function DashboardShellLayout({ children }: { children: Rea
   const userId = user?.id ?? null;
 
   const initialAgentRuns = userId ? await getAgentRuns() : [];
+  const pendingApprovals = userId ? await getPendingAgentApprovals() : [];
+  const pendingApprovalQueueStats = computeApprovalQueueStats(pendingApprovals);
+  const pendingApprovalsBadgeTitle =
+    pendingApprovalQueueStats.stalePendingCount > 0
+      ? `${pendingApprovalQueueStats.stalePendingCount} pending over 48 hours — review when you can`
+      : null;
 
   let complianceAttention = false;
   let maintenanceAttention = false;
@@ -67,6 +75,8 @@ export default async function DashboardShellLayout({ children }: { children: Rea
             subscriptionStatus={settings?.subscriptionStatus ?? null}
             subscriptionPeriodEnd={settings?.subscriptionPeriodEnd ?? null}
             subscriptionTrialEnd={settings?.subscriptionTrialEnd ?? null}
+            pendingApprovalsCount={pendingApprovals.length}
+            pendingApprovalsBadgeTitle={pendingApprovalsBadgeTitle}
           />
           <SidebarInset className="bg-background">
             {userId ? <ReferencingInboundRealtimeListener userId={userId} /> : null}

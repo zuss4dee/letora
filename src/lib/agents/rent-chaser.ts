@@ -1,10 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { createAgentApproval } from "@/lib/actions/agent-approvals";
 import { recordAgentRunStep } from "@/lib/agents/audit";
 import { loadAgentContext } from "@/lib/agents/context-loader";
 import { assertStepBudget } from "@/lib/agents/ota-loop";
-import { sendEmailTool } from "@/lib/tools/send-email";
+import type { CreateAgentApprovalContract, SendRentChaseEmailEvidence } from "@/lib/approvals/types";
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 
@@ -309,27 +310,72 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
     });
 
     let emailSent = false;
+    let approvalId: string | null = null;
+
     if (tenantEmail.trim()) {
-      const sendResult = await sendEmailTool(supabase, resolvedUserId, inserted.id, {
-        to: tenantEmail,
-        toName: tenantName,
-        subject: draft.subject,
-        body: draft.body,
-        agentType: "rent_chaser",
-      });
-      emailSent = sendResult.sent;
+      const dueDateLabel = row.due_date ?? "—";
+      const evidence: SendRentChaseEmailEvidence = {
+        tenantName,
+        tenantId: row.tenant_id,
+        propertyId: row.property_id,
+        propertyAddress,
+        amountOwed,
+        daysOverdue,
+        dueDate: row.due_date,
+        emailSubject: draft.subject,
+        bodyPreview: draft.body.length > 280 ? `${draft.body.slice(0, 277)}…` : draft.body,
+      };
+
+      const approval = await createAgentApproval(
+        {
+          agentRunId: inserted.id,
+          agentType: "rent_chaser",
+          title: `Approve rent chase — ${tenantName}`,
+          summary: `£${amountOwed.toFixed(2)} owed · ${daysOverdue}d overdue · due ${dueDateLabel}`,
+          actionType: "send_rent_chase_email",
+          targetType: "rent_payment",
+          targetId: row.id,
+          payload: {
+            userId: resolvedUserId,
+            rentPaymentId: row.id,
+            tenantId: row.tenant_id,
+            propertyId: row.property_id,
+            tenantEmail,
+            tenantName,
+            emailSubject: draft.subject,
+            emailBody: draft.body,
+            amountOwed,
+            daysOverdue,
+            dueDate: row.due_date,
+          },
+          evidence,
+        } satisfies CreateAgentApprovalContract,
+        { supabase, userId: resolvedUserId },
+      );
+
+      if (!approval.ok) {
+        await supabase
+          .from("agent_runs")
+          .update({
+            status: "failed",
+            payload: { ...payload, source: sourceTag, approvalError: approval.error },
+          })
+          .eq("id", inserted.id)
+          .eq("user_id", resolvedUserId);
+        continue;
+      }
+
+      approvalId = approval.id;
+
       await recordAgentRunStep(supabase, {
         userId: resolvedUserId,
         agentRunId: inserted.id,
         stepIndex: nextStep(),
         stepType: "act",
-        toolName: "send_email_tool",
+        toolName: "request_rent_chase_approval",
         detail: {
-          to: tenantEmail,
-          emailLogId: sendResult.emailLogId,
-          sent: sendResult.sent,
-          message: sendResult.message,
-          error: sendResult.error,
+          rentPaymentId: row.id,
+          approvalId,
         },
       });
     } else {
@@ -351,12 +397,16 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
         .eq("user_id", resolvedUserId);
     }
 
+    const awaitingApproval = Boolean(tenantEmail.trim() && approvalId);
     await supabase
       .from("agent_runs")
       .update({
-        status: "completed",
+        status: awaitingApproval ? "pending" : "completed",
         payload: {
           ...payload,
+          source: sourceTag,
+          approvalId,
+          approvalRequiredForRentChase: tenantEmail.trim() ? true : false,
           emailSent,
         },
       })

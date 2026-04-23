@@ -1,6 +1,17 @@
 "use client";
 
-import { Loader2, Menu, MessageSquarePlus, Send } from "lucide-react";
+import {
+  ArrowUpRight,
+  ClipboardCheck,
+  FileCheck2,
+  Home,
+  Loader2,
+  Menu,
+  MessageSquarePlus,
+  Send,
+  ShieldCheck,
+  Wrench,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -174,23 +185,45 @@ function SuggestedActionChips({
   onMessagePick: (text: string) => void;
 }) {
   const router = useRouter();
+  const actionable = actions.filter((a) =>
+    a.kind === "link"
+      ? isValidDashboardDeepLink(a.href ?? "")
+      : Boolean(a.message && a.message.trim().length > 0),
+  );
+  const prioritized = actionable.slice(0, 2);
+  if (prioritized.length === 0) return null;
+
   return (
-    <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Suggested actions">
-      {actions.map((a) => (
+    <div className="mt-4 space-y-1.5 border-t border-border/50 pt-3" role="group" aria-label="Suggested actions">
+      {prioritized.map((a, idx) => {
+        const visual = inferActionVisual(a.label, a.kind === "link" ? a.href : undefined);
+        return (
         <Button
           key={a.id}
           type="button"
           size="sm"
           variant="secondary"
-          className="h-auto min-h-8 max-w-full whitespace-normal rounded-full border border-border bg-muted text-left text-xs font-headline font-normal text-foreground hover:bg-accent"
+          className={cn(
+            "h-auto min-h-11 w-full justify-between rounded-lg px-3 py-2 text-left font-headline text-xs font-medium transition-colors",
+            idx === 0
+              ? "border border-secondary/35 bg-secondary/10 text-foreground hover:bg-secondary/15"
+              : "border border-border bg-background/70 text-foreground hover:bg-accent/60",
+          )}
           onClick={() => {
             if (a.kind === "link" && a.href) router.push(a.href);
             else if (a.kind === "message" && a.message) onMessagePick(a.message);
           }}
         >
-          {a.label}
+          <span className="flex min-w-0 items-center gap-2">
+            <ActionTypeIcon kind={visual.kind} />
+            <span className="line-clamp-2">{visual.label}</span>
+          </span>
+          <span className={cn("ml-3", idx === 0 ? "text-secondary" : "text-muted-foreground")} aria-hidden>
+            →
+          </span>
         </Button>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -199,6 +232,18 @@ interface ActionTag {
   label: string;
   href: string;
 }
+
+type StatusChipTone = "created" | "reused" | "drafted" | "pending" | "blocked" | "sent";
+type StatusChip = { label: string; tone: StatusChipTone };
+type StructuredSection = { title: string; lines: string[] };
+type ActionVisualKind =
+  | "approvals"
+  | "onboarding"
+  | "tenancy"
+  | "maintenance"
+  | "compliance"
+  | "generic";
+type ActionVisual = { kind: ActionVisualKind; label: string };
 
 const NAVIGATE_ACTION_TAG = /<action\b[\s\S]*?type\s*=\s*["']navigate["'][\s\S]*?\/>/gi;
 
@@ -211,6 +256,140 @@ function isValidDashboardDeepLink(href: string): boolean {
   if (!h.startsWith("/dashboard")) return false;
   if (/^\/dashboard\/?$/i.test(h)) return false;
   return true;
+}
+
+function normalizeActionLabel(label: string): string {
+  const t = label.trim();
+  return t.length > 0 ? t : "Open";
+}
+
+function inferActionVisual(label: string, href?: string): ActionVisual {
+  const normalizedLabel = normalizeActionLabel(label);
+  const l = normalizedLabel.toLowerCase();
+  const target = `${l} ${(href ?? "").toLowerCase()}`;
+  if (/\bapproval/.test(target)) return { kind: "approvals", label: normalizedLabel };
+  if (/\bonboard/.test(target)) return { kind: "onboarding", label: normalizedLabel };
+  if (/\btenanc/.test(target)) return { kind: "tenancy", label: normalizedLabel };
+  if (/\bmainten/.test(target) || /\brepair/.test(target)) {
+    return { kind: "maintenance", label: normalizedLabel };
+  }
+  if (/\bcompliance/.test(target) || /\breferenc/.test(target)) {
+    return { kind: "compliance", label: normalizedLabel };
+  }
+  return { kind: "generic", label: normalizedLabel };
+}
+
+function ActionTypeIcon({ kind }: { kind: ActionVisualKind }) {
+  const className = "size-3.5 shrink-0 text-muted-foreground";
+  if (kind === "approvals") return <ClipboardCheck className={className} aria-hidden />;
+  if (kind === "onboarding") return <Home className={className} aria-hidden />;
+  if (kind === "tenancy") return <FileCheck2 className={className} aria-hidden />;
+  if (kind === "maintenance") return <Wrench className={className} aria-hidden />;
+  if (kind === "compliance") return <ShieldCheck className={className} aria-hidden />;
+  return <ArrowUpRight className={className} aria-hidden />;
+}
+
+function extractStatusChips(text: string): StatusChip[] {
+  const normalized = text.toLowerCase();
+  const out: StatusChip[] = [];
+  if (/\bcreated\b/.test(normalized)) out.push({ label: "Created", tone: "created" });
+  if (/\breused\b/.test(normalized)) out.push({ label: "Reused", tone: "reused" });
+  if (/\bdrafted\b/.test(normalized)) out.push({ label: "Drafted", tone: "drafted" });
+  if (/\bpending approval\b/.test(normalized)) out.push({ label: "Pending approval", tone: "pending" });
+  if (/\bblocked\b/.test(normalized)) out.push({ label: "Blocked", tone: "blocked" });
+  if (/\bsent\b/.test(normalized)) out.push({ label: "Sent", tone: "sent" });
+  return out;
+}
+
+const STRUCTURED_TITLES = [
+  "Top priority",
+  "Why",
+  "Affected items",
+  "Blocker",
+  "Pattern to watch",
+  "Next action",
+  "Current stage",
+  "Completed steps",
+  "Pending tasks",
+] as const;
+
+function parseStructuredSections(text: string): { intro: string; sections: StructuredSection[] } {
+  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+  const sections: StructuredSection[] = [];
+  const intro: string[] = [];
+  let current: StructuredSection | null = null;
+
+  const titleRegex = new RegExp(
+    `^(?:[-•]\\s*)?(?:\\*\\*)?(${STRUCTURED_TITLES.map((t) => t.replace(/\s+/g, "\\s+")).join("|")})(?:\\*\\*)?\\s*[:\\-]?\\s*(.*)$`,
+    "i",
+  );
+
+  for (const line of lines) {
+    const m = titleRegex.exec(line);
+    if (m) {
+      if (current) sections.push(current);
+      current = { title: m[1], lines: [] };
+      const tail = (m[2] ?? "").trim();
+      if (tail) current.lines.push(tail);
+      continue;
+    }
+    if (current) current.lines.push(line);
+    else intro.push(line);
+  }
+
+  if (current) sections.push(current);
+  return { intro: intro.join("\n"), sections };
+}
+
+function StatusChipsRow({ chips }: { chips: StatusChip[] }) {
+  if (chips.length === 0) return null;
+  const toneClass: Record<StatusChipTone, string> = {
+    created: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
+    reused: "border-sky-500/30 bg-sky-500/10 text-sky-200",
+    drafted: "border-indigo-500/30 bg-indigo-500/10 text-indigo-200",
+    pending: "border-amber-500/30 bg-amber-500/10 text-amber-200",
+    blocked: "border-rose-500/30 bg-rose-500/10 text-rose-200",
+    sent: "border-teal-500/30 bg-teal-500/10 text-teal-200",
+  };
+
+  return (
+    <div className="flex flex-wrap gap-1.5 sm:gap-2" aria-label="Assistant status states">
+      {chips.map((c) => (
+        <span
+          key={`${c.tone}-${c.label}`}
+          className={cn(
+            "inline-flex items-center rounded-full border px-2.5 py-1 font-headline text-[0.62rem] tracking-[0.08em] uppercase sm:text-[0.65rem]",
+            toneClass[c.tone],
+          )}
+        >
+          {c.label}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function StructuredSections({ sections }: { sections: StructuredSection[] }) {
+  if (sections.length === 0) return null;
+
+  return (
+    <div className="grid gap-1.5 sm:gap-2">
+      {sections.map((s) => (
+        <div key={s.title} className="rounded-lg border border-border/70 bg-background/60 px-3 py-2">
+          <p className="font-headline text-[0.68rem] uppercase tracking-[0.12em] text-muted-foreground">
+            {s.title}
+          </p>
+          <div className="mt-1 space-y-1">
+            {s.lines.map((line, idx) => (
+              <p key={`${s.title}-${idx}`} className="text-[0.84rem] leading-relaxed text-foreground sm:text-sm">
+                {line}
+              </p>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 function parseActionTags(text: string): { cleanText: string; actions: ActionTag[] } {
@@ -238,21 +417,34 @@ function parseActionTags(text: string): { cleanText: string; actions: ActionTag[
 }
 
 function NavigationButtons({ actions }: { actions: ActionTag[] }) {
-  if (actions.length === 0) return null;
+  const valid = actions.filter((a) => isValidDashboardDeepLink(a.href));
+  const prioritized = valid.slice(0, 2);
+  if (prioritized.length === 0) return null;
   return (
-    <div className="mt-4 flex flex-wrap gap-2">
-      {actions.map((a) => (
+    <div className="mt-4 space-y-1.5 border-t border-border/50 pt-3">
+      {prioritized.map((a, idx) => {
+        const visual = inferActionVisual(a.label, a.href);
+        return (
         <Link
           key={a.href}
           href={a.href}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3.5 py-1.5 font-headline text-xs font-medium text-foreground transition-colors hover:border-secondary/50"
+          className={cn(
+            "inline-flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 font-headline text-xs font-medium transition-colors",
+            idx === 0
+              ? "border border-secondary/35 bg-secondary/10 text-foreground hover:bg-secondary/15"
+              : "border border-border bg-background/70 text-foreground hover:border-secondary/50 hover:bg-accent/60",
+          )}
         >
-          {a.label}
-          <span className="text-secondary" aria-hidden>
+          <span className="flex min-w-0 items-center gap-2">
+            <ActionTypeIcon kind={visual.kind} />
+            <span className="line-clamp-2">{visual.label}</span>
+          </span>
+          <span className={cn(idx === 0 ? "text-secondary" : "text-muted-foreground")} aria-hidden>
             →
           </span>
         </Link>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -293,7 +485,7 @@ function MessageBubble({
   const bubbleText = cn(
     "whitespace-pre-wrap [word-break:normal] break-words [overflow-wrap:anywhere]",
     role === "assistant"
-      ? "text-base font-normal leading-relaxed text-foreground"
+      ? "text-[0.95rem] font-normal leading-relaxed text-foreground sm:text-base"
       : "text-[0.9375rem] font-normal leading-[1.65] text-foreground",
   );
   if (role === "assistant") {
@@ -317,12 +509,16 @@ function MessageBubble({
   const { cleanText, actions: navActions } = role === "assistant"
     ? parseActionTags(content)
     : { cleanText: content, actions: [] as ActionTag[] };
+  const statusChips = role === "assistant" ? extractStatusChips(cleanText) : [];
+  const structured = role === "assistant"
+    ? parseStructuredSections(cleanText)
+    : { intro: cleanText, sections: [] as StructuredSection[] };
 
   return (
     <div className={cn("flex w-full min-w-0", isUser ? "justify-end" : "justify-start")}>
       <div
         className={cn(
-          "min-w-0 rounded-2xl px-3 py-2.5 font-headline shadow-none sm:px-4 sm:py-3",
+          "min-w-0 rounded-2xl px-3 py-2.5 font-headline shadow-none sm:px-3.5 sm:py-2.5",
           compact ? "w-full max-w-full" : "max-w-[min(100%,40rem)]",
           isUser
             ? "border border-secondary/35 bg-secondary/10 text-foreground dark:border-[#BD9952]/22 dark:bg-[#1a1610] dark:text-slate-100"
@@ -330,7 +526,23 @@ function MessageBubble({
           isTransitional && !isUser && "animate-pulse border-secondary/25 opacity-70 dark:border-[#BD9952]/15",
         )}
       >
-        <p className={bubbleText}>{cleanText}</p>
+        {role === "assistant" ? (
+          <div className="space-y-3">
+            <StatusChipsRow chips={statusChips} />
+            {structured.intro ? (
+              <div className={cn((statusChips.length > 0 || structured.sections.length > 0) && "border-t border-border/50 pt-2.5")}>
+                <p className={bubbleText}>{structured.intro}</p>
+              </div>
+            ) : null}
+            {structured.sections.length > 0 ? (
+              <div className={cn((statusChips.length > 0 || structured.intro) && "border-t border-border/50 pt-2.5")}>
+                <StructuredSections sections={structured.sections} />
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <p className={bubbleText}>{cleanText}</p>
+        )}
         {role === "assistant" && suggestedActions && suggestedActions.length > 0 && onPickSuggestedMessage ? (
           <SuggestedActionChips actions={suggestedActions} onMessagePick={onPickSuggestedMessage} />
         ) : null}
@@ -806,7 +1018,7 @@ export function AssistantChat({
                   </p>
                 </div>
               ) : (
-                <div className="mx-auto flex w-full max-w-[40rem] flex-col gap-6">
+                <div className="mx-auto flex w-full max-w-[40rem] flex-col gap-5 sm:gap-5">
                   {messages.map((m, i) => (
                     <MessageBubble
                       key={`${m.role}-${i}-${m.content.slice(0, 24)}`}

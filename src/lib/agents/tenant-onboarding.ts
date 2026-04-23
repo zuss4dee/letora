@@ -4,12 +4,18 @@ import { recordAgentRunStep } from "@/lib/agents/audit";
 import { loadAgentContext } from "@/lib/agents/context-loader";
 import { assertStepBudget } from "@/lib/agents/ota-loop";
 import { createAgentApproval } from "@/lib/actions/agent-approvals";
+import type { CreateAgentApprovalContract, SendOnboardingEmailEvidence } from "@/lib/approvals/types";
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { sendEmailTool } from "@/lib/tools/send-email";
 import { createClient } from "@/lib/supabase/server";
 
 const OTA_MAX = 5;
 const REQUIRE_APPROVAL_FOR_WELCOME_EMAIL = true;
+
+/** Optional traceability for a single onboarding execution (e.g. internal auto-onboard). */
+export type RunTenantOnboardingAgentOptions = {
+  runCorrelationId?: string;
+};
 
 export type TenantOnboardingResult = {
   success: boolean;
@@ -262,12 +268,129 @@ async function buildOnboardingResumeResult(
   };
 }
 
+/**
+ * Build the same welcome email the onboarding agent would send, for any tenancy stage
+ * where the landlord still owns the row (used after dashboard approval).
+ */
+export async function buildWelcomeEmailForTenancy(
+  supabase: SupabaseClient,
+  userId: string,
+  tenancyId: string,
+): Promise<
+  | { ok: false; error: string }
+  | { ok: true; to: string; toName: string; subject: string; body: string; html?: string }
+> {
+  const { data: row, error: fetchError } = await supabase
+    .from("tenancies")
+    .select(
+      `
+      id,
+      property_id,
+      tenant_id,
+      start_date,
+      move_in_date,
+      monthly_rent,
+      deposit_amount,
+      properties!inner ( user_id, address ),
+      tenants ( full_name, email, phone )
+    `,
+    )
+    .eq("id", tenancyId)
+    .maybeSingle();
+
+  if (fetchError || !row) {
+    return { ok: false, error: fetchError?.message ?? "Tenancy not found" };
+  }
+
+  const propRaw = row.properties as unknown;
+  const property = (Array.isArray(propRaw) ? propRaw[0] : propRaw) as {
+    user_id: string;
+    address: string | null;
+  };
+  const tenRaw = row.tenants as unknown;
+  const tenant = (Array.isArray(tenRaw) ? tenRaw[0] : tenRaw) as {
+    full_name: string | null;
+    email: string | null;
+    phone: string | null;
+  } | null;
+
+  if (!property || !tenant) {
+    return { ok: false, error: "Missing property or tenant data" };
+  }
+
+  if (property.user_id !== userId) {
+    return { ok: false, error: "Forbidden" };
+  }
+
+  const startDateIso = row.start_date ?? new Date().toISOString().slice(0, 10);
+  const moveInExplicit = (row as { move_in_date?: string | null }).move_in_date;
+  const moveInDate =
+    (typeof moveInExplicit === "string" && moveInExplicit.trim() !== ""
+      ? moveInExplicit.trim()
+      : null) ?? startDateIso;
+  const propertyAddress =
+    normalizePropertyAddressLabel(property.address?.trim() ?? "") || "the property";
+
+  const { data: settings } = await supabase
+    .from("user_settings")
+    .select("landlord_name, contact_email, contact_phone, business_name")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  const landlordName =
+    settings?.landlord_name?.trim() ||
+    settings?.business_name?.trim() ||
+    "Your landlord";
+  const landlordContact =
+    [settings?.contact_email?.trim(), settings?.contact_phone?.trim()].filter(Boolean).join(" · ") ||
+    "see your welcome pack";
+
+  const tenantName = tenant.full_name?.trim() || "Tenant";
+  const tenantEmail = tenant.email?.trim() || "";
+  if (!tenantEmail) {
+    return { ok: false, error: "Tenant has no email address" };
+  }
+
+  const ctx: TenancyContext = {
+    tenancyId,
+    userId,
+    propertyId: row.property_id as string,
+    tenantId: row.tenant_id as string,
+    moveInDate,
+    tenantEmail,
+    tenantName,
+    propertyAddress,
+    landlordName,
+    landlordContact,
+    monthlyRent:
+      row.monthly_rent == null
+        ? 0
+        : typeof row.monthly_rent === "number"
+          ? row.monthly_rent
+          : Number(row.monthly_rent),
+    depositAmount:
+      row.deposit_amount == null
+        ? null
+        : typeof row.deposit_amount === "number"
+          ? row.deposit_amount
+          : Number(row.deposit_amount),
+  };
+
+  const { subject, body, html } = await buildWelcomeEmail(ctx);
+  return { ok: true, to: tenantEmail, toName: tenantName, subject, body, html };
+}
+
 export async function runTenantOnboardingAgent(
   tenancyId: string,
   userId: string,
   supabaseClient?: SupabaseClient,
+  options?: RunTenantOnboardingAgentOptions,
 ): Promise<TenantOnboardingResult> {
   const supabase = supabaseClient ?? (await createClient());
+  const runCorrelationId =
+    typeof options?.runCorrelationId === "string" && options.runCorrelationId.trim() !== ""
+      ? options.runCorrelationId.trim()
+      : undefined;
 
   let stepCount = 0;
   function nextStep() {
@@ -449,6 +572,7 @@ export async function runTenantOnboardingAgent(
     subject,
     monthlyRent: ctx.monthlyRent,
     depositAmount: ctx.depositAmount,
+    ...(runCorrelationId ? { run_correlation_id: runCorrelationId } : {}),
   };
 
   const { data: insertedRun, error: runError } = await supabase
@@ -483,6 +607,14 @@ export async function runTenantOnboardingAgent(
   let approvalId: string | null = null;
 
   if (REQUIRE_APPROVAL_FOR_WELCOME_EMAIL) {
+    const evidence: SendOnboardingEmailEvidence = {
+      tenantName: ctx.tenantName,
+      tenantEmail: ctx.tenantEmail,
+      propertyAddress: ctx.propertyAddress,
+      subject,
+      ...(runCorrelationId ? { run_correlation_id: runCorrelationId } : {}),
+    };
+
     const approval = await createAgentApproval(
       {
         agentRunId,
@@ -496,13 +628,8 @@ export async function runTenantOnboardingAgent(
           tenancyId,
           userId,
         },
-        evidence: {
-          tenantName: ctx.tenantName,
-          tenantEmail: ctx.tenantEmail,
-          propertyAddress: ctx.propertyAddress,
-          subject,
-        },
-      },
+        evidence,
+      } satisfies CreateAgentApprovalContract,
       { supabase, userId },
     );
     if (!approval.ok) {

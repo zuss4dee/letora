@@ -1,6 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sendEmailTool } from "@/lib/tools/send-email";
 
+export type MoveInTenancyBundle = {
+  tenancyId: string;
+  tenantId: string | null;
+  startDate: string | null;
+  moveInDate: string | null;
+  monthlyRent: number;
+  depositAmount: number | null;
+  property: { address: string | null; city: string | null; postcode: string | null };
+  tenant: { full_name: string | null; email: string | null; phone: string | null };
+};
+
 type MoveInEmailResult = {
   sent: boolean;
   emailLogId: string;
@@ -8,17 +19,17 @@ type MoveInEmailResult = {
   error?: string;
 };
 
-export async function sendMoveInInstructionsEmail(
+export async function loadMoveInTenancyBundle(
   supabase: SupabaseClient,
   tenancyId: string,
   userId: string,
-  agentRunId: string | null = null,
-): Promise<MoveInEmailResult> {
+): Promise<MoveInTenancyBundle | null> {
   const { data: tenancy, error: tenErr } = await supabase
     .from("tenancies")
     .select(
       `
       id,
+      tenant_id,
       start_date,
       move_in_date,
       monthly_rent,
@@ -31,9 +42,7 @@ export async function sendMoveInInstructionsEmail(
     .eq("properties.user_id", userId)
     .maybeSingle();
 
-  if (tenErr || !tenancy) {
-    return { sent: false, emailLogId: "", message: "Tenancy not found", error: "Tenancy not found" };
-  }
+  if (tenErr || !tenancy) return null;
 
   const prop = tenancy.properties as unknown as {
     address: string | null;
@@ -47,15 +56,31 @@ export async function sendMoveInInstructionsEmail(
     | null;
   const tenant = Array.isArray(tenantRaw) ? tenantRaw[0] : tenantRaw;
 
-  if (!tenant?.email) {
-    return { sent: false, emailLogId: "", message: "Tenant has no email", error: "Missing tenant email" };
-  }
+  if (!tenant) return null;
 
+  return {
+    tenancyId: tenancy.id as string,
+    tenantId: (tenancy.tenant_id as string | null) ?? null,
+    startDate: (tenancy.start_date as string | null) ?? null,
+    moveInDate: (tenancy.move_in_date as string | null) ?? null,
+    monthlyRent: Number(tenancy.monthly_rent ?? 0),
+    depositAmount: tenancy.deposit_amount != null ? Number(tenancy.deposit_amount) : null,
+    property: { address: prop.address, city: prop.city, postcode: prop.postcode },
+    tenant: {
+      full_name: tenant.full_name,
+      email: tenant.email,
+      phone: tenant.phone,
+    },
+  };
+}
+
+export function composeMoveInEmailContent(bundle: MoveInTenancyBundle): { subject: string; body: string } {
+  const { property: prop, tenant, moveInDate, startDate, monthlyRent, depositAmount } = bundle;
   const addressLabel = [prop.address, prop.city, prop.postcode].filter(Boolean).join(", ");
-  const moveInDate = tenancy.move_in_date ?? tenancy.start_date;
+  const moveInDateResolved = moveInDate ?? startDate;
 
-  const formattedDate = moveInDate
-    ? new Date(`${moveInDate}T12:00:00.000Z`).toLocaleDateString("en-GB", {
+  const formattedDate = moveInDateResolved
+    ? new Date(`${moveInDateResolved}T12:00:00.000Z`).toLocaleDateString("en-GB", {
         day: "numeric",
         month: "long",
         year: "numeric",
@@ -80,11 +105,11 @@ export async function sendMoveInInstructionsEmail(
     "You'll need to register for council tax with your local authority. This is the tenant's responsibility.",
     "",
     "Rent Payments",
-    `Monthly rent: £${Number(tenancy.monthly_rent).toFixed(2)}`,
+    `Monthly rent: £${Number(monthlyRent).toFixed(2)}`,
     "Rent is due on the same date each month. You'll receive payment reminders and receipts via email.",
     "",
-    tenancy.deposit_amount
-      ? `Deposit: £${Number(tenancy.deposit_amount).toFixed(2)} — Your deposit will be protected in a government-approved scheme and you'll receive the protection certificate separately.`
+    depositAmount != null
+      ? `Deposit: £${Number(depositAmount).toFixed(2)} — Your deposit will be protected in a government-approved scheme and you'll receive the protection certificate separately.`
       : "",
     "",
     "Maintenance",
@@ -97,11 +122,33 @@ export async function sendMoveInInstructionsEmail(
     "",
     "Kind regards,",
     "Letora Property Management",
-  ].filter(Boolean).join("\n");
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  return { subject, body };
+}
+
+export async function sendMoveInInstructionsEmail(
+  supabase: SupabaseClient,
+  tenancyId: string,
+  userId: string,
+  agentRunId: string | null = null,
+): Promise<MoveInEmailResult> {
+  const bundle = await loadMoveInTenancyBundle(supabase, tenancyId, userId);
+  if (!bundle) {
+    return { sent: false, emailLogId: "", message: "Tenancy not found", error: "Tenancy not found" };
+  }
+
+  if (!bundle.tenant.email?.trim()) {
+    return { sent: false, emailLogId: "", message: "Tenant has no email", error: "Missing tenant email" };
+  }
+
+  const { subject, body } = composeMoveInEmailContent(bundle);
 
   const emailResult = await sendEmailTool(supabase, userId, agentRunId, {
-    to: tenant.email,
-    toName: tenant.full_name ?? "",
+    to: bundle.tenant.email,
+    toName: bundle.tenant.full_name ?? "",
     subject,
     body,
     agentType: "onboarding",

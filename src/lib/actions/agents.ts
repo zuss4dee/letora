@@ -12,43 +12,6 @@ export type AgentRun = {
   createdAt: string;
 };
 
-export async function saveRentChaserDraft(draft: {
-  tenantEmail: string;
-  tenantName: string;
-  subject: string;
-  body: string;
-}): Promise<{ draftId: string }> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) throw new Error("Not authenticated");
-
-  if (!draft.tenantEmail.trim()) {
-    throw new Error("Missing tenant email");
-  }
-
-  const { data, error } = await supabase
-    .from("email_logs")
-    .insert({
-      user_id: user.id,
-      agent_type: "rent_chaser",
-      to_email: draft.tenantEmail.trim(),
-      to_name: draft.tenantName.trim() || null,
-      subject: draft.subject.trim() || "(No subject)",
-      body: draft.body.trim() || "",
-      status: "draft",
-    })
-    .select("id")
-    .single();
-
-  if (error || !data?.id) throw new Error(error?.message ?? "Could not save draft");
-
-  revalidatePath("/dashboard");
-  revalidatePath("/dashboard/agents");
-  return { draftId: data.id as string };
-}
-
 export async function saveContractDraft(contractId: string, contractText: string): Promise<void> {
   const supabase = await createClient();
   const {
