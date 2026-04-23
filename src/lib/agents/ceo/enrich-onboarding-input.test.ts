@@ -216,6 +216,7 @@ describe("userRequestsDraftContractInMessage", () => {
 
   it("does not match unrelated draft wording", () => {
     expect(userRequestsDraftContractInMessage("draft an email to the tenant")).toBe(false);
+    expect(userRequestsDraftContractInMessage("draft a rent chase for Sofia Martins")).toBe(false);
   });
 });
 

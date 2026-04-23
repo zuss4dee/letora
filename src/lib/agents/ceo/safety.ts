@@ -72,9 +72,11 @@ export function classifyCEOIntent(latestUserText: string): CEOIntent {
 
   /** Read-first onboarding state checks should not immediately trigger mutating confirmation UX. */
   if (
-    /\b(next\s+onboarding\s+action|what\s+stage\s+is|what\s+is\s+blocking|what'?s\s+blocking|what'?s\s+left|remaining\s+onboarding|continue\s+.*onboarding|resume\s+.*onboarding)\b/.test(
+    /\b(next\s+onboarding\s+action|next\s+onboarding\s+step|what\s+is\s+the\s+next\s+onboarding|what'?s\s+the\s+next\s+onboarding|what\s+stage\s+is|what\s+is\s+blocking|what'?s\s+blocking|what'?s\s+left|remaining\s+onboarding|continue\s+.*onboarding|resume\s+.*onboarding)\b/.test(
       t,
-    )
+    ) ||
+    (/\b(next\s+step|next\s+thing)\s+for\b/.test(t) && /\bonboarding\b/.test(t)) ||
+    (/\bwhat'?s\s+next\b/.test(t) && /\bonboarding\b/.test(t))
   ) {
     return "draft_suggest"
   }

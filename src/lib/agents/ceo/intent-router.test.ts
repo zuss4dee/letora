@@ -115,9 +115,30 @@ describe("routeCEOIntent — tenant list phrasing", () => {
     const r = routeCEOIntent("What is the next onboarding action for Joseph Prince?");
     expect(r.primaryIntent).toBe("onboarding");
     expect(r.wantsOnboardingStateInspection).toBe(true);
-    expect(r.recommendedTools[0]).toBe("resolve_onboarding_navigation");
+    expect(r.wantsRentChaseLane).toBe(false);
+    expect(r.recommendedTools).toEqual(["resolve_onboarding_navigation", "get_contracts", "prepare_referencing"]);
     expect(r.recommendedTools).not.toContain("create_tenant_and_tenancy");
     expect(r.recommendedTools).not.toContain("start_tenant_onboarding");
+    expect(r.recommendedTools).not.toContain("send_move_in_email");
+    expect(r.recommendedTools).not.toContain("chase_rent");
+    expect(r.recommendedTools).not.toContain("draft_contract");
+  });
+
+  it("routes rent chase draft requests to get_rent_status + chase_rent (not contracts)", () => {
+    const r = routeCEOIntent("Draft a rent chase for Sofia Martins");
+    expect(r.wantsRentChaseLane).toBe(true);
+    expect(r.wantsOnboardingStateInspection).toBe(false);
+    expect(r.recommendedTools.slice(0, 2)).toEqual(["get_rent_status", "chase_rent"]);
+    expect(r.recommendedTools).not.toContain("draft_contract");
+    const hint = formatRouterHintForSystem(r);
+    expect(hint).toContain("rent chase");
+    expect(hint).toContain("tenancy agreement");
+  });
+
+  it("does not merge operational brief tools into rent chase lane", () => {
+    const r = routeCEOIntent("Send a rent reminder for unit 2");
+    expect(r.wantsRentChaseLane).toBe(true);
+    expect(r.recommendedTools).not.toContain("get_dashboard_summary");
   });
 
   it("routes 'where is Alexis a tenant' to tenants intent with list_tenants", () => {

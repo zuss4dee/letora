@@ -60,6 +60,10 @@ export type CEOIntentRoute = {
    * Read-only Approvals queue snapshot — use **get_pending_approvals_summary**; no chat confirmation batch.
    */
   wantsApprovalsQueueInspection: boolean
+  /**
+   * Rent chase / late-rent email lane — **get_rent_status** + **chase_rent** only; not tenancy-agreement drafting.
+   */
+  wantsRentChaseLane: boolean
   needsClarification: boolean
   clarificationQuestion: string | null
 }
@@ -339,8 +343,35 @@ function detectContinueOnboardingResume(normalized: string): boolean {
 
 /** Read-first onboarding state checks. */
 function detectOnboardingStateInspection(normalized: string): boolean {
-  return /\b(next\s+onboarding\s+action|next\s+action\s+for|what\s+stage\s+is|what\s+is\s+blocking|what'?s\s+blocking|what'?s\s+left|remaining\s+onboarding|continue\s+.*onboarding|resume\s+.*onboarding)\b/i.test(
-    normalized,
+  return (
+    /\b(next\s+onboarding\s+action|next\s+onboarding\s+step|next\s+action\s+for|what\s+is\s+the\s+next\s+onboarding|what'?s\s+the\s+next\s+onboarding|what\s+stage\s+is|what\s+is\s+blocking|what'?s\s+blocking|what'?s\s+left|remaining\s+onboarding|continue\s+.*onboarding|resume\s+.*onboarding)\b/i.test(
+      normalized,
+    ) ||
+    (/\b(next\s+step|next\s+thing)\s+for\b/i.test(normalized) && /\bonboarding\b/i.test(normalized)) ||
+    (/\bwhat'?s\s+next\b/i.test(normalized) && /\bonboarding\b/i.test(normalized))
+  )
+}
+
+/**
+ * User wants overdue-rent comms drafted or chased — not tenancy-agreement drafting or generic onboarding.
+ */
+function detectRentChaseDraftRequest(normalized: string): boolean {
+  if (
+    /\b(approve|reject)\b/i.test(normalized) &&
+    (/\b(applicant|application|applied)\b/i.test(normalized) || /\b(this|that|the)\s+lead\b/i.test(normalized))
+  ) {
+    return false
+  }
+  if (/\btenancy\s+agreement\b/i.test(normalized) || /\b(ast|e-?sign)\b/i.test(normalized)) {
+    return false
+  }
+  return (
+    /\b(rent\s+chase|chase\s+(?:the\s+)?rent|late[-\s]?rent|rent\s+reminder|arrears|overdue\s+rent|unpaid\s+rent)\b/i.test(
+      normalized,
+    ) ||
+    /\b(draft|prepare|send|write)\b[\s\S]{0,48}\b(rent\s+chase|chase\s+rent|rent\s+reminder|late[-\s]?rent|reminder\s+(?:for\s+)?rent)\b/i.test(
+      normalized,
+    )
   )
 }
 
@@ -408,6 +439,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
       wantsCreateTenantTenancy: false,
       wantsOperationalBrief: false,
       wantsApprovalsQueueInspection: true,
+      wantsRentChaseLane: false,
       needsClarification: false,
       clarificationQuestion: null,
     }
@@ -421,12 +453,17 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
   const wantsOnboardingStateInspection = detectOnboardingStateInspection(normalized)
   const wantsBulkOnboarding = detectBulkOnboardingRequest(normalized, trimmed)
   const wantsCreateTenantTenancy = detectCreateTenantTenancyRequest(normalized)
+  const wantsRentChaseDraft =
+    detectRentChaseDraftRequest(normalized) && !wantsOnboardingStateInspection && !wantsContinueOnboarding
   const scores = scoreMessage(normalized)
   if (wantsBulkOnboarding) {
     scores.onboarding += 3
   }
   if (wantsCreateTenantTenancy) {
     scores.onboarding += 2.7
+  }
+  if (wantsRentChaseDraft) {
+    scores.rent_collection += 4
   }
   const totalScore = Object.values(scores).reduce((a, b) => a + b, 0)
 
@@ -457,6 +494,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
         wantsCreateTenantTenancy: false,
         wantsOperationalBrief,
         wantsApprovalsQueueInspection: false,
+        wantsRentChaseLane: false,
         needsClarification: false,
         clarificationQuestion: null,
       }
@@ -500,6 +538,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
       wantsCreateTenantTenancy,
       wantsOperationalBrief,
       wantsApprovalsQueueInspection: false,
+      wantsRentChaseLane: false,
       needsClarification,
       clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
     }
@@ -585,20 +624,9 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
   }
 
   if (wantsOnboardingStateInspection) {
+    const onboardingReadFirstExtras = recommendedTools.filter((t) => t === "list_tenants")
     recommendedTools = uniqueToolsOrdered(
-      [
-        "resolve_onboarding_navigation",
-        "get_contracts",
-        "prepare_referencing",
-        ...recommendedTools.filter(
-          (t) =>
-            t !== "resolve_onboarding_navigation" &&
-            t !== "get_contracts" &&
-            t !== "prepare_referencing" &&
-            t !== "start_tenant_onboarding" &&
-            t !== "create_tenant_and_tenancy",
-        ),
-      ],
+      ["resolve_onboarding_navigation", "get_contracts", "prepare_referencing", ...onboardingReadFirstExtras],
       6,
     )
   }
@@ -627,7 +655,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     /\b(compliance|epc|gas\s+safety|electric(?:al)?\s+safety|eicr|landlord\s+cert|safety\s+cert|certificate\s+expir|expired\s+cert|expiring\s+cert|legal\s+safety)\b/i.test(
       normalized,
     ) || /\b(gas|electrical|electric)\s+cert(ificate)?s?\b/i.test(normalized)
-  if (wantsCompliancePriority) {
+  if (wantsCompliancePriority && !wantsOnboardingStateInspection && !wantsRentChaseDraft) {
     recommendedTools = uniqueToolsOrdered(
       [
         "get_compliance_summary",
@@ -637,7 +665,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     )
   }
 
-  if (wantsOperationalBrief) {
+  if (wantsOperationalBrief && !wantsRentChaseDraft && !wantsOnboardingStateInspection) {
     recommendedTools = uniqueToolsOrdered(
       [
         "get_dashboard_summary",
@@ -647,6 +675,11 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
       ],
       6,
     )
+  }
+
+  if (wantsRentChaseDraft) {
+    const rentChaseExtras = recommendedTools.filter((t) => t === "list_tenants")
+    recommendedTools = uniqueToolsOrdered(["get_rent_status", "chase_rent", ...rentChaseExtras], 6)
   }
 
   const confidence = Math.min(1, primaryScore / CONFIDENCE_NORMALIZER)
@@ -663,6 +696,8 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     !isAffirmativeShort(trimmed) &&
     !wantsReferencingStatus &&
     !wantsContinueOnboarding &&
+    !wantsOnboardingStateInspection &&
+    !wantsRentChaseDraft &&
     !wantsOperationalBrief
 
   const wantsOnboardingByPlainName =
@@ -684,6 +719,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     wantsCreateTenantTenancy,
     wantsOperationalBrief,
     wantsApprovalsQueueInspection: false,
+    wantsRentChaseLane: wantsRentChaseDraft,
     needsClarification,
     clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
   }
@@ -714,7 +750,8 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
     !route.wantsContinueOnboarding &&
     !route.wantsOnboardingStateInspection &&
     !route.wantsOperationalBrief &&
-    !route.wantsApprovalsQueueInspection
+    !route.wantsApprovalsQueueInspection &&
+    !route.wantsRentChaseLane
   ) {
     return ""
   }
@@ -726,7 +763,8 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
     !route.wantsContinueOnboarding &&
     !route.wantsOnboardingStateInspection &&
     !route.wantsOperationalBrief &&
-    !route.wantsApprovalsQueueInspection
+    !route.wantsApprovalsQueueInspection &&
+    !route.wantsRentChaseLane
   ) {
     return ""
   }
@@ -766,7 +804,13 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
 
   if (route.wantsOnboardingStateInspection) {
     lines.push(
-      "- **Required (onboarding next-step / stage / blocker):** Start read-first. Call **resolve_onboarding_navigation** (plus **get_contracts** and **prepare_referencing** when useful) to inspect current tenancy/onboarding/contract state before any mutation. Return: current stage, completed steps, blocker (if any), and next valid action. Distinguish human gates from automation: if an approval-gated step is next, direct to **/dashboard/approvals**; then state workflow progression continues automatically as statuses/requirements complete. Do **not** imply manual checklist babysitting. Do **not** call **start_tenant_onboarding** or **create_tenant_and_tenancy** unless inspection proves no tenancy/onboarding exists and the user asks you to proceed.",
+      "- **Required (onboarding next-step / stage / blocker):** Start read-first. Call **resolve_onboarding_navigation** (plus **get_contracts** and **prepare_referencing** when useful) to inspect current tenancy/onboarding/contract state before any mutation. Answer **only** from that JSON: **onboarding_status**, **pending_task_names**, **tasks_complete**/**tasks_total**, **referencing_complete** — do **not** invent tasks or stages. Return: current stage, completed steps, blocker (if any), and next valid onboarding action. Do **not** switch to generic Settings/helpdesk guidance unless **prepare_referencing** (or another tool this turn) shows **missing_agency_email** or a field that is **the** immediate blocker for **this** tenancy. Do **not** mention **draft_contract**, **chase_rent**, or **tenancy agreement** drafting unless the JSON shows that step is next. Distinguish human gates from automation: if an approval-gated step is next, direct to **/dashboard/approvals**. Do **not** call **start_tenant_onboarding** or **create_tenant_and_tenancy** unless inspection proves no tenancy/onboarding exists and the user asks you to proceed.",
+    )
+  }
+
+  if (route.wantsRentChaseLane) {
+    lines.push(
+      "- **Required (rent chase / arrears comms):** Call **get_rent_status** (set **tenant_name** when the user named a tenant) and **chase_rent** when drafting chases. Stay in **overdue rent / chase / reminder** language only. Do **not** discuss **draft_contract**, **tenancy agreement**, **AST**, or **start_tenant_onboarding** unless the user explicitly asked for those. Preserve **pending approval** wording for tenant emails (**email_sent** false) and **/dashboard/approvals**.",
     )
   }
 
@@ -784,7 +828,7 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
 
   if (route.wantsOperationalBrief) {
     lines.push(
-      "- **Required (operational brief / what next):** The user asked for a portfolio-style update. Call **get_dashboard_summary**, **get_maintenance_summary**, and **get_compliance_summary** in parallel this turn (unless they already narrowed to one domain). Structure the reply: (1) **Top priority** — one line, (2) **Why** — one sentence; every claim tied to a JSON field you saw, (3) **1–3 items needing review** — use names/addresses from JSON when available; include **/dashboard/approvals** when approval-gated comms may be waiting (chat tools do not list each approval row; do not invent counts, ages, or queue order), (4) **Blockers** — JSON-backed; if several rows share one root cause, state that **shared blocker** once (not the same blocker repeated per row), (5) optional **Pattern to watch** — one short hedged line **only** when the **same** blocker or theme appears on **multiple** rows in **this** turn’s data (see **Recurring patterns and snapshot scope**); omit if unsupported — **no** long-term trends or chat memory, (6) **One recommended next action**. **Within-bucket ranking:** use severity rules in the system prompt (overdue days, amounts, **priority**, **email_sent**, missing emails) **only** where those fields exist; if you cannot rank inside a bucket, say so and fall back to category priority + Approvals.",
+      "- **Required (operational brief / what next):** The user asked for a portfolio-style update. Call **get_dashboard_summary**, **get_maintenance_summary**, and **get_compliance_summary** in parallel this turn (unless they already narrowed to one domain). Keep the reply **short**: lead with the single most urgent actionable item (from JSON), one sentence why, then at most **2–3** brief bullets for other areas (pending approvals, overdue rent, maintenance, onboarding/compliance **only** when your tools surfaced them). Do **not** narrate unrelated workflows or merge onboarding step-by-step detail with rent chases unless the same tool batch ties them together. Structure: (1) **Top priority** — one line, (2) **Why** — one sentence tied to JSON, (3) **Other items** — compact bullets, (4) **Blockers** — JSON-backed only, (5) optional **Pattern to watch** only per recurring-patterns rules, (6) **One next action**. **Within-bucket ranking:** use severity rules in the system prompt only where fields exist.",
     )
   }
 

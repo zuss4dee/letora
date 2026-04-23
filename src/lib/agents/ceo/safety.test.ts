@@ -84,6 +84,10 @@ describe("CEO safety confirmation gating", () => {
     expect(classifyCEOIntent("show me pending approvals")).toBe("read_only");
   });
 
+  it("classifies next onboarding action questions as draft_suggest (not read_only)", () => {
+    expect(classifyCEOIntent("What is the next onboarding action for Oliver Reed?")).toBe("draft_suggest");
+  });
+
   it("does not require confirmation for get_pending_approvals_summary alone", () => {
     const intent = classifyCEOIntent("list pending approvals");
     expect(toolsRequireUserConfirmation(intent, ["get_pending_approvals_summary"])).toBe(false);
