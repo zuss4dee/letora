@@ -9,6 +9,7 @@ import type { CEOMessage } from "@/lib/agents/ceo";
 import {
   stripCeoHexUuidsFromText,
   stripMarkdownDelimitersFromAssistantText,
+  stripNavigateActionTagsFromAssistantText,
 } from "@/lib/agents/ceo/safety";
 import { buildLeadQualifyAssistantMessage } from "@/lib/assistant/build-lead-qualify-message";
 import { shouldOfferManualLeadQualifyUi } from "@/lib/assistant/lead-qualify-embed";
@@ -136,7 +137,9 @@ function mapAssistantError(err: unknown): { status: number; code: string; messag
 
 /** Last line of defense: strip UUID echoes, then Markdown markers the model may still emit. */
 function sanitizeAssistantReply(text: string): string {
-  return stripMarkdownDelimitersFromAssistantText(stripCeoHexUuidsFromText(text));
+  return stripMarkdownDelimitersFromAssistantText(
+    stripCeoHexUuidsFromText(stripNavigateActionTagsFromAssistantText(text)),
+  );
 }
 
 function chunkUtf8Text(text: string, maxChars: number): string[] {

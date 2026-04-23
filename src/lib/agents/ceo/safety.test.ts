@@ -4,6 +4,7 @@ import {
   buildConfirmationMessage,
   classifyCEOIntent,
   normalizeCEOToolInput,
+  stripNavigateActionTagsFromAssistantText,
   toolsRequireUserConfirmation,
 } from "./safety";
 import type { CEOToolName } from "./tools";
@@ -19,6 +20,22 @@ describe("CEO safety confirmation gating", () => {
     const intent = classifyCEOIntent("onboard this client");
     const tools: CEOToolName[] = ["start_tenant_onboarding"];
     expect(toolsRequireUserConfirmation(intent, tools)).toBe(true);
+  });
+
+  it("requires confirmation for freeform create tenant / tenancy phrasing", () => {
+    expect(classifyCEOIntent("onboard a tenant and create the tenancy for them")).toBe(
+      "confirmation_required",
+    );
+    expect(classifyCEOIntent("create a tenant and tenancy for Jane")).toBe("confirmation_required");
+    const intent = classifyCEOIntent("create a tenant and tenancy for Jane");
+    expect(toolsRequireUserConfirmation(intent, ["start_tenant_onboarding"])).toBe(true);
+  });
+
+  it("strips navigate action tags from assistant text", () => {
+    const raw =
+      'Done.\n<action type="navigate" label="View tenancy onboarding" href="/" />\nNext: review Approvals.';
+    expect(stripNavigateActionTagsFromAssistantText(raw)).not.toMatch(/<action/i);
+    expect(stripNavigateActionTagsFromAssistantText(raw)).toContain("Done.");
   });
 
   it("requires confirmation for maintenance dispatch action", () => {

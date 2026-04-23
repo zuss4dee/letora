@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getPendingCeoActionFromMessages } from "@/lib/assistant/pending-ceo-from-messages";
 import { AssistantConversationList } from "@/components/dashboard/assistant-conversation-list";
 import type { AssistantConversationListItem } from "@/lib/assistant-messages/store";
-import type { PendingCEOAction } from "@/lib/agents/ceo/safety";
+import { stripNavigateActionTagsFromAssistantText, type PendingCEOAction } from "@/lib/agents/ceo/safety";
 import type { LetoraSuggestedAction } from "@/lib/agents/ceo/suggested-actions";
 import {
   parseLeadQualifyEmbed,
@@ -200,17 +200,32 @@ interface ActionTag {
   href: string;
 }
 
-const ACTION_TAG_REGEX = /<action\s+type="navigate"\s+label="([^"]+)"\s+href="([^"]+)"\s*\/>/g;
+const NAVIGATE_ACTION_TAG = /<action\b[\s\S]*?type\s*=\s*["']navigate["'][\s\S]*?\/>/gi;
 
 const CONTRACT_ID_PATTERN =
   /(?:contract\s*(?:id|ID)[:\s]+|\/dashboard\/contracts\/)([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i;
 
+function isValidDashboardDeepLink(href: string): boolean {
+  const h = href.trim();
+  if (!h || h === "/" || h === "#") return false;
+  if (!h.startsWith("/dashboard")) return false;
+  if (/^\/dashboard\/?$/i.test(h)) return false;
+  return true;
+}
+
 function parseActionTags(text: string): { cleanText: string; actions: ActionTag[] } {
   const actions: ActionTag[] = [];
-  const cleanText = text.replace(ACTION_TAG_REGEX, (_match, label: string, href: string) => {
-    actions.push({ label, href });
+  const withoutNavigate = text.replace(NAVIGATE_ACTION_TAG, (full) => {
+    const labelM = /\blabel\s*=\s*"([^"]*)"/i.exec(full);
+    const hrefM = /\bhref\s*=\s*"([^"]*)"/i.exec(full);
+    const label = labelM?.[1]?.trim() ?? "";
+    const href = hrefM?.[1]?.trim() ?? "";
+    if (label && isValidDashboardDeepLink(href)) {
+      actions.push({ label, href });
+    }
     return "";
-  }).trim();
+  });
+  const cleanText = stripNavigateActionTagsFromAssistantText(withoutNavigate);
 
   if (actions.length === 0) {
     const cid = CONTRACT_ID_PATTERN.exec(text);

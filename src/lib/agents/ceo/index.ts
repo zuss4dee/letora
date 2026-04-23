@@ -21,6 +21,7 @@ import {
   normalizeCEOToolInput,
   pendingActionFromToolUseBlocks,
   stripCeoHexUuidsFromText,
+  stripNavigateActionTagsFromAssistantText,
   toolsRequireUserConfirmation,
 } from "./safety";
 import type { PendingCEOAction } from "./safety";
@@ -647,7 +648,7 @@ function completeWithSuggestedActions(
   );
   return {
     outcome: "complete",
-    reply: stripCeoHexUuidsFromText(cleaned),
+    reply: stripCeoHexUuidsFromText(stripNavigateActionTagsFromAssistantText(cleaned)),
     ...(suggestedActions.length > 0 ? { suggestedActions } : {}),
   };
 }
@@ -749,9 +750,14 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
         `\n\n${injectAuthoritativeCurrentDateBlock()}` +
         (referencingInboundDigest ? `\n\n${referencingInboundDigest}` : "") +
         "\n\nThe landlord already confirmed the pending actions. Tool runs are complete. Summarize outcomes in natural language. Do not ask for confirmation again." +
+      "\n\n**Operational vocabulary:** Prefer **drafted**, **proposed**, **pending approval**, **sent**, **completed**, **blocked** — match each phrase to the tool JSON (e.g. **email_sent**, **pending_approval**, **success**, **saved**). If something is still in Approvals, tell them to check **/dashboard/approvals**." +
       "\n\n**Mandatory for tool JSON:** If any result has `success`: false or an `error` string, say exactly what failed using the `message` or `error` field (e.g. missing email, onboarding already started). **Do not** claim the system rejected a plain-name input, or cite UUID/form validation errors, unless those exact words appear in the JSON." +
       "\n\n**draft_contract results:** If JSON has **saved: true**, confirm the draft was saved. If JSON has **error** and **code**, quote them. **Never** say “technical barrier”, “persistent issue”, “only the dashboard”, or “cannot bypass” unless those exact phrases appear in the **error** string." +
-      "\n\n**Product truth:** Letora does not have a tenant portal or tenant app. Tenants are reached by **email**. Onboarding **tasks** are for the **landlord** in the dashboard. **Never** tell the user that tenants will see a checklist in a portal or log in to Letora.",
+      "\n\n**Product truth:** Letora does not have a tenant portal or tenant app. Tenants are reached by **email**. Onboarding **tasks** are for the **landlord** in the dashboard. **Never** tell the user that tenants will see a checklist in a portal or log in to Letora." +
+      "\n\n**Money boundary:** Letora does **not** collect tenant rent, custody funds, or pay landlords. Describe rent chases as **drafts** / **pending approval** / comms only — never imply in-app payment collection or payouts ran." +
+      "\n\n**Prioritization:** Lead with the highest-impact outcome (e.g. **pending approval** vs **sent** vs **blocked**). If any result left work in **Approvals**, say reviewing **/dashboard/approvals** is the operator next step before treating outbound comms as done." +
+      "\n\n**Within-bucket ranking:** When multiple rows appear in one tool’s JSON, order by severity using only fields present (**days_overdue**, **amount_owed**, **email_sent**, **priority**, **status**, **due_date**, etc.). State **why** the top row wins. If the JSON does not support fine ordering, say that — do not invent relative urgency." +
+      "\n\n**Patterns (this batch only):** You may mention a **repeated blocker** or **pattern to watch** only if the **same** issue appears across **multiple** rows or tool results **in this confirmed batch** — hedged wording, no historical trends, no memory beyond this summary. If the shared blocker is obvious, name it once before listing examples.",
       portfolioHealthDigest,
     );
     const summaryMessages: MessageParam[] = [
@@ -865,9 +871,15 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
     Boolean(inferredPropertyHintFromUser) &&
     Boolean(inferredTenantName);
 
+  /** Avoid running **start_tenant_onboarding** as a hidden prefetch when the user is creating a new tenancy/tenant from freeform (would mutate before confirmation). */
+  const looksLikeNewTenantTenancyCreation =
+    (/\b(create|add|set\s+up)\b/i.test(latestUser) && /\b(tenant|tenancy)\b/i.test(latestUser)) ||
+    (/\bonboard\b/i.test(latestUser) && /\bcreate\b/i.test(latestUser) && /\btenancy\b/i.test(latestUser));
+
   const wantsOnboardingPrefetch =
     Boolean(inferredTenantName) &&
     !route.wantsReferencingStatus &&
+    !looksLikeNewTenantTenancyCreation &&
     (route.wantsContinueOnboarding ||
       route.wantsOnboardingByPlainName ||
       route.primaryIntent === "onboarding" ||

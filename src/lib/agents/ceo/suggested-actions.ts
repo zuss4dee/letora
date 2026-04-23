@@ -212,6 +212,34 @@ export function suggestedActionsFromReferencingTool(
 /**
  * Deep links from resolve_onboarding_navigation tool JSON.
  */
+const UUID_V4 =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * Deep link from **start_tenant_onboarding** JSON when a single **tenancy_id** is known
+ * (UI label must stay aligned with assistant wording: “Open onboarding”).
+ */
+export function suggestedActionsFromStartTenantOnboarding(raw: string): LetoraSuggestedAction[] {
+  const o = parseToolJson(raw);
+  if (!o) return [];
+  const candidates = o["candidates"];
+  if (Array.isArray(candidates) && candidates.length > 1) {
+    return [];
+  }
+  const tenancyId = typeof o.tenancy_id === "string" ? o.tenancy_id.trim() : "";
+  if (!tenancyId || !UUID_V4.test(tenancyId)) {
+    return [];
+  }
+  return [
+    {
+      id: `open-onboarding-${tenancyId}`,
+      label: "Open onboarding",
+      kind: "link",
+      href: `/dashboard/tenancies/${tenancyId}`,
+    },
+  ];
+}
+
 export function suggestedActionsFromOnboardingNavigation(raw: string): LetoraSuggestedAction[] {
   const o = parseToolJson(raw);
   if (!o) return [];
@@ -267,6 +295,9 @@ export function mergeSuggestedActionsFromTools(
     }
     if (t.name === "resolve_onboarding_navigation") {
       out.push(...suggestedActionsFromOnboardingNavigation(t.raw));
+    }
+    if (t.name === "start_tenant_onboarding") {
+      out.push(...suggestedActionsFromStartTenantOnboarding(t.raw));
     }
   }
   return dedupeById(out);

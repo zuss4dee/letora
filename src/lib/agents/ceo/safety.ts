@@ -56,6 +56,14 @@ export function classifyCEOIntent(latestUserText: string): CEOIntent {
   const t = latestUserText.trim().toLowerCase()
   if (t.length === 0) return "read_only"
 
+  /** New tenant + tenancy creation from freeform — must get normalized confirmation before tools run. */
+  if (
+    (/\b(create|add|set\s+up)\b/.test(t) && /\b(tenant|tenancy)\b/.test(t)) ||
+    (/\bonboard\b/.test(t) && /\bcreate\b/.test(t) && /\btenancy\b/.test(t))
+  ) {
+    return "confirmation_required"
+  }
+
   if (
     /\b(send|resend|dispatch|onboard|start\s+onboarding|blast|transmit|actually\s+send|go\s+ahead\s+and\s+send|email\s+them\s+now|mark\s+.*\s+resolved|mark\s+as\s+resolved|close\s+the\s+tickets?|delete\s+|remove\s+permanently|cancel\s+the\s+|finalize\s+and\s+send)\b/.test(
       t,
@@ -160,6 +168,17 @@ export function stripMarkdownDelimitersFromAssistantText(text: string): string {
   return t;
 }
 
+/**
+ * Removes internal CEO navigation markup from assistant-visible text. The chat UI may
+ * derive buttons from tool JSON / suggested actions instead; any stray tags must not leak.
+ */
+export function stripNavigateActionTagsFromAssistantText(text: string): string {
+  let t = text;
+  t = t.replace(/<action\b[\s\S]*?\/>/gi, "");
+  t = t.replace(/<action\b[^>]*>/gi, "");
+  return t.replace(/\n{3,}/g, "\n\n").trim();
+}
+
 /** Removes hex UUIDs and "(tenancy …)" fragments so chat never shows raw tenancy ids. */
 export function stripCeoHexUuidsFromText(text: string): string {
   let t = text;
@@ -186,9 +205,7 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
   const lines = action.toolCalls.map((c) => {
     switch (c.name) {
       case "chase_rent":
-        return `• **Chase overdue rent** (prepare/send tenant communications${
-          c.input.month ? ` for **${c.input.month}**` : ""
-        })`
+        return `• **Rent chase (draft)**${c.input.month ? ` for **${c.input.month}**` : ""} — prepares chase emails; each tenant send stays **pending approval** in Approvals until approved`
       case "draft_contract":
         return `• **Draft a tenancy contract**${
           c.input.tenant_name ? ` for **${c.input.tenant_name}**` : ""
@@ -199,10 +216,30 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
         return `• **Nurture a lead** (advance pipeline step${c.input.lead_id ? ` for lead **${c.input.lead_id.slice(0, 8)}…**` : ""}${c.input.step ? ` — **${c.input.step}**` : ""}; may draft/send email)`
       case "decide_lead_application":
         return `• **Approve or reject applicant** (final decision on a lead in applied stage${c.input.decision ? ` — **${c.input.decision}**` : ""})`
-      case "start_tenant_onboarding":
-        return `• **Start tenant onboarding**${
-          c.input.onboarding_for ? ` for **${c.input.onboarding_for}**` : ""
-        } (may create tenancy records, checklist tasks, and welcome communications)`
+      case "start_tenant_onboarding": {
+        const detailLines: string[] = []
+        if (c.input.onboarding_for?.trim()) {
+          detailLines.push(`Tenant (onboarding_for): **${c.input.onboarding_for.trim()}**`)
+        }
+        if (c.input.onboarding_property_hint?.trim()) {
+          detailLines.push(`Property hint: **${c.input.onboarding_property_hint.trim()}**`)
+        }
+        if (c.input.start_date?.trim()) {
+          detailLines.push(`Tenancy start (YYYY-MM-DD): **${c.input.start_date.trim()}**`)
+        }
+        const tid = c.input.tenant_id?.trim() ?? ""
+        if (tid && !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tid)) {
+          detailLines.push(`Tenant reference: **${tid}**`)
+        }
+        if (c.input.lead_id?.trim()) {
+          const lid = c.input.lead_id.trim()
+          detailLines.push(
+            lid.length > 8 ? `Lead ID (prefix): **${lid.slice(0, 8)}…**` : `Lead ID: **${lid}**`,
+          )
+        }
+        const detail = detailLines.length > 0 ? `\n${detailLines.join("\n")}` : ""
+        return `• **Start tenant onboarding / create tenancy records**${detail}\n  May create tenancy rows, onboarding tasks, and queue the welcome email for **Approvals**. Reply **yes** only if tenant name, property, and start date match what you intend.`
+      }
       case "bulk_onboard_tenants": {
         const rowCount = countCsvRows(c.input.csv_text ?? "")
         const label = rowCount > 0 ? `${rowCount} row${rowCount === 1 ? "" : "s"}` : "CSV rows"
@@ -220,7 +257,7 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
       case "resolve_onboarding_navigation":
         return "• **Resolve onboarding screen link** (read-only — deep link to tenancy onboarding)"
       case "dispatch_maintenance_request":
-        return "• **Dispatch maintenance request** (logs issue and may notify contractor)"
+        return "• **Dispatch maintenance request** — logs issue; contractor email (if provided) is **pending approval** in Approvals until approved"
       case "generate_property_listing":
         return "• **Generate property listing** (can save generated marketing description to property record)"
       case "get_maintenance_summary":
@@ -239,6 +276,12 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
         return "• **List tenants** (read-only)"
       case "search_properties":
         return "• **Search properties** (read-only — resolve address to property UUIDs)"
+      case "send_move_in_email":
+        return "• **Move-in instructions email** — queues **pending approval** in Approvals (not sent until approved)"
+      case "send_contract":
+        return `• **Send tenancy agreement for e-signing**${
+          c.input.tenant_name ? ` for **${c.input.tenant_name}**` : ""
+        } (emails tenant a signing link when the tool succeeds — not rent collection)`
       default:
         return `• **${(c as { name: string }).name}**`
     }
@@ -247,7 +290,7 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
   const hasReferencingSend = action.toolCalls.some((c) => c.name === "send_referencing_handoff");
   const intro = hasReferencingSend
     ? `The next step will **email your referencing agency** with tenant and property details from Letora (same as the tenancy page handoff):\n\n`
-    : `The next step may **contact tenants** or **change what they see**, or run actions that go beyond a simple lookup:\n\n`;
+    : `The next step runs **mutating platform tools** (not read-only). Rent chases, move-in email, and contractor dispatch emails are **approval-gated** — they stay **pending approval** in **/dashboard/approvals** until you approve. Other lines below may email or update records as described:\n\n`;
 
   return stripCeoHexUuidsFromText(
     `${intro}${lines.join("\n")}\n\nReply **yes** to proceed, or tell me what to change.`,

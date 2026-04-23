@@ -5,45 +5,45 @@ import type { CEOToolName } from "./tools"
  */
 const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
   chase_rent:
-    "State how many tenants are overdue, approximate total overdue amount, and mention a few tenant names when helpful. Note that reminder drafts were prepared.",
+    "Summarise **month**, **chased** count, and **message**. For each **results** row: use **email_sent** — if false, say **drafted** / **pending approval** (not **sent**); if true, say **sent** for that row. When ranking rows for urgency: use **days_overdue** and **amount_owed** only when present; **email_sent** false before true for “what first”; flag missing/blank **tenant_email** as a **blocker** before chase priority. If **multiple** rows share the same missing field or same **pending approval** state, you may add one hedged **pattern to watch** line for **this snapshot only** — no historical trend language. Direct to **/dashboard/approvals** when any row is not sent. Do not imply Letora collected rent.",
   get_maintenance_summary:
-    "Lead with urgent items, then open vs in-progress. Summarize the most important tickets by title; do not list raw IDs.",
+    "Order by **priority** (urgent first when field exists), then non-completed **status**, then **created_at** if present in ticket objects. Lead with the single worst ticket for tenant impact when JSON supports it; do not invent severity beyond **priority** / title / description text. If many tickets are open with a **common** theme visible in titles/status (e.g. same property or same category) **only** from JSON text, you may note a **pattern to watch** in one cautious sentence — not a trend over time. Summarize the most important tickets by title; do not list raw IDs.",
   get_leads_summary:
     "State whether there are any new leads, then give pending/qualified/disqualified counts and a short list of recent lead names when helpful.",
   search_properties:
     "List matching properties with their **id** (UUID), human-readable label, and hint if multiple matches — tell the user to pick the right one before mutating tools. Never treat a unit number as a UUID.",
   start_tenant_onboarding:
-    "If **mode** is **resume**, onboarding is already running — follow **ceo_resume_hint**, list **pending_task_names**, and give **tasks_complete**/**tasks_total**. When **referencing_complete** is true, do **not** say the user must wait for the referencing agency (referencing is done or marked complete on the tenancy). End by asking if they want help with the next pending items (e.g. send move-in email, draft contract). For a fresh start (**success** with tasks created), confirm welcome email draft/sent and task count. **Letora has no tenant-facing portal.** Tenants are contacted by **email** only. Onboarding **tasks** are for the **landlord** (dashboard). If the tool returned candidates (multiple tenancies), ask for street/city.",
+    "Structure the reply with these headings (plain lines, no Markdown): Created — Drafted — Pending approval — Blocked — Next action. Only omit empty sections. **Created:** e.g. **Created tenancy** when **mode** is **tenant_and_property** or **lead_conversion** (new row); **Created tenant record** when **lead_conversion** created a new tenant profile. If JSON or **message** clearly indicates a **new property** row was created in this flow, add **Created property record** as its own bullet (do not bury in parentheses). **Drafted:** welcome email is **drafted** when **emailStatus** is **draft** or **message** implies a draft exists. **Pending approval:** when **message** contains **awaiting approval** / approval gate for welcome email, or **emailStatus** is **draft** and approval is required — say welcome email is **pending approval** in Approvals (**/dashboard/approvals**); do **not** say the tenant email was **sent** unless **emailStatus** is **sent** (or tool explicitly confirms send). **Blocked:** **success** false, **error**, missing tenant email, validation failures — say **Blocked** and why. **Next action:** one concrete step (e.g. approve welcome email, pick property from **candidates**, call **search_properties**). If **mode** is **resume**, follow **ceo_resume_hint** and **pending_task_names**; when **referencing_complete** is true, do **not** say referencing is still blocking. If the tool returned **candidates** (multiple tenancies), ask for street/city — do **not** claim a single tenancy was onboarded. Do **not** say **done successfully** or that everything completed unless every part succeeded and there is no operator follow-up (no pending approval, no blocked line). **Letora has no tenant-facing portal**; tenants are reached by **email**; checklist tasks are for the **landlord** in the dashboard.",
   bulk_onboard_tenants:
     "If **mode** is **preview**, summarize **summary.total**, **summary.newProperties**, **summary.matchedProperties**, **summary.existingTenants**, **summary.skippedActiveTenancies**, **summary.validationErrors**, and call out a few **preview_rows**. Ask the user to confirm before running the real import. If **mode** is **executed**, lead with **totals.succeeded / totals.total** onboarded, plus **totals.skipped** and **totals.failed**; mention tenants get welcome emails + onboarding tasks. If **mode** is **nothing_to_do**, repeat the **note** and suggest fixing the CSV or removing duplicates. Never paste raw JSON.",
   send_referencing_handoff:
     "Read **sent** (boolean) and **message**. Use **tenant_name** / **property_address** when describing who the handoff was for. Do **not** quote **tenancy_id** in prose. If sent is true, confirm the email was sent to the agency. If sent is false, say what happened per **message** — never claim the email was sent unless sent is true.",
   prepare_referencing:
-    "Follow **ceo_instruction** verbatim for what to say about inbound mail. Summarize **recent_inbound_mail** previews when present. **onboarding_status**, **referencing_complete**, **handoff_sent**, **referencing_last_inbound_at**, **tasks** / **tasks_complete**/**tasks_total**. If missing_agency_email, point to Settings → Email & Automation (referencing). If handoff_sent is true, do not imply the user still needs to send the first handoff.",
+    "Follow **ceo_instruction** verbatim for what to say about inbound mail. Summarize **recent_inbound_mail** previews when present. **onboarding_status**, **referencing_complete**, **handoff_sent**, **referencing_last_inbound_at**, **tasks** / **tasks_complete**/**tasks_total**. Prefer calling out **missing_agency_email** or stalled handoff before generic task progress when JSON shows a blocker. If missing_agency_email, point to Settings → Email & Automation (referencing). If handoff_sent is true, do not imply the user still needs to send the first handoff.",
   dispatch_maintenance_request:
-    "Confirm issue logged, inferred category/urgency, and contractor dispatch status (drafted/sent/failed). Keep next steps practical.",
+    "Read **contractor_dispatch** / **channel_note**. If **pending_approval** or message says Approvals, say dispatch is **pending approval** (not **sent**); if only logged with no contractor email, say **completed** for logging, no contractor email **sent**. If **error** in JSON, say **blocked** and why.",
   generate_property_listing:
     "Share polished listing copy summary and whether it was saved to the property record or returned as preview only.",
   qualify_leads:
     "If the JSON has error/details, lead with that in plain language. If message says no pending leads, say so. If parse_ok is false or parse_failed is true, explain briefly and use hint + /dashboard/leads — never generic 'technical failure' boilerplate. Otherwise: how many scored, outcomes, reasons in prose (not raw JSON).",
   nurture_lead:
-    "Confirm the pipeline step taken, new status, and whether the email was sent or saved as a draft (per settings). Do not paste the full email unless asked.",
+    "Confirm pipeline step and new status. Say **sent** only if the tool JSON indicates send; otherwise **drafted** or saved per **message** / settings — not **pending approval** unless JSON says so.",
   decide_lead_application:
     "State clearly whether the applicant was approved or rejected and that the lead record was updated.",
   draft_contract:
-    "Read **saved**, **contract_id**, **property_match**, **message**, **error**, and **code**. If **code** is **llm_error** or **save_failed**, repeat the **error** string in plain language — do **not** blame “tenant record resolution”, “backend configuration”, “synchronization”, or “sync” unless those exact words appear in **error**. If **code** is **matched_by_fallback**, ask if the property in **message** is the right one. If **code** is **ambiguous_match**, list **candidates** and ask which address they mean. If **code** is **no_property_match**, use **message** in plain language. If **code** is **ambiguous_tenancy**, **multiple_tenants**, or **tenant_name_mismatch**, list **candidates** and ask the user to pick — do **not** say the tenancy does not exist at that address. If **saved** is true, confirm the **tenancy agreement** draft was saved and mention review under **/dashboard/contracts**. **tenancy_id** may be omitted when the draft matched tenant + property without a separate tenancy row. Do not paste internal instructions, “Next steps”, or raw URLs. Do not paste the full document unless asked.",
+    "Read **saved**, **contract_id**, **property_match**, **message**, **error**, and **code**. If **code** is **llm_error** or **save_failed**, repeat the **error** string in plain language — do **not** blame “tenant record resolution”, “backend configuration”, “synchronization”, or “sync” unless those exact words appear in **error**. If **code** is **matched_by_fallback**, ask if the property in **message** is the right one. If **code** is **ambiguous_match**, list **candidates** and ask which address they mean. If **code** is **no_property_match**, use **message** in plain language. If **code** is **ambiguous_tenancy**, **multiple_tenants**, or **tenant_name_mismatch**, list **candidates** and ask the user to pick — do **not** say the tenancy does not exist at that address. If **saved** is true, say the **tenancy agreement** draft was **saved** (**proposed** / ready for review — not tenant **sent** until **send_contract** succeeds). Mention review under **/dashboard/contracts**. **tenancy_id** may be omitted when the draft matched tenant + property without a separate tenancy row. Do not paste internal instructions, “Next steps”, or raw URLs. Do not paste the full document unless asked.",
   send_contract:
-    "Read **success** and **message**. If success is true, confirm the **tenancy agreement** was sent to the tenant and they received a signing link by email. Include tenant name and property address. If success is false, explain using the **message** field.",
+    "Read **success** and **message**. If success is true, the signing email to the tenant was **sent** (signing link) — not payment collection. If success is false, say **blocked** or failed and use **message** / **error**.",
   get_contracts:
     "List rows found: for each, mention tenant name, property address, status (draft/sent/signed/active), and contract_id. In prose say **tenancy agreement**, not “contract”, unless quoting data. If none found, say so and suggest drafting one first.",
   send_move_in_email:
-    "Read **success**, **message**, and **email_log_id** when present. If success is true, confirm move-in instructions were emailed to the tenant. If false, explain using **message** and do not claim the email was sent.",
+    "If **pending_approval** is true (normal path), say move-in instructions are **proposed** and **pending approval** in **/dashboard/approvals** — not **sent** until executed. If **success** is false, say **blocked** and use **message**. Only say **sent** if JSON explicitly confirms send with no approval gate.",
   get_dashboard_summary:
-    "Give a compact portfolio snapshot: property and tenant counts, overdue rent pressure, maintenance load, **compliance_issue_count**, **compliance_gap_count** (missing expiry / undated certs), **compliance_expiring_soon_count** from the JSON (legal certificates — not repairs), and what deserves attention first.",
+    "Give a compact portfolio snapshot: property and tenant counts, overdue rent pressure, maintenance load, **compliance_issue_count**, **compliance_gap_count** (missing expiry / undated certs), **compliance_expiring_soon_count** from the JSON (legal certificates — not repairs). Within **compliance_issues_preview**, prefer expired / clear issues over expiring-soon when ranking “worst first” — only for rows shown; note previews may be capped. For “what next?”: lead with one highest-severity line backed by numbers, say **why** in one sentence from JSON, then **/dashboard/approvals** for approval-gated comms (do not invent approval row counts or ages). If **several** preview rows show the **same** certificate type gap or same property, you may add one hedged **pattern to watch** for **this** summary only — never imply weeks/months of history.",
   get_compliance_summary:
-    "Lead with **compliance_issue_count** and **compliance_gap_count**. List compliance issues (expired or expiry before today) and gaps (**is_compliance_gap** / status missing) with certificate_type and property_address. Mention **expiring_within_30_days_count** separately. Do not confuse with maintenance tickets — **definition** in the JSON explains the rule.",
+    "Lead with **compliance_issue_count** and **compliance_gap_count**. Within **records**, list true compliance issues (expired or expiry before today) before gaps when ranking “fix first” — only using **is_compliance_issue**, **is_compliance_gap**, **expiry_date**, **status** from JSON. Mention **expiring_within_30_days_count** separately. Do not confuse with maintenance tickets — **definition** in the JSON explains the rule.",
   get_rent_status:
-    "Prioritize **tenancies** in the JSON: monthly_rent, start_date, move_in_date, tenancy_status, rent_due_day_of_month, rent_schedule_hint, first_payment_record. Use **payments** for that month’s paid/overdue. Never say you lack rent amount or tenancy start date when **tenancies** includes them. If **ambiguity_note** is set, follow it.",
+    "Prioritize **tenancies** in the JSON: monthly_rent, start_date, move_in_date, tenancy_status, rent_due_day_of_month, rent_schedule_hint, first_payment_record. Use **payments** for that month’s paid/overdue. When several payments are overdue in JSON, rank by **due_date** then **amount** only if those fields exist — otherwise say ordering is unclear. If **multiple** overdue rows share the same tenancy/property signal from JSON, one optional hedged **pattern to watch** line is allowed — current data only. Never say you lack rent amount or tenancy start date when **tenancies** includes them. If **ambiguity_note** is set, follow it.",
   list_tenants:
     "Give the count and a short bullet list of names (and property if clear); avoid dumping the full table.",
   resolve_onboarding_navigation:
@@ -66,7 +66,7 @@ export function wrapToolResultForModel(toolName: CEOToolName, raw: string): stri
     toolName === "start_tenant_onboarding"
       ? [
           "",
-          "Mandatory for start_tenant_onboarding: never mention a tenant portal, tenant app, or tenant login in Letora. Communication with tenants is by email. Task lists are visible to the landlord in the dashboard. If JSON has **mode: \"resume\"**, obey **ceo_resume_hint** — do not imply onboarding can be \"restarted\" or that referencing is still pending when **referencing_complete** is true.",
+          "Mandatory for start_tenant_onboarding: never mention a tenant portal, tenant app, or tenant login. Do **not** emit `<action …/>` tags; the UI supplies **Open onboarding** from tool JSON when **tenancy_id** is present. Never claim the welcome email was **sent** unless **emailStatus** / JSON confirms send.",
         ]
       : []
   const referencingHandoffExtra =
@@ -76,6 +76,13 @@ export function wrapToolResultForModel(toolName: CEOToolName, raw: string): stri
           "Mandatory for send_referencing_handoff: the JSON includes **sent**. Your reply MUST match sent: if false, do not say the email was delivered, resent, or received by the agency; use the **message** field. Never include **tenancy_id** in user-facing text — use **tenant_name** (and **property_address** if present).",
         ]
       : []
+  const chaseRentExtra =
+    toolName === "chase_rent"
+      ? [
+          "",
+          "Mandatory for chase_rent: use **email_sent** per **results** row. False means **drafted** / **pending approval** (not **sent**). Rank within **results** using **days_overdue** / **amount_owed** only when present; flag blank **tenant_email** as blocker before urgency. The batch **message** already states Approvals — reinforce **/dashboard/approvals** when chases are not sent. Never imply tenant payment was collected.",
+        ]
+      : []
   return [
     "Tool output (internal data for you only):",
     "",
@@ -83,6 +90,7 @@ export function wrapToolResultForModel(toolName: CEOToolName, raw: string): stri
     ...qualifyExtra,
     ...onboardingExtra,
     ...referencingHandoffExtra,
+    ...chaseRentExtra,
     "",
     raw,
     "",
