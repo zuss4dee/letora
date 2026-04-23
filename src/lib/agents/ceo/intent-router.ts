@@ -736,7 +736,7 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
 
   if (route.wantsOnboardingStateInspection) {
     lines.push(
-      "- **Required (onboarding next-step / stage / blocker):** Start read-first. Call **resolve_onboarding_navigation** (plus **get_contracts** and **prepare_referencing** when useful) to inspect current tenancy/onboarding/contract state before any mutation. Return: current stage, completed steps, blocker (if any), and next valid action. Do **not** call **start_tenant_onboarding** or **create_tenant_and_tenancy** unless inspection proves no tenancy/onboarding exists and the user asks you to proceed.",
+      "- **Required (onboarding next-step / stage / blocker):** Start read-first. Call **resolve_onboarding_navigation** (plus **get_contracts** and **prepare_referencing** when useful) to inspect current tenancy/onboarding/contract state before any mutation. Return: current stage, completed steps, blocker (if any), and next valid action. Distinguish human gates from automation: if an approval-gated step is next, direct to **/dashboard/approvals**; then state workflow progression continues automatically as statuses/requirements complete. Do **not** imply manual checklist babysitting. Do **not** call **start_tenant_onboarding** or **create_tenant_and_tenancy** unless inspection proves no tenancy/onboarding exists and the user asks you to proceed.",
     )
   }
 
