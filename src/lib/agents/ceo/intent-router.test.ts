@@ -100,8 +100,8 @@ describe("routeCEOIntent — tenant list phrasing", () => {
     expect(r.recommendedTools[0]).toBe("resolve_onboarding_navigation");
     expect(r.recommendedTools).not.toContain("start_tenant_onboarding");
     const hint = formatRouterHintForSystem(r);
-    expect(hint).toContain("read-first");
-    expect(hint).toContain("current stage");
+    expect(hint).toMatch(/read-first/i);
+    expect(hint).toContain("narrow reply");
   });
 
   it("normalizes onbosrding typo so onboarding routing still works", () => {

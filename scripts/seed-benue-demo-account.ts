@@ -86,6 +86,20 @@ async function resolveAuthUserId(supabase: SeedSupabase, email: string): Promise
 }
 
 async function wipeDemoPortfolio(supabase: SeedSupabase, userId: UUID): Promise<void> {
+  /**
+   * Must run **before** any early return. Otherwise a rerun after demo properties were removed
+   * (or a failed partial wipe) left old pending rows in place and the seed inserted duplicates.
+   */
+  const { error: apErr } = await supabase
+    .from("agent_approvals")
+    .delete()
+    .eq("user_id", userId)
+    .like("title", `${DEMO_TITLE_PREFIX}%`);
+  if (apErr) {
+    console.error("Failed to delete demo agent_approvals:", apErr.message);
+    process.exit(1);
+  }
+
   const { data: demoProperties, error: pErr } = await supabase
     .from("properties")
     .select("id")
@@ -99,7 +113,60 @@ async function wipeDemoPortfolio(supabase: SeedSupabase, userId: UUID): Promise<
 
   const propertyIds = (demoProperties ?? []).map((r: { id: string }) => r.id);
   if (propertyIds.length === 0) {
-    console.log("No previous demo properties to remove.");
+    const { error: rpStrayErr } = await supabase
+      .from("rent_payments")
+      .delete()
+      .eq("user_id", userId)
+      .eq("notes", DEMO_RENT_NOTE);
+    if (rpStrayErr) {
+      console.error("Failed to delete stray demo rent_payments:", rpStrayErr.message);
+      process.exit(1);
+    }
+    const { data: strayTenants, error: stErr } = await supabase
+      .from("tenants")
+      .select("id")
+      .eq("user_id", userId)
+      .like("email", `%${DEMO_EMAIL_SUFFIX}`);
+    if (stErr) {
+      console.error("Failed to list stray demo tenants:", stErr.message);
+      process.exit(1);
+    }
+    const strayTenantIds = (strayTenants ?? []).map((r: { id: string }) => r.id);
+    if (strayTenantIds.length > 0) {
+      const { data: strayTenancies, error: stnErr } = await supabase
+        .from("tenancies")
+        .select("id")
+        .in("tenant_id", strayTenantIds);
+      if (stnErr) {
+        console.error("Failed to list stray demo tenancies:", stnErr.message);
+        process.exit(1);
+      }
+      const strayTenancyIds = (strayTenancies ?? []).map((r: { id: string }) => r.id);
+      if (strayTenancyIds.length > 0) {
+        for (const table of ["rent_payments", "maintenance_requests", "onboarding_tasks", "referencing_events"] as const) {
+          const { error } = await supabase.from(table).delete().in("tenancy_id", strayTenancyIds);
+          if (error) {
+            console.error(`Failed stray delete from ${table}:`, error.message);
+            process.exit(1);
+          }
+        }
+        const { error: stnDelErr } = await supabase.from("tenancies").delete().in("id", strayTenancyIds);
+        if (stnDelErr) {
+          console.error("Failed to delete stray demo tenancies:", stnDelErr.message);
+          process.exit(1);
+        }
+      }
+      const { error: tenStrayDelErr } = await supabase
+        .from("tenants")
+        .delete()
+        .eq("user_id", userId)
+        .like("email", `%${DEMO_EMAIL_SUFFIX}`);
+      if (tenStrayDelErr) {
+        console.error("Failed to delete stray demo tenants:", tenStrayDelErr.message);
+        process.exit(1);
+      }
+    }
+    console.log("No previous demo properties to remove (cleared demo approvals + stray tagged rows).");
     return;
   }
 
@@ -114,16 +181,6 @@ async function wipeDemoPortfolio(supabase: SeedSupabase, userId: UUID): Promise<
   }
 
   const tenancyIds = (demoTenancies ?? []).map((r: { id: string }) => r.id);
-
-  const { error: apErr } = await supabase
-    .from("agent_approvals")
-    .delete()
-    .eq("user_id", userId)
-    .like("title", `${DEMO_TITLE_PREFIX}%`);
-  if (apErr) {
-    console.error("Failed to delete demo agent_approvals:", apErr.message);
-    process.exit(1);
-  }
 
   if (tenancyIds.length > 0) {
     for (const table of ["rent_payments", "maintenance_requests", "onboarding_tasks", "referencing_events"] as const) {
@@ -701,6 +758,7 @@ async function main(): Promise<void> {
         dueDate: "2026-03-01",
         emailSubject: "Rent reminder — Market Lane Lofts",
         bodyPreview: "We note March rent remains outstanding…",
+        run_correlation_id: "demo-seed",
       },
       status: "pending" as const,
     },
@@ -731,6 +789,7 @@ async function main(): Promise<void> {
       evidence: {
         maintenanceRequestId: maintLeak,
         summary: "Water pooling under the kitchen sink when the tap runs.",
+        run_correlation_id: "demo-seed",
       },
       status: "pending" as const,
     },
