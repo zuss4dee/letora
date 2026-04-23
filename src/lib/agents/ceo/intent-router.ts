@@ -810,7 +810,7 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
 
   if (route.wantsRentChaseLane) {
     lines.push(
-      "- **Required (rent chase / arrears comms):** Call **get_rent_status** (set **tenant_name** when the user named a tenant) and **chase_rent** when drafting chases. Stay in **overdue rent / chase / reminder** language only. Do **not** discuss **draft_contract**, **tenancy agreement**, **AST**, or **start_tenant_onboarding** unless the user explicitly asked for those. Preserve **pending approval** wording for tenant emails (**email_sent** false) and **/dashboard/approvals**.",
+      "- **Required (rent chase / arrears comms):** Call **get_rent_status** (set **tenant_name** when the user named a tenant) and **chase_rent** when drafting chases — pass the same **tenant_name** (or **tenant_id**) on **chase_rent** when the user asked for one tenant so you do not draft chases for every overdue tenant in the month. Stay in **overdue rent / chase / reminder** language only. Do **not** discuss **draft_contract**, **tenancy agreement**, **AST**, or **start_tenant_onboarding** unless the user explicitly asked for those. Preserve **pending approval** wording for tenant emails (**email_sent** false) and **/dashboard/approvals**.",
     )
   }
 

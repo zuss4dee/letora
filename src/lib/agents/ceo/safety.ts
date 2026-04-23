@@ -221,8 +221,13 @@ export function stripCeoHexUuidsFromText(text: string): string {
 export function buildConfirmationMessage(action: PendingCEOAction): string {
   const lines = action.toolCalls.map((c) => {
     switch (c.name) {
-      case "chase_rent":
-        return `• **Rent chase (draft)**${c.input.month ? ` for **${c.input.month}**` : ""} — prepares chase emails; each tenant send stays **pending approval** in Approvals until approved`
+      case "chase_rent": {
+        const tn = c.input.tenant_name?.trim()
+        const tid = c.input.tenant_id?.trim()
+        const scope =
+          tn ? ` for **${tn}**` : tid && /^[0-9a-f-]{36}$/i.test(tid) ? " (scoped tenant)" : ""
+        return `• **Rent chase (draft)**${c.input.month ? ` — **${c.input.month}**` : ""}${scope} — prepares chase emails; each tenant send stays **pending approval** in Approvals until approved`
+      }
       case "draft_contract":
         return `• **Draft a tenancy contract**${
           c.input.tenant_name ? ` for **${c.input.tenant_name}**` : ""

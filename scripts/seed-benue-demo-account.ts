@@ -7,7 +7,9 @@
  * Loads `.env.local` from the repo root when present (NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY).
  *
  * Safety:
- * - Only touches rows tagged with DEMO_PROPERTY_PREFIX / DEMO_EMAIL_SUFFIX / DEMO_TITLE_PREFIX.
+ * - Deletes **all pending** agent_approvals for the target user before reseed (clears rent-chaser
+ *   rows that are not demo-title-prefixed, so reruns do not accumulate).
+ * - Only touches portfolio rows tagged with DEMO_PROPERTY_PREFIX / DEMO_EMAIL_SUFFIX / DEMO_RENT_NOTE.
  * - Resolves user by exact email match; aborts if not found.
  */
 
@@ -87,16 +89,16 @@ async function resolveAuthUserId(supabase: SeedSupabase, email: string): Promise
 
 async function wipeDemoPortfolio(supabase: SeedSupabase, userId: UUID): Promise<void> {
   /**
-   * Must run **before** any early return. Otherwise a rerun after demo properties were removed
-   * (or a failed partial wipe) left old pending rows in place and the seed inserted duplicates.
+   * Must run **before** any early return. Clears every pending approval for this account so
+   * agent-created rows (e.g. rent chase titles without DEMO_TITLE_PREFIX) do not accumulate.
    */
   const { error: apErr } = await supabase
     .from("agent_approvals")
     .delete()
     .eq("user_id", userId)
-    .like("title", `${DEMO_TITLE_PREFIX}%`);
+    .eq("status", "pending");
   if (apErr) {
-    console.error("Failed to delete demo agent_approvals:", apErr.message);
+    console.error("Failed to delete pending agent_approvals:", apErr.message);
     process.exit(1);
   }
 
@@ -166,7 +168,7 @@ async function wipeDemoPortfolio(supabase: SeedSupabase, userId: UUID): Promise<
         process.exit(1);
       }
     }
-    console.log("No previous demo properties to remove (cleared demo approvals + stray tagged rows).");
+    console.log("No previous demo properties to remove (cleared pending approvals + stray tagged rows).");
     return;
   }
 
@@ -873,18 +875,17 @@ async function main(): Promise<void> {
 
   console.log(`Demo rent_payments (tagged notes): ${demoRentCount}`);
   console.log(`Demo maintenance_requests (under demo tenancies): ${demoMaintCount}`);
-  const demoPendingApprovals = await (async () => {
+  const pendingAll = await (async () => {
     const { count, error } = await supabase
       .from("agent_approvals")
       .select("*", { count: "exact", head: true })
       .eq("user_id", userId)
-      .eq("status", "pending")
-      .like("title", `${DEMO_TITLE_PREFIX}%`);
+      .eq("status", "pending");
     if (error) return `? (${error.message})`;
     return String(count ?? 0);
   })();
 
-  console.log(`Demo pending agent_approvals (tagged title): ${demoPendingApprovals}`);
+  console.log(`Pending agent_approvals (expected 3 after seed): ${pendingAll}`);
 }
 
 void main();

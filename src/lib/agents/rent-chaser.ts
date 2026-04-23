@@ -101,6 +101,8 @@ export type RunRentChaserOptions = {
   month?: string;
   /** Traced in agent run payload for audit (e.g. `ceo_assistant`). */
   source?: string;
+  /** If set (e.g. CEO tool when the user named a tenant), only that tenant’s chaseable rows. */
+  tenantId?: string;
 };
 
 export async function runRentChaserAgent(userId: string, options?: RunRentChaserOptions): Promise<AgentResult[]> {
@@ -203,6 +205,11 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
     });
   }
 
+  const scopedTenantId = options?.tenantId?.trim();
+  if (scopedTenantId) {
+    candidates = candidates.filter((row) => row.tenant_id === scopedTenantId);
+  }
+
   await recordAgentRunStep(supabase, {
     userId: resolvedUserId,
     agentRunId: null,
@@ -215,6 +222,7 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
       merged: candidates.length,
       monthFilter: monthFilter ?? null,
       source: sourceTag,
+      tenantIdFilter: scopedTenantId ?? null,
     },
   });
 

@@ -67,6 +67,15 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
           type: "string",
           description: "The month to chase rent for in YYYY-MM format. Defaults to current month if not provided.",
         },
+        tenant_name: {
+          type: "string",
+          description:
+            "When the user asked to chase a **specific tenant** (e.g. “Sofia Martins”), pass their full name so only that tenant’s overdue instalments in the month are drafted — not every overdue tenant.",
+        },
+        tenant_id: {
+          type: "string",
+          description: "Tenant profile UUID from list_tenants when known; scopes the chase to that tenant only.",
+        },
       },
       required: [],
     },

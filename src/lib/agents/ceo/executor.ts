@@ -1297,10 +1297,30 @@ export async function executeCEOTool(
     }
     case "chase_rent": {
       const month = args.month ?? new Date().toISOString().slice(0, 7);
+      const rawTenantId = typeof args.tenant_id === "string" ? args.tenant_id.trim() : "";
+      const rawTenantName =
+        typeof args.tenant_name === "string" ? sanitizeTenantName(args.tenant_name.trim()) : "";
+
+      let scopedTenantId: string | undefined;
+      if (rawTenantId || rawTenantName) {
+        const lookupKey = rawTenantId || rawTenantName;
+        const resolved = await resolveTenantProfileForAccount(supabase, userId, lookupKey);
+        if (!resolved.ok) {
+          return JSON.stringify({
+            month,
+            chased: 0,
+            results: [],
+            ...resolved.body,
+          });
+        }
+        scopedTenantId = resolved.tenantId;
+      }
+
       const results = await runRentChaserAgent(userId, {
         supabase,
         month,
         source: "ceo_assistant",
+        ...(scopedTenantId ? { tenantId: scopedTenantId } : {}),
       });
       if (results.length === 0) {
         return JSON.stringify({
