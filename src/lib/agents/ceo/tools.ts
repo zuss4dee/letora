@@ -3,6 +3,7 @@ export type CEOToolName =
   | "chase_rent"
   | "get_maintenance_summary"
   | "get_leads_summary"
+  | "get_pending_approvals_summary"
   | "search_properties"
   | "create_tenant_and_tenancy"
   | "start_tenant_onboarding"
@@ -28,6 +29,7 @@ export const CEO_TOOL_NAMES: readonly CEOToolName[] = [
   "chase_rent",
   "get_maintenance_summary",
   "get_leads_summary",
+  "get_pending_approvals_summary",
   "search_properties",
   "create_tenant_and_tenancy",
   "start_tenant_onboarding",
@@ -89,6 +91,16 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
     name: "get_leads_summary",
     description:
       "Read-only lead overview: count new/pending/qualified/disqualified leads and list recent lead records. Does not change lead statuses.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "get_pending_approvals_summary",
+    description:
+      "Read-only snapshot of the landlord’s **Approvals** queue: pending human gates before outbound comms or contractor email. Use when the user asks to **list/show/review pending approvals**, what’s **in Approvals**, or the **approval queue** — not when they ask to **approve/send** a specific item from chat. Returns counts by category, oldest-waiting age, and item titles; execution stays in **/dashboard/approvals**.",
     input_schema: {
       type: "object",
       properties: {},

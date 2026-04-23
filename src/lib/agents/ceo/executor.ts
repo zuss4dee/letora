@@ -15,7 +15,13 @@ import {
 import { createAgentApproval } from "@/lib/actions/agent-approvals";
 import { enqueueMoveInEmailApproval } from "@/lib/onboarding/move-in-email-approval";
 import { runReferencingHandoffForUser } from "@/lib/actions/referencing";
-import type { ApproveMaintenanceDispatchEvidence, CreateAgentApprovalContract } from "@/lib/approvals/types";
+import { computeApprovalQueueStats } from "@/lib/approvals/queue-stats";
+import type {
+  AgentApprovalActionType,
+  AgentApprovalRow,
+  ApproveMaintenanceDispatchEvidence,
+  CreateAgentApprovalContract,
+} from "@/lib/approvals/types";
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import {
   type PropertyRowForMatch,
@@ -31,6 +37,37 @@ function formatTenantNameFromProfile(tenant: { full_name?: string | null } | nul
 /** Strip trailing prepositions left over from natural-language tool args (e.g. "alexis at" → "alexis"). */
 function sanitizeTenantName(raw: string): string {
   return raw.replace(/\s+(at|in|for|from|with|of)\s*$/i, "").trim();
+}
+
+type ApprovalQueueCategory = "onboarding" | "rent_chase" | "move_in" | "maintenance" | "other";
+
+function categoryForApprovalActionType(actionType: AgentApprovalActionType): ApprovalQueueCategory {
+  switch (actionType) {
+    case "send_onboarding_email":
+      return "onboarding";
+    case "send_rent_chase_email":
+      return "rent_chase";
+    case "send_move_in_email":
+      return "move_in";
+    case "approve_maintenance_dispatch":
+      return "maintenance";
+  }
+}
+
+function formatApprovalQueueAgeLabel(iso: string | null): string | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  const mins = Math.floor((Date.now() - t) / 60_000);
+  if (mins < 1) return "just now";
+  if (mins === 1) return "1 minute";
+  if (mins < 60) return `${mins} minutes`;
+  const hours = Math.floor(mins / 60);
+  if (hours === 1) return "1 hour";
+  if (hours < 48) return `${hours} hours`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "1 day";
+  return `${days} days`;
 }
 
 /** Day-of-month (1–31) for recurring rent, inferred from tenancy start_date. */
@@ -1360,6 +1397,51 @@ export async function executeCEOTool(
         qualified: byQualified("qualified"),
         disqualified: byQualified("disqualified"),
         recent,
+      });
+    }
+    case "get_pending_approvals_summary": {
+      const { data, error } = await supabase
+        .from("agent_approvals")
+        .select("id,title,summary,action_type,created_at,status")
+        .eq("user_id", userId)
+        .eq("status", "pending")
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        return JSON.stringify({ ok: false, error: error.message });
+      }
+
+      const pending = (data ?? []) as AgentApprovalRow[];
+      const stats = computeApprovalQueueStats(pending);
+      const by_category: Record<ApprovalQueueCategory, number> = {
+        onboarding: 0,
+        rent_chase: 0,
+        move_in: 0,
+        maintenance: 0,
+        other: 0,
+      };
+      for (const row of pending) {
+        const cat = categoryForApprovalActionType(row.action_type);
+        by_category[cat] += 1;
+      }
+      const items = pending.map((row) => ({
+        id: row.id,
+        title: row.title,
+        summary: row.summary,
+        category: categoryForApprovalActionType(row.action_type),
+        created_at: row.created_at,
+      }));
+
+      return JSON.stringify({
+        ok: true,
+        pending_total: stats.pendingTotal,
+        by_category,
+        by_action_type: stats.byActionType,
+        oldest_waiting_iso: stats.oldestPendingCreatedAt,
+        oldest_waiting_label: formatApprovalQueueAgeLabel(stats.oldestPendingCreatedAt),
+        stale_pending_count: stats.stalePendingCount,
+        items,
+        next_action: "Open /dashboard/approvals to approve, reject, or review full details.",
       });
     }
     case "search_properties": {

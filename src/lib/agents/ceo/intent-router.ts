@@ -1,3 +1,4 @@
+import { isApprovalsQueueInspectionMessage } from "./approvals-queue-intent"
 import {
   classifyCEOIntent,
   toolsRequireUserConfirmation,
@@ -55,6 +56,10 @@ export type CEOIntentRoute = {
    * Broad “what needs attention / what next / update / blocked” — load dashboard + maintenance + compliance and answer with operator prioritization.
    */
   wantsOperationalBrief: boolean
+  /**
+   * Read-only Approvals queue snapshot — use **get_pending_approvals_summary**; no chat confirmation batch.
+   */
+  wantsApprovalsQueueInspection: boolean
   needsClarification: boolean
   clarificationQuestion: string | null
 }
@@ -387,6 +392,26 @@ function detectOperationalBriefRequest(normalized: string): boolean {
 export function routeCEOIntent(userMessage: string): CEOIntentRoute {
   const trimmed = userMessage.trim()
   const normalized = normalizeForRouting(trimmed)
+  if (isApprovalsQueueInspectionMessage(trimmed)) {
+    return {
+      primaryIntent: "portfolio",
+      secondaryIntents: [],
+      confidence: 0.55,
+      recommendedTools: ["get_pending_approvals_summary"],
+      confirmationRequired: false,
+      wantsLeadQualification: false,
+      wantsOnboardingByPlainName: false,
+      wantsReferencingStatus: false,
+      wantsContinueOnboarding: false,
+      wantsOnboardingStateInspection: false,
+      wantsBulkOnboarding: false,
+      wantsCreateTenantTenancy: false,
+      wantsOperationalBrief: false,
+      wantsApprovalsQueueInspection: true,
+      needsClarification: false,
+      clarificationQuestion: null,
+    }
+  }
   const wantsOperationalBrief = detectOperationalBriefRequest(normalized)
   const wantsLeadQualification = /\bqualify\b/i.test(normalized) && /\bleads?\b/i.test(normalized)
   const wantsReferencingStatusEarly = detectReferencingStatusQuestion(normalized)
@@ -431,6 +456,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
         wantsBulkOnboarding: false,
         wantsCreateTenantTenancy: false,
         wantsOperationalBrief,
+        wantsApprovalsQueueInspection: false,
         needsClarification: false,
         clarificationQuestion: null,
       }
@@ -473,6 +499,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
       wantsBulkOnboarding,
       wantsCreateTenantTenancy,
       wantsOperationalBrief,
+      wantsApprovalsQueueInspection: false,
       needsClarification,
       clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
     }
@@ -656,6 +683,7 @@ export function routeCEOIntent(userMessage: string): CEOIntentRoute {
     wantsBulkOnboarding,
     wantsCreateTenantTenancy,
     wantsOperationalBrief,
+    wantsApprovalsQueueInspection: false,
     needsClarification,
     clarificationQuestion: needsClarification ? CLARIFICATION_QUESTION : null,
   }
@@ -685,7 +713,8 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
     !route.wantsReferencingStatus &&
     !route.wantsContinueOnboarding &&
     !route.wantsOnboardingStateInspection &&
-    !route.wantsOperationalBrief
+    !route.wantsOperationalBrief &&
+    !route.wantsApprovalsQueueInspection
   ) {
     return ""
   }
@@ -696,7 +725,8 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
     !route.wantsReferencingStatus &&
     !route.wantsContinueOnboarding &&
     !route.wantsOnboardingStateInspection &&
-    !route.wantsOperationalBrief
+    !route.wantsOperationalBrief &&
+    !route.wantsApprovalsQueueInspection
   ) {
     return ""
   }
@@ -755,6 +785,12 @@ export function formatRouterHintForSystem(route: CEOIntentRoute): string {
   if (route.wantsOperationalBrief) {
     lines.push(
       "- **Required (operational brief / what next):** The user asked for a portfolio-style update. Call **get_dashboard_summary**, **get_maintenance_summary**, and **get_compliance_summary** in parallel this turn (unless they already narrowed to one domain). Structure the reply: (1) **Top priority** — one line, (2) **Why** — one sentence; every claim tied to a JSON field you saw, (3) **1–3 items needing review** — use names/addresses from JSON when available; include **/dashboard/approvals** when approval-gated comms may be waiting (chat tools do not list each approval row; do not invent counts, ages, or queue order), (4) **Blockers** — JSON-backed; if several rows share one root cause, state that **shared blocker** once (not the same blocker repeated per row), (5) optional **Pattern to watch** — one short hedged line **only** when the **same** blocker or theme appears on **multiple** rows in **this** turn’s data (see **Recurring patterns and snapshot scope**); omit if unsupported — **no** long-term trends or chat memory, (6) **One recommended next action**. **Within-bucket ranking:** use severity rules in the system prompt (overdue days, amounts, **priority**, **email_sent**, missing emails) **only** where those fields exist; if you cannot rank inside a bucket, say so and fall back to category priority + Approvals.",
+    )
+  }
+
+  if (route.wantsApprovalsQueueInspection) {
+    lines.push(
+      "- **Required (Approvals queue — read-only):** Call **get_pending_approvals_summary** this turn. Answer with **pending_total**, **by_category**, **oldest_waiting_label** (or say queue is empty), and short lines for **items** from JSON only. **Next step:** open **/dashboard/approvals** to approve, reject, or inspect. Do **not** use **Reply yes** / chat batch confirmation wording. Do **not** call mutating tools (e.g. **chase_rent**, **send_move_in_email**) for this request.",
     )
   }
 

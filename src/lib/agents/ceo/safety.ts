@@ -1,5 +1,6 @@
 import type { ToolUseBlock } from "@anthropic-ai/sdk/resources/messages/messages"
 
+import { isApprovalsQueueInspectionMessage } from "./approvals-queue-intent"
 import type { CEOToolName } from "./tools"
 import { isCEOToolName } from "./tools"
 
@@ -19,6 +20,7 @@ const READ_ONLY_TOOLS: readonly CEOToolName[] = [
   "get_rent_status",
   "get_maintenance_summary",
   "get_leads_summary",
+  "get_pending_approvals_summary",
   "search_properties",
   "list_tenants",
   "prepare_referencing",
@@ -55,6 +57,10 @@ export function getLatestUserContent(messages: readonly CEOMessageLike[]): strin
 export function classifyCEOIntent(latestUserText: string): CEOIntent {
   const t = latestUserText.trim().toLowerCase()
   if (t.length === 0) return "read_only"
+
+  if (isApprovalsQueueInspectionMessage(latestUserText)) {
+    return "read_only"
+  }
 
   /** New tenant + tenancy creation from freeform — must get normalized confirmation before tools run. */
   if (
@@ -284,6 +290,8 @@ export function buildConfirmationMessage(action: PendingCEOAction): string {
         return "• **Summarise maintenance tickets** (read-only)"
       case "get_leads_summary":
         return "• **Leads pipeline summary** (read-only)"
+      case "get_pending_approvals_summary":
+        return "• **Approvals queue summary** (read-only)"
       case "get_dashboard_summary":
         return "• **Portfolio dashboard summary** (read-only)"
       case "get_compliance_summary":

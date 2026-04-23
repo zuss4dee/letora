@@ -172,4 +172,30 @@ describe("routeCEOIntent — tenant list phrasing", () => {
     expect(r.wantsBulkOnboarding).toBe(true);
     expect(r.recommendedTools).toContain("bulk_onboard_tenants");
   });
+
+  it("routes pending approvals questions to get_pending_approvals_summary (read-only)", () => {
+    for (const msg of [
+      "Show me pending approvals",
+      "List pending approvals",
+      "What's in approvals",
+      "Review approvals",
+    ]) {
+      const r = routeCEOIntent(msg);
+      expect(r.wantsApprovalsQueueInspection).toBe(true);
+      expect(r.recommendedTools).toEqual(["get_pending_approvals_summary"]);
+      expect(r.confirmationRequired).toBe(false);
+      const hint = formatRouterHintForSystem(r);
+      expect(hint).toContain("get_pending_approvals_summary");
+      expect(hint).not.toContain("Reply **yes**");
+    }
+  });
+
+  it("does not treat approve/reject applicant as approvals queue inspection", () => {
+    const r = routeCEOIntent("Approve the applicant for lead 123");
+    expect(r.wantsApprovalsQueueInspection).toBe(false);
+  });
+
+  it("does not treat approve + approvals as queue inspection", () => {
+    expect(routeCEOIntent("Approve all pending approvals").wantsApprovalsQueueInspection).toBe(false);
+  });
 });

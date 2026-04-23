@@ -285,11 +285,31 @@ export function suggestedActionsFromOnboardingNavigation(raw: string): LetoraSug
   return [];
 }
 
+export function suggestedActionsFromPendingApprovalsSummary(raw: string): LetoraSuggestedAction[] {
+  const o = parseToolJson(raw);
+  if (!o || o.ok !== true) return [];
+  const total = typeof o.pending_total === "number" ? o.pending_total : 0;
+  if (total <= 0) {
+    return [];
+  }
+  return [
+    {
+      id: "open-approvals-queue",
+      label: "Review approvals",
+      kind: "link",
+      href: "/dashboard/approvals",
+    },
+  ];
+}
+
 export function mergeSuggestedActionsFromTools(
   toolBatch: readonly { name: CEOToolName; raw: string }[],
 ): LetoraSuggestedAction[] {
   const out: LetoraSuggestedAction[] = [];
   for (const t of toolBatch) {
+    if (t.name === "get_pending_approvals_summary") {
+      out.push(...suggestedActionsFromPendingApprovalsSummary(t.raw));
+    }
     if (t.name === "prepare_referencing" || t.name === "send_referencing_handoff") {
       out.push(...suggestedActionsFromReferencingTool(t.name, t.raw));
     }

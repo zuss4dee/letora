@@ -841,6 +841,71 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
     effectiveSystemPrompt = `${effectiveSystemPrompt}\n\n${referencingInboundDigest}`;
   }
 
+  const conversation: MessageParam[] = contextMessages.map((m) => ({
+    role: m.role,
+    content: m.content,
+  }));
+
+  if (route.wantsApprovalsQueueInspection) {
+    const approvalsRaw = await executeCEOTool("get_pending_approvals_summary", {}, userId, supabase);
+    const approvalsToolBatch: { name: CEOToolName; raw: string }[] = [
+      { name: "get_pending_approvals_summary", raw: approvalsRaw },
+    ];
+    const approvalsSummarySystem = `${effectiveSystemPrompt}\n\n**Server already ran get_pending_approvals_summary for this user message. Tool JSON (authoritative — your reply MUST follow this data only):**\n${approvalsRaw}\n\n**Mandatory:** Summarize the Approvals queue in plain text only. Include **pending_total**, **by_category** (onboarding, rent_chase, move_in, maintenance), **oldest_waiting_label** when the queue is non-empty (say the queue is empty otherwise), and a short bullet list from **items** (use **title** and **category**). End with the **next_action** path from JSON (open /dashboard/approvals). Do **not** ask the user to reply **yes** or **no** to proceed. Do **not** offer to approve, reject, or send items from chat. Do not call tools.`;
+
+    try {
+      const approvalsSummaryResp = await anthropic.messages.create({
+        model: ANTHROPIC_CEO_MODEL,
+        max_tokens: 2048,
+        system: approvalsSummarySystem,
+        messages: conversation,
+      });
+      return completeWithSuggestedActions(
+        extractFinalText(approvalsSummaryResp),
+        approvalsToolBatch,
+        authoritativeLeadsRaw,
+        null,
+        referencingInboundDigest,
+        null,
+        null,
+        latestUser,
+      );
+    } catch (anthropicError) {
+      await runAdminFailureAlert({
+        stage: "anthropic_loop",
+        error: anthropicError,
+        userId,
+      });
+      try {
+        const reply = await runGeminiFallback({
+          systemPrompt: approvalsSummarySystem,
+          conversation,
+        });
+        return completeWithSuggestedActions(
+          reply,
+          approvalsToolBatch,
+          authoritativeLeadsRaw,
+          null,
+          referencingInboundDigest,
+          null,
+          null,
+          latestUser,
+        );
+      } catch (geminiError) {
+        console.error("[ceo] gemini fallback failure", {
+          stage: "approvals_queue_summary",
+          userId,
+          error: toErrorMessage(geminiError),
+        });
+        throw new Error(
+          `AI services are temporarily unavailable. Primary and fallback models failed. Anthropic: ${toErrorMessage(
+            anthropicError,
+          )}; Gemini: ${toErrorMessage(geminiError)}`,
+        );
+      }
+    }
+  }
+
   /** So the model cannot end_turn with “no agency reply” before calling tools — same JSON as prepare_referencing. */
   let referencingPrefetchRaw: string | null = null;
   if (route.wantsReferencingStatus) {
@@ -916,10 +981,6 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
   }
 
   const intent = classifyCEOIntent(latestUser);
-  const conversation: MessageParam[] = contextMessages.map((m) => ({
-    role: m.role,
-    content: m.content,
-  }));
 
   let lastToolBatch: { name: CEOToolName; raw: string }[] = [];
   /** Latest **draft_contract** JSON in this agent loop (survives later turns that overwrite **lastToolBatch**). */

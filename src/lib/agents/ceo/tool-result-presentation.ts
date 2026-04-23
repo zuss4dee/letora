@@ -10,6 +10,8 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
     "Order by **priority** (urgent first when field exists), then non-completed **status**, then **created_at** if present in ticket objects. Lead with the single worst ticket for tenant impact when JSON supports it; do not invent severity beyond **priority** / title / description text. If many tickets are open with a **common** theme visible in titles/status (e.g. same property or same category) **only** from JSON text, you may note a **pattern to watch** in one cautious sentence — not a trend over time. Summarize the most important tickets by title; do not list raw IDs.",
   get_leads_summary:
     "State whether there are any new leads, then give pending/qualified/disqualified counts and a short list of recent lead names when helpful.",
+  get_pending_approvals_summary:
+    "Read-only queue snapshot: **pending_total**, **by_category**, **oldest_waiting_label**, **items** (title + category), **next_action**. Do **not** say **Reply yes** or ask for chat confirmation. Approving or sending remains in **/dashboard/approvals**.",
   search_properties:
     "List matching properties with their **id** (UUID), human-readable label, and hint if multiple matches — tell the user to pick the right one before mutating tools. Never treat a unit number as a UUID.",
   create_tenant_and_tenancy:

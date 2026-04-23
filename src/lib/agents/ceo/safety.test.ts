@@ -78,6 +78,16 @@ describe("CEO safety confirmation gating", () => {
     expect(classifyCEOIntent("where is Alexis a tenant?")).toBe("read_only");
     expect(classifyCEOIntent("where is john a tenant")).toBe("read_only");
   });
+
+  it("classifies approvals queue inspection as read_only", () => {
+    expect(classifyCEOIntent("review approvals")).toBe("read_only");
+    expect(classifyCEOIntent("show me pending approvals")).toBe("read_only");
+  });
+
+  it("does not require confirmation for get_pending_approvals_summary alone", () => {
+    const intent = classifyCEOIntent("list pending approvals");
+    expect(toolsRequireUserConfirmation(intent, ["get_pending_approvals_summary"])).toBe(false);
+  });
 });
 
 describe("bulk_onboard_tenants safety", () => {
