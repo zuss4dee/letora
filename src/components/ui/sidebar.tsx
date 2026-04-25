@@ -155,12 +155,28 @@ function Sidebar({
   className,
   children,
   dir,
+  userEmail: _userEmail,
+  complianceAttention: _complianceAttention,
+  maintenanceAttention: _maintenanceAttention,
+  subscriptionPlan: _subscriptionPlan,
+  subscriptionStatus: _subscriptionStatus,
+  subscriptionPeriodEnd: _subscriptionPeriodEnd,
+  subscriptionTrialEnd: _subscriptionTrialEnd,
   ...props
 }: React.ComponentProps<"div"> & {
   side?: "left" | "right"
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
 }) {
+  void [
+    _userEmail,
+    _complianceAttention,
+    _maintenanceAttention,
+    _subscriptionPlan,
+    _subscriptionStatus,
+    _subscriptionPeriodEnd,
+    _subscriptionTrialEnd,
+  ]
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 
   if (collapsible === "none") {

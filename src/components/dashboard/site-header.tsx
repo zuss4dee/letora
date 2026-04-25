@@ -2,18 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, LayoutGrid } from "lucide-react";
+import { Bell, Command, Search, UserCircle2 } from "lucide-react";
 
-import { ThemeToggle } from "@/components/theme-toggle";
+import { useOpenCommandPalette } from "@/components/dashboard/dashboard-command-palette";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
@@ -81,27 +73,31 @@ function breadcrumbFor(pathname: string): { parent: string; current: string } {
 
 export function SiteHeader() {
   const pathname = usePathname();
-  const { parent, current } = breadcrumbFor(pathname ?? "");
+  const { current } = breadcrumbFor(pathname ?? "");
+  const { openPalette } = useOpenCommandPalette();
 
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 flex h-16 shrink-0 items-center border-b border-border/80",
-        "bg-background/85 backdrop-blur-xl transition-[width,height] ease-linear dark:bg-background/60",
+        "sticky top-0 z-40 flex h-12 shrink-0 items-center border-b border-border/80",
+        "bg-[#0b0b0b] transition-[width,height] ease-linear",
         "group-has-data-[collapsible=icon]/sidebar-wrapper:h-16",
       )}
     >
-      <div className="flex w-full items-center justify-between gap-4 px-4 lg:px-12">
+      <div className="flex w-full items-center justify-between gap-4 px-4 md:px-6">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <SidebarTrigger className="-ml-1 text-muted-foreground hover:bg-accent hover:text-secondary md:hidden" />
-          <span className="font-headline truncate text-sm font-light text-foreground md:hidden">{current}</span>
-          <div className="hidden min-w-0 items-center gap-2 md:flex">
-            <span className="font-headline text-sm font-light text-muted-foreground">{parent}</span>
-            <span className="text-muted-foreground" aria-hidden>
-              /
-            </span>
-            <span className="font-headline truncate text-sm font-light text-foreground">{current}</span>
+          <SidebarTrigger className="-ml-1 text-zinc-400 hover:bg-transparent hover:text-white md:hidden" />
+          <div className="relative hidden w-full max-w-md md:block">
+            <Search className="pointer-events-none absolute left-2 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              readOnly
+              onClick={openPalette}
+              aria-label="Search or open command palette"
+              className="h-8 w-full border border-border bg-black pl-8 pr-3 text-xs text-zinc-200 outline-none"
+              value="Search or CMD+K"
+            />
           </div>
+          <span className="font-headline truncate text-sm font-light text-foreground md:hidden">{current}</span>
         </div>
 
         <div className="flex shrink-0 items-center gap-2 sm:gap-4">
@@ -109,46 +105,33 @@ export function SiteHeader() {
             type="button"
             variant="ghost"
             size="icon"
-            className="size-9 text-muted-foreground hover:bg-transparent hover:text-[#BD9952]"
+            className="size-8 text-zinc-500 hover:bg-transparent hover:text-white"
             aria-label="Notifications"
           >
             <Bell className="size-[18px] stroke-[1.25]" />
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="size-9 text-muted-foreground hover:bg-transparent hover:text-[#BD9952]"
-                aria-label="App shortcuts"
-              >
-                <LayoutGrid className="size-[18px] stroke-[1.25]" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 border-border bg-popover text-popover-foreground">
-              <DropdownMenuLabel className="font-headline text-xs font-normal text-muted-foreground">
-                Jump to
-              </DropdownMenuLabel>
-              <DropdownMenuSeparator className="bg-border" />
-              <DropdownMenuItem asChild className="focus:bg-accent">
-                <Link href="/dashboard/leads">Leads inbox</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="focus:bg-accent">
-                <Link href="/dashboard/import">Batch import</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="focus:bg-accent">
-                <Link href="/dashboard/emails">Emails</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="focus:bg-accent">
-                <Link href="/dashboard/rent-tracker">Rent tracker</Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild className="focus:bg-accent">
-                <Link href="/dashboard">Home</Link>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <ThemeToggle />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8 text-zinc-500 hover:bg-transparent hover:text-white"
+            aria-label="Command palette"
+            onClick={openPalette}
+          >
+            <Command className="size-[18px] stroke-[1.25]" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8 text-zinc-500 hover:bg-transparent hover:text-white"
+            aria-label="Profile"
+            asChild
+          >
+            <Link href="/dashboard/settings">
+              <UserCircle2 className="size-[18px] stroke-[1.25]" />
+            </Link>
+          </Button>
         </div>
       </div>
     </header>

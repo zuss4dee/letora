@@ -199,6 +199,10 @@ export function AppSidebar({
   subscriptionTrialEnd = null,
   pendingApprovalsCount = 0,
   pendingApprovalsBadgeTitle = null,
+  variant,
+  side,
+  collapsible,
+  className,
   ...props
 }: React.ComponentProps<typeof Sidebar> & {
   userEmail?: string | null;
@@ -311,9 +315,10 @@ export function AppSidebar({
 
   return (
     <Sidebar
-      collapsible="offcanvas"
-      variant="sidebar"
-      className="border-sidebar-border [&_[data-sidebar=sidebar]]:border-sidebar-border"
+      collapsible={collapsible ?? "offcanvas"}
+      variant={variant ?? "sidebar"}
+      side={side}
+      className={cn("border-sidebar-border [&_[data-sidebar=sidebar]]:border-sidebar-border", className)}
       {...props}
     >
       <SidebarHeader className="gap-0 px-4 pb-8 pt-8">

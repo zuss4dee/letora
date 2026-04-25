@@ -1,19 +1,18 @@
 import type { ReactNode } from "react";
-import { redirect } from "next/navigation";
 
-import { createClient } from "@/lib/supabase/server";
-
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/login");
+  /**
+   * TEMP DEBUG: auth gate removed to isolate route hangs.
+   *
+   * Previous blocking logic:
+   * - createClient()
+   * - supabase.auth.getUser()
+   * - redirect("/login") when no user
+   */
 
   return children;
 }

@@ -2,58 +2,24 @@ import type { CSSProperties, ReactNode } from "react";
 import { Suspense } from "react";
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
+import { DashboardSidebarBoundary } from "@/components/dashboard/dashboard-sidebar-boundary";
 import { DashboardShellProviders } from "@/components/dashboard/dashboard-shell-providers";
-import { MercuryTourGate } from "@/components/dashboard/mercury-tour-gate";
-import { ReferencingInboundRealtimeListener } from "@/components/referencing-inbound-realtime-listener";
 import { SiteHeader } from "@/components/dashboard/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { redirect } from "next/navigation";
 
-import { getComplianceExpiredSidebarAttention } from "@/lib/actions/compliance";
-import { getMaintenanceSafetySidebarAttention } from "@/lib/actions/safety-alerts";
-import { getOnboardingStatusForGate, getUserSettings } from "@/lib/actions/user-settings";
-import { isOnboardingMarkedComplete } from "@/lib/onboarding/status";
-import { getAgentRuns } from "@/lib/actions/agents";
-import { getPendingAgentApprovals } from "@/lib/actions/agent-approvals";
-import { computeApprovalQueueStats } from "@/lib/approvals/queue-stats";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function DashboardShellLayout({ children }: { children: ReactNode }) {
+  // Permanent safe layout: auth-only logic here.
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  const userEmail = user?.email ?? null;
-  const userId = user?.id ?? null;
-
-  const initialAgentRuns = userId ? await getAgentRuns() : [];
-  const pendingApprovals = userId ? await getPendingAgentApprovals() : [];
-  const pendingApprovalQueueStats = computeApprovalQueueStats(pendingApprovals);
-  const pendingApprovalsBadgeTitle =
-    pendingApprovalQueueStats.stalePendingCount > 0
-      ? `${pendingApprovalQueueStats.stalePendingCount} pending over 48 hours — review when you can`
-      : null;
-
-  let complianceAttention = false;
-  let maintenanceAttention = false;
-  let showMercuryTour = false;
-  let settings: Awaited<ReturnType<typeof getUserSettings>> = null;
-  if (userId) {
-    const [loadedSettings, onboardingGate, cAtt, mAtt] = await Promise.all([
-      getUserSettings(userId),
-      getOnboardingStatusForGate(userId),
-      getComplianceExpiredSidebarAttention(userId),
-      getMaintenanceSafetySidebarAttention(userId),
-    ]);
-    settings = loadedSettings;
-    if (!isOnboardingMarkedComplete(onboardingGate)) {
-      redirect("/onboarding");
-    }
-    showMercuryTour = settings ? settings.hasSeenTour !== true : false;
-    complianceAttention = cAtt;
-    maintenanceAttention = mAtt;
-  }
+  if (!user) redirect("/login");
+  const userId = user.id;
+  const userEmail = user.email ?? null;
 
   return (
     <TooltipProvider>
@@ -65,25 +31,12 @@ export default async function DashboardShellLayout({ children }: { children: Rea
           } as CSSProperties
         }
       >
-        <DashboardShellProviders initialAgentRuns={initialAgentRuns}>
-          <AppSidebar
-            variant="sidebar"
-            userEmail={userEmail}
-            complianceAttention={complianceAttention}
-            maintenanceAttention={maintenanceAttention}
-            subscriptionPlan={settings?.subscriptionPlan ?? null}
-            subscriptionStatus={settings?.subscriptionStatus ?? null}
-            subscriptionPeriodEnd={settings?.subscriptionPeriodEnd ?? null}
-            subscriptionTrialEnd={settings?.subscriptionTrialEnd ?? null}
-            pendingApprovalsCount={pendingApprovals.length}
-            pendingApprovalsBadgeTitle={pendingApprovalsBadgeTitle}
-          />
+        <DashboardShellProviders initialAgentRuns={[]}>
+          <Suspense fallback={<AppSidebar variant="sidebar" userEmail={userEmail} pendingApprovalsCount={0} />}>
+            <DashboardSidebarBoundary userId={userId} userEmail={userEmail} />
+          </Suspense>
           <SidebarInset className="bg-background">
-            {userId ? <ReferencingInboundRealtimeListener userId={userId} /> : null}
             <SiteHeader />
-            <Suspense fallback={null}>
-              <MercuryTourGate initialShowTour={showMercuryTour} />
-            </Suspense>
             <div className="flex min-h-0 flex-1 flex-col">{children}</div>
           </SidebarInset>
         </DashboardShellProviders>

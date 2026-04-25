@@ -1,43 +1,46 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Plus, Sparkles } from "lucide-react";
+import { CheckCircle2, Circle, Ellipsis, Hourglass, Plus } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { EditTenancyDialog } from "@/components/tenancies/edit-tenancy-dialog";
 import { AddTenancyDialog } from "@/components/rent/add-tenancy-dialog";
 import { LogPaymentDialog } from "@/components/rent/log-payment-dialog";
+import { EditTenancyDialog } from "@/components/tenancies/edit-tenancy-dialog";
 import type { RentPaymentRow, TenancyRow } from "@/lib/actions/tenancies";
 import { cn } from "@/lib/utils";
-
-const PAGE_SIZE = 10;
 
 const gbp = new Intl.NumberFormat("en-GB", {
   style: "currency",
   currency: "GBP",
-  maximumFractionDigits: 0,
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
 });
 
 function parseIsoDate(date: string | null) {
   if (!date) return null;
-  const d = new Date(`${date}T00:00:00.000Z`);
-  return Number.isNaN(d.getTime()) ? null : d;
+  const parsed = new Date(`${date}T00:00:00.000Z`);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function classifyTenancy(endDateIso: string | null): "active" | "expiring" | "expired" {
-  const now = new Date();
-  const end = parseIsoDate(endDateIso);
-  if (!end) return "active";
-  if (end.getTime() < now.getTime()) return "expired";
-  const sixtyDaysMs = 60 * 24 * 60 * 60 * 1000;
-  if (end.getTime() - now.getTime() <= sixtyDaysMs) return "expiring";
-  return "active";
+function fmtShortDate(date: string | null): string {
+  const parsed = parseIsoDate(date);
+  if (!parsed) return "—";
+  return parsed.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
-function isTenancyActiveRow(t: TenancyRow): boolean {
-  const st = (t.status ?? "active").toLowerCase();
-  if (st === "ended") return false;
-  return classifyTenancy(t.endDate) !== "expired";
+function fmtInspectorDate(date: string | null): string {
+  const parsed = parseIsoDate(date);
+  if (!parsed) return "—";
+  return parsed.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).toUpperCase();
 }
 
 function initials(name: string | null): string {
@@ -47,115 +50,67 @@ function initials(name: string | null): string {
   return `${parts[0]![0] ?? ""}${parts[parts.length - 1]![0] ?? ""}`.toUpperCase();
 }
 
-function tenantRefId(tenancyId: string, name: string | null): string {
-  const compact = tenancyId.replace(/-/g, "").toUpperCase();
-  const suf = initials(name);
-  return `T-${compact.slice(0, 4)}-${suf}`;
+function splitAddress(address: string | null): { line1: string; line2: string } {
+  if (!address?.trim()) return { line1: "Property", line2: "—" };
+  const [line1, ...rest] = address.split(",");
+  return {
+    line1: line1?.trim() || "Property",
+    line2: rest.join(",").trim() || "—",
+  };
 }
 
-function splitPropertyAddress(addr: string | null): { line1: string; line2: string | null } {
-  if (!addr?.trim()) return { line1: "—", line2: null };
-  const i = addr.indexOf(",");
-  if (i === -1) return { line1: addr.trim(), line2: null };
-  return {
-    line1: addr.slice(0, i).trim(),
-    line2: addr.slice(i + 1).trim() || null,
-  };
+function tenancyRef(tenancyId: string): string {
+  return `TN-${tenancyId.replace(/-/g, "").slice(0, 4).toUpperCase()}`;
 }
 
 type PaymentUi = "paid" | "arrears" | "pending";
 
 function paymentForTenancy(
   tenancyId: string,
-  map: Map<string, RentPaymentRow>,
-): { ui: PaymentUi; arrears: number | null; payment: RentPaymentRow | null } {
-  const p = map.get(tenancyId) ?? null;
-  if (!p) {
-    return { ui: "pending", arrears: null, payment: null };
+  paymentMap: Map<string, RentPaymentRow>,
+): { ui: PaymentUi; arrears: number; payment: RentPaymentRow | null } {
+  const payment = paymentMap.get(tenancyId) ?? null;
+  if (!payment) return { ui: "pending", arrears: 0, payment: null };
+  const status = (payment.status ?? "pending").toLowerCase();
+  if (status === "paid") return { ui: "paid", arrears: 0, payment };
+  if (status === "overdue") {
+    const due = payment.amountDue ?? 0;
+    const paid = payment.amountPaid ?? 0;
+    return { ui: "arrears", arrears: Math.max(0, due - paid), payment };
   }
-  const st = (p.status ?? "pending").toLowerCase();
-  if (st === "paid") {
-    return { ui: "paid", arrears: null, payment: p };
-  }
-  if (st === "overdue") {
-    const due = p.amountDue ?? 0;
-    const paid = p.amountPaid ?? 0;
-    const owed = Math.max(0, due - paid);
-    return { ui: "arrears", arrears: owed > 0 ? owed : due, payment: p };
-  }
-  return { ui: "pending", arrears: null, payment: p };
+  return { ui: "pending", arrears: 0, payment };
 }
 
-function isOnboardingPipelineComplete(t: TenancyRow): boolean {
-  const ob = (t.onboardingStatus ?? "").trim().toLowerCase();
-  return ob === "complete" || ob === "signed" || ob === "active";
+function statusLabel(status: string | null): "Active" | "Pending" | "Ending" | "Onboarding" {
+  const normalized = (status ?? "").toLowerCase();
+  if (normalized === "active") return "Active";
+  if (normalized === "pending") return "Pending";
+  if (normalized === "ended" || normalized === "ending") return "Ending";
+  return "Onboarding";
 }
 
-function onboardingBar(t: TenancyRow): { label: string; pct: number; tone: "green" | "gold" | "teal" } {
-  const ob = (t.onboardingStatus ?? "").trim().toLowerCase();
-
-  /** DB pipeline: show full green bar when onboarding is finished or tenancy is live. */
-  if (isOnboardingPipelineComplete(t)) {
-    const label =
-      ob === "active" ? "ACTIVE" : ob === "signed" ? "SIGNED" : "COMPLETE";
-    return { label, pct: 100, tone: "green" };
+function onboardingProgress(onboardingStatus: string | null): { pct: number; label: string } {
+  const normalized = (onboardingStatus ?? "").toLowerCase();
+  if (normalized === "complete" || normalized === "active" || normalized === "signed") {
+    return { pct: 100, label: "Complete" };
   }
-
-  if (ob === "not_started" || ob === "") {
-    const st = (t.status ?? "active").toLowerCase();
-    if (st === "pending") {
-      return { label: "REFERENCING", pct: 42, tone: "gold" };
-    }
-    return { label: "NOT STARTED", pct: 10, tone: "gold" };
+  if (normalized === "contract_sent" || normalized === "pending_signature") {
+    return { pct: 66, label: "Onboarding" };
   }
-
-  if (ob === "in_progress") {
-    return { label: "IN PROGRESS", pct: 38, tone: "gold" };
-  }
-  if (ob === "references") {
-    return { label: "REFERENCING", pct: 55, tone: "gold" };
-  }
-  if (ob === "contract_sent") {
-    return { label: "CONTRACT SENT", pct: 78, tone: "gold" };
-  }
-  if (ob === "pending_signature") {
-    return { label: "PENDING SIGN", pct: 90, tone: "gold" };
-  }
-
-  // Legacy rows without a known status: approximate from dates / tenancy status
-  const st = (t.status ?? "active").toLowerCase();
-  const now = new Date();
-  const moveIn = parseIsoDate(t.moveInDate) ?? parseIsoDate(t.startDate);
-  if (st === "pending") {
-    return { label: "REFERENCING", pct: 42, tone: "gold" };
-  }
-  if (moveIn && moveIn.getTime() > now.getTime()) {
-    return { label: "CONTRACT SENT", pct: 78, tone: "gold" };
-  }
-  return { label: "SIGNED", pct: 100, tone: "teal" };
+  if (normalized === "references") return { pct: 52, label: "Onboarding" };
+  if (normalized === "in_progress") return { pct: 35, label: "Onboarding" };
+  if (normalized === "not_started" || normalized === "") return { pct: 15, label: "Onboarding" };
+  return { pct: 40, label: "Onboarding" };
 }
 
-function StatusBadge({ kind }: { kind: PaymentUi }) {
-  const styles: Record<PaymentUi, string> = {
-    paid: "border-emerald-500/40 text-[#afefdd]",
-    arrears: "border-[#BB5551]/50 text-[#ee7d77]",
-    pending: "border-[#484848]/50 text-muted-foreground",
-  };
-  const labels: Record<PaymentUi, string> = {
-    paid: "PAID",
-    arrears: "ARREARS",
-    pending: "PENDING",
-  };
-  return (
-    <span
-      className={cn(
-        "inline-flex rounded-sm border px-2 py-0.5 font-[family-name:var(--font-inter)] text-[0.6rem] font-semibold uppercase tracking-wider",
-        styles[kind],
-      )}
-    >
-      {labels[kind]}
-    </span>
-  );
+function termLength(startDate: string | null, endDate: string | null): string {
+  const start = parseIsoDate(startDate);
+  const end = parseIsoDate(endDate);
+  if (!start || !end) return "—";
+  const months =
+    (end.getUTCFullYear() - start.getUTCFullYear()) * 12 + end.getUTCMonth() - start.getUTCMonth();
+  if (months <= 0) return "—";
+  return `${months} MONTHS`;
 }
 
 export function TenanciesRegistry({
@@ -171,464 +126,427 @@ export function TenanciesRegistry({
   propertyOptions: Array<{ id: string; label: string }>;
   tenantOptions: Array<{ id: string; label: string }>;
 }) {
-  const [page, setPage] = useState(1);
+  const [filter, setFilter] = useState<"all" | "active" | "pending" | "onboarding" | "overdue">("all");
+  const [selectedTenancyId, setSelectedTenancyId] = useState<string | null>(tenancies[0]?.id ?? null);
 
   const paymentByTenancy = useMemo(() => {
-    const m = new Map<string, RentPaymentRow>();
-    for (const p of paymentsThisMonth) {
-      const tid = p.tenancyId;
-      if (!tid) continue;
-      if (!m.has(tid)) m.set(tid, p);
+    const map = new Map<string, RentPaymentRow>();
+    for (const payment of paymentsThisMonth) {
+      const tenancyId = payment.tenancyId;
+      if (!tenancyId || map.has(tenancyId)) continue;
+      map.set(tenancyId, payment);
     }
-    return m;
+    return map;
   }, [paymentsThisMonth]);
 
-  const sorted = useMemo(
-    () =>
-      [...tenancies].sort((a, b) => (b.startDate ?? "").localeCompare(a.startDate ?? "")),
+  const sortedRows = useMemo(
+    () => [...tenancies].sort((a, b) => (b.startDate ?? "").localeCompare(a.startDate ?? "")),
     [tenancies],
   );
 
-  const activeRows = useMemo(() => sorted.filter(isTenancyActiveRow), [sorted]);
+  const filteredRows = useMemo(() => {
+    return sortedRows.filter((row) => {
+      const status = statusLabel(row.status).toLowerCase();
+      const payment = paymentForTenancy(row.id, paymentByTenancy);
+      const onboarding = onboardingProgress(row.onboardingStatus);
+      if (filter === "all") return true;
+      if (filter === "active") return status === "active";
+      if (filter === "pending") return status === "pending";
+      if (filter === "onboarding") return onboarding.pct < 100;
+      if (filter === "overdue") return payment.ui === "arrears";
+      return true;
+    });
+  }, [sortedRows, paymentByTenancy, filter]);
 
-  const kpis = useMemo(() => {
-    const totalActive = activeRows.length;
-    const payRows = paymentsThisMonth.filter((p) => p.tenancyId);
-    const paidCount = payRows.filter((p) => (p.status ?? "").toLowerCase() === "paid").length;
-    const overdueCount = payRows.filter((p) => (p.status ?? "").toLowerCase() === "overdue").length;
-    const totalWithStatus = payRows.length;
-    const collectionRate =
-      totalWithStatus > 0 ? (paidCount / totalWithStatus) * 100 : 100;
+  const selected = useMemo(() => {
+    if (filteredRows.length === 0) return null;
+    return (
+      filteredRows.find((row) => row.id === selectedTenancyId) ??
+      filteredRows[0] ??
+      null
+    );
+  }, [filteredRows, selectedTenancyId]);
 
-    const monthlyRevenue = activeRows.reduce((sum, t) => sum + (t.monthlyRent ?? 0), 0);
-    const forecast = monthlyRevenue * 1.03;
-
-    const pendingOnboarding = activeRows.filter((t) => {
-      if (isOnboardingPipelineComplete(t)) return false;
-      const st = (t.status ?? "").toLowerCase();
-      const moveIn = parseIsoDate(t.moveInDate) ?? parseIsoDate(t.startDate);
-      const now = new Date();
-      return st === "pending" || (moveIn !== null && moveIn.getTime() > now.getTime());
-    }).length;
-
-    const readySigning = activeRows.filter((t) => {
-      const st = (t.status ?? "").toLowerCase();
-      const moveIn = parseIsoDate(t.moveInDate) ?? parseIsoDate(t.startDate);
-      const now = new Date();
-      return st !== "pending" && moveIn !== null && moveIn.getTime() > now.getTime();
-    }).length;
-
-    return {
-      totalActive,
-      collectionRate,
-      arrearsFlagged: overdueCount,
-      monthlyRevenue,
-      forecast,
-      pendingOnboarding,
-      readySigning,
-    };
-  }, [activeRows, paymentsThisMonth]);
-
-  const total = sorted.length;
-  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const safePage = Math.min(page, pageCount);
-  const start = (safePage - 1) * PAGE_SIZE;
-  const slice = sorted.slice(start, start + PAGE_SIZE);
-
-  const displayFrom = total === 0 ? 0 : start + 1;
-  const displayTo = Math.min(start + PAGE_SIZE, total);
-
-  const forecastK = Math.round(kpis.forecast / 1000);
+  const selectedPayment = selected ? paymentForTenancy(selected.id, paymentByTenancy) : null;
+  const selectedAddress = splitAddress(selected?.propertyAddress ?? null);
+  const selectedOnboarding = onboardingProgress(selected?.onboardingStatus ?? null);
+  const selectedMoveInDate = selected?.moveInDate ?? selected?.startDate ?? null;
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col bg-background">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -left-32 top-20 size-96 rounded-full bg-[#BD9952]/[0.03] blur-3xl" />
-        <div className="absolute bottom-0 right-0 size-[28rem] rounded-full bg-[#BD9952]/[0.06] blur-3xl dark:bg-[#1a1a1a]/80" />
-      </div>
-
-      <div className="relative mx-auto w-full max-w-7xl flex-1 px-4 pb-8 pt-4 sm:px-6 md:px-12 md:pb-24 md:pt-8">
-        <header className="flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-end md:justify-between md:pb-8">
-          <div>
-            <h1 className="font-headline text-2xl font-extralight tracking-tight text-foreground sm:text-3xl md:text-4xl">
-              Tenancies
-            </h1>
-            <p className="mt-2 hidden max-w-xl font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground sm:block">
-              Manage onboarding, payments, and arrears for your premium portfolio across 12 jurisdictions.
-            </p>
-          </div>
-          <AddTenancyDialog
-            properties={propertyOptions}
-            tenants={tenantOptions}
-            trigger={
+    <div className="flex min-h-0 flex-1 bg-[#0e0e0e] text-[#e5e2e1]">
+      <div className="flex min-w-0 flex-1 flex-col border-r border-[#232323]">
+        <div className="flex items-center justify-between border-b border-[#232323] px-3 py-2">
+          <div className="flex items-center gap-1 text-[11px]">
+            {[
+              { id: "all", label: "All" },
+              { id: "active", label: "Active" },
+              { id: "pending", label: "Pending" },
+              { id: "onboarding", label: "Onboarding" },
+            ].map((item) => (
               <button
+                key={item.id}
                 type="button"
-                disabled={propertyOptions.length === 0 || tenantOptions.length === 0}
-                className="inline-flex items-center gap-2 rounded-sm bg-gradient-to-r from-[#BD9952] via-[#c9a86a] to-[#A38245] px-6 py-2.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-bold uppercase tracking-[0.12em] text-[#1a1206] shadow-[0_0_24px_rgba(189,153,82,0.25)] transition hover:brightness-110 disabled:opacity-40"
+                onClick={() => setFilter(item.id as typeof filter)}
+                className={cn(
+                  "h-7 border px-3 text-[11px] font-medium",
+                  filter === item.id
+                    ? "border-[#3a3a3a] bg-[#1d1d1d] text-[#f2f2f2]"
+                    : "border-transparent text-[#737373] hover:bg-[#1a1a1a] hover:text-[#c4c7c8]",
+                )}
               >
-                <Plus className="size-4" strokeWidth={2} aria-hidden />
-                Create Tenancy
+                {item.label}
               </button>
-            }
-          />
-        </header>
-
-        <section className="mb-6 grid grid-cols-2 gap-3 border-b border-border/80 py-6 md:mb-10 md:gap-10 md:grid-cols-4 md:py-10">
-          <div className="rounded-sm border border-border bg-card/80 p-4 backdrop-blur-sm">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Total active
-            </p>
-            <p className="font-headline mt-2 text-2xl font-extralight tabular-nums text-[#BD9952]">
-              {kpis.totalActive}
-            </p>
-            <p className="mt-1 font-[family-name:var(--font-inter)] text-[10px] text-muted-foreground">
-              +4% this month
-            </p>
-          </div>
-          <div className="rounded-sm border border-border bg-card/80 p-4 backdrop-blur-sm">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Collection rate
-            </p>
-            <p className="font-headline mt-2 text-2xl font-extralight tabular-nums text-foreground">
-              {kpis.collectionRate.toFixed(1)}%
-            </p>
-            <p
+            ))}
+            <button
+              type="button"
+              onClick={() => setFilter("overdue")}
               className={cn(
-                "mt-1 font-[family-name:var(--font-inter)] text-[10px]",
-                kpis.arrearsFlagged > 0 ? "text-[#ee7d77]" : "text-muted-foreground",
+                "flex h-7 items-center border px-3 text-[11px] font-medium",
+                filter === "overdue"
+                  ? "border-[#3a3a3a] bg-[#1d1d1d] text-[#ff8c8c]"
+                  : "border-transparent text-[#ff6f6f] hover:bg-[#1a1a1a]",
               )}
             >
-              {kpis.arrearsFlagged > 0
-                ? `${kpis.arrearsFlagged} arrears flagged`
-                : "All current"}
-            </p>
+              <span className="mr-2 size-1.5 rounded-full bg-[#d75454]" />
+              Overdue
+            </button>
           </div>
-          <div className="rounded-sm border border-border bg-card/80 p-4 backdrop-blur-sm">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Monthly revenue
-            </p>
-            <p className="font-headline mt-2 text-2xl font-extralight tabular-nums text-[#BD9952]">
-              {gbp.format(kpis.monthlyRevenue)}
-            </p>
-            <p className="mt-1 font-[family-name:var(--font-inter)] text-[10px] text-muted-foreground">
-              Forecast: £{forecastK}k
-            </p>
-          </div>
-          <div className="rounded-sm border border-border bg-card/80 p-4 backdrop-blur-sm">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Onboarding
-            </p>
-            <p className="font-headline mt-2 text-2xl font-extralight tabular-nums text-foreground">
-              {kpis.pendingOnboarding}
-            </p>
-            <p className="mt-1 font-[family-name:var(--font-inter)] text-[10px] text-muted-foreground">
-              {kpis.readySigning > 0 ? `${kpis.readySigning} ready for signing` : "Pipeline clear"}
-            </p>
-          </div>
-        </section>
-
-        <ul className="space-y-3 md:hidden">
-          {slice.length === 0 ? (
-            <li className="rounded-sm border border-border bg-card/90 px-4 py-10 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
-              No tenancies yet.
-            </li>
-          ) : (
-            slice.map((t) => {
-              const amount = t.monthlyRent ?? 0;
-              const { line1, line2 } = splitPropertyAddress(t.propertyAddress);
-              const { ui, arrears, payment } = paymentForTenancy(t.id, paymentByTenancy);
-              const defaultPay =
-                payment && (payment.amountDue ?? 0) - (payment.amountPaid ?? 0) > 0
-                  ? (payment.amountDue ?? 0) - (payment.amountPaid ?? 0)
-                  : amount;
-              return (
-                <li
-                  key={`m-${t.id}`}
-                  className="rounded-sm border border-border bg-card/90 p-4"
+          <div className="flex items-center gap-4 text-[11px] text-[#7a7a7a]">
+            <button type="button" className="hover:text-[#c4c7c8]">
+              Sort by: Date Added
+            </button>
+            <button type="button" className="hover:text-[#c4c7c8]">
+              Columns
+            </button>
+            <AddTenancyDialog
+              properties={propertyOptions}
+              tenants={tenantOptions}
+              trigger={
+                <button
+                  type="button"
+                  disabled={propertyOptions.length === 0 || tenantOptions.length === 0}
+                  className="inline-flex h-7 items-center gap-1 border border-[#343434] bg-[#f5f5f5] px-2 text-[11px] font-semibold text-[#101010] disabled:opacity-50"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div
-                        className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-muted font-[family-name:var(--font-inter)] text-[11px] font-semibold text-[#BD9952]"
-                        aria-hidden
-                      >
-                        {initials(t.tenantFullName)}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-foreground">
-                          {t.tenantFullName ?? "—"}
-                        </p>
-                        <p className="truncate font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
-                          {line1}
-                          {line2 ? ` · ${line2}` : ""}
-                        </p>
-                      </div>
-                    </div>
-                    <StatusBadge kind={ui} />
-                  </div>
-                  <div className="mt-3 grid grid-cols-2 gap-3 border-t border-border/60 pt-3">
-                    <div>
-                      <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
-                        Monthly rent
-                      </p>
-                      <p className="mt-1 font-headline text-sm font-light tabular-nums text-foreground">
-                        {gbp.format(amount)}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
-                        Arrears
-                      </p>
-                      <p className="mt-1 font-headline text-sm font-light tabular-nums">
-                        {arrears != null && arrears > 0 ? (
-                          <span className="text-[#ee7d77]">{gbp.format(arrears)}</span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-3 flex items-center justify-end gap-3">
-                    <Link
-                      href={`/dashboard/tenancies/${t.id}`}
-                      className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#BD9952] hover:underline"
-                    >
-                      View
-                    </Link>
-                    {userId ? (
-                      <LogPaymentDialog
-                        tenancyId={t.id}
-                        rentPaymentId={payment?.id}
-                        defaultAmountPaid={defaultPay}
-                        triggerLabel="Pay"
-                        triggerClassName="border-[#484848]/40 bg-transparent text-[10px] uppercase tracking-widest text-foreground hover:border-[#BD9952]/50 hover:text-[#BD9952]"
-                      />
-                    ) : null}
-                  </div>
-                </li>
-              );
-            })
-          )}
-        </ul>
-
-        <div className="hidden overflow-hidden rounded-sm border border-border bg-card/90 md:block">
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[880px] border-collapse text-left">
-              <thead>
-                <tr className="border-b border-border font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.18em] text-muted-foreground">
-                  <th className="px-4 py-4 font-medium">Tenant</th>
-                  <th className="px-4 py-4 font-medium">Property</th>
-                  <th className="px-4 py-4 font-medium">Monthly rent</th>
-                  <th className="px-4 py-4 font-medium">Status</th>
-                  <th className="min-w-[140px] px-4 py-4 font-medium">Onboarding</th>
-                  <th className="px-4 py-4 font-medium">Arrears</th>
-                  <th className="px-4 py-4 text-right font-medium">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {slice.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-4 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground"
-                    >
-                      No tenancies yet. Create your first tenancy to populate this registry.
-                    </td>
-                  </tr>
-                ) : (
-                  slice.map((t) => {
-                    const amount = t.monthlyRent ?? 0;
-                    const { line1, line2 } = splitPropertyAddress(t.propertyAddress);
-                    const { ui, arrears, payment } = paymentForTenancy(t.id, paymentByTenancy);
-                    const ob = onboardingBar(t);
-                    const barTone =
-                      ob.tone === "green"
-                        ? "bg-[#9cd4a8] shadow-[0_0_10px_rgba(156,212,168,0.35)]"
-                        : ob.tone === "teal"
-                          ? "bg-[#afefdd] shadow-[0_0_8px_rgba(175,239,221,0.25)]"
-                          : "bg-[#BD9952] shadow-[0_0_8px_rgba(189,153,82,0.25)]";
-                    const defaultPay =
-                      payment && (payment.amountDue ?? 0) - (payment.amountPaid ?? 0) > 0
-                        ? (payment.amountDue ?? 0) - (payment.amountPaid ?? 0)
-                        : amount;
-                    return (
-                      <tr
-                        key={t.id}
-                        className="group border-b border-border/70 transition-colors hover:bg-muted/50 dark:hover:bg-[#1F2020]/50"
-                      >
-                        <td className="px-4 py-4">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className="flex size-10 shrink-0 items-center justify-center rounded-full border border-border bg-muted font-[family-name:var(--font-inter)] text-xs font-semibold text-[#BD9952]"
-                              aria-hidden
-                            >
-                              {initials(t.tenantFullName)}
-                            </div>
-                            <div className="min-w-0">
-                              <p className="truncate font-medium text-foreground">
-                                {t.tenantFullName ?? "—"}
-                              </p>
-                              <p className="font-mono text-[0.65rem] text-muted-foreground">
-                                {tenantRefId(t.id, t.tenantFullName)}
-                              </p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="max-w-[220px] px-4 py-4">
-                          <p className="truncate text-sm text-foreground">{line1}</p>
-                          {line2 ? (
-                            <p className="truncate font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
-                              {line2}
-                            </p>
-                          ) : null}
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-4 font-headline text-sm font-light tabular-nums text-foreground">
-                          {gbp.format(amount)}
-                        </td>
-                        <td className="px-4 py-4">
-                          <StatusBadge kind={ui} />
-                        </td>
-                        <td className="px-4 py-4">
-                          <div className="flex flex-col gap-1.5">
-                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-                              <div
-                                className={cn("h-full rounded-full transition-all", barTone)}
-                                style={{ width: `${ob.pct}%` }}
-                              />
-                            </div>
-                            <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-wider text-muted-foreground">
-                              {ob.label}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="whitespace-nowrap px-4 py-4 font-headline text-sm tabular-nums">
-                          {arrears != null && arrears > 0 ? (
-                            <span className="text-[#ee7d77]">{gbp.format(arrears)}</span>
-                          ) : (
-                            <span className="text-muted-foreground">—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-4 text-right">
-                          <div className="flex flex-wrap items-center justify-end gap-2 opacity-100 md:opacity-60 md:transition-opacity md:group-hover:opacity-100">
-                            <Link
-                              href={`/dashboard/tenancies/${t.id}`}
-                              className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#BD9952] hover:underline"
-                            >
-                              View
-                            </Link>
-                            {userId ? (
-                              <>
-                                <LogPaymentDialog
-                                  tenancyId={t.id}
-                                  rentPaymentId={payment?.id}
-                                  defaultAmountPaid={defaultPay}
-                                  triggerLabel="Pay"
-                                  triggerClassName="border-[#484848]/40 bg-transparent text-[10px] uppercase tracking-widest text-foreground hover:border-[#BD9952]/50 hover:text-[#BD9952]"
-                                />
-                                <EditTenancyDialog
-                                  tenancyId={t.id}
-                                  userId={userId}
-                                  initial={{
-                                    startDate: t.startDate,
-                                    endDate: t.endDate,
-                                    moveInDate: t.moveInDate,
-                                    monthlyRent: t.monthlyRent,
-                                    depositAmount: t.depositAmount,
-                                    status: t.status,
-                                  }}
-                                  triggerLabel="Edit"
-                                  triggerClassName="border-[#484848]/40 bg-transparent text-[10px] uppercase tracking-widest text-foreground hover:border-[#BD9952]/50 hover:text-[#BD9952]"
-                                />
-                              </>
-                            ) : null}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex flex-col gap-4 border-t border-border px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Displaying {displayFrom} to {displayTo} of {total} tenancies
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                aria-label="Previous page"
-                disabled={safePage <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="rounded-sm border border-border p-1.5 text-muted-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-30"
-              >
-                <ChevronLeft className="size-4" />
-              </button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
-                  <button
-                    key={n}
-                    type="button"
-                    onClick={() => setPage(n)}
-                    className={cn(
-                      "min-w-9 px-2 py-1 font-[family-name:var(--font-inter)] text-xs tabular-nums transition",
-                      n === safePage
-                        ? "border-b-2 border-[#BD9952] text-[#BD9952]"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    {String(n).padStart(2, "0")}
-                  </button>
-                ))}
-              </div>
-              <button
-                type="button"
-                aria-label="Next page"
-                disabled={safePage >= pageCount}
-                onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="rounded-sm border border-border p-1.5 text-muted-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-30"
-              >
-                <ChevronRight className="size-4" />
-              </button>
-            </div>
+                  <Plus className="size-3.5" />
+                  Quick Action
+                </button>
+              }
+            />
           </div>
         </div>
 
-        {pageCount > 1 ? (
-          <div className="mt-4 flex items-center justify-between gap-2 md:hidden">
-            <button
-              type="button"
-              aria-label="Previous page"
-              disabled={safePage <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="rounded-sm border border-border p-2 text-muted-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-30"
-            >
-              <ChevronLeft className="size-4" />
-            </button>
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              {displayFrom}-{displayTo} of {total}
-            </p>
-            <button
-              type="button"
-              aria-label="Next page"
-              disabled={safePage >= pageCount}
-              onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-              className="rounded-sm border border-border p-2 text-muted-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-30"
-            >
-              <ChevronRight className="size-4" />
-            </button>
-          </div>
-        ) : null}
+        <div className="min-h-0 flex-1 overflow-auto">
+          <table className="w-full border-collapse text-left">
+            <thead className="sticky top-0 z-10 bg-[#111111] text-[10px] uppercase tracking-[0.08em] text-[#6f6f6f]">
+              <tr className="border-b border-[#232323]">
+                <th className="px-3 py-2 font-medium">Tenant</th>
+                <th className="px-3 py-2 font-medium">Property</th>
+                <th className="px-3 py-2 font-medium">Status</th>
+                <th className="px-3 py-2 font-medium">Rent Due</th>
+                <th className="px-3 py-2 font-medium">Arrears</th>
+                <th className="px-3 py-2 font-medium">Move-in Stage</th>
+                <th className="px-3 py-2 font-medium">Referencing</th>
+              </tr>
+            </thead>
+            <tbody className="text-[12px]">
+              {filteredRows.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-3 py-10 text-center text-[12px] text-[#7b7b7b]">
+                    No tenancies found.
+                  </td>
+                </tr>
+              ) : (
+                filteredRows.map((row) => {
+                  const address = splitAddress(row.propertyAddress);
+                  const payment = paymentForTenancy(row.id, paymentByTenancy);
+                  const onboarding = onboardingProgress(row.onboardingStatus);
+                  const rowStatus = statusLabel(row.status);
+                  const isSelected = selected?.id === row.id;
+                  const paymentDue =
+                    payment.payment?.amountDue ??
+                    payment.payment?.amountPaid ??
+                    row.monthlyRent ??
+                    0;
+                  const payDefault =
+                    payment.payment && (payment.payment.amountDue ?? 0) - (payment.payment.amountPaid ?? 0) > 0
+                      ? (payment.payment.amountDue ?? 0) - (payment.payment.amountPaid ?? 0)
+                      : paymentDue;
+                  return (
+                    <tr
+                      key={row.id}
+                      onClick={() => setSelectedTenancyId(row.id)}
+                      className={cn(
+                        "cursor-pointer border-b border-[#232323] hover:bg-[#1b1b1b]",
+                        isSelected && "bg-[#1a1a1a]",
+                      )}
+                    >
+                      <td className="px-3 py-2.5">
+                        <div className="flex items-center gap-2">
+                          <div className="flex size-5 items-center justify-center border border-[#353535] bg-[#202020] text-[10px] text-[#d0d0d0]">
+                            {initials(row.tenantFullName)}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-[12px] font-medium text-[#f0f0f0]">
+                              {row.tenantFullName ?? "Unknown Tenant"}
+                            </p>
+                            <p className="truncate text-[10px] text-[#707070]">{tenancyRef(row.id)}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <p className="text-[12px] text-[#d5d5d5]">{address.line1}</p>
+                        <p className="text-[10px] text-[#737373]">{address.line2}</p>
+                      </td>
+                      <td className="px-3 py-2.5">
+                        <span
+                          className={cn(
+                            "border px-2 py-0.5 text-[10px] uppercase",
+                            rowStatus === "Active" && "border-[#2f6c3e]/50 bg-[#163121]/40 text-[#5ab875]",
+                            rowStatus === "Pending" && "border-[#73641d]/50 bg-[#392f12]/40 text-[#c7aa48]",
+                            rowStatus === "Ending" && "border-[#365488]/50 bg-[#162238]/40 text-[#78a4f5]",
+                            rowStatus === "Onboarding" && "border-[#73641d]/50 bg-[#392f12]/40 text-[#c7aa48]",
+                          )}
+                        >
+                          {rowStatus}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-[12px] text-[#ebebeb]">
+                        {gbp.format(paymentDue)}
+                      </td>
+                      <td className="px-3 py-2.5 font-mono text-[12px]">
+                        {payment.ui === "arrears" ? (
+                          <span className="font-semibold text-[#d75454]">{gbp.format(payment.arrears)}</span>
+                        ) : (
+                          <span className="text-[#707070]">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {onboarding.pct === 100 ? (
+                          <span className="text-[11px] text-[#7f7f7f]">{fmtShortDate(selectedMoveInDate)}</span>
+                        ) : (
+                          <div>
+                            <div className="h-1 w-20 overflow-hidden bg-[#252525]">
+                              <div className="h-full bg-[#d8d8d8]" style={{ width: `${onboarding.pct}%` }} />
+                            </div>
+                            <span className="mt-1 block text-[10px] text-[#7a7a7a]">
+                              {onboarding.pct}% {onboarding.label}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-3 py-2.5">
+                        {onboarding.pct >= 52 ? (
+                          <CheckCircle2 className="size-3.5 text-[#35bb61]" />
+                        ) : onboarding.pct >= 20 ? (
+                          <Hourglass className="size-3.5 text-[#a3a3a3]" />
+                        ) : (
+                          <Circle className="size-3.5 text-[#5f5f5f]" />
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <Link
-        href="/dashboard"
-        className="fixed bottom-8 right-8 z-30 hidden size-12 items-center justify-center rounded-sm border border-[#BD9952]/30 bg-card text-[#BD9952] shadow-[0_0_20px_rgba(189,153,82,0.2)] transition hover:border-[#BD9952]/60 hover:shadow-[0_0_28px_rgba(189,153,82,0.35)] md:flex"
-        aria-label="Open intelligence assistant"
-      >
-        <Sparkles className="size-5" strokeWidth={1.5} />
-      </Link>
+      <aside className="hidden w-[320px] shrink-0 flex-col border-l border-[#232323] bg-[#111111] lg:flex">
+        {selected ? (
+          <>
+            <div className="border-b border-[#232323] p-5">
+              <p className="mb-4 text-[10px] uppercase tracking-[0.14em] text-[#6f6f6f]">Inspector</p>
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center border border-[#363636] bg-[#212121] text-[12px] font-medium text-[#e2e2e2]">
+                  {initials(selected.tenantFullName)}
+                </div>
+                <div className="min-w-0">
+                  <h2 className="truncate text-[28px] leading-7 font-semibold text-white">
+                    {selected.tenantFullName ?? "Unknown Tenant"}
+                  </h2>
+                  <p className="truncate text-[11px] text-[#8a8a8a]">
+                    {selectedAddress.line1}, {selectedAddress.line2}
+                  </p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Link
+                  href={`/dashboard/tenancies/${selected.id}`}
+                  className="flex-1 border border-[#2f2f2f] bg-[#f5f5f5] py-2 text-center text-[10px] font-semibold uppercase tracking-[0.08em] text-[#111111]"
+                >
+                  Open Onboarding
+                </Link>
+                <button
+                  type="button"
+                  className="flex size-8 items-center justify-center border border-[#333333] text-[#c0c0c0]"
+                >
+                  <Ellipsis className="size-4" />
+                </button>
+              </div>
+            </div>
+
+            <div className="min-h-0 flex-1 space-y-7 overflow-y-auto p-5">
+              <section>
+                <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6f6f6f]">
+                  Tenancy Parameters
+                </h3>
+                <div className="grid grid-cols-2 gap-x-5 gap-y-3">
+                  <div>
+                    <p className="text-[10px] text-[#6f6f6f]">Commencement</p>
+                    <p className="text-[12px] font-medium text-[#dddddd]">
+                      {fmtInspectorDate(selected.startDate)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#6f6f6f]">Term Length</p>
+                    <p className="text-[12px] font-medium text-[#dddddd]">
+                      {termLength(selected.startDate, selected.endDate)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#6f6f6f]">Referencing</p>
+                    <p className="flex items-center gap-1 text-[11px] font-semibold text-[#35bb61]">
+                      <CheckCircle2 className="size-3.5" />
+                      {selectedOnboarding.pct >= 52 ? "PASSED" : "PENDING"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#6f6f6f]">Deposit</p>
+                    <p className="text-[12px] font-medium text-[#dddddd]">
+                      {gbp.format(selected.depositAmount ?? 0)}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <section>
+                <div className="mb-3 flex items-center justify-between">
+                  <h3 className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6f6f6f]">
+                    Onboarding Flow
+                  </h3>
+                  <span className="text-[10px] font-medium text-[#e5e5e5]">
+                    {selectedOnboarding.pct >= 100 ? "6/6 TASKS" : "4/6 TASKS"}
+                  </span>
+                </div>
+                <div className="space-y-2 text-[11px]">
+                  {[
+                    { done: selectedOnboarding.pct >= 20, label: "Identity Verified" },
+                    { done: selectedOnboarding.pct >= 52, label: "References Cleared" },
+                    { done: selectedOnboarding.pct >= 78, label: "Agreement Signed" },
+                    { done: selectedOnboarding.pct >= 100, label: "First Rent Paid" },
+                  ].map((task) => (
+                    <div key={task.label} className="flex items-center gap-2">
+                      {task.done ? (
+                        <CheckCircle2 className="size-3.5 text-[#35bb61]" />
+                      ) : (
+                        <Circle className="size-3.5 text-[#5f5f5f]" />
+                      )}
+                      <span className={task.done ? "text-[#d4d4d4]" : "text-[#777777]"}>{task.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              <section className="border border-[#282828] bg-[#171717] p-4">
+                <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6f6f6f]">
+                  Rent Ledger
+                </h3>
+                <div className="mb-4 flex items-end justify-between">
+                  <span className="text-[11px] text-[#919191]">Current Balance</span>
+                  <span className="font-mono text-[28px] font-semibold text-[#f0f0f0]">
+                    {gbp.format(selectedPayment?.arrears ?? 0)}
+                  </span>
+                </div>
+                <div className="space-y-1 text-[11px]">
+                  <Link
+                    href={`/dashboard/tenancies/${selected.id}`}
+                    className="flex items-center justify-between px-1 py-1.5 text-[#9c9c9c] hover:bg-[#212121] hover:text-[#d7d7d7]"
+                  >
+                    <span>View Full Ledger</span>
+                    <span>›</span>
+                  </Link>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between px-1 py-1.5 text-left text-[#9c9c9c] hover:bg-[#212121] hover:text-[#d7d7d7]"
+                  >
+                    <span>Upcoming Approvals</span>
+                    <span className="rounded-full bg-[#1f3961] px-1.5 text-[9px] text-[#86b5ff]">
+                      {selectedOnboarding.pct < 100 ? "2" : "0"}
+                    </span>
+                  </button>
+                </div>
+              </section>
+
+              <section>
+                <h3 className="mb-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#6f6f6f]">
+                  Activity Log
+                </h3>
+                <div className="relative ml-1 border-l border-[#2b2b2b] pl-4">
+                  {[
+                    { state: "neutral", title: "Agreement Generated", detail: "2 hours ago • By System" },
+                    { state: "good", title: "References Approved", detail: "Yesterday • By Letora" },
+                    { state: "neutral", title: "Application Received", detail: "3 days ago • By Portal" },
+                  ].map((entry) => (
+                    <div key={entry.title} className="relative mb-5">
+                      <span
+                        className={cn(
+                          "absolute -left-[21px] top-1 size-2.5 rounded-full border border-[#3a3a3a] bg-[#1a1a1a]",
+                          entry.state === "good" && "border-[#35bb61] bg-[#35bb61]",
+                        )}
+                      />
+                      <p className="text-[11px] font-medium text-[#efefef]">{entry.title}</p>
+                      <p className="text-[10px] text-[#727272]">{entry.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </div>
+
+            <div className="border-t border-[#232323] bg-[#111111] p-4">
+              <div className="space-y-2">
+                {userId ? (
+                  <>
+                    <LogPaymentDialog
+                      tenancyId={selected.id}
+                      rentPaymentId={selectedPayment?.payment?.id}
+                      defaultAmountPaid={
+                        selectedPayment && selectedPayment.arrears > 0
+                          ? selectedPayment.arrears
+                          : selected.monthlyRent ?? 0
+                      }
+                      triggerLabel="Draft Agreement"
+                      triggerClassName="w-full border-[#3a3a3a] bg-[#212121] py-2 text-[11px] font-medium text-[#e8e8e8] hover:bg-[#292929]"
+                    />
+                    <EditTenancyDialog
+                      tenancyId={selected.id}
+                      userId={userId}
+                      initial={{
+                        startDate: selected.startDate,
+                        endDate: selected.endDate,
+                        moveInDate: selected.moveInDate,
+                        monthlyRent: selected.monthlyRent,
+                        depositAmount: selected.depositAmount,
+                        status: selected.status,
+                      }}
+                      triggerLabel="View Tenant"
+                      triggerClassName="w-full border-[#313131] bg-transparent py-2 text-[10px] text-[#a8a8a8] hover:border-[#454545] hover:text-[#d4d4d4]"
+                    />
+                  </>
+                ) : null}
+                <Link
+                  href="/dashboard/properties"
+                  className="block w-full border border-[#313131] py-2 text-center text-[10px] text-[#a8a8a8] hover:border-[#454545] hover:text-[#d4d4d4]"
+                >
+                  View Property
+                </Link>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="p-5 text-[12px] text-[#808080]">Select a tenancy to inspect.</div>
+        )}
+      </aside>
     </div>
   );
 }
