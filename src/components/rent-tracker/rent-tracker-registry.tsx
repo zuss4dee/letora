@@ -58,20 +58,20 @@ function getDisplayStatus(
 function statusPill(display: "paid" | "overdue" | "pending") {
   if (display === "paid") {
     return (
-      <span className="inline-flex items-center rounded-full bg-[#afefdd]/10 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wider text-[#afefdd]">
+      <span className="inline-flex items-center border border-[#21473c] bg-[#152420] px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-wider text-[#9ad7c3]">
         Paid
       </span>
     );
   }
   if (display === "overdue") {
     return (
-      <span className="inline-flex items-center rounded-full bg-[#BB5551]/15 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wider text-[#ee7d77]">
+      <span className="inline-flex items-center border border-[#4a2624] bg-[#271716] px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-wider text-[#ee8a85]">
         Overdue
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full bg-[#BD9952]/12 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wider text-[#BD9952]">
+    <span className="inline-flex items-center border border-[#4f3f23] bg-[#2c2417] px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-wider text-[#d0ad67]">
       Pending
     </span>
   );
@@ -198,14 +198,10 @@ export function RentTrackerRegistry({
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col bg-background">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -right-24 top-32 size-80 rounded-full bg-[#BD9952]/[0.04] blur-3xl" />
-      </div>
-
-      <div className="relative mx-auto w-full max-w-7xl flex-1 px-6 pb-24 pt-6 md:px-12 md:pt-8">
-        <div className="mb-8 flex flex-col gap-4 border-b border-border pb-6 md:flex-row md:items-center md:justify-between">
-          <nav className="flex flex-wrap items-center gap-6 font-[family-name:var(--font-inter)] text-xs uppercase tracking-wider text-muted-foreground">
+    <div className="relative flex min-h-0 flex-1 flex-col bg-[#0f0f0f]">
+      <div className="relative flex-1">
+        <div className="mb-4 flex flex-col gap-4 border-b border-[#282828] bg-[#131313] px-5 py-4 md:flex-row md:items-center md:justify-between">
+          <nav className="flex flex-wrap items-center gap-6 font-[family-name:var(--font-inter)] text-[11px] uppercase tracking-wider text-[#8e8e8e]">
             <Link href="/dashboard" className="transition-colors hover:text-foreground">
               Dashboard
             </Link>
@@ -236,12 +232,12 @@ export function RentTrackerRegistry({
           </nav>
         </div>
 
-        <header className="flex flex-col gap-6 border-b border-border pb-8 md:flex-row md:items-end md:justify-between">
+        <header className="flex flex-col gap-6 border-b border-[#282828] bg-[#131313] px-5 pb-6 pt-2 md:flex-row md:items-end md:justify-between">
           <div>
-            <h1 className="font-headline text-2xl font-extralight leading-none tracking-[-0.02em] text-foreground sm:text-3xl md:text-[3.5rem]">
+            <h1 className="font-[family-name:var(--font-inter)] text-2xl font-semibold leading-none tracking-tight text-[#f3f3f3] sm:text-3xl">
               Rent Tracker
             </h1>
-            <p className="mt-3 hidden font-[family-name:var(--font-inter)] text-sm uppercase tracking-[0.2em] text-muted-foreground sm:block">
+            <p className="mt-2 hidden font-mono text-[10px] uppercase tracking-[0.18em] text-[#7e7e7e] sm:block">
               Portfolio payment intelligence
             </p>
           </div>
@@ -252,7 +248,7 @@ export function RentTrackerRegistry({
                 <button
                   type="button"
                   disabled={tenancies.length === 0}
-                  className="border border-border px-5 py-2.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-40"
+                  className="border border-[#343434] bg-[#171717] px-5 py-2.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-[#d6d6d6] transition hover:border-[#c9c9c9] hover:text-white disabled:opacity-40"
                 >
                   Record payment
                 </button>
@@ -261,7 +257,7 @@ export function RentTrackerRegistry({
             <button
               type="button"
               onClick={() => downloadReportCsv(filtered, todayIso)}
-              className="inline-flex items-center gap-2 rounded-sm bg-gradient-to-br from-[#C9C6C5] to-[#474646] px-6 py-3 font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.15em] text-[#414040] transition hover:opacity-90"
+              className="inline-flex items-center gap-2 border border-[#d4d4d4] bg-[#f0f0f0] px-5 py-2.5 font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-[0.15em] text-[#222] transition hover:bg-white"
             >
               Generate report
               <Download className="size-4" aria-hidden />
@@ -269,80 +265,76 @@ export function RentTrackerRegistry({
           </div>
         </header>
 
-        <section className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div className="flex h-32 flex-col justify-between bg-card p-6 transition-colors hover:bg-muted/80 dark:hover:bg-[#1F2020]">
-            <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
+        <section className="mb-6 grid grid-cols-2 gap-px border-y border-[#282828] bg-[#282828] md:grid-cols-4">
+          <div className="flex h-28 flex-col justify-between bg-[#161616] p-4">
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#7d7d7d]">
               Total expected
             </span>
-            <span className="font-headline text-3xl font-light text-foreground">
+            <span className="font-mono text-[24px] text-[#ededed]">
               {gbp.format(stats.expectedThisMonth)}
             </span>
           </div>
-          <div className="relative flex h-32 flex-col justify-between overflow-hidden bg-card p-6 transition-colors hover:bg-muted/80 dark:hover:bg-[#1F2020]">
+          <div className="relative flex h-28 flex-col justify-between overflow-hidden bg-[#161616] p-4">
             <div>
-              <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#7d7d7d]">
                 Collected
               </span>
-              <span className="mt-1 block font-headline text-3xl font-light text-foreground">
+              <span className="mt-1 block font-mono text-[24px] text-[#ededed]">
                 {gbp.format(stats.receivedThisMonth)}
               </span>
             </div>
-            <div className="mt-3 h-0.5 w-full bg-border">
+            <div className="mt-3 h-px w-full bg-[#2a2a2a]">
               <div
-                className="h-full bg-[#BD9952] transition-all"
+                className="h-full bg-[#d0ad67] transition-all"
                 style={{ width: `${collectionPct}%` }}
               />
             </div>
-            <span className="absolute bottom-6 right-6 font-[family-name:var(--font-inter)] text-[0.6rem] font-bold text-[#BD9952]">
+            <span className="absolute bottom-4 right-4 font-mono text-[10px] font-bold text-[#d0ad67]">
               {collectionPct.toFixed(0)}%
             </span>
           </div>
-          <div className="flex h-32 flex-col justify-between border-l border-[#BB5551]/20 bg-card p-6">
-            <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-[#BB5551]">
+          <div className="flex h-28 flex-col justify-between border-l border-[#4b2624] bg-[#161616] p-4">
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#d17b76]">
               Arrears
             </span>
             <div className="flex items-baseline gap-2">
-              <span className="font-headline text-3xl font-light text-[#BB5551]">
+              <span className="font-mono text-[24px] text-[#ee8a85]">
                 {gbp.format(stats.arrearsAmount)}
               </span>
-              <span className="font-[family-name:var(--font-inter)] text-[0.6rem] font-bold text-[#BB5551]/60">
+              <span className="font-mono text-[10px] font-bold text-[#a85f5b]">
                 {stats.overdueCount} units
               </span>
             </div>
           </div>
-          <div className="flex h-32 flex-col justify-between bg-card p-6 transition-colors hover:bg-muted/80 dark:hover:bg-[#1F2020]">
-            <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
+          <div className="flex h-28 flex-col justify-between bg-[#161616] p-4">
+            <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#7d7d7d]">
               Next 30 days forecast
             </span>
-            <span className="font-headline text-3xl font-light text-foreground">
+            <span className="font-mono text-[24px] text-[#ededed]">
               {gbp.format(stats.forecastNext30Days)}
             </span>
           </div>
         </section>
 
-        <div className="relative mb-8 flex flex-col gap-4 border-l border-[#BD9952]/30 bg-muted/40 p-5 backdrop-blur-sm dark:bg-[#252626]/40 md:flex-row md:items-center md:gap-6">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#4f3700]/30 text-[#BD9952]">
+        <div className="relative mb-6 flex flex-col gap-4 border border-[#2f2f2f] bg-[#171717] p-4 md:flex-row md:items-center md:gap-6">
+          <div className="flex size-9 shrink-0 items-center justify-center border border-[#4f3f23] bg-[#2c2417] text-[#d0ad67]">
             <Sparkles className="size-5" strokeWidth={1.25} aria-hidden />
           </div>
           <div>
-            <h1 className="mb-1 font-[family-name:var(--font-inter)] text-[0.6875rem] font-bold uppercase tracking-[0.15em] text-[#BD9952]">
+            <h1 className="mb-1 font-mono text-[10px] font-bold uppercase tracking-[0.15em] text-[#d0ad67]">
               Portfolio intelligence insight
             </h1>
-            <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">
+            <p className="max-w-3xl text-sm leading-relaxed text-[#a4a4a4]">
               Collection velocity across{" "}
-              <span className="text-foreground">{insightHighlight}</span> has stabilised with automated
+              <span className="text-[#ededed]">{insightHighlight}</span> has stabilised with automated
               reminders. Arrears are projected to compress as upcoming instalments clear in the next
               cycle.
             </p>
           </div>
-          <div
-            className="pointer-events-none absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-r from-transparent via-[#BD9952]/40 to-transparent"
-            aria-hidden
-          />
         </div>
 
-        <section className="space-y-6">
-          <div className="flex flex-col gap-4 border-b border-border/80 pb-4 md:flex-row md:items-center md:justify-between">
+        <section className="space-y-5 px-5 pb-8">
+          <div className="flex flex-col gap-4 border-b border-[#282828] pb-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-8">
               {(
                 [
@@ -361,10 +353,10 @@ export function RentTrackerRegistry({
                     setPage(1);
                   }}
                   className={cn(
-                    "pb-4 font-[family-name:var(--font-inter)] text-xs uppercase tracking-widest transition-colors",
+                    "pb-4 font-[family-name:var(--font-inter)] text-[11px] uppercase tracking-widest transition-colors",
                     tab === id && !upcomingOnly
-                      ? "border-b-2 border-[#BD9952] font-bold text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
+                      ? "border-b-2 border-[#d0ad67] font-bold text-[#ededed]"
+                      : "text-[#8e8e8e] hover:text-[#ededed]",
                   )}
                 >
                   {label}
@@ -372,7 +364,7 @@ export function RentTrackerRegistry({
               ))}
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-muted-foreground">
+              <span className="font-mono text-[10px] uppercase tracking-widest text-[#7f7f7f]">
                 Filter by
               </span>
               <select
@@ -381,7 +373,7 @@ export function RentTrackerRegistry({
                   setPropertyFilter(e.target.value);
                   setPage(1);
                 }}
-                className="cursor-pointer border-0 bg-transparent font-[family-name:var(--font-inter)] text-xs uppercase tracking-wider text-muted-foreground focus:outline-none focus:ring-0"
+                className="cursor-pointer border border-[#303030] bg-[#171717] px-2 py-1 font-[family-name:var(--font-inter)] text-[11px] uppercase tracking-wider text-[#d5d5d5] focus:outline-none"
                 aria-label="Filter by property"
               >
                 <option value="all">All properties</option>
@@ -394,30 +386,30 @@ export function RentTrackerRegistry({
             </div>
           </div>
 
-          <div className="overflow-hidden bg-card">
+          <div className="overflow-hidden border border-[#282828] bg-[#151515]">
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] border-collapse text-left">
                 <thead>
-                  <tr className="border-b border-border/80">
-                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
+                  <tr className="border-b border-[#282828] bg-[#161616]">
+                    <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[#7b7b7b]">
                       Tenant
                     </th>
-                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
+                    <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[#7b7b7b]">
                       Property
                     </th>
-                    <th className="px-6 py-5 text-right font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
+                    <th className="px-4 py-3 text-right font-mono text-[10px] uppercase tracking-[0.2em] text-[#7b7b7b]">
                       Monthly rent
                     </th>
-                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
+                    <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[#7b7b7b]">
                       Due date
                     </th>
-                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
+                    <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[#7b7b7b]">
                       Status
                     </th>
-                    <th className="px-6 py-5 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
+                    <th className="px-4 py-3 font-mono text-[10px] uppercase tracking-[0.2em] text-[#7b7b7b]">
                       Last payment
                     </th>
-                    <th className="px-6 py-5 text-right font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
+                    <th className="px-4 py-3 text-right font-mono text-[10px] uppercase tracking-[0.2em] text-[#7b7b7b]">
                       Actions
                     </th>
                   </tr>
@@ -427,7 +419,7 @@ export function RentTrackerRegistry({
                     <tr>
                       <td
                         colSpan={7}
-                        className="px-6 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground"
+                        className="px-6 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-[#8f8f8f]"
                       >
                         No payments match this view. Add a payment or adjust filters.
                       </td>
@@ -442,43 +434,43 @@ export function RentTrackerRegistry({
                       return (
                         <tr
                           key={p.id}
-                          className="group border-b border-border/40 transition-colors hover:bg-muted/60 dark:hover:bg-[#1F2020]/80"
+                          className="group border-b border-[#242424] transition-colors hover:bg-[#1b1b1b]"
                         >
-                          <td className="px-6 py-6">
+                          <td className="px-4 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#474646]/40 font-[family-name:var(--font-inter)] text-[10px] font-medium text-foreground">
+                              <div className="flex size-7 shrink-0 items-center justify-center border border-[#3a3a3a] bg-[#1d1d1d] font-mono text-[10px] font-medium text-[#d8d8d8]">
                                 {initials(p.tenantName)}
                               </div>
-                              <span className="text-sm font-medium text-foreground">
+                              <span className="text-sm font-medium text-[#efefef]">
                                 {p.tenantName ?? "—"}
                               </span>
                             </div>
                           </td>
-                          <td className="max-w-[220px] px-6 py-6">
-                            <span className="text-xs text-muted-foreground">{p.propertyAddress ?? "—"}</span>
+                          <td className="max-w-[220px] px-4 py-4">
+                            <span className="text-xs text-[#9a9a9a]">{p.propertyAddress ?? "—"}</span>
                           </td>
-                          <td className="whitespace-nowrap px-6 py-6 text-right">
-                            <span className="font-headline text-sm text-foreground">
+                          <td className="whitespace-nowrap px-4 py-4 text-right">
+                            <span className="font-mono text-sm text-[#efefef]">
                               {gbp.format(p.amount)}
                             </span>
                           </td>
-                          <td className="whitespace-nowrap px-6 py-6">
+                          <td className="whitespace-nowrap px-4 py-4">
                             <span
                               className={cn(
                                 "text-xs",
-                                dueOverdue ? "text-[#BB5551]" : "text-muted-foreground",
+                                dueOverdue ? "text-[#ee8a85]" : "text-[#a0a0a0]",
                               )}
                             >
                               {formatDisplayDate(p.due_date)}
                             </span>
                           </td>
-                          <td className="px-6 py-6">{statusPill(display)}</td>
-                          <td className="whitespace-nowrap px-6 py-6">
-                            <span className="text-xs text-muted-foreground">
+                          <td className="px-4 py-4">{statusPill(display)}</td>
+                          <td className="whitespace-nowrap px-4 py-4">
+                            <span className="text-xs text-[#a0a0a0]">
                               {p.paid_date ? formatDisplayDate(p.paid_date) : "—"}
                             </span>
                           </td>
-                          <td className="px-6 py-6 text-right">
+                          <td className="px-4 py-4 text-right">
                             <div className="flex flex-wrap justify-end gap-2">
                               {showMarkPaid ? (
                                 <button
@@ -487,7 +479,7 @@ export function RentTrackerRegistry({
                                   onClick={() =>
                                     void run(p.id, () => markRentPaid(p.id, todayIso))
                                   }
-                                  className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#BD9952] hover:underline disabled:opacity-50"
+                                  className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#d0ad67] hover:underline disabled:opacity-50"
                                 >
                                   Mark paid
                                 </button>
@@ -497,7 +489,7 @@ export function RentTrackerRegistry({
                                   type="button"
                                   disabled={busyId === p.id}
                                   onClick={() => void run(p.id, () => markRentOverdue(p.id))}
-                                  className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground hover:text-[#BD9952] disabled:opacity-50"
+                                  className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#9b9b9b] hover:text-[#d0ad67] disabled:opacity-50"
                                 >
                                   Mark overdue
                                 </button>
@@ -506,7 +498,7 @@ export function RentTrackerRegistry({
                                 type="button"
                                 disabled={busyId === p.id}
                                 onClick={() => void run(p.id, () => deleteRentPayment(p.id))}
-                                className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground hover:text-[#ee7d77] disabled:opacity-50"
+                                className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#9b9b9b] hover:text-[#ee8a85] disabled:opacity-50"
                               >
                                 Remove
                               </button>
@@ -521,8 +513,8 @@ export function RentTrackerRegistry({
             </div>
           </div>
 
-          <div className="flex flex-col gap-4 px-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
-            <span className="font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-widest text-muted-foreground">
+          <div className="flex flex-col gap-4 pt-1 sm:flex-row sm:items-center sm:justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-widest text-[#7f7f7f]">
               Showing {displayFrom} to {displayTo} of {totalFiltered} payments
             </span>
             <div className="flex items-center gap-2">
@@ -531,7 +523,7 @@ export function RentTrackerRegistry({
                 aria-label="Previous page"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="flex size-8 items-center justify-center border border-border text-muted-foreground transition hover:border-secondary/40 hover:text-foreground disabled:opacity-30"
+                className="flex size-8 items-center justify-center border border-[#303030] bg-[#171717] text-[#9e9e9e] transition hover:border-[#d0ad67] hover:text-[#efefef] disabled:opacity-30"
               >
                 <ChevronLeft className="size-4" />
               </button>
@@ -540,7 +532,7 @@ export function RentTrackerRegistry({
                 aria-label="Next page"
                 disabled={safePage >= pageCount}
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="flex size-8 items-center justify-center border border-border text-muted-foreground transition hover:border-secondary/40 hover:text-foreground disabled:opacity-30"
+                className="flex size-8 items-center justify-center border border-[#303030] bg-[#171717] text-[#9e9e9e] transition hover:border-[#d0ad67] hover:text-[#efefef] disabled:opacity-30"
               >
                 <ChevronRight className="size-4" />
               </button>

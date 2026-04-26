@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { approveAgentApproval, denyAgentApproval } from "@/lib/actions/agent-approvals";
@@ -16,7 +16,6 @@ import {
 } from "@/components/dashboard/approval-display";
 import { ApprovalAuditSheetTrigger } from "@/components/agents/approval-audit-sheet";
 import { MVP_TERMS } from "@/components/dashboard/workspace-terminology";
-import { parseStaleReminderAudit } from "@/lib/approvals/stale-approval-reminders";
 import type { AgentApprovalRow } from "@/lib/approvals/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +31,11 @@ export function ApprovalsPendingInteractive({
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(approvals[0]?.id ?? null);
+  const selectedApproval = useMemo(
+    () => approvals.find((approval) => approval.id === selectedId) ?? approvals[0] ?? null,
+    [approvals, selectedId],
+  );
 
   const runApprove = useCallback(
     async (id: string) => {
@@ -82,116 +86,160 @@ export function ApprovalsPendingInteractive({
   );
 
   return (
-    <ul className="space-y-2">
-      {approvals.map((approval) => {
-        const targetLine = formatApprovalTargetLine(approval.target_type, approval.target_id);
-        const busy = busyId === approval.id;
-        const stale = emphasizeQueueAge && isApprovalPendingStale(approval.created_at);
-        const reminderAudit = emphasizeQueueAge
-          ? parseStaleReminderAudit(approval.evidence as Record<string, unknown>)
-          : null;
-        const ageLabel = emphasizeQueueAge
-          ? formatApprovalShortRelativeAge(approval.created_at)
-          : formatApprovalRelativeTime(approval.created_at);
-        return (
-          <li
-            key={approval.id}
-            className={cn(
-              "rounded-lg border bg-card/30 dark:bg-white/[0.02]",
-              stale
-                ? "border-amber-500/25 dark:border-amber-400/18"
-                : "border-border/80 dark:border-white/[0.06]",
-            )}
-          >
-            <div className="flex flex-col gap-3 p-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:p-4">
-              <div className="min-w-0 flex-1 space-y-2">
-                <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-1">
-                  <h3 className="font-[family-name:var(--font-inter)] text-[0.8125rem] font-semibold leading-snug text-foreground">
-                    {approval.title}
-                  </h3>
-                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-                    {stale ? (
-                      <Badge
-                        variant="outline"
-                        className="border-border/80 bg-muted/25 font-[family-name:var(--font-inter)] text-[0.58rem] font-medium normal-case tracking-normal text-muted-foreground dark:border-white/[0.1]"
-                      >
-                        {MVP_TERMS.aging}
-                      </Badge>
-                    ) : null}
-                    <time
-                      className={cn(
-                        "font-[family-name:var(--font-inter)] text-[0.65rem] tabular-nums",
-                        stale
-                          ? "text-amber-950/80 dark:text-amber-100/75"
-                          : "text-muted-foreground",
-                      )}
-                      dateTime={approval.created_at}
-                      title={formatApprovalAbsoluteTime(approval.created_at)}
-                    >
-                      {ageLabel}
-                    </time>
+    <section className="grid gap-0 overflow-hidden border border-white/[0.1] bg-[#0f0f0f] lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="min-w-0 overflow-hidden border-b border-white/[0.08] lg:border-b-0 lg:border-r lg:border-white/[0.08]">
+        <div className="hidden border-b border-white/[0.08] bg-[#121212] px-3 py-2 lg:grid lg:grid-cols-[1.6fr_0.8fr_0.7fr_0.8fr] lg:gap-3">
+          <p className="font-[family-name:var(--font-inter)] text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+            Case context
+          </p>
+          <p className="font-[family-name:var(--font-inter)] text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+            Agent
+          </p>
+          <p className="font-[family-name:var(--font-inter)] text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+            Urgency
+          </p>
+          <p className="font-[family-name:var(--font-inter)] text-right text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+            Age
+          </p>
+        </div>
+        <ul className="divide-y divide-white/[0.06]">
+          {approvals.map((approval) => {
+            const targetLine = formatApprovalTargetLine(approval.target_type, approval.target_id);
+            const stale = emphasizeQueueAge && isApprovalPendingStale(approval.created_at);
+            const selected = approval.id === selectedApproval?.id;
+            const ageLabel = emphasizeQueueAge
+              ? formatApprovalShortRelativeAge(approval.created_at)
+              : formatApprovalRelativeTime(approval.created_at);
+            return (
+              <li key={approval.id}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedId(approval.id)}
+                  className={cn(
+                    "w-full p-3 text-left transition-colors lg:grid lg:grid-cols-[1.6fr_0.8fr_0.7fr_0.8fr] lg:items-center lg:gap-3",
+                    selected ? "bg-white/[0.05]" : "bg-transparent hover:bg-white/[0.02]",
+                  )}
+                  aria-current={selected ? "true" : undefined}
+                >
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={cn("size-1.5 shrink-0", stale ? "bg-rose-300" : selected ? "bg-zinc-100" : "bg-zinc-600")}
+                        aria-hidden
+                      />
+                      <p className="truncate font-[family-name:var(--font-inter)] text-[0.78rem] font-medium text-zinc-100">
+                        {approval.title}
+                      </p>
+                    </div>
+                    <p className="mt-1 truncate font-[family-name:var(--font-inter)] text-[0.67rem] text-zinc-500">
+                      {approval.summary ?? targetLine ?? "No context summary provided."}
+                    </p>
                   </div>
-                </div>
-                {approval.summary ? (
-                  <p className="font-[family-name:var(--font-inter)] text-[0.75rem] leading-relaxed text-muted-foreground">
-                    {approval.summary}
-                  </p>
-                ) : null}
-                {reminderAudit ? (
-                  <p className="font-[family-name:var(--font-inter)] text-[0.65rem] leading-snug text-muted-foreground/85">
-                    {MVP_TERMS.reminded}{" "}
-                    <time dateTime={reminderAudit.last_sent_at} title={formatApprovalAbsoluteTime(reminderAudit.last_sent_at)}>
-                      {formatApprovalShortRelativeAge(reminderAudit.last_sent_at)}
-                    </time>
-                  </p>
-                ) : null}
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge
-                    variant="outline"
-                    className="border-amber-500/35 bg-amber-500/[0.08] font-[family-name:var(--font-inter)] text-[0.6rem] font-medium uppercase tracking-[0.06em] text-amber-950 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-100"
-                  >
-                    {formatApprovalActionType(approval.action_type)}
-                  </Badge>
-                  <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">
+                  <p className="mt-2 font-[family-name:var(--font-inter)] text-[0.66rem] text-zinc-400 lg:mt-0">
                     {formatApprovalAgentType(approval.agent_type)}
-                  </span>
-                  {targetLine ? (
-                    <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">
-                      {targetLine}
-                    </span>
+                  </p>
+                  <div className="mt-2 lg:mt-0">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "border px-2 py-0.5 font-[family-name:var(--font-inter)] text-[0.57rem] font-semibold uppercase tracking-[0.08em]",
+                        stale
+                          ? "border-rose-300/40 bg-rose-300/10 text-rose-200"
+                          : "border-white/[0.16] bg-white/[0.04] text-zinc-300",
+                      )}
+                    >
+                      {stale ? "Critical" : "Normal"}
+                    </Badge>
+                  </div>
+                  <p className="mt-2 font-[family-name:var(--font-inter)] text-[0.66rem] tabular-nums text-zinc-500 lg:mt-0 lg:text-right">
+                    {ageLabel}
+                  </p>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <aside className="flex min-h-[22rem] flex-col bg-[#111111]">
+        {selectedApproval ? (
+          <>
+            <div className="border-b border-white/[0.08] px-4 py-4">
+              <p className="font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                Decision panel
+              </p>
+              <h3 className="mt-2 font-[family-name:var(--font-inter)] text-base font-medium leading-tight text-zinc-100">
+                {selectedApproval.title}
+              </h3>
+            </div>
+            <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+              <section>
+                <p className="font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                  Reasoning
+                </p>
+                <p className="mt-2 font-[family-name:var(--font-inter)] text-[0.75rem] leading-relaxed text-zinc-300">
+                  {selectedApproval.summary ?? "No summary provided. Open audit context for full payload details."}
+                </p>
+              </section>
+              <section className="space-y-2">
+                <p className="font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+                  Context
+                </p>
+                <div className="space-y-1.5">
+                  <p className="font-[family-name:var(--font-inter)] text-[0.68rem] text-zinc-400">
+                    Action: {formatApprovalActionType(selectedApproval.action_type)}
+                  </p>
+                  <p className="font-[family-name:var(--font-inter)] text-[0.68rem] text-zinc-400">
+                    Agent: {formatApprovalAgentType(selectedApproval.agent_type)}
+                  </p>
+                  <p className="font-[family-name:var(--font-inter)] text-[0.68rem] text-zinc-400">
+                    Created: {formatApprovalAbsoluteTime(selectedApproval.created_at)}
+                  </p>
+                  {formatApprovalTargetLine(selectedApproval.target_type, selectedApproval.target_id) ? (
+                    <p className="font-[family-name:var(--font-inter)] text-[0.68rem] text-zinc-400">
+                      Target: {formatApprovalTargetLine(selectedApproval.target_type, selectedApproval.target_id)}
+                    </p>
                   ) : null}
                 </div>
-              </div>
-              <div className="flex shrink-0 flex-wrap gap-2 sm:flex-col sm:items-stretch">
-                <ApprovalAuditSheetTrigger approval={approval} className="border-border/80 dark:border-white/[0.1]" />
-                <Button
-                  type="button"
-                  size="sm"
-                  disabled={busy}
-                  className={cn(
-                    "font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.1em]",
-                    "border border-[#BD9952]/40 bg-[#BD9952]/15 text-[#1f1608] hover:bg-[#BD9952]/25",
-                    "dark:border-[#BD9952]/35 dark:bg-[#BD9952]/10 dark:text-[#e8dcc8] dark:hover:bg-[#BD9952]/20",
-                  )}
-                  onClick={() => void runApprove(approval.id)}
-                >
-                  {busy ? "…" : "Approve"}
-                </Button>
+              </section>
+              {emphasizeQueueAge && isApprovalPendingStale(selectedApproval.created_at) ? (
+                <section className="border border-rose-300/20 bg-rose-300/5 p-2.5">
+                  <p className="font-[family-name:var(--font-inter)] text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-rose-200">
+                    {MVP_TERMS.aging}
+                  </p>
+                  <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.68rem] text-rose-100/90">
+                    This approval has been waiting for over 48 hours and should be triaged first.
+                  </p>
+                </section>
+              ) : null}
+            </div>
+            <div className="space-y-2 border-t border-white/[0.08] px-4 py-4">
+              <Button
+                type="button"
+                disabled={busyId === selectedApproval.id}
+                className="h-9 w-full border border-white/20 bg-zinc-100 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-black hover:bg-zinc-200"
+                onClick={() => void runApprove(selectedApproval.id)}
+              >
+                {busyId === selectedApproval.id ? "…" : "Approve action"}
+              </Button>
+              <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
-                  disabled={busy}
-                  className="font-[family-name:var(--font-inter)] text-[0.65rem] uppercase tracking-[0.1em]"
-                  onClick={() => void runDeny(approval.id)}
+                  disabled={busyId === selectedApproval.id}
+                  className="h-8 border-white/[0.16] bg-transparent font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.1em] text-zinc-300 hover:bg-white/[0.04] hover:text-zinc-100"
+                  onClick={() => void runDeny(selectedApproval.id)}
                 >
-                  {busy ? "…" : "Deny"}
+                  {busyId === selectedApproval.id ? "…" : "Deny"}
                 </Button>
+                <ApprovalAuditSheetTrigger
+                  approval={selectedApproval}
+                  className="h-8 border-white/[0.16] bg-transparent font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.1em] text-zinc-300 hover:bg-white/[0.04] hover:text-zinc-100"
+                />
               </div>
             </div>
-          </li>
-        );
-      })}
-    </ul>
+          </>
+        ) : null}
+      </aside>
+    </section>
   );
 }

@@ -93,13 +93,13 @@ function planPresenceStyles(subscriptionStatus: string | null | undefined): {
   return { dot: "bg-sky-500", ping: "bg-sky-400" };
 }
 
-/** Nocturnal Architect — nav row: tonal hover, teal inset when active (no heavy borders). */
+/** Dense operational nav rows with tonal active treatment. */
 const navRowBase =
-  "relative mx-2 flex touch-manipulation items-center gap-3 rounded-md px-3 py-2.5 text-left font-[family-name:var(--font-inter)] text-[0.8125rem] font-medium leading-snug tracking-[0.01em] transition-[background-color,color,box-shadow] duration-150 ease-out";
+  "relative mx-2 flex touch-manipulation items-center gap-2.5 rounded-md px-2.5 py-2 text-left font-[family-name:var(--font-inter)] text-[0.74rem] font-medium leading-none tracking-[0.01em] transition-[background-color,color,box-shadow] duration-150 ease-out";
 const navRowIdle =
-  "text-[#6f6a62] hover:bg-black/[0.035] hover:text-[#1f1d1b] active:bg-black/[0.06] dark:text-[#94928e] dark:hover:bg-white/[0.045] dark:hover:text-[#e8e6e3] dark:active:bg-white/[0.07]";
+  "text-[#6a655d] hover:bg-black/[0.04] hover:text-[#23211f] active:bg-black/[0.06] dark:text-[#a19f9a] dark:hover:bg-white/[0.055] dark:hover:text-[#e7e5e2] dark:active:bg-white/[0.07]";
 const navRowActive =
-  "bg-[#ebe8e2] text-[#1d1b19] shadow-[inset_3px_0_0_0_#01696f] dark:bg-[#242220] dark:text-[#f2f1ef]";
+  "bg-[#e7e2da] text-[#1a1917] shadow-[inset_2px_0_0_0_#01696f] dark:bg-[#2a2724] dark:text-[#f2f1ef]";
 
 type AttentionItem = { url: string; title: string; ariaLabel: string };
 
@@ -119,11 +119,11 @@ function NavSection({
   const attentionByUrl = new Map(attentionItems?.map((a) => [a.url, a] as const) ?? []);
 
   return (
-    <div className="mb-2">
-      <span className="mb-2.5 block px-5 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#7f7569] dark:text-[#6b6966]">
+    <div className="mb-1.5">
+      <span className="mb-1.5 block px-5 font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-[#7f7569] dark:text-[#7a7772]">
         {label}
       </span>
-      <ul className="flex flex-col gap-0.5">
+      <ul className="flex flex-col gap-px">
         {items.map((item) => {
           const active = isActivePath(pathname, item.url);
           const Icon = item.icon;
@@ -139,15 +139,17 @@ function NavSection({
               >
                 <Icon
                   className={cn(
-                    "size-[18px] shrink-0 stroke-[1.5] transition-colors duration-150",
-                    active ? "text-[#01696f] dark:text-[#97e6ec]" : "text-[#8a8176] group-hover:text-[#5a5146] dark:text-[#6b6966] dark:group-hover:text-[#b8b6b1]",
+                    "size-4 shrink-0 stroke-[1.5] transition-colors duration-150",
+                    active
+                      ? "text-[#01696f] dark:text-[#97e6ec]"
+                      : "text-[#8a8176] group-hover:text-[#5a5146] dark:text-[#7f7c77] dark:group-hover:text-[#c2bfba]",
                   )}
                   aria-hidden
                 />
                 <span className="min-w-0 flex-1 truncate">{item.title}</span>
                 {item.badgeCount != null && item.badgeCount > 0 ? (
                   <span
-                    className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-[#bd9952]/35 bg-[#f3ebdf] px-1 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold tabular-nums text-[#8d602b] dark:bg-[#2a2218] dark:text-[#d4a574]"
+                    className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full border border-[#bd9952]/35 bg-[#f3ebdf] px-1 font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold tabular-nums text-[#8d602b] dark:bg-[#31281c] dark:text-[#e2b485]"
                     aria-label={`${item.badgeCount} items pending approval`}
                     title={item.badgeTitle}
                   >
@@ -338,30 +340,33 @@ export function AppSidebar({
       variant={variant ?? "sidebar"}
       side={side}
       className={cn(
-        "border-transparent [&_[data-sidebar=sidebar]]:border-transparent",
+        "border-transparent [&_[data-sidebar=sidebar]]:border-transparent [&_[data-sidebar=sidebar]]:bg-[#efebe5] dark:[&_[data-sidebar=sidebar]]:bg-[#141312]",
         className,
       )}
     >
-      <SidebarHeader className="gap-0 px-0 pb-6 pt-9">
+      <SidebarHeader className="gap-0 px-0 pb-4 pt-6">
         <Link
           href="/dashboard"
           onClick={closeMobileNav}
           className="block touch-manipulation px-5 transition-opacity hover:opacity-90"
         >
-          <span className="font-headline text-[1.35rem] font-semibold tracking-[-0.04em] text-[#1f1d1b] dark:text-[#f5f4f2]">
+          <p className="font-[family-name:var(--font-inter)] text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-[#857d73] dark:text-[#7d7974]">
+            Letora OS
+          </p>
+          <span className="mt-1 block font-headline text-[1.2rem] font-semibold tracking-[-0.03em] text-[#1f1d1b] dark:text-[#f5f4f2]">
             Letora
           </span>
-          <p className="mt-2 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.12em] text-[#7f7569] dark:text-[#797876]">
-            Architectural management
+          <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.6rem] font-medium uppercase tracking-[0.11em] text-[#7f7569] dark:text-[#84817d]">
+            Operational panel
           </p>
         </Link>
 
-        <div className="mx-5 mt-7 rounded-lg bg-[#f3f0ea] px-3.5 py-3 shadow-[inset_0_1px_0_0_rgb(0_0_0/0.04)] dark:bg-[#1c1b1a] dark:shadow-[inset_0_1px_0_0_rgb(255_255_255/0.04)]">
-          <p className="font-[family-name:var(--font-inter)] text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[#7f7569] dark:text-[#6b6966]">
+        <div className="mx-5 mt-4 rounded-md bg-[#e8e3da] px-3 py-2.5 dark:bg-[#1b1a19]">
+          <p className="font-[family-name:var(--font-inter)] text-[0.56rem] font-semibold uppercase tracking-[0.14em] text-[#7f7569] dark:text-[#7d7a75]">
             Subscription
           </p>
           <div
-            className="mt-2.5 flex min-w-0 items-start gap-3"
+            className="mt-2 flex min-w-0 items-start gap-2.5"
             title={planStatusLine}
             aria-label={`Plan status: ${planStatusLine}`}
           >
@@ -376,17 +381,17 @@ export function AppSidebar({
               ) : null}
               <span className={cn("relative inline-flex h-2.5 w-2.5 rounded-full", presence.dot)} />
             </span>
-            <p className="min-w-0 flex-1 font-[family-name:var(--font-inter)] text-[0.78rem] font-medium leading-snug text-[#3d3730] dark:text-[#cdccca]">
+            <p className="min-w-0 flex-1 font-[family-name:var(--font-inter)] text-[0.71rem] font-medium leading-snug text-[#3d3730] dark:text-[#cdccca]">
               {planStatusLine}
             </p>
           </div>
         </div>
 
-        <div className="px-5 pt-6">
+        <div className="px-5 pt-4">
           <Link
             href="/dashboard/properties"
             onClick={closeMobileNav}
-            className="flex touch-manipulation items-center justify-center gap-2 rounded-md border border-[#01696f]/30 bg-[#01696f]/10 py-2.5 font-[family-name:var(--font-inter)] text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-[#01555a] transition-colors hover:border-[#01696f]/55 hover:bg-[#01696f]/16 hover:text-[#01484c] dark:border-[#01696f]/35 dark:bg-[#01696f]/12 dark:text-[#97e6ec] dark:hover:bg-[#01696f]/18 dark:hover:text-[#b5f0f4]"
+            className="flex touch-manipulation items-center justify-center gap-2 rounded-md border border-[#01696f]/35 bg-[#01696f]/12 py-2 font-[family-name:var(--font-inter)] text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#01555a] transition-colors hover:border-[#01696f]/55 hover:bg-[#01696f]/16 hover:text-[#01484c] dark:border-[#01696f]/35 dark:bg-[#01696f]/14 dark:text-[#97e6ec] dark:hover:bg-[#01696f]/2 dark:hover:text-[#b5f0f4]"
           >
             <PlusCircle className="size-4 shrink-0 stroke-[1.5]" aria-hidden />
             Add a property
@@ -394,11 +399,11 @@ export function AppSidebar({
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-0 pb-4">
-        <div className="mx-5 mb-5 h-px bg-gradient-to-r from-transparent via-black/[0.09] to-transparent dark:via-white/[0.08]" aria-hidden />
+      <SidebarContent className="px-0 pb-3 pt-1">
+        <div className="mx-5 mb-3 h-px bg-black/[0.09] dark:bg-white/[0.07]" aria-hidden />
         <nav className="flex min-h-0 flex-1 flex-col" aria-label="Dashboard">
           <NavSection label="Main" items={mainItems} pathname={pathname} onNavigate={closeMobileNav} />
-          <div className="my-4 mx-5 h-px bg-gradient-to-r from-transparent via-black/[0.08] to-transparent dark:via-white/[0.06]" aria-hidden />
+          <div className="my-2.5 mx-5 h-px bg-black/[0.08] dark:bg-white/[0.06]" aria-hidden />
           <NavSection
             label="Workflow"
             items={workflowItems}
@@ -406,23 +411,23 @@ export function AppSidebar({
             attentionItems={workflowAttention.length > 0 ? workflowAttention : undefined}
             onNavigate={closeMobileNav}
           />
-          <div className="my-4 mx-5 h-px bg-gradient-to-r from-transparent via-black/[0.08] to-transparent dark:via-white/[0.06]" aria-hidden />
+          <div className="my-2.5 mx-5 h-px bg-black/[0.08] dark:bg-white/[0.06]" aria-hidden />
           <NavSection label="More" items={moreItems} pathname={pathname} onNavigate={closeMobileNav} />
         </nav>
       </SidebarContent>
 
-      <SidebarFooter className="border-none bg-transparent px-0 pb-6 pt-2">
-        <div className="mx-5 mb-4 h-px bg-gradient-to-r from-transparent via-black/[0.09] to-transparent dark:via-white/[0.08]" aria-hidden />
+      <SidebarFooter className="border-none bg-transparent px-0 pb-4 pt-2">
+        <div className="mx-5 mb-2.5 h-px bg-black/[0.09] dark:bg-white/[0.07]" aria-hidden />
         <button
           type="button"
           onClick={() => setFooterOpen((o) => !o)}
-          className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between gap-2 rounded-md px-3 py-2 text-left font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#7f7569] transition-colors hover:bg-black/[0.04] hover:text-[#5e554a] dark:text-[#6b6966] dark:hover:bg-white/[0.04] dark:hover:text-[#a8a6a4]"
+          className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-[#7f7569] transition-colors hover:bg-black/[0.04] hover:text-[#5e554a] dark:text-[#7d7a75] dark:hover:bg-white/[0.04] dark:hover:text-[#b6b3ae]"
           aria-expanded={footerOpen}
           aria-controls="sidebar-footer-panel"
         >
           <span>Workspace</span>
           <ChevronDown
-            className={cn("size-4 shrink-0 text-[#7f7569] transition-transform duration-200 dark:text-[#6b6966]", footerOpen && "rotate-180")}
+            className={cn("size-4 shrink-0 text-[#7f7569] transition-transform duration-200 dark:text-[#7d7a75]", footerOpen && "rotate-180")}
             aria-hidden
           />
         </button>
@@ -483,24 +488,27 @@ export function AppSidebar({
                 />
                 History
               </Link>
-              <SidebarAgentActivityButton onBeforeOpen={closeMobileNav} />
-              <div className="mx-2 mt-3 rounded-lg bg-[#f3f0ea] p-3 shadow-[inset_0_1px_0_0_rgb(0_0_0/0.04)] dark:bg-[#1c1b1a] dark:shadow-[inset_0_1px_0_0_rgb(255_255_255/0.04)]">
+              <SidebarAgentActivityButton
+                onBeforeOpen={closeMobileNav}
+                className={cn(navRowBase, navRowIdle, "mb-0.5")}
+              />
+              <div className="mx-2 mt-2 rounded-md bg-[#e8e3da] p-2.5 dark:bg-[#1b1a19]">
                 <div className="flex items-center gap-3">
-                  <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#e3ddd2] font-[family-name:var(--font-inter)] text-[0.7rem] font-semibold uppercase tracking-wide text-[#3b3329] ring-1 ring-black/[0.05] dark:bg-[#2a2826] dark:text-[#cdccca] dark:ring-white/[0.06]">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-[#ddd7cc] font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-wide text-[#3b3329] ring-1 ring-black/[0.05] dark:bg-[#2a2826] dark:text-[#cdccca] dark:ring-white/[0.06]">
                     {(userEmail?.[0] ?? "?").toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#7f7569] dark:text-[#94928e]">
+                    <p className="font-[family-name:var(--font-inter)] text-[0.56rem] font-semibold uppercase tracking-[0.13em] text-[#7f7569] dark:text-[#8f8c87]">
                       Signed in
                     </p>
-                    <p className="truncate font-[family-name:var(--font-inter)] text-[0.72rem] text-[#3d3730] dark:text-[#cdccca]">
+                    <p className="truncate font-[family-name:var(--font-inter)] text-[0.68rem] text-[#3d3730] dark:text-[#cdccca]">
                       {userEmail ?? "—"}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={onLogout}
-                    className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-[#7f7569] transition-colors hover:bg-black/[0.06] hover:text-[#201e1b] dark:text-[#6b6966] dark:hover:bg-white/[0.06] dark:hover:text-[#e8e6e3]"
+                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-[#7f7569] transition-colors hover:bg-black/[0.06] hover:text-[#201e1b] dark:text-[#7d7a75] dark:hover:bg-white/[0.06] dark:hover:text-[#e8e6e3]"
                     aria-label="Log out"
                   >
                     <LogOut className="size-4 stroke-[1.5]" />

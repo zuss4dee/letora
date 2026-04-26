@@ -9,10 +9,10 @@ const MAINT = "approve_maintenance_dispatch" as const;
 
 function statBlock(label: string, value: number, valueClass?: string) {
   return (
-    <div className="min-w-0 rounded-lg border border-border/70 bg-card/30 px-3 py-2.5 dark:border-white/[0.06] dark:bg-white/[0.02]">
-      <p className="font-headline text-[0.58rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">{label}</p>
+    <div className="min-w-0 border border-white/[0.07] bg-[#151515] px-3 py-2.5">
+      <p className="font-headline text-[0.56rem] font-semibold uppercase tracking-[0.18em] text-zinc-500">{label}</p>
       <p
-        className={`mt-1 font-headline text-lg font-extralight tabular-nums text-foreground md:text-xl ${valueClass ?? ""}`}
+        className={`mt-1 font-headline text-lg font-light tabular-nums text-zinc-100 md:text-xl ${valueClass ?? ""}`}
       >
         {value}
       </p>
@@ -30,7 +30,7 @@ export function ApprovalsQueueSummary({ stats }: { stats: ApprovalQueueStats }) 
 
   return (
     <section aria-label="Approval queue summary" className="space-y-2">
-      <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+      <p className="font-headline text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-zinc-500">
         Queue health
       </p>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-7">
@@ -39,26 +39,26 @@ export function ApprovalsQueueSummary({ stats }: { stats: ApprovalQueueStats }) 
         {statBlock("Rent chase", rent)}
         {statBlock("Move-in", moveIn)}
         {statBlock("Maintenance", maintenance)}
-        <div className="min-w-0 rounded-lg border border-border/70 bg-card/30 px-3 py-2.5 dark:border-white/[0.06] dark:bg-white/[0.02]">
-          <p className="font-headline text-[0.58rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="min-w-0 border border-white/[0.07] bg-[#151515] px-3 py-2.5">
+          <p className="font-headline text-[0.56rem] font-semibold uppercase tracking-[0.18em] text-zinc-500">
             Oldest waiting
           </p>
-          <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.8125rem] font-medium tabular-nums text-foreground/90">
+          <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.8125rem] font-medium tabular-nums text-zinc-200">
             {oldest ?? "—"}
           </p>
         </div>
-        <div className="min-w-0 rounded-lg border border-border/70 bg-card/30 px-3 py-2.5 dark:border-white/[0.06] dark:bg-white/[0.02]">
-          <p className="font-headline text-[0.58rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="min-w-0 border border-white/[0.07] bg-[#151515] px-3 py-2.5">
+          <p className="font-headline text-[0.56rem] font-semibold uppercase tracking-[0.18em] text-zinc-500">
             {MVP_TERMS.aging}
           </p>
           <p
-            className={`mt-1 font-headline text-lg font-extralight tabular-nums md:text-xl ${
-              stats.stalePendingCount > 0 ? "text-amber-900/85 dark:text-amber-100/85" : "text-foreground"
+            className={`mt-1 font-headline text-lg font-light tabular-nums md:text-xl ${
+              stats.stalePendingCount > 0 ? "text-rose-300" : "text-zinc-100"
             }`}
           >
             {stats.stalePendingCount}
           </p>
-          <p className="mt-0.5 font-[family-name:var(--font-inter)] text-[0.65rem] leading-snug text-muted-foreground">
+          <p className="mt-0.5 font-[family-name:var(--font-inter)] text-[0.65rem] leading-snug text-zinc-500">
             Over 48h pending
           </p>
         </div>

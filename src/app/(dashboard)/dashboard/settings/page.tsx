@@ -67,7 +67,20 @@ const defaultValues: UserSettingsInput = {
   leadQualifierCriteria: "",
 };
 
-export default async function SettingsPage() {
+function SettingsSkeleton() {
+  return (
+    <div className="space-y-3">
+      <div className="h-24 animate-pulse bg-[#151515]" />
+      <div className="grid gap-3 md:grid-cols-2">
+        <div className="h-52 animate-pulse bg-[#151515]" />
+        <div className="h-52 animate-pulse bg-[#151515]" />
+      </div>
+      <div className="h-64 animate-pulse bg-[#151515]" />
+    </div>
+  );
+}
+
+async function SettingsAsyncSection() {
   const supabase = await createClient();
   const {
     data: { user },
@@ -78,40 +91,48 @@ export default async function SettingsPage() {
   const initialValues = mergeSettingsWithAuthHints(rowMerged, user ?? null);
 
   return (
-    <div className="@container/main relative flex flex-1 flex-col">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[min(42vh,420px)] bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(61,26,10,0.35),transparent_65%)]"
-        aria-hidden
-      />
-      <div className="relative flex flex-col gap-10 py-8 md:py-12">
-        <header className="px-4 lg:px-6">
-          <div className="max-w-2xl space-y-3">
-            <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
-              Account
-            </p>
-            <h1 className="font-headline text-2xl font-extralight tracking-[-0.04em] text-foreground sm:text-3xl md:text-[2.15rem] md:leading-tight">
-              Settings
-            </h1>
-            <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">
-              Business profile, automation preferences, and email — tuned to how you run tenancies. Billing lives on
-              the{" "}
-              <Link href="/dashboard/billing" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
-                Billing
-              </Link>{" "}
-              page.
-            </p>
+    <div className="space-y-4">
+      <AgentSettingsForm initialValues={initialValues} userId={user?.id ?? ""} />
+      {user?.id ? <DeleteAccountCard /> : null}
+    </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <div className="@container/main relative flex flex-1 flex-col overflow-hidden bg-[#0b0b0b] text-[#e5e2e1]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[220px] bg-[radial-gradient(ellipse_72%_58%_at_50%_-8%,rgba(61,26,10,0.34),transparent_68%)]" />
+      <div className="relative flex h-full min-h-0 flex-col">
+        <header className="border-b border-[#272727] bg-[#0f0f0f]/90 px-4 py-3 backdrop-blur-sm lg:px-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="space-y-1.5">
+              <p className="font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8f8f8f]">
+                Workspace / System Settings
+              </p>
+              <h1 className="font-[family-name:var(--font-inter)] text-[1.1rem] font-semibold tracking-[-0.01em] text-[#f4f4f4]">
+                Workspace Preferences
+              </h1>
+              <p className="max-w-3xl font-[family-name:var(--font-inter)] text-[12px] leading-5 text-[#a0a0a0]">
+                Manage account profile, automation controls, and operational defaults for tenancy workflows. Billing
+                is handled on the{" "}
+                <Link href="/dashboard/billing" className="text-[#d5d5d5] underline-offset-4 hover:underline">
+                  Billing
+                </Link>{" "}
+                page.
+              </p>
+            </div>
+            <div className="rounded border border-[#303030] bg-[#121212] px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.08em] text-[#8a8a8a]">
+              Live Config
+            </div>
           </div>
         </header>
 
-        <div className="flex flex-col gap-8 px-4 lg:px-6">
-          <Suspense
-            fallback={
-              <div className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">Loading settings…</div>
-            }
-          >
-            <AgentSettingsForm initialValues={initialValues} userId={user?.id ?? ""} />
-          </Suspense>
-          {user?.id ? <DeleteAccountCard /> : null}
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 lg:px-6">
+          <div className="mx-auto w-full max-w-6xl border border-[#242424] bg-[#101010] p-3 md:p-4">
+            <Suspense fallback={<SettingsSkeleton />}>
+              <SettingsAsyncSection />
+            </Suspense>
+          </div>
         </div>
       </div>
     </div>

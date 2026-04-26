@@ -29,7 +29,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} font-sans h-full subpixel-antialiased`}
     >
-      <body className={`${inter.className} min-h-full flex flex-col bg-background font-normal text-foreground`}>
+      <body
+        suppressHydrationWarning
+        className={`${inter.className} min-h-full flex flex-col bg-background font-normal text-foreground`}
+      >
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

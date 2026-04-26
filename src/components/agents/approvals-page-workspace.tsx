@@ -6,9 +6,7 @@ import { ApprovalsPendingInteractive } from "@/components/agents/approvals-pendi
 import { ApprovalsResolvedSection } from "@/components/agents/approvals-resolved-section";
 import type { AgentApprovalActionType, AgentApprovalRow } from "@/lib/approvals/types";
 import { MVP_TERMS } from "@/components/dashboard/workspace-terminology";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Inbox } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type ActionFilter = "all" | AgentApprovalActionType;
@@ -49,10 +47,10 @@ function ActionFilterChips({
             type="button"
             onClick={() => onChange(f.value)}
             className={cn(
-              "rounded-md border px-2.5 py-1 font-[family-name:var(--font-inter)] text-[0.62rem] font-medium uppercase tracking-[0.08em] transition-colors",
+              "border px-2.5 py-1 font-[family-name:var(--font-inter)] text-[0.62rem] font-medium uppercase tracking-[0.11em] transition-colors",
               active
-                ? "border-[#BD9952]/45 bg-[#BD9952]/12 text-foreground dark:border-[#BD9952]/35 dark:bg-[#BD9952]/10"
-                : "border-border/70 bg-muted/20 text-muted-foreground hover:bg-muted/35 dark:border-white/[0.08]",
+                ? "border-white/25 bg-white/10 text-zinc-100"
+                : "border-white/[0.08] bg-[#151515] text-zinc-500 hover:text-zinc-200",
             )}
           >
             {f.label}
@@ -85,15 +83,15 @@ export function ApprovalsPageWorkspace({
       <Tabs
         value={tab}
         onValueChange={(v) => setTab(v as "queue" | "decisions")}
-        className="w-full gap-5"
+        className="w-full gap-4"
       >
         <TabsList
           variant="line"
-          className="h-auto w-full justify-start gap-0 rounded-none border-b border-border bg-transparent p-0 dark:border-[rgb(72_72_72_/0.12)] sm:w-auto sm:gap-8"
+          className="h-auto w-full justify-start gap-0 rounded-none border-b border-white/[0.1] bg-transparent p-0 sm:w-auto sm:gap-7"
         >
           <TabsTrigger
             value="queue"
-            className="rounded-none px-0 pb-3 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground after:bottom-0 after:h-[2px] after:bg-[#BD9952] data-[state=active]:text-foreground"
+            className="rounded-none px-0 pb-3 font-[family-name:var(--font-inter)] text-[0.66rem] uppercase tracking-[0.16em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-white data-[state=active]:text-zinc-100"
           >
             Queue
             {pending.length > 0 ? (
@@ -102,7 +100,7 @@ export function ApprovalsPageWorkspace({
           </TabsTrigger>
           <TabsTrigger
             value="decisions"
-            className="rounded-none px-0 pb-3 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.14em] text-muted-foreground after:bottom-0 after:h-[2px] after:bg-[#BD9952] data-[state=active]:text-foreground"
+            className="rounded-none px-0 pb-3 font-[family-name:var(--font-inter)] text-[0.66rem] uppercase tracking-[0.16em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-white data-[state=active]:text-zinc-100"
           >
             Recent decisions
             {resolved.length > 0 ? (
@@ -113,40 +111,53 @@ export function ApprovalsPageWorkspace({
 
         <TabsContent value="queue" className="mt-0 space-y-4 outline-none">
           {pending.length === 0 ? (
-            <Card className="border-border/80 dark:border-white/[0.06]">
-              <CardHeader className="flex flex-row items-start gap-3 space-y-0 border-b border-border/60 pb-4 dark:border-white/[0.06]">
-                <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-border/70 bg-muted/30 dark:border-white/[0.08]">
-                  <Inbox className="size-4 text-muted-foreground" aria-hidden />
-                </span>
-                <div>
-                  <CardTitle className="font-[family-name:var(--font-inter)] text-base font-semibold">
-                    No {MVP_TERMS.pendingApprovals.toLowerCase()}
-                  </CardTitle>
-                  <p className="mt-1 font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
-                    Tenant welcome, rent chases, move-in email, and contractor dispatch all stay in{" "}
-                    {MVP_TERMS.pendingApproval.toLowerCase()} until you approve — then they&apos;re{" "}
-                    {MVP_TERMS.sent.toLowerCase()}.
-                  </p>
-                </div>
-              </CardHeader>
-              <CardContent className="py-6">
-                <p className="text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
-                  You&apos;re caught up — check the assistant on Home for the next task.
-                </p>
-              </CardContent>
-            </Card>
+            <section className="border border-white/[0.1] bg-[#121212] p-5">
+              <p className="font-[family-name:var(--font-inter)] text-[0.66rem] font-semibold uppercase tracking-[0.15em] text-zinc-500">
+                Queue state
+              </p>
+              <p className="mt-2 font-[family-name:var(--font-inter)] text-sm font-medium text-zinc-100">
+                No {MVP_TERMS.pendingApprovals.toLowerCase()} in queue
+              </p>
+              <p className="mt-1 max-w-3xl font-[family-name:var(--font-inter)] text-[0.78rem] leading-relaxed text-zinc-400">
+                You&apos;re clear. New onboarding, rent chase, move-in, and maintenance recommendations will surface here
+                for review before they are {MVP_TERMS.sent.toLowerCase()}.
+              </p>
+            </section>
           ) : (
             <>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="font-[family-name:var(--font-inter)] text-[0.7rem] text-muted-foreground">
-                  Filter by action type. Sorted oldest first.
-                </p>
+              <div className="flex flex-col gap-3 border border-white/[0.1] bg-[#121212] px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                  <p className="font-[family-name:var(--font-inter)] text-[0.62rem] uppercase tracking-[0.14em] text-zinc-500">
+                    Queue controls
+                  </p>
+                  <p className="font-[family-name:var(--font-inter)] text-[0.72rem] text-zinc-300">
+                    Sorted oldest first. Select a row to inspect rationale and run decision actions.
+                  </p>
+                </div>
                 <ActionFilterChips idPrefix="q" value={actionFilter} onChange={setActionFilter} />
               </div>
-              {filteredPending.length === 0 ? (
-                <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
-                  No {MVP_TERMS.pendingApproval.toLowerCase()} for this filter.
+              <div className="flex flex-wrap items-center gap-3 px-0.5">
+                <p className="font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-zinc-600">
+                  Status key
                 </p>
+                <span className="inline-flex items-center gap-1.5 font-[family-name:var(--font-inter)] text-[0.65rem] text-zinc-400">
+                  <span className="size-2 bg-zinc-100" aria-hidden />
+                  Selected
+                </span>
+                <span className="inline-flex items-center gap-1.5 font-[family-name:var(--font-inter)] text-[0.65rem] text-zinc-400">
+                  <span className="size-2 bg-rose-300" aria-hidden />
+                  Aging ({">"}48h)
+                </span>
+              </div>
+              {filteredPending.length === 0 ? (
+                <section className="border border-dashed border-white/[0.12] bg-[#111111] p-5">
+                  <p className="font-[family-name:var(--font-inter)] text-sm text-zinc-300">
+                    No {MVP_TERMS.pendingApproval.toLowerCase()} for the selected filter.
+                  </p>
+                  <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.72rem] text-zinc-500">
+                    Switch filter chips to return to the full approval queue.
+                  </p>
+                </section>
               ) : (
                 <ApprovalsPendingInteractive approvals={filteredPending} emphasizeQueueAge />
               )}
@@ -156,21 +167,26 @@ export function ApprovalsPageWorkspace({
 
         <TabsContent value="decisions" className="mt-0 space-y-4 outline-none">
           {resolved.length === 0 ? (
-            <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
-              No recent decisions yet.
-            </p>
+            <section className="border border-dashed border-white/[0.12] bg-[#111111] p-5">
+              <p className="font-[family-name:var(--font-inter)] text-sm text-zinc-300">No recent decisions yet.</p>
+              <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.72rem] text-zinc-500">
+                Approved and denied decisions will appear here for audit review.
+              </p>
+            </section>
           ) : (
             <>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="font-[family-name:var(--font-inter)] text-[0.7rem] text-muted-foreground">
-                  Same filters apply to the decision log.
+              <div className="flex flex-col gap-2 border border-white/[0.1] bg-[#121212] px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="font-[family-name:var(--font-inter)] text-[0.7rem] text-zinc-400">
+                  Use the same action filters on the decision log.
                 </p>
                 <ActionFilterChips idPrefix="d" value={actionFilter} onChange={setActionFilter} />
               </div>
               {filteredResolved.length === 0 ? (
-                <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
-                  No decisions for this filter.
-                </p>
+                <section className="border border-dashed border-white/[0.12] bg-[#111111] p-5">
+                  <p className="font-[family-name:var(--font-inter)] text-sm text-zinc-300">
+                    No decisions for the selected filter.
+                  </p>
+                </section>
               ) : (
                 <ApprovalsResolvedSection approvals={filteredResolved} className="pt-1" />
               )}

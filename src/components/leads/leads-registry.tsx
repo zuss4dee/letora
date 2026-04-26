@@ -92,6 +92,25 @@ function pipelinePill(status: string): { label: string; className: string } {
   );
 }
 
+function qualificationPill(status: string): { label: string; className: string } {
+  const s = status.toLowerCase();
+  const map: Record<string, { label: string; className: string }> = {
+    qualified: {
+      label: "Vetted",
+      className: "border border-[#2d434d] bg-[#1a2a2e] text-[#38bdf8]",
+    },
+    disqualified: {
+      label: "Disqualified",
+      className: "border border-[#4d2d2d] bg-[#2e1a1a] text-[#f87171]",
+    },
+    pending: {
+      label: "Reviewing",
+      className: "border border-[#4d452d] bg-[#2e2a1a] text-[#eab308]",
+    },
+  };
+  return map[s] ?? map.pending;
+}
+
 function formatDateAdded(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -191,73 +210,55 @@ export function LeadsRegistry({
   const displayTo = Math.min(start + PAGE_SIZE, total);
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col bg-background">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/4 top-24 size-96 rounded-full bg-[#BD9952]/[0.03] blur-3xl" />
-      </div>
-
-      <div className="relative mx-auto w-full max-w-7xl flex-1 px-4 pb-8 pt-4 sm:px-6 md:px-12 md:pb-24 md:pt-8">
-        <header className="mb-6 flex flex-col gap-4 border-b border-border pb-6 md:mb-10 md:flex-row md:items-end md:justify-between md:pb-10">
-          <div className="max-w-2xl">
-            <h1 className="font-headline text-2xl font-extralight tracking-tight text-foreground sm:text-3xl md:text-[2.75rem]">
+    <div className="flex min-h-0 flex-1 flex-col bg-[#131313] text-[#e5e2e1]">
+      <header className="border-b border-[#282828] bg-[#161616] px-4 py-3 sm:px-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+              LeadOps Console
+            </p>
+            <h1 className="mt-1 text-xl font-semibold tracking-tight text-zinc-100 sm:text-2xl">
               Lead Management
             </h1>
-            <p className="mt-3 hidden font-[family-name:var(--font-inter)] text-base font-light tracking-wide text-muted-foreground sm:block md:text-lg">
-              Track prospective tenants and inquiries across your global portfolio with precision.
-            </p>
           </div>
           <AddLeadDialog
             properties={properties}
             trigger={
               <button
                 type="button"
-                className="inline-flex items-center gap-3 rounded-sm border border-border px-6 py-3 font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.2em] text-[#BD9952] transition hover:bg-muted/80 dark:hover:bg-[#131313]"
+                className="inline-flex h-8 items-center gap-2 border border-[#333333] bg-[#1a1a1a] px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-200 transition-colors hover:bg-[#242424]"
               >
-                <Plus className="size-4" strokeWidth={2} aria-hidden />
+                <Plus className="size-3.5" strokeWidth={2} aria-hidden />
                 Add lead
               </button>
             }
           />
-        </header>
+        </div>
+      </header>
 
-        <section className="mb-6 grid grid-cols-2 gap-3 md:mb-10 md:grid-cols-4 md:gap-4">
-          <div className="border border-border bg-card p-5 transition-colors hover:bg-muted/70 dark:hover:bg-[#1F2020]/80">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Total leads
-            </p>
-            <p className="font-headline mt-2 text-2xl font-light tabular-nums text-foreground">
-              {stats.total}
-            </p>
-          </div>
-          <div className="border border-border bg-card p-5 transition-colors hover:bg-muted/70 dark:hover:bg-[#1F2020]/80">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              New
-            </p>
-            <p className="font-headline mt-2 text-2xl font-light tabular-nums text-[#BD9952]">
-              {stats.newCount}
-            </p>
-          </div>
-          <div className="border border-border bg-card p-5 transition-colors hover:bg-muted/70 dark:hover:bg-[#1F2020]/80">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Qualified
-            </p>
-            <p className="font-headline mt-2 text-2xl font-light tabular-nums text-[#afefdd]">
-              {stats.qualifiedCount}
-            </p>
-          </div>
-          <div className="border border-border bg-card p-5 transition-colors hover:bg-muted/70 dark:hover:bg-[#1F2020]/80">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-              Viewings
-            </p>
-            <p className="font-headline mt-2 text-2xl font-light tabular-nums text-foreground">
-              {stats.viewingCount}
-            </p>
-          </div>
-        </section>
+      <section className="grid grid-cols-2 gap-px border-b border-[#282828] bg-[#282828] md:grid-cols-4">
+        <div className="bg-[#161616] px-4 py-3 sm:px-6">
+          <p className="text-[10px] uppercase tracking-widest text-zinc-500">Total leads</p>
+          <p className="mt-1 font-mono text-lg text-zinc-100">{stats.total}</p>
+        </div>
+        <div className="bg-[#161616] px-4 py-3 sm:px-6">
+          <p className="text-[10px] uppercase tracking-widest text-zinc-500">New</p>
+          <p className="mt-1 font-mono text-lg text-zinc-100">{stats.newCount}</p>
+        </div>
+        <div className="bg-[#161616] px-4 py-3 sm:px-6">
+          <p className="text-[10px] uppercase tracking-widest text-zinc-500">Qualified</p>
+          <p className="mt-1 font-mono text-lg text-[#38bdf8]">{stats.qualifiedCount}</p>
+        </div>
+        <div className="bg-[#161616] px-4 py-3 sm:px-6">
+          <p className="text-[10px] uppercase tracking-widest text-zinc-500">Viewings</p>
+          <p className="mt-1 font-mono text-lg text-[#eab308]">{stats.viewingCount}</p>
+        </div>
+      </section>
 
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="relative max-w-md flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+      <div className="border-b border-[#282828] bg-[#161616] px-4 py-2 sm:px-6">
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div className="relative w-full max-w-xl">
+            <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
             <input
               type="search"
               value={query}
@@ -265,32 +266,63 @@ export function LeadsRegistry({
                 setQuery(e.target.value);
                 setPage(1);
               }}
-              placeholder="Search leads, properties, or inquiries…"
-              className="w-full border-0 border-b border-border bg-transparent py-2 pl-10 pr-4 font-[family-name:var(--font-inter)] text-xs text-foreground placeholder:text-placeholder-foreground focus:border-secondary focus:outline-none focus:ring-0"
+              placeholder="Search leads, properties, email, source..."
+              className="h-8 w-full border border-[#333333] bg-[#0b0b0b] pl-9 pr-3 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-100 focus:outline-none"
               aria-label="Search leads"
             />
           </div>
-          <div className="flex flex-wrap gap-2">
-            {STATUS_TABS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => {
-                  setStatusTab(t.id);
-                  setPage(1);
-                }}
-                className={cn(
-                  "rounded-sm px-3 py-1.5 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest transition-colors",
-                  statusTab === t.id
-                    ? "bg-muted text-foreground"
-                    : "text-muted-foreground hover:text-muted-foreground",
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
+          <div className="flex items-center gap-2 self-end lg:self-auto">
+            <button
+              type="button"
+              onClick={() => setShowFilters((v) => !v)}
+              className={cn(
+                "inline-flex h-7 items-center gap-1 border border-[#333333] bg-[#1a1a1a] px-2 text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-100",
+                showFilters && "text-zinc-100",
+              )}
+              aria-label="Toggle filters"
+              aria-pressed={showFilters}
+            >
+              <Filter className="size-3.5" strokeWidth={1.5} />
+              Filters
+            </button>
+            <button
+              type="button"
+              onClick={() => downloadCsv(filtered)}
+              className="inline-flex h-7 items-center gap-1 border border-[#333333] bg-[#1a1a1a] px-2 text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-100"
+              aria-label="Export CSV"
+            >
+              <Download className="size-3.5" strokeWidth={1.5} />
+              Export
+            </button>
           </div>
         </div>
+        <div className="mt-2 flex flex-wrap gap-1">
+          {STATUS_TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => {
+                setStatusTab(t.id);
+                setPage(1);
+              }}
+              className={cn(
+                "h-7 px-2.5 text-[10px] font-semibold uppercase tracking-widest transition-colors",
+                statusTab === t.id
+                  ? "border-b-2 border-zinc-100 bg-[#242424] text-zinc-100"
+                  : "text-zinc-500 hover:bg-[#242424] hover:text-zinc-300",
+              )}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {showFilters ? (
+        <div className="border-b border-[#282828] bg-[#131313] px-4 py-2 text-[11px] text-zinc-500 sm:px-6">
+          Filter by status tabs and search terms; lead actions remain available via row menu.
+        </div>
+      ) : null}
 
         <ul className="mb-4 space-y-3 md:hidden">
           {slice.length === 0 ? (
@@ -302,15 +334,15 @@ export function LeadsRegistry({
               const { line1, line2 } = splitPropertyAddress(lead.propertyAddress);
               const pill = pipelinePill(lead.status);
               return (
-                <li key={`m-${lead.id}`} className="rounded-sm border border-border bg-card p-4">
+                <li key={`m-${lead.id}`} className="border border-[#282828] bg-[#161616] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#484848]/10 bg-[#252626] text-[10px] font-bold text-foreground">
+                      <div className="flex size-8 shrink-0 items-center justify-center border border-[#333333] bg-[#242424] text-[10px] font-bold text-zinc-100">
                         {initials(lead.name)}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-foreground">{lead.name}</p>
-                        <p className="truncate font-[family-name:var(--font-inter)] text-[11px] font-light text-muted-foreground">
+                        <p className="truncate text-sm font-medium text-zinc-100">{lead.name}</p>
+                        <p className="truncate text-[11px] text-zinc-500">
                           {line1}
                           {line2 ? ` · ${line2}` : ""}
                         </p>
@@ -318,15 +350,15 @@ export function LeadsRegistry({
                     </div>
                     <span
                       className={cn(
-                        "inline-flex shrink-0 items-center rounded-full px-2.5 py-0.5 font-[family-name:var(--font-inter)] text-[9px] font-bold uppercase tracking-widest",
+                        "inline-flex shrink-0 items-center px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest",
                         pill.className,
                       )}
                     >
                       {pill.label}
                     </span>
                   </div>
-                  <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
-                    <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
+                  <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#282828] pt-3">
+                    <p className="text-[10px] uppercase tracking-widest text-zinc-500">
                       {formatDateAdded(lead.createdAt)}
                     </p>
                     <LeadRowActions
@@ -342,60 +374,28 @@ export function LeadsRegistry({
           )}
         </ul>
 
-        <div className="hidden overflow-hidden border border-border bg-card md:block">
-          <div className="flex items-center justify-between border-b border-border/80 px-8 py-5">
-            <h2 className="font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
-              Active inquiries
-            </h2>
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                onClick={() => setShowFilters((v) => !v)}
-                className={cn(
-                  "text-muted-foreground transition hover:text-foreground",
-                  showFilters && "text-[#BD9952]",
-                )}
-                aria-label="Toggle filters"
-                aria-pressed={showFilters}
-              >
-                <Filter className="size-5" strokeWidth={1.5} />
-              </button>
-              <button
-                type="button"
-                onClick={() => downloadCsv(filtered)}
-                className="text-muted-foreground transition hover:text-foreground"
-                aria-label="Export CSV"
-              >
-                <Download className="size-5" strokeWidth={1.5} />
-              </button>
-            </div>
-          </div>
-
-          {showFilters ? (
-            <div className="border-b border-[#484848]/10 px-8 py-3 font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
-              Filter by pipeline using the chips above. Search matches name, email, phone, and
-              property.
-            </div>
-          ) : null}
-
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[960px] border-collapse text-left">
+        <div className="hidden min-h-0 flex-1 overflow-hidden md:block">
+          <div className="min-h-0 flex-1 overflow-auto">
+            <table className="w-full min-w-[1100px] border-collapse text-left">
               <thead>
-                <tr className="border-b border-[#484848]/5 text-[10px] uppercase tracking-widest text-muted-foreground">
-                  <th className="px-8 py-5 font-medium">Lead name</th>
-                  <th className="px-8 py-5 font-medium">Property interest</th>
-                  <th className="px-8 py-5 font-medium">Source</th>
-                  <th className="px-8 py-5 font-medium">Status</th>
-                  <th className="px-8 py-5 font-medium">Date added</th>
-                  <th className="px-8 py-5 text-right font-medium">Actions</th>
+                <tr className="sticky top-0 z-10 border-b border-[#282828] bg-[#161616] text-[10px] uppercase tracking-widest text-zinc-500">
+                  <th className="border-r border-[#282828] px-4 py-2 font-medium">Lead name</th>
+                  <th className="border-r border-[#282828] px-4 py-2 font-medium">Property</th>
+                  <th className="border-r border-[#282828] px-4 py-2 font-medium">Stage</th>
+                  <th className="border-r border-[#282828] px-4 py-2 font-medium">Source</th>
+                  <th className="border-r border-[#282828] px-4 py-2 font-medium">Qualification</th>
+                  <th className="border-r border-[#282828] px-4 py-2 font-medium">
+                    Response status
+                  </th>
+                  <th className="px-4 py-2 text-right font-medium">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {slice.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={6}
-                      className="px-8 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground"
+                      colSpan={7}
+                      className="px-8 py-16 text-center text-sm text-zinc-500"
                     >
                       No leads match this view. Add a lead or adjust search.
                     </td>
@@ -405,56 +405,72 @@ export function LeadsRegistry({
                     const { line1, line2 } = splitPropertyAddress(lead.propertyAddress);
                     const src = sourcePresentation(lead.source);
                     const pill = pipelinePill(lead.status);
+                    const qualification = qualificationPill(lead.qualifiedStatus);
                     return (
                       <tr
                         key={lead.id}
-                        className="group border-b border-border/50 transition-colors hover:bg-muted/70 dark:hover:bg-[#1F2020]/90"
+                        className="group border-b border-[#282828] transition-colors hover:bg-[#242424]"
                       >
-                        <td className="px-8 py-6">
-                          <div className="flex items-center gap-4">
-                            <div className="flex size-8 shrink-0 items-center justify-center rounded-full border border-[#484848]/10 bg-[#252626] text-[10px] font-bold text-foreground">
+                        <td className="border-r border-[#282828] px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="flex size-8 shrink-0 items-center justify-center border border-[#333333] bg-[#1a1a1a] text-[10px] font-bold text-zinc-100">
                               {initials(lead.name)}
                             </div>
                             <div>
-                              <div className="text-sm font-medium tracking-wide text-foreground">
+                              <div className="text-sm font-semibold tracking-tight text-zinc-100">
                                 {lead.name}
                               </div>
-                              <div className="mt-0.5 text-[10px] font-light text-muted-foreground">
+                              <div className="mt-0.5 text-[10px] text-zinc-500">
                                 {lead.email ?? "—"}
                               </div>
                             </div>
                           </div>
                         </td>
-                        <td className="max-w-[240px] px-8 py-6">
-                          <div className="text-sm font-light text-foreground">{line1}</div>
+                        <td className="max-w-[240px] border-r border-[#282828] px-4 py-3">
+                          <div className="text-sm text-zinc-300">{line1}</div>
                           {line2 ? (
-                            <div className="mt-0.5 text-[10px] font-light text-muted-foreground">
+                            <div className="mt-0.5 text-[10px] text-zinc-500">
                               {line2}
                             </div>
                           ) : null}
                         </td>
-                        <td className="px-8 py-6">
-                          <div className="inline-flex items-center gap-2 rounded-sm border border-[#484848]/15 px-2 py-1 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
-                            <span className={cn("size-1.5 rounded-full", src.dot)} aria-hidden />
-                            {src.label}
-                          </div>
-                        </td>
-                        <td className="px-8 py-6">
+                        <td className="border-r border-[#282828] px-4 py-3">
                           <span
                             className={cn(
-                              "inline-flex items-center rounded-full px-3 py-1 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest",
+                              "inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest",
                               pill.className,
                             )}
                           >
                             {pill.label}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap px-8 py-6">
-                          <span className="font-[family-name:var(--font-inter)] text-[11px] font-light text-muted-foreground">
-                            {formatDateAdded(lead.createdAt)}
+                        <td className="border-r border-[#282828] px-4 py-3">
+                          <div className="inline-flex items-center gap-2 px-2 py-0.5 text-[10px] uppercase tracking-widest text-zinc-400">
+                            <span className={cn("size-1.5 rounded-full", src.dot)} aria-hidden />
+                            {src.label}
+                          </div>
+                        </td>
+                        <td className="border-r border-[#282828] px-4 py-3">
+                          <span
+                            className={cn(
+                              "inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest",
+                              qualification.className,
+                            )}
+                          >
+                            {qualification.label}
                           </span>
                         </td>
-                        <td className="px-8 py-6 text-right">
+                        <td className="whitespace-nowrap border-r border-[#282828] px-4 py-3">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-zinc-500">{formatDateAdded(lead.createdAt)}</span>
+                            <span className="text-[11px] italic text-zinc-500">
+                              {lead.status === "contacted" || lead.status === "viewing"
+                                ? "Replied"
+                                : "Pending"}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-right">
                           <div className="flex justify-end opacity-100 md:opacity-0 md:transition-opacity md:group-hover:opacity-100">
                             <LeadRowActions
                               leadId={lead.id}
@@ -472,8 +488,8 @@ export function LeadsRegistry({
             </table>
           </div>
 
-          <div className="flex flex-col gap-4 border-t border-[#484848]/5 px-8 py-6 sm:flex-row sm:items-center sm:justify-between">
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
+          <div className="flex flex-col gap-4 border-t border-[#282828] bg-[#161616] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p className="text-[10px] uppercase tracking-widest text-zinc-500">
               Showing {displayFrom}–{displayTo} of {total} leads
             </p>
             <div className="flex items-center gap-4">
@@ -482,11 +498,11 @@ export function LeadsRegistry({
                 aria-label="Previous page"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="text-muted-foreground transition hover:text-foreground disabled:opacity-30"
+                className="text-zinc-500 transition hover:text-zinc-100 disabled:opacity-30"
               >
                 <ChevronLeft className="size-5" />
               </button>
-              <span className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-[#BD9952]">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-100">
                 {safePage}
               </span>
               <button
@@ -494,7 +510,7 @@ export function LeadsRegistry({
                 aria-label="Next page"
                 disabled={safePage >= pageCount}
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="text-muted-foreground transition hover:text-foreground disabled:opacity-30"
+                className="text-zinc-500 transition hover:text-zinc-100 disabled:opacity-30"
               >
                 <ChevronRight className="size-5" />
               </button>
@@ -503,17 +519,17 @@ export function LeadsRegistry({
         </div>
 
         {pageCount > 1 ? (
-          <div className="mt-4 flex items-center justify-between gap-2 md:hidden">
+          <div className="mt-4 flex items-center justify-between gap-2 px-4 pb-4 md:hidden">
             <button
               type="button"
               aria-label="Previous page"
               disabled={safePage <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="rounded-sm border border-border p-2 text-muted-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-30"
+              className="border border-[#333333] bg-[#1a1a1a] p-2 text-zinc-500 transition hover:text-zinc-100 disabled:opacity-30"
             >
               <ChevronLeft className="size-4" />
             </button>
-            <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
               {displayFrom}–{displayTo} of {total}
             </p>
             <button
@@ -521,13 +537,12 @@ export function LeadsRegistry({
               aria-label="Next page"
               disabled={safePage >= pageCount}
               onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-              className="rounded-sm border border-border p-2 text-muted-foreground transition hover:border-secondary/40 hover:text-[#BD9952] disabled:opacity-30"
+              className="border border-[#333333] bg-[#1a1a1a] p-2 text-zinc-500 transition hover:text-zinc-100 disabled:opacity-30"
             >
               <ChevronRight className="size-4" />
             </button>
           </div>
         ) : null}
-      </div>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Download, Filter } from "lucide-react";
-import { useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Download, Filter, Search } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { EmailDraftViewButton } from "@/components/emails/email-draft-view-button";
 import type { EmailDispatchRow } from "@/lib/email-dispatch";
@@ -31,20 +31,23 @@ function formatSentDate(iso: string): string {
 function StatusPill({ status }: { status: EmailDispatchRow["uiStatus"] }) {
   if (status === "delivered") {
     return (
-      <span className="inline-flex items-center rounded-full border border-[#afefdd]/25 bg-[#1a2e28]/60 px-3 py-1 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-[#afefdd]">
+      <span className="inline-flex items-center gap-1.5 border border-emerald-900/30 bg-emerald-950/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-400/90">
+        <span className="size-1 rounded-full bg-emerald-400" />
         Delivered
       </span>
     );
   }
   if (status === "opened") {
     return (
-      <span className="inline-flex items-center rounded-full border border-[#4f3700]/35 bg-[#4f3700]/20 px-3 py-1 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-[#e1ba70]">
+      <span className="inline-flex items-center gap-1.5 border border-amber-900/35 bg-amber-950/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-400/90">
+        <span className="size-1 rounded-full bg-amber-400" />
         Opened
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center rounded-full border border-[#7f2927]/35 bg-[#7f2927]/25 px-3 py-1 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-widest text-[#ee7d77]">
+    <span className="inline-flex items-center gap-1.5 border border-red-900/35 bg-red-950/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-red-400/90">
+      <span className="size-1 rounded-full bg-red-400" />
       Bounced
     </span>
   );
@@ -83,9 +86,9 @@ export function EmailsSentRegistry({
 }) {
   const [tab, setTab] = useState<LogTab>("all");
   const [query, setQuery] = useState("");
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const [statusOnly, setStatusOnly] = useState<EmailDispatchRow["uiStatus"] | "all">("all");
   const [page, setPage] = useState(1);
+  const [selectedId, setSelectedId] = useState<string | null>(rows[0]?.id ?? null);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -105,215 +108,179 @@ export function EmailsSentRegistry({
   const start = (safePage - 1) * PAGE_SIZE;
   const slice = filtered.slice(start, start + PAGE_SIZE);
 
+  const selected = useMemo(() => {
+    if (slice.length === 0) return null;
+    const row = slice.find((item) => item.id === selectedId);
+    return row ?? slice[0];
+  }, [selectedId, slice]);
+
+  useEffect(() => {
+    if (!selected) {
+      setSelectedId(null);
+      return;
+    }
+    if (selectedId !== selected.id) {
+      setSelectedId(selected.id);
+    }
+  }, [selected, selectedId]);
+
   const tabs: { id: LogTab; label: string }[] = [
-    { id: "all", label: "All logs" },
+    { id: "all", label: "All" },
     { id: "automated", label: "Automated" },
     { id: "manual", label: "Manual" },
   ];
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col bg-background">
-      <div
-        className="pointer-events-none fixed inset-0 z-0 opacity-[0.03]"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E")`,
-        }}
-        aria-hidden
-      />
-
-      <div className="relative z-[1] mx-auto w-full max-w-7xl flex-1 px-4 pb-8 pt-4 sm:px-6 md:px-12 md:pb-24 md:pt-10">
-        <header className="mb-6 max-w-3xl md:mb-12">
-          <h1 className="font-headline text-2xl font-extralight leading-none tracking-tight text-foreground sm:text-3xl md:text-[3.5rem]">
-            Emails Sent
-          </h1>
-          <p className="mt-3 hidden max-w-xl font-[family-name:var(--font-inter)] text-sm text-muted-foreground sm:block">
-            A clinical log of all outgoing property management communications and tenant notices.
-          </p>
-        </header>
-
-        <div className="mb-6 flex flex-col gap-3 border-b border-border/80 pb-3 md:mb-10 md:flex-row md:items-center md:justify-between md:pb-4">
-          <div className="flex flex-nowrap gap-4 overflow-x-auto md:flex-wrap md:gap-8">
-            {tabs.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => {
-                  setTab(t.id);
+    <div className="flex min-h-0 flex-1 flex-col bg-[#0B0B0B] text-[#e5e2e1]">
+      <div className="border-b border-[#1f1f1f] px-4 py-3 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-4">
+            <h1 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-300">Communications Hub</h1>
+            <span className="hidden text-[11px] text-zinc-500 sm:inline">
+              {totalDispatched.toLocaleString("en-GB")} total dispatches
+            </span>
+          </div>
+          <div className="flex w-full items-center gap-3 sm:w-auto">
+            <div className="relative flex-1 sm:w-72 sm:flex-none">
+              <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-zinc-600" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => {
+                  setQuery(e.target.value);
                   setPage(1);
                 }}
-                className={cn(
-                  "pb-4 font-[family-name:var(--font-inter)] text-[11px] uppercase tracking-[0.2em] transition-colors",
-                  tab === t.id
-                    ? "border-b border-[#BD9952] font-medium text-foreground"
-                    : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={() => setAdvancedOpen((v) => !v)}
-            className={cn(
-              "ml-auto flex items-center gap-2 font-[family-name:var(--font-inter)] text-[11px] uppercase tracking-widest transition-colors",
-              advancedOpen ? "text-[#BD9952]" : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Filter className="size-4" strokeWidth={1.5} />
-            Advanced filters
-          </button>
-        </div>
-
-        {advancedOpen ? (
-          <div className="mb-8 flex flex-wrap items-center gap-4 rounded-sm border border-border bg-card/80 px-4 py-3">
-            <span className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
-              Delivery status
-            </span>
-            <select
-              value={statusOnly}
-              onChange={(e) => {
-                setStatusOnly(e.target.value as typeof statusOnly);
-                setPage(1);
-              }}
-              className="border-0 bg-transparent font-[family-name:var(--font-inter)] text-xs text-muted-foreground focus:outline-none focus:ring-0"
-            >
-              <option value="all">All statuses</option>
-              <option value="delivered">Delivered</option>
-              <option value="opened">Opened</option>
-              <option value="bounced">Bounced</option>
-            </select>
+                placeholder="Search communications..."
+                className="h-8 w-full border border-[#2a2a2a] bg-[#0a0a0a] pl-7 pr-2 text-xs text-zinc-300 placeholder:text-zinc-600 focus:outline-none"
+                aria-label="Search emails"
+              />
+            </div>
             <button
               type="button"
               onClick={() => downloadCsv(filtered)}
-              className="ml-auto inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#BD9952] hover:underline"
+              className="inline-flex h-8 items-center gap-1.5 border border-[#2a2a2a] px-2.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white"
             >
               <Download className="size-3.5" />
-              Export view
+              Export
             </button>
           </div>
-        ) : null}
-
-        <div className="mb-6 max-w-md">
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Search communications…"
-            className="w-full border-0 border-b border-border bg-transparent py-2 font-[family-name:var(--font-inter)] text-sm text-foreground placeholder:text-placeholder-foreground focus:border-secondary focus:outline-none focus:ring-0"
-            aria-label="Search emails"
-          />
         </div>
+      </div>
 
-        <ul className="space-y-3 md:hidden">
-          {slice.length === 0 ? (
-            <li className="rounded-sm bg-card px-4 py-10 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
-              No messages in this view.
-            </li>
-          ) : (
-            slice.map((row) => (
-              <li
-                key={`m-${row.source}-${row.id}`}
-                className="rounded-sm bg-card p-4"
+      <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px]">
+        <section className="flex min-h-0 flex-col border-r border-[#1f1f1f]">
+          <div className="flex h-10 items-center justify-between border-b border-[#1f1f1f] px-4 sm:px-6">
+            <div className="flex h-full items-center gap-5">
+              {tabs.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => {
+                    setTab(t.id);
+                    setPage(1);
+                  }}
+                  className={cn(
+                    "h-full border-b text-[10px] font-bold uppercase tracking-[0.16em] transition-colors",
+                    tab === t.id
+                      ? "border-white text-white"
+                      : "border-transparent text-zinc-500 hover:text-zinc-300",
+                  )}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <Filter className="size-3.5 text-zinc-600" />
+              <select
+                value={statusOnly}
+                onChange={(e) => {
+                  setStatusOnly(e.target.value as typeof statusOnly);
+                  setPage(1);
+                }}
+                className="h-7 border border-[#2a2a2a] bg-[#0a0a0a] px-2 text-[10px] uppercase tracking-wider text-zinc-400 focus:outline-none"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium text-foreground">{row.recipientName}</p>
-                    <p className="truncate text-[11px] text-muted-foreground">{row.recipientEmail}</p>
-                  </div>
-                  <StatusPill status={row.uiStatus} />
-                </div>
-                <p className="mt-3 line-clamp-2 text-[13px] text-muted-foreground">{row.subject}</p>
-                <div className="mt-3 flex items-center justify-between gap-3 border-t border-border/60 pt-3">
-                  <span className="text-[11px] font-light text-muted-foreground">
-                    {formatSentDate(row.sentAt)}
-                  </span>
-                  <EmailDraftViewButton
-                    subject={row.subject}
-                    body={row.body}
-                    buttonClassName="border-[#484848]/30 bg-transparent font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#BD9952] hover:border-[#BD9952]/50 hover:bg-[#BD9952]/5 hover:text-[#BD9952]"
-                  />
-                </div>
-              </li>
-            ))
-          )}
-        </ul>
-
-        <div className="hidden space-y-0.5 md:block">
-          <div className="grid grid-cols-12 items-center rounded-t-sm bg-card px-6 py-4">
-            <div className="col-span-3 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-              Recipient
-            </div>
-            <div className="col-span-5 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-              Subject line
-            </div>
-            <div className="col-span-2 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-              Date sent
-            </div>
-            <div className="col-span-2 text-right font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-              Status
+                <option value="all">All status</option>
+                <option value="delivered">Delivered</option>
+                <option value="opened">Opened</option>
+                <option value="bounced">Bounced</option>
+              </select>
             </div>
           </div>
 
-          {slice.length === 0 ? (
-            <div className="bg-background px-6 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
-              No messages in this view. Sent mail from agents and the assistant will appear here.
-            </div>
-          ) : (
-            slice.map((row, i) => (
-              <div
-                key={`${row.source}-${row.id}`}
-                className={cn(
-                  "group grid grid-cols-12 items-center px-6 py-5 transition-colors",
-                  i % 2 === 0
-                    ? "bg-background hover:bg-muted/60 dark:hover:bg-[#131313]"
-                    : "bg-muted/30 hover:bg-muted/70 dark:bg-[#131313]/30 dark:hover:bg-[#131313]",
+          <div className="min-h-0 flex-1 overflow-auto">
+            <table className="w-full table-fixed border-collapse text-left">
+              <thead>
+                <tr className="sticky top-0 z-10 border-b border-[#1f1f1f] bg-[#0B0B0B]">
+                  <th className="w-[22%] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600 sm:px-6">
+                    Recipient
+                  </th>
+                  <th className="w-[32%] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">
+                    Subject
+                  </th>
+                  <th className="w-[12%] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">
+                    Type
+                  </th>
+                  <th className="w-[16%] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">
+                    Status
+                  </th>
+                  <th className="w-[18%] px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600 sm:px-6">
+                    Date
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1f1f1f] font-mono text-[11px]">
+                {slice.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center font-sans text-sm text-zinc-500">
+                      No messages in this view.
+                    </td>
+                  </tr>
+                ) : (
+                  slice.map((row) => (
+                    <tr
+                      key={`${row.source}-${row.id}`}
+                      onClick={() => setSelectedId(row.id)}
+                      className={cn(
+                        "cursor-pointer transition-colors hover:bg-zinc-900/50",
+                        selected?.id === row.id ? "bg-zinc-900/70" : "",
+                      )}
+                    >
+                      <td className="truncate px-4 py-3 text-zinc-300 sm:px-6">
+                        <div className="truncate">{row.recipientEmail}</div>
+                      </td>
+                      <td className="px-2 py-3">
+                        <div className="truncate text-zinc-400">{row.subject}</div>
+                      </td>
+                      <td className="px-2 py-3">
+                        <span className="inline-flex border border-[#2a2a2a] bg-zinc-900/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-500">
+                          {row.source === "email_log" ? "Workflow" : "Draft"}
+                        </span>
+                      </td>
+                      <td className="px-2 py-3">
+                        <StatusPill status={row.uiStatus} />
+                      </td>
+                      <td className="px-2 py-3 text-right text-zinc-600 sm:px-6">
+                        {formatSentDate(row.sentAt)}
+                      </td>
+                    </tr>
+                  ))
                 )}
-              >
-                <div className="col-span-3">
-                  <p className="text-[13px] font-medium text-foreground">{row.recipientName}</p>
-                  <p className="text-[11px] text-muted-foreground">{row.recipientEmail}</p>
-                </div>
-                <div className="col-span-5 pr-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[13px] text-muted-foreground transition-colors group-hover:text-foreground">
-                      {row.subject}
-                    </p>
-                    <EmailDraftViewButton
-                      subject={row.subject}
-                      body={row.body}
-                      buttonClassName="border-[#484848]/30 bg-transparent font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-[#BD9952] hover:border-[#BD9952]/50 hover:bg-[#BD9952]/5 hover:text-[#BD9952]"
-                    />
-                  </div>
-                </div>
-                <div className="col-span-2">
-                  <span className="text-[12px] font-light text-muted-foreground">
-                    {formatSentDate(row.sentAt)}
-                  </span>
-                </div>
-                <div className="col-span-2 flex justify-end">
-                  <StatusPill status={row.uiStatus} />
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+              </tbody>
+            </table>
+          </div>
 
-        <div className="mt-12 flex flex-col gap-6 text-[11px] uppercase tracking-[0.2em] text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <span>
-              Page {safePage} of {pageCount}
+          <div className="flex items-center justify-between border-t border-[#1f1f1f] px-4 py-2 sm:px-6">
+            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+              Page {safePage} / {pageCount}
             </span>
-            <div className="flex gap-1">
+            <div className="flex items-center gap-1">
               <button
                 type="button"
                 aria-label="Previous page"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="flex size-6 items-center justify-center border border-border text-muted-foreground transition hover:border-secondary/40 hover:text-foreground disabled:opacity-30"
+                className="flex size-6 items-center justify-center border border-[#2a2a2a] text-zinc-500 hover:text-white disabled:opacity-40"
               >
                 <ChevronLeft className="size-4" />
               </button>
@@ -322,24 +289,50 @@ export function EmailsSentRegistry({
                 aria-label="Next page"
                 disabled={safePage >= pageCount}
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="flex size-6 items-center justify-center border border-border text-muted-foreground transition hover:border-secondary/40 hover:text-foreground disabled:opacity-30"
+                className="flex size-6 items-center justify-center border border-[#2a2a2a] text-zinc-500 hover:text-white disabled:opacity-40"
               >
                 <ChevronRight className="size-4" />
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span
-              className="size-1.5 rounded-full bg-[#afefdd] shadow-[0_0_8px_rgba(175,239,221,0.4)]"
-              aria-hidden
-            />
-            <span className="text-muted-foreground">
-              System live:{" "}
-              <span className="text-muted-foreground">{totalDispatched.toLocaleString("en-GB")}</span> total
-              emails dispatched this cycle
-            </span>
+        </section>
+
+        <aside className="flex min-h-0 flex-col border-t border-[#1f1f1f] bg-[#0B0B0B] xl:border-l xl:border-t-0">
+          <div className="border-b border-[#1f1f1f] px-4 py-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">Communication Detail</p>
+            <h2 className="mt-2 line-clamp-2 text-sm font-semibold text-zinc-200">
+              {selected?.subject ?? "No message selected"}
+            </h2>
+            {selected ? (
+              <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-500">
+                <span className="truncate">{selected.recipientEmail}</span>
+                <StatusPill status={selected.uiStatus} />
+              </div>
+            ) : null}
           </div>
-        </div>
+
+          <div className="min-h-0 flex-1 space-y-5 overflow-auto p-4">
+            <section>
+              <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">Message content</h3>
+              <div className="border border-[#1f1f1f] bg-zinc-900/30 p-3">
+                <pre className="whitespace-pre-wrap break-words text-[11px] leading-relaxed text-zinc-400">
+                  {selected?.body ?? "Select a message to preview body content."}
+                </pre>
+              </div>
+            </section>
+
+            {selected ? (
+              <section className="space-y-2">
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">Actions</h3>
+                <EmailDraftViewButton
+                  subject={selected.subject}
+                  body={selected.body}
+                  buttonClassName="h-8 w-full border-[#2a2a2a] bg-transparent px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900/40 hover:text-white"
+                />
+              </section>
+            ) : null}
+          </div>
+        </aside>
       </div>
     </div>
   );

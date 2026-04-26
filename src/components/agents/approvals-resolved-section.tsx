@@ -33,51 +33,51 @@ export function ApprovalsResolvedSection({
     <section className={cn(className)} aria-labelledby="approvals-resolved-heading">
       <h2
         id="approvals-resolved-heading"
-        className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground"
+        className="font-headline text-[0.58rem] font-semibold uppercase tracking-[0.22em] text-zinc-500"
       >
         Recent decisions
       </h2>
-      <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.75rem] text-muted-foreground">
+      <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.75rem] text-zinc-400">
         Completed, denied, or approved (newest first).
       </p>
-      <ul className="mt-4 divide-y divide-border/50 rounded-lg border border-border/60 dark:divide-white/[0.06] dark:border-white/[0.06]">
+      <ul className="mt-4 divide-y divide-white/[0.06] border border-white/[0.1] bg-[#111111]">
         {approvals.map((a) => {
           const targetLine = formatApprovalTargetLine(a.target_type, a.target_id);
           const decided = a.decided_at ?? a.executed_at ?? a.created_at;
           return (
             <li key={a.id} className="flex flex-col gap-2 px-3 py-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4 sm:px-4">
               <div className="min-w-0 flex-1">
-                <p className="font-[family-name:var(--font-inter)] text-[0.75rem] font-medium text-foreground/90">
+                <p className="font-[family-name:var(--font-inter)] text-[0.75rem] font-medium text-zinc-100">
                   {a.title}
                 </p>
                 <div className="mt-1 flex flex-wrap items-center gap-2">
                   <Badge variant="outline" className={cn("font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.05em]", statusBadgeClass(a.status))}>
                     {formatApprovalDecisionStatus(a.status)}
                   </Badge>
-                  <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">
+                  <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-zinc-400">
                     {formatApprovalActionType(a.action_type)}
                   </span>
                   {targetLine ? (
-                    <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">
+                    <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-zinc-500">
                       {targetLine}
                     </span>
                   ) : null}
                 </div>
                 {a.status === "denied" && a.deny_reason ? (
-                  <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">
+                  <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.65rem] text-zinc-500">
                     {a.deny_reason}
                   </p>
                 ) : null}
               </div>
               <div className="flex shrink-0 flex-row items-center gap-2 sm:flex-col sm:items-end">
                 <time
-                  className="font-[family-name:var(--font-inter)] text-[0.65rem] tabular-nums text-muted-foreground sm:text-right"
+                  className="font-[family-name:var(--font-inter)] text-[0.65rem] tabular-nums text-zinc-500 sm:text-right"
                   dateTime={decided}
                   title={formatApprovalAbsoluteTime(decided)}
                 >
                   {formatApprovalAbsoluteTime(decided)}
                 </time>
-                <ApprovalAuditSheetTrigger approval={a} className="border-border/70 dark:border-white/[0.1]" />
+                <ApprovalAuditSheetTrigger approval={a} className="border-white/[0.14] text-zinc-300 hover:bg-white/[0.04]" />
               </div>
             </li>
           );
