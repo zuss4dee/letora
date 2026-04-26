@@ -3,36 +3,19 @@ export const dynamic = "force-dynamic";
 import { redirect } from "next/navigation";
 
 import { AssistantChat } from "./assistant/assistant-chat";
-import { AssistantLanding } from "@/components/dashboard/assistant-landing";
+import { CommandCenterLandingView } from "@/components/dashboard/command-center/command-center-landing-view";
 import {
   ASSISTANT_UI_MESSAGE_LIMIT,
   createAssistantConversation,
   listAssistantConversationsForSession,
   listAssistantMessagesForConversation,
 } from "@/lib/assistant-messages/store";
-import { getHomePortfolioSnapshot } from "@/lib/dashboard/home-snapshot";
-import {
-  buildWorkspaceSetupChecklist,
-  pendingWorkspaceSetupItems,
-  workspaceSetupChecklistHasIncomplete,
-} from "@/lib/onboarding/workspace-setup";
-import { getPendingAgentApprovals } from "@/lib/actions/agent-approvals";
-import { computeApprovalQueueStats } from "@/lib/approvals/queue-stats";
-import { getUserSettings } from "@/lib/actions/user-settings";
 import { createClient } from "@/lib/supabase/server";
 
 function deriveTitleFromFirstLine(text: string) {
   const line = text.split("\n")[0]?.trim() ?? "";
   if (!line) return "New chat";
   return line.length > 200 ? `${line.slice(0, 199)}…` : line;
-}
-
-function firstNameFromUser(email: string | null | undefined): string {
-  if (!email) return "there";
-  const local = email.split("@")[0] ?? "";
-  const cleaned = local.replace(/[._-]+/g, " ").trim();
-  if (!cleaned) return "there";
-  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 }
 
 /**
@@ -62,115 +45,12 @@ export default async function DashboardPage({
 
   const requested = typeof sp.c === "string" ? sp.c : undefined;
 
-  /** Landing: focus on starting a message; chat history opens via “All chats” or direct `?c=` links. */
+  /** Landing: Command Center UI; dynamic sections load behind Suspense (see command-center-*). */
   if (!requested) {
-    const conversations = await listAssistantConversationsForSession();
-    const homeMetrics =
-      user?.id != null ? await getHomePortfolioSnapshot(user.id) : { totalProperties: 0, activeTenancies: 0 };
-
-    const settings = user?.id ? await getUserSettings(user.id) : null;
-    let tenancyCount = 0;
-    let complianceCount = 0;
-    let tenantCount = 0;
-    if (user?.id) {
-      const [tenanciesRes, complianceRes, tenantsRes] = await Promise.all([
-        supabase.from("tenancies").select("id", { count: "exact", head: true }),
-        supabase.from("compliance_records").select("id", { count: "exact", head: true }),
-        supabase.from("tenants").select("id", { count: "exact", head: true }),
-      ]);
-      tenancyCount = tenanciesRes.count ?? 0;
-      complianceCount = complianceRes.count ?? 0;
-      tenantCount = tenantsRes.count ?? 0;
-    }
-
-    const setupChecklist = user?.id
-      ? buildWorkspaceSetupChecklist({
-          businessName: settings?.businessName,
-          landlordName: settings?.landlordName,
-          contactEmail: settings?.contactEmail,
-          contactPhone: settings?.contactPhone,
-          businessAddress: settings?.businessAddress,
-          emailFromName: settings?.emailFromName,
-          hasSeenTour: settings?.hasSeenTour === true,
-          propertyCount: homeMetrics.totalProperties,
-          tenantCount,
-          tenancyCount,
-          complianceCount,
-        })
-      : [];
-
-    const showSetupReminder =
-      Boolean(user?.id) &&
-      workspaceSetupChecklistHasIncomplete(setupChecklist) &&
-      !settings?.onboardingSetupReminderDismissedAt;
-
-    const setupChecklistToShow = showSetupReminder ? pendingWorkspaceSetupItems(setupChecklist) : [];
-
-    const pendingApprovals = user?.id ? await getPendingAgentApprovals() : [];
-    const pendingApprovalsQueueStats = computeApprovalQueueStats(pendingApprovals);
-
-    let onboardingRuns7d = 0;
-    let approvalsCompleted7d = 0;
-    if (user?.id) {
-      const weekAgoIso = new Date(Date.now() - 7 * 86400000).toISOString();
-      const [runsRes, completedRes] = await Promise.all([
-        supabase
-          .from("agent_runs")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("agent_type", "tenant_onboarding")
-          .gte("created_at", weekAgoIso),
-        supabase
-          .from("agent_approvals")
-          .select("id", { count: "exact", head: true })
-          .eq("user_id", user.id)
-          .eq("status", "executed")
-          .gte("executed_at", weekAgoIso),
-      ]);
-      onboardingRuns7d = runsRes.count ?? 0;
-      approvalsCompleted7d = completedRes.count ?? 0;
-    }
-
-    const maintenanceDispatchPendingCount =
-      pendingApprovalsQueueStats.byActionType.approve_maintenance_dispatch ?? 0;
-
-    const mvpOperationsSnapshot =
-      user?.id != null
-        ? {
-            onboardingRuns7d,
-            pendingApprovalCount: pendingApprovals.length,
-            maintenanceDispatchPendingCount,
-            approvalsCompleted7d,
-          }
-        : null;
-
-    const pendingApprovalsPreview = pendingApprovals.slice(0, 3).map((a) => ({
-      id: a.id,
-      title: a.title,
-      summary: a.summary,
-      action_type: a.action_type,
-      created_at: a.created_at,
-      target_type: a.target_type,
-      target_id: a.target_id,
-    }));
-
+    if (!user?.id) redirect("/login");
     return (
-      <div className="relative flex min-h-0 flex-1 flex-col bg-background">
-        <div className="mx-auto w-full max-w-7xl flex-1 px-6 pb-20 pt-6 md:px-16 md:pt-10">
-          <div className="mx-auto max-w-2xl">
-            <AssistantLanding
-              greetingName={firstNameFromUser(user?.email)}
-              conversations={conversations}
-              totalProperties={homeMetrics.totalProperties}
-              activeTenancies={homeMetrics.activeTenancies}
-              workspaceSetupChecklist={setupChecklistToShow}
-              pendingApprovalsTotal={pendingApprovals.length}
-              pendingApprovalsPreview={pendingApprovalsPreview}
-              pendingApprovalsQueueStats={pendingApprovalsQueueStats}
-              mvpOperationsSnapshot={mvpOperationsSnapshot}
-            />
-          </div>
-        </div>
+      <div className="relative flex min-h-0 flex-1 flex-col bg-[#0B0B0B]">
+        <CommandCenterLandingView userId={user.id} />
       </div>
     );
   }

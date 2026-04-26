@@ -131,6 +131,11 @@
   --placeholder-foreground: #8f8f8f;
 }
 
+/* Left rail — DESIGN.md (Nocturnal Architect): 220px narrow nav, glass, warm #0f0e0d */
+[data-slot="sidebar-wrapper"] {
+  --sidebar-width: 13.75rem;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -156,6 +161,7 @@
     @apply font-semibold tracking-tight text-white;
   }
 }
+
 /* Product UI “display” / headline class — Inter, authority over ultra-thin marketing weights */
 .font-headline {
   font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
@@ -240,4 +246,17 @@
 /* Google Places legacy Autocomplete attaches .pac-container to the document; keep above app chrome. */
 .pac-container {
   z-index: 12000 !important;
+}
+
+/* Sidebar shell — tonal + glass (DESIGN.md §4); desktop inner + mobile sheet */
+[data-sidebar="sidebar"] {
+  background-color: rgb(255 255 255 / 0.9) !important;
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.dark [data-sidebar="sidebar"] {
+  background-color: rgb(15 14 13 / 0.94) !important;
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
 }

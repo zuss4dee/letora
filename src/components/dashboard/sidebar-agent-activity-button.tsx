@@ -23,11 +23,11 @@ export function SidebarAgentActivityButton({
         openAgentRuns();
       }}
       className={cn(
-        "mb-2 flex w-full items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-muted-foreground transition-colors duration-200 ease-out hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
+        "relative mx-2 mb-0.5 flex w-[calc(100%-1rem)] touch-manipulation items-center gap-3 rounded-md px-3 py-2.5 text-left font-[family-name:var(--font-inter)] text-[0.8125rem] font-medium leading-snug tracking-[0.01em] text-[#6f6a62] transition-[background-color,color] duration-150 ease-out hover:bg-black/[0.035] hover:text-[#1f1d1b] active:bg-black/[0.06] dark:text-[#94928e] dark:hover:bg-white/[0.045] dark:hover:text-[#e8e6e3] dark:active:bg-white/[0.07]",
         className,
       )}
     >
-      <Bot className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
+      <Bot className="size-[18px] shrink-0 stroke-[1.5] text-[#8a8176] dark:text-[#6b6966]" aria-hidden />
       Agent activity
     </button>
   );

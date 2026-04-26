@@ -29,8 +29,13 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} font-sans h-full subpixel-antialiased`}
     >
-      <body className={`${inter.className} min-h-full flex flex-col bg-background font-normal text-foreground`} suppressHydrationWarning>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false} enableColorScheme>
+      <body className={`${inter.className} min-h-full flex flex-col bg-background font-normal text-foreground`}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem={false}
+          enableColorScheme
+        >
           <AuthDeepLinkRecover />
           {children}
           <Toaster richColors />

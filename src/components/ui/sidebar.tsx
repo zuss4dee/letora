@@ -31,6 +31,28 @@ const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
+/** App-level fields that must never reach DOM / Radix via `...props`. */
+const LETORA_SIDEBAR_NON_DOM_KEYS = new Set<string>([
+  "userEmail",
+  "complianceAttention",
+  "maintenanceAttention",
+  "subscriptionPlan",
+  "subscriptionStatus",
+  "subscriptionPeriodEnd",
+  "subscriptionTrialEnd",
+  "pendingApprovalsCount",
+  "pendingApprovalsBadgeTitle",
+])
+
+function stripLetoraSidebarKeysForDom(props: Record<string, unknown>): Record<string, unknown> {
+  if (Object.keys(props).length === 0) return props
+  const next: Record<string, unknown> = { ...props }
+  for (const key of LETORA_SIDEBAR_NON_DOM_KEYS) {
+    if (key in next) delete next[key]
+  }
+  return next
+}
+
 type SidebarContextProps = {
   state: "expanded" | "collapsed"
   open: boolean
@@ -167,6 +189,16 @@ function Sidebar({
   side?: "left" | "right"
   variant?: "sidebar" | "floating" | "inset"
   collapsible?: "offcanvas" | "icon" | "none"
+  /** Stripped before DOM — AppSidebar may forward these by mistake. */
+  userEmail?: string | null
+  complianceAttention?: boolean
+  maintenanceAttention?: boolean
+  subscriptionPlan?: string | null
+  subscriptionStatus?: string | null
+  subscriptionPeriodEnd?: string | null
+  subscriptionTrialEnd?: string | null
+  pendingApprovalsCount?: number
+  pendingApprovalsBadgeTitle?: string | null
 }) {
   void [
     _userEmail,
@@ -178,6 +210,7 @@ function Sidebar({
     _subscriptionTrialEnd,
   ]
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
+  const domSafeProps = stripLetoraSidebarKeysForDom(props as Record<string, unknown>)
 
   if (collapsible === "none") {
     return (
@@ -187,7 +220,7 @@ function Sidebar({
           "flex h-full w-(--sidebar-width) flex-col bg-sidebar text-sidebar-foreground",
           className
         )}
-        {...props}
+        {...(domSafeProps as React.ComponentProps<"div">)}
       >
         {children}
       </div>
@@ -196,7 +229,11 @@ function Sidebar({
 
   if (isMobile) {
     return (
-      <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+      <Sheet
+        open={openMobile}
+        onOpenChange={setOpenMobile}
+        {...(domSafeProps as React.ComponentProps<typeof Sheet>)}
+      >
         <SheetContent
           dir={dir}
           data-sidebar="sidebar"
@@ -252,7 +289,7 @@ function Sidebar({
             : "group-data-[collapsible=icon]:w-(--sidebar-width-icon) group-data-[side=left]:border-r group-data-[side=right]:border-l",
           className
         )}
-        {...props}
+        {...(domSafeProps as React.ComponentProps<"div">)}
       >
         <div
           data-sidebar="sidebar"

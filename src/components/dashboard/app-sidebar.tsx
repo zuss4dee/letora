@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 
 import { SidebarAgentActivityButton } from "@/components/dashboard/sidebar-agent-activity-button";
+import { useSidebarDynamicOptional } from "@/components/dashboard/sidebar-dynamic-context";
 import { getSidebarPlanStatusCompact } from "@/lib/billing/subscription-display";
 import { cn } from "@/lib/utils";
 import {
@@ -42,7 +43,6 @@ type NavItem = {
   url: string;
   icon: React.ElementType;
   badgeCount?: number;
-  /** Optional context for the count badge (e.g. aging queue). */
   badgeTitle?: string;
 };
 
@@ -73,7 +73,6 @@ function isActivePath(pathname: string, url: string) {
   return pathname === url || pathname.startsWith(`${url}/`);
 }
 
-/** Sidebar “presence” dot: green glow = active paid subscription, amber = trial, etc. */
 function planPresenceStyles(subscriptionStatus: string | null | undefined): {
   dot: string;
   ping?: string;
@@ -81,8 +80,8 @@ function planPresenceStyles(subscriptionStatus: string | null | undefined): {
   const st = subscriptionStatus?.toLowerCase() ?? "";
   if (st === "active") {
     return {
-      dot: "bg-emerald-400 shadow-[0_0_10px_3px_rgba(52,211,153,0.75),0_0_22px_8px_rgba(16,185,129,0.28)]",
-      ping: "bg-emerald-400",
+      dot: "bg-[#2dd4bf] shadow-[0_0_0_1px_rgb(45_212_191/0.35),0_0_14px_rgb(45_212_191/0.25)]",
+      ping: "bg-[#2dd4bf]",
     };
   }
   if (st === "trialing") return { dot: "bg-amber-400", ping: "bg-amber-300" };
@@ -90,9 +89,17 @@ function planPresenceStyles(subscriptionStatus: string | null | undefined): {
   if (st === "inactive" || st === "canceled" || st === "cancelled" || st === "unpaid") {
     return { dot: "bg-zinc-500" };
   }
-  if (!st) return { dot: "bg-zinc-400" };
+  if (!st) return { dot: "bg-[#6b6966]" };
   return { dot: "bg-sky-500", ping: "bg-sky-400" };
 }
+
+/** Nocturnal Architect — nav row: tonal hover, teal inset when active (no heavy borders). */
+const navRowBase =
+  "relative mx-2 flex touch-manipulation items-center gap-3 rounded-md px-3 py-2.5 text-left font-[family-name:var(--font-inter)] text-[0.8125rem] font-medium leading-snug tracking-[0.01em] transition-[background-color,color,box-shadow] duration-150 ease-out";
+const navRowIdle =
+  "text-[#6f6a62] hover:bg-black/[0.035] hover:text-[#1f1d1b] active:bg-black/[0.06] dark:text-[#94928e] dark:hover:bg-white/[0.045] dark:hover:text-[#e8e6e3] dark:active:bg-white/[0.07]";
+const navRowActive =
+  "bg-[#ebe8e2] text-[#1d1b19] shadow-[inset_3px_0_0_0_#01696f] dark:bg-[#242220] dark:text-[#f2f1ef]";
 
 type AttentionItem = { url: string; title: string; ariaLabel: string };
 
@@ -106,19 +113,17 @@ function NavSection({
   label: string;
   items: NavItem[];
   pathname: string;
-  /** Red dot + tooltip per matching nav URL (compliance expiry, maintenance safety, etc.). */
   attentionItems?: AttentionItem[];
-  /** Close mobile sheet so one tap navigates (avoids double-tap / focus + click). */
   onNavigate?: () => void;
 }) {
   const attentionByUrl = new Map(attentionItems?.map((a) => [a.url, a] as const) ?? []);
 
   return (
-    <div className="mb-4">
-      <span className="mb-2 block px-4 font-[family-name:var(--font-inter)] text-[0.6875rem] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+    <div className="mb-2">
+      <span className="mb-2.5 block px-5 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#7f7569] dark:text-[#6b6966]">
         {label}
       </span>
-      <ul className="space-y-1">
+      <ul className="flex flex-col gap-0.5">
         {items.map((item) => {
           const active = isActivePath(pathname, item.url);
           const Icon = item.icon;
@@ -130,18 +135,19 @@ function NavSection({
                 href={item.url}
                 data-mercury-tour={item.url === "/dashboard/compliance" ? "compliance" : undefined}
                 onClick={() => onNavigate?.()}
-                className={cn(
-                  "touch-manipulation flex items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out active:bg-sidebar-accent/80",
-                  active
-                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
-                )}
+                className={cn("group", navRowBase, active ? navRowActive : navRowIdle)}
               >
-                <Icon className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
+                <Icon
+                  className={cn(
+                    "size-[18px] shrink-0 stroke-[1.5] transition-colors duration-150",
+                    active ? "text-[#01696f] dark:text-[#97e6ec]" : "text-[#8a8176] group-hover:text-[#5a5146] dark:text-[#6b6966] dark:group-hover:text-[#b8b6b1]",
+                  )}
+                  aria-hidden
+                />
                 <span className="min-w-0 flex-1 truncate">{item.title}</span>
                 {item.badgeCount != null && item.badgeCount > 0 ? (
                   <span
-                    className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-amber-500/30 bg-amber-500/10 px-1 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold tabular-nums text-amber-950 dark:border-amber-400/25 dark:bg-amber-400/10 dark:text-amber-100"
+                    className="inline-flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full border border-[#bd9952]/35 bg-[#f3ebdf] px-1 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold tabular-nums text-[#8d602b] dark:bg-[#2a2218] dark:text-[#d4a574]"
                     aria-label={`${item.badgeCount} items pending approval`}
                     title={item.badgeTitle}
                   >
@@ -150,7 +156,7 @@ function NavSection({
                 ) : null}
                 {showDot && attention ? (
                   <span
-                    className="size-1.5 shrink-0 rounded-full bg-red-500"
+                    className="size-1.5 shrink-0 rounded-full bg-[#c45c52] ring-2 ring-[#c45c52]/30 dark:ring-[#c45c52]/25"
                     title={attention.title}
                     aria-label={attention.ariaLabel}
                   />
@@ -203,30 +209,40 @@ export function AppSidebar({
   side,
   collapsible,
   className,
-  ...props
-}: React.ComponentProps<typeof Sidebar> & {
+}: Pick<React.ComponentProps<typeof Sidebar>, "variant" | "side" | "collapsible" | "className"> & {
   userEmail?: string | null;
-  /** Any certificate past legal expiry — red dot on Compliance (not missing PDFs alone). */
   complianceAttention?: boolean;
-  /** Active urgent safety alerts (last 7 days, non-resolved) — red dot on Maintenance. */
   maintenanceAttention?: boolean;
   subscriptionPlan?: string | null;
   subscriptionStatus?: string | null;
   subscriptionPeriodEnd?: string | null;
   subscriptionTrialEnd?: string | null;
-  /** Pending agent approvals — subtle count badge on Approvals (Workflow). */
   pendingApprovalsCount?: number;
-  /** Shown as native tooltip on the approvals badge when the queue has aging items. */
   pendingApprovalsBadgeTitle?: string | null;
 }) {
   const pathname = usePathname();
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
+  const dyn = useSidebarDynamicOptional();
+  const d = dyn?.state;
+
+  const complianceResolved = complianceAttention ?? d?.complianceAttention ?? false;
+  const maintenanceResolved = maintenanceAttention ?? d?.maintenanceAttention ?? false;
+  const subscriptionPlanResolved = subscriptionPlan ?? d?.subscriptionPlan ?? null;
+  const subscriptionStatusResolved = subscriptionStatus ?? d?.subscriptionStatus ?? null;
+  const subscriptionPeriodEndResolved = subscriptionPeriodEnd ?? d?.subscriptionPeriodEnd ?? null;
+  const subscriptionTrialEndResolved = subscriptionTrialEnd ?? d?.subscriptionTrialEnd ?? null;
+  const pendingApprovalsBadgeTitleResolved =
+    pendingApprovalsBadgeTitle ?? d?.pendingApprovalsBadgeTitle ?? null;
+  const serverPendingApprovalsCount = d?.pendingApprovalsCount ?? pendingApprovalsCount;
+
   const [livePendingApprovalCount, setLivePendingApprovalCount] = React.useState(pendingApprovalsCount);
 
   React.useEffect(() => {
-    setLivePendingApprovalCount(pendingApprovalsCount);
-  }, [pendingApprovalsCount]);
+    setLivePendingApprovalCount((c) =>
+      Math.max(c, pendingApprovalsCount, serverPendingApprovalsCount),
+    );
+  }, [pendingApprovalsCount, serverPendingApprovalsCount]);
 
   const refreshPendingApprovalCount = React.useCallback(async () => {
     const supabase = createClient();
@@ -271,14 +287,14 @@ export function AppSidebar({
   const billingNavActive = onBillingPage;
 
   const workflowAttention: AttentionItem[] = [];
-  if (complianceAttention) {
+  if (complianceResolved) {
     workflowAttention.push({
       url: "/dashboard/compliance",
       title: "Expired certificate",
       ariaLabel: "Compliance: expired certificate on record",
     });
   }
-  if (maintenanceAttention) {
+  if (maintenanceResolved) {
     workflowAttention.push({
       url: "/dashboard/maintenance",
       title: "Urgent safety alert",
@@ -294,13 +310,13 @@ export function AppSidebar({
   }
 
   const subFields = {
-    subscriptionPlan,
-    subscriptionStatus,
-    subscriptionPeriodEnd,
-    subscriptionTrialEnd,
+    subscriptionPlan: subscriptionPlanResolved,
+    subscriptionStatus: subscriptionStatusResolved,
+    subscriptionPeriodEnd: subscriptionPeriodEndResolved,
+    subscriptionTrialEnd: subscriptionTrialEndResolved,
   };
   const planStatusLine = getSidebarPlanStatusCompact(subFields);
-  const presence = planPresenceStyles(subscriptionStatus);
+  const presence = planPresenceStyles(subscriptionStatusResolved);
 
   const workflowItems: NavItem[] = [
     ...workflowItemsBase,
@@ -309,66 +325,80 @@ export function AppSidebar({
       url: "/dashboard/approvals",
       icon: BadgeCheck,
       badgeCount: livePendingApprovalCount > 0 ? livePendingApprovalCount : undefined,
-      badgeTitle: pendingApprovalsBadgeTitle ?? undefined,
+      badgeTitle: pendingApprovalsBadgeTitleResolved ?? undefined,
     },
   ];
+
+  const footerNavClass = (active: boolean) =>
+    cn(navRowBase, "mb-0.5", active ? navRowActive : navRowIdle);
 
   return (
     <Sidebar
       collapsible={collapsible ?? "offcanvas"}
       variant={variant ?? "sidebar"}
       side={side}
-      className={cn("border-sidebar-border [&_[data-sidebar=sidebar]]:border-sidebar-border", className)}
-      {...props}
+      className={cn(
+        "border-transparent [&_[data-sidebar=sidebar]]:border-transparent",
+        className,
+      )}
     >
-      <SidebarHeader className="gap-0 px-4 pb-8 pt-8">
-        <Link href="/dashboard" onClick={closeMobileNav} className="block touch-manipulation px-2">
-          <span className="font-headline text-lg font-light tracking-[0.2em] text-foreground">
-            LETORA
+      <SidebarHeader className="gap-0 px-0 pb-6 pt-9">
+        <Link
+          href="/dashboard"
+          onClick={closeMobileNav}
+          className="block touch-manipulation px-5 transition-opacity hover:opacity-90"
+        >
+          <span className="font-headline text-[1.35rem] font-semibold tracking-[-0.04em] text-[#1f1d1b] dark:text-[#f5f4f2]">
+            Letora
           </span>
-          <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.2em] text-muted-foreground">
-            Architectural Management
+          <p className="mt-2 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.12em] text-[#7f7569] dark:text-[#797876]">
+            Architectural management
           </p>
         </Link>
-        <div className="mt-4 border-t border-sidebar-border/70 px-2 pt-3">
+
+        <div className="mx-5 mt-7 rounded-lg bg-[#f3f0ea] px-3.5 py-3 shadow-[inset_0_1px_0_0_rgb(0_0_0/0.04)] dark:bg-[#1c1b1a] dark:shadow-[inset_0_1px_0_0_rgb(255_255_255/0.04)]">
+          <p className="font-[family-name:var(--font-inter)] text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-[#7f7569] dark:text-[#6b6966]">
+            Subscription
+          </p>
           <div
-            className="flex min-w-0 items-center gap-2.5"
+            className="mt-2.5 flex min-w-0 items-start gap-3"
             title={planStatusLine}
             aria-label={`Plan status: ${planStatusLine}`}
           >
-            <span className="relative flex h-2.5 w-2.5 shrink-0" aria-hidden>
+            <span className="relative mt-0.5 flex h-2.5 w-2.5 shrink-0" aria-hidden>
               {presence.ping ? (
                 <span
                   className={cn(
-                    "absolute inline-flex h-full w-full animate-ping rounded-full opacity-40",
+                    "absolute inline-flex h-full w-full animate-ping rounded-full opacity-35",
                     presence.ping,
                   )}
                 />
               ) : null}
-              <span
-                className={cn(
-                  "relative inline-flex h-2.5 w-2.5 rounded-full ring-2 ring-sidebar",
-                  presence.dot,
-                )}
-              />
+              <span className={cn("relative inline-flex h-2.5 w-2.5 rounded-full", presence.dot)} />
             </span>
-            <p className="min-w-0 font-headline text-[0.75rem] font-medium leading-snug text-foreground">
+            <p className="min-w-0 flex-1 font-[family-name:var(--font-inter)] text-[0.78rem] font-medium leading-snug text-[#3d3730] dark:text-[#cdccca]">
               {planStatusLine}
             </p>
           </div>
         </div>
-        <Link
-          href="/dashboard/properties"
-          onClick={closeMobileNav}
-          className="mt-6 flex touch-manipulation items-center gap-2 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-[#BD9952] transition-colors hover:text-foreground"
-        >
-          <PlusCircle className="size-4 stroke-[1.25]" aria-hidden />
-          Add a property
-        </Link>
+
+        <div className="px-5 pt-6">
+          <Link
+            href="/dashboard/properties"
+            onClick={closeMobileNav}
+            className="flex touch-manipulation items-center justify-center gap-2 rounded-md border border-[#01696f]/30 bg-[#01696f]/10 py-2.5 font-[family-name:var(--font-inter)] text-[0.7rem] font-semibold uppercase tracking-[0.1em] text-[#01555a] transition-colors hover:border-[#01696f]/55 hover:bg-[#01696f]/16 hover:text-[#01484c] dark:border-[#01696f]/35 dark:bg-[#01696f]/12 dark:text-[#97e6ec] dark:hover:bg-[#01696f]/18 dark:hover:text-[#b5f0f4]"
+          >
+            <PlusCircle className="size-4 shrink-0 stroke-[1.5]" aria-hidden />
+            Add a property
+          </Link>
+        </div>
       </SidebarHeader>
-      <SidebarContent className="px-0">
-        <nav className="flex flex-1 flex-col px-0">
+
+      <SidebarContent className="px-0 pb-4">
+        <div className="mx-5 mb-5 h-px bg-gradient-to-r from-transparent via-black/[0.09] to-transparent dark:via-white/[0.08]" aria-hidden />
+        <nav className="flex min-h-0 flex-1 flex-col" aria-label="Dashboard">
           <NavSection label="Main" items={mainItems} pathname={pathname} onNavigate={closeMobileNav} />
+          <div className="my-4 mx-5 h-px bg-gradient-to-r from-transparent via-black/[0.08] to-transparent dark:via-white/[0.06]" aria-hidden />
           <NavSection
             label="Workflow"
             items={workflowItems}
@@ -376,23 +406,23 @@ export function AppSidebar({
             attentionItems={workflowAttention.length > 0 ? workflowAttention : undefined}
             onNavigate={closeMobileNav}
           />
+          <div className="my-4 mx-5 h-px bg-gradient-to-r from-transparent via-black/[0.08] to-transparent dark:via-white/[0.06]" aria-hidden />
           <NavSection label="More" items={moreItems} pathname={pathname} onNavigate={closeMobileNav} />
         </nav>
       </SidebarContent>
-      <SidebarFooter className="border-t border-sidebar-border p-4">
+
+      <SidebarFooter className="border-none bg-transparent px-0 pb-6 pt-2">
+        <div className="mx-5 mb-4 h-px bg-gradient-to-r from-transparent via-black/[0.09] to-transparent dark:via-white/[0.08]" aria-hidden />
         <button
           type="button"
           onClick={() => setFooterOpen((o) => !o)}
-          className={cn(
-            "flex w-full items-center justify-between gap-2 rounded-sm px-2 py-2 text-left font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.14em] text-muted-foreground transition-colors duration-200 ease-out hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
-            footerOpen && "mb-2",
-          )}
+          className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between gap-2 rounded-md px-3 py-2 text-left font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#7f7569] transition-colors hover:bg-black/[0.04] hover:text-[#5e554a] dark:text-[#6b6966] dark:hover:bg-white/[0.04] dark:hover:text-[#a8a6a4]"
           aria-expanded={footerOpen}
           aria-controls="sidebar-footer-panel"
         >
           <span>Workspace</span>
           <ChevronDown
-            className={cn("size-4 shrink-0 transition-transform duration-200", footerOpen && "rotate-180")}
+            className={cn("size-4 shrink-0 text-[#7f7569] transition-transform duration-200 dark:text-[#6b6966]", footerOpen && "rotate-180")}
             aria-hidden
           />
         </button>
@@ -404,80 +434,78 @@ export function AppSidebar({
           )}
         >
           <div className="min-h-0 overflow-hidden">
-            <div className={cn("flex flex-col gap-0", !footerOpen && "pointer-events-none")}>
-              <Link
-                href="/dashboard/settings"
-                onClick={closeMobileNav}
-                className={cn(
-                  "mb-2 flex touch-manipulation items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
-                  settingsNavActive
-                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
-                )}
-              >
-                <Settings className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
+            <div className={cn("flex flex-col gap-0.5 pt-1", !footerOpen && "pointer-events-none")}>
+              <Link href="/dashboard/settings" onClick={closeMobileNav} className={footerNavClass(settingsNavActive)}>
+                <Settings
+                  className={cn(
+                    "size-[18px] shrink-0 stroke-[1.5]",
+                    settingsNavActive ? "text-[#97e6ec]" : "text-[#6b6966]",
+                  )}
+                  aria-hidden
+                />
                 Settings
               </Link>
-              <Link
-                href="/dashboard/billing"
-                onClick={closeMobileNav}
-                className={cn(
-                  "mb-2 flex touch-manipulation items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
-                  billingNavActive
-                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
-                )}
-              >
-                <CreditCard className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
+              <Link href="/dashboard/billing" onClick={closeMobileNav} className={footerNavClass(billingNavActive)}>
+                <CreditCard
+                  className={cn(
+                    "size-[18px] shrink-0 stroke-[1.5]",
+                    billingNavActive ? "text-[#97e6ec]" : "text-[#6b6966]",
+                  )}
+                  aria-hidden
+                />
                 Billing
               </Link>
               <Link
                 href="/dashboard/help"
                 onClick={closeMobileNav}
-                className={cn(
-                  "mb-2 flex touch-manipulation items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
-                  isActivePath(pathname, "/dashboard/help")
-                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
-                )}
+                className={footerNavClass(isActivePath(pathname, "/dashboard/help"))}
               >
-                <HelpCircle className="size-5 stroke-[1.25]" aria-hidden />
+                <HelpCircle
+                  className={cn(
+                    "size-[18px] shrink-0 stroke-[1.5]",
+                    isActivePath(pathname, "/dashboard/help") ? "text-[#97e6ec]" : "text-[#6b6966]",
+                  )}
+                  aria-hidden
+                />
                 Help
               </Link>
               <Link
                 href="/dashboard/activity"
                 onClick={closeMobileNav}
-                className={cn(
-                  "mb-2 flex touch-manipulation items-center gap-3 px-4 py-2 font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] transition-colors duration-200 ease-out",
-                  isActivePath(pathname, "/dashboard/activity")
-                    ? "border-l-2 border-secondary bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "border-l-2 border-transparent text-muted-foreground hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground",
-                )}
+                className={footerNavClass(isActivePath(pathname, "/dashboard/activity"))}
               >
-                <History className="size-5 shrink-0 stroke-[1.25]" aria-hidden />
+                <History
+                  className={cn(
+                    "size-[18px] shrink-0 stroke-[1.5]",
+                    isActivePath(pathname, "/dashboard/activity") ? "text-[#97e6ec]" : "text-[#6b6966]",
+                  )}
+                  aria-hidden
+                />
                 History
               </Link>
               <SidebarAgentActivityButton onBeforeOpen={closeMobileNav} />
-              <div className="flex items-center gap-3 px-4 py-2">
-                <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase text-foreground">
-                  {(userEmail?.[0] ?? "?").toUpperCase()}
+              <div className="mx-2 mt-3 rounded-lg bg-[#f3f0ea] p-3 shadow-[inset_0_1px_0_0_rgb(0_0_0/0.04)] dark:bg-[#1c1b1a] dark:shadow-[inset_0_1px_0_0_rgb(255_255_255/0.04)]">
+                <div className="flex items-center gap-3">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#e3ddd2] font-[family-name:var(--font-inter)] text-[0.7rem] font-semibold uppercase tracking-wide text-[#3b3329] ring-1 ring-black/[0.05] dark:bg-[#2a2826] dark:text-[#cdccca] dark:ring-white/[0.06]">
+                    {(userEmail?.[0] ?? "?").toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#7f7569] dark:text-[#94928e]">
+                      Signed in
+                    </p>
+                    <p className="truncate font-[family-name:var(--font-inter)] text-[0.72rem] text-[#3d3730] dark:text-[#cdccca]">
+                      {userEmail ?? "—"}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="inline-flex size-9 shrink-0 items-center justify-center rounded-md text-[#7f7569] transition-colors hover:bg-black/[0.06] hover:text-[#201e1b] dark:text-[#6b6966] dark:hover:bg-white/[0.06] dark:hover:text-[#e8e6e3]"
+                    aria-label="Log out"
+                  >
+                    <LogOut className="size-4 stroke-[1.5]" />
+                  </button>
                 </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-[family-name:var(--font-inter)] text-[0.6875rem] uppercase tracking-[0.12em] text-foreground">
-                    Profile
-                  </p>
-                  <p className="truncate font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">
-                    {userEmail ?? "—"}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={onLogout}
-                  className="inline-flex size-8 shrink-0 items-center justify-center rounded-sm text-muted-foreground transition-colors duration-200 ease-out hover:bg-muted/90 hover:text-foreground dark:hover:bg-sidebar-accent dark:hover:text-sidebar-foreground"
-                  aria-label="Log out"
-                >
-                  <LogOut className="size-4 stroke-[1.25]" />
-                </button>
               </div>
             </div>
           </div>

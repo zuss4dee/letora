@@ -4,23 +4,19 @@ export async function withTimeout<T>(
   fallback: T,
   label = "async-task",
 ): Promise<T> {
-  const timerLabel = `[withTimeout] ${label}`;
-  console.time(timerLabel);
+  const logLabel = `[withTimeout] ${label}`;
   try {
-    const result = await Promise.race<T>([
+    return await Promise.race<T>([
       promise,
       new Promise<T>((resolve) => {
         setTimeout(() => {
-          console.warn(`${timerLabel} timed out after ${ms}ms`);
+          console.warn(`${logLabel} timed out after ${ms}ms`);
           resolve(fallback);
         }, ms);
       }),
     ]);
-    return result;
   } catch (error) {
-    console.warn(`${timerLabel} failed`, error);
+    console.warn(`${logLabel} failed`, error);
     return fallback;
-  } finally {
-    console.timeEnd(timerLabel);
   }
 }

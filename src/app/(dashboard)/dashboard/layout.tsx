@@ -2,8 +2,12 @@ import type { CSSProperties, ReactNode } from "react";
 import { Suspense } from "react";
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
-import { DashboardSidebarBoundary } from "@/components/dashboard/dashboard-sidebar-boundary";
 import { DashboardShellProviders } from "@/components/dashboard/dashboard-shell-providers";
+import { OnboardingGateBoundary } from "@/components/dashboard/onboarding-gate-boundary";
+import { SidebarApprovalsMeta } from "@/components/dashboard/sidebar-approvals-meta";
+import { SidebarAttentionBadges } from "@/components/dashboard/sidebar-attention-badges";
+import { SidebarDynamicProvider } from "@/components/dashboard/sidebar-dynamic-context";
+import { SidebarSubscriptionMeta } from "@/components/dashboard/sidebar-subscription-meta";
 import { SiteHeader } from "@/components/dashboard/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,7 +16,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function DashboardShellLayout({ children }: { children: ReactNode }) {
-  // Permanent safe layout: auth-only logic here.
+  // Auth-only: no slow server actions here (see isolated Suspense loaders below).
   const supabase = await createClient();
   const {
     data: { user },
@@ -32,11 +36,23 @@ export default async function DashboardShellLayout({ children }: { children: Rea
         }
       >
         <DashboardShellProviders initialAgentRuns={[]}>
-          <Suspense fallback={<AppSidebar variant="sidebar" userEmail={userEmail} pendingApprovalsCount={0} />}>
-            <DashboardSidebarBoundary userId={userId} userEmail={userEmail} />
-          </Suspense>
+          <SidebarDynamicProvider>
+            <AppSidebar variant="sidebar" userEmail={userEmail} />
+            <Suspense fallback={null}>
+              <SidebarAttentionBadges userId={userId} />
+            </Suspense>
+            <Suspense fallback={null}>
+              <SidebarSubscriptionMeta userId={userId} />
+            </Suspense>
+            <Suspense fallback={null}>
+              <SidebarApprovalsMeta />
+            </Suspense>
+          </SidebarDynamicProvider>
           <SidebarInset className="bg-background">
             <SiteHeader />
+            <Suspense fallback={null}>
+              <OnboardingGateBoundary userId={userId} />
+            </Suspense>
             <div className="flex min-h-0 flex-1 flex-col">{children}</div>
           </SidebarInset>
         </DashboardShellProviders>
