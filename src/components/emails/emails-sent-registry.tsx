@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 
 const PAGE_SIZE = 10;
 
-type LogTab = "all" | "automated" | "manual";
+type LogTab = "tenants" | "all" | "automated" | "manual";
 
 function formatSentDate(iso: string): string {
   const d = new Date(iso);
@@ -29,6 +29,14 @@ function formatSentDate(iso: string): string {
 }
 
 function StatusPill({ status }: { status: EmailDispatchRow["uiStatus"] }) {
+  if (status === "draft") {
+    return (
+      <span className="inline-flex items-center gap-1.5 border border-zinc-600/40 bg-zinc-900/40 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-400/95">
+        <span className="size-1 rounded-full bg-zinc-500" />
+        Draft
+      </span>
+    );
+  }
   if (status === "delivered") {
     return (
       <span className="inline-flex items-center gap-1.5 border border-emerald-900/30 bg-emerald-950/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-400/90">
@@ -54,11 +62,12 @@ function StatusPill({ status }: { status: EmailDispatchRow["uiStatus"] }) {
 }
 
 function downloadCsv(rows: EmailDispatchRow[]) {
-  const h = ["Recipient", "Email", "Subject", "Date sent", "Status", "Source"];
+  const h = ["Tenant", "Recipient", "Email", "Subject", "Date sent", "Status", "Source"];
   const lines = [h.join(",")];
   for (const r of rows) {
     lines.push(
       [
+        r.isTenantRecipient ? "yes" : "no",
         `"${r.recipientName.replace(/"/g, '""')}"`,
         `"${r.recipientEmail.replace(/"/g, '""')}"`,
         `"${r.subject.replace(/"/g, '""')}"`,
@@ -80,19 +89,27 @@ function downloadCsv(rows: EmailDispatchRow[]) {
 export function EmailsSentRegistry({
   rows,
   totalDispatched,
+  initialLogId,
 }: {
   rows: EmailDispatchRow[];
   totalDispatched: number;
+  /** Deep-link from Approvals audit: select this `email_logs` row when present. */
+  initialLogId?: string | null;
 }) {
-  const [tab, setTab] = useState<LogTab>("all");
+  const [tab, setTab] = useState<LogTab>("tenants");
   const [query, setQuery] = useState("");
   const [statusOnly, setStatusOnly] = useState<EmailDispatchRow["uiStatus"] | "all">("all");
   const [page, setPage] = useState(1);
-  const [selectedId, setSelectedId] = useState<string | null>(rows[0]?.id ?? null);
+  const tenantRows = useMemo(() => rows.filter((r) => r.isTenantRecipient), [rows]);
+  const tenantTotal = tenantRows.length;
+  const [selectedId, setSelectedId] = useState<string | null>(
+    tenantRows[0]?.id ?? rows[0]?.id ?? null,
+  );
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return rows.filter((r) => {
+      if (tab === "tenants" && !r.isTenantRecipient) return false;
       if (tab === "automated" && !isAutomatedEmailDispatch(r.agentType)) return false;
       if (tab === "manual" && isAutomatedEmailDispatch(r.agentType)) return false;
       if (statusOnly !== "all" && r.uiStatus !== statusOnly) return false;
@@ -101,6 +118,24 @@ export function EmailsSentRegistry({
       return hay.includes(q);
     });
   }, [rows, tab, query, statusOnly]);
+
+  useEffect(() => {
+    if (!initialLogId?.trim()) return;
+    const id = initialLogId.trim();
+    const hit = rows.find((r) => r.source === "email_log" && r.id === id);
+    if (!hit) return;
+    setSelectedId(hit.id);
+    if (hit.isTenantRecipient) setTab("tenants");
+    if (hit.uiStatus === "draft") setStatusOnly("draft");
+  }, [initialLogId, rows]);
+
+  useEffect(() => {
+    if (!initialLogId?.trim()) return;
+    const id = initialLogId.trim();
+    const idx = filtered.findIndex((r) => r.source === "email_log" && r.id === id);
+    if (idx < 0) return;
+    setPage(Math.floor(idx / PAGE_SIZE) + 1);
+  }, [initialLogId, filtered]);
 
   const total = filtered.length;
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -124,8 +159,9 @@ export function EmailsSentRegistry({
     }
   }, [selected, selectedId]);
 
-  const tabs: { id: LogTab; label: string }[] = [
-    { id: "all", label: "All" },
+  const tabs: { id: LogTab; label: string; hint?: string }[] = [
+    { id: "tenants", label: "To tenants", hint: `${tenantTotal}` },
+    { id: "all", label: "All mail" },
     { id: "automated", label: "Automated" },
     { id: "manual", label: "Manual" },
   ];
@@ -137,7 +173,8 @@ export function EmailsSentRegistry({
           <div className="flex min-w-0 items-center gap-4">
             <h1 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-300">Communications Hub</h1>
             <span className="hidden text-[11px] text-zinc-500 sm:inline">
-              {totalDispatched.toLocaleString("en-GB")} total dispatches
+              {totalDispatched.toLocaleString("en-GB")} total dispatches ·{" "}
+              <span className="text-zinc-400">{tenantTotal.toLocaleString("en-GB")} to tenants</span>
             </span>
           </div>
           <div className="flex w-full items-center gap-3 sm:w-auto">
@@ -167,10 +204,34 @@ export function EmailsSentRegistry({
         </div>
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px]">
+      <section
+        className="border-b border-[#BD9952]/25 bg-gradient-to-b from-[#1a1814]/95 to-[#0B0B0B] px-4 py-5 sm:px-6"
+        aria-label="Tenant email summary"
+      >
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="min-w-0 max-w-3xl space-y-2">
+            <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]">
+              Tenant communications
+            </p>
+            <h2 className="font-headline text-xl font-light tracking-tight text-white sm:text-2xl">
+              See every email sent to your tenants
+            </h2>
+            <p className="text-sm leading-relaxed text-zinc-400">
+              Welcome and move-in messages, rent chases, maintenance acknowledgements, and other workflow mail to tenant
+              addresses on your portfolio. Switch tabs to include contractor or landlord-only messages.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col items-start gap-1 border border-white/[0.08] bg-black/20 px-5 py-4 sm:items-end">
+            <p className="text-[0.6rem] font-bold uppercase tracking-[0.18em] text-zinc-500">Tenant messages logged</p>
+            <p className="font-mono text-4xl font-light tabular-nums leading-none text-white">{tenantTotal}</p>
+          </div>
+        </div>
+      </section>
+
+      <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]">
         <section className="flex min-h-0 flex-col border-r border-[#1f1f1f]">
-          <div className="flex h-10 items-center justify-between border-b border-[#1f1f1f] px-4 sm:px-6">
-            <div className="flex h-full items-center gap-5">
+          <div className="flex min-h-10 flex-wrap items-center justify-between gap-2 border-b border-[#1f1f1f] px-4 sm:px-6">
+            <div className="flex h-full min-h-10 flex-wrap items-center gap-x-4 gap-y-1">
               {tabs.map((t) => (
                 <button
                   key={t.id}
@@ -180,13 +241,17 @@ export function EmailsSentRegistry({
                     setPage(1);
                   }}
                   className={cn(
-                    "h-full border-b text-[10px] font-bold uppercase tracking-[0.16em] transition-colors",
+                    "border-b-2 py-2.5 text-[10px] font-bold uppercase tracking-[0.14em] transition-colors",
                     tab === t.id
-                      ? "border-white text-white"
+                      ? "border-[#BD9952] text-white"
                       : "border-transparent text-zinc-500 hover:text-zinc-300",
+                    t.id === "tenants" && tab === t.id && "text-[#e8d4a8]",
                   )}
                 >
                   {t.label}
+                  {t.hint ? (
+                    <span className="ml-1.5 tabular-nums opacity-80">({t.hint})</span>
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -201,6 +266,7 @@ export function EmailsSentRegistry({
                 className="h-7 border border-[#2a2a2a] bg-[#0a0a0a] px-2 text-[10px] uppercase tracking-wider text-zinc-400 focus:outline-none"
               >
                 <option value="all">All status</option>
+                <option value="draft">Draft</option>
                 <option value="delivered">Delivered</option>
                 <option value="opened">Opened</option>
                 <option value="bounced">Bounced</option>
@@ -212,14 +278,14 @@ export function EmailsSentRegistry({
             <table className="w-full table-fixed border-collapse text-left">
               <thead>
                 <tr className="sticky top-0 z-10 border-b border-[#1f1f1f] bg-[#0B0B0B]">
-                  <th className="w-[22%] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600 sm:px-6">
-                    Recipient
+                  <th className="w-[26%] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600 sm:px-6">
+                    To
                   </th>
-                  <th className="w-[32%] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">
+                  <th className="w-[34%] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">
                     Subject
                   </th>
                   <th className="w-[12%] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">
-                    Type
+                    Audience
                   </th>
                   <th className="w-[16%] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">
                     Status
@@ -233,7 +299,9 @@ export function EmailsSentRegistry({
                 {slice.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center font-sans text-sm text-zinc-500">
-                      No messages in this view.
+                      {tab === "tenants"
+                        ? "No tenant emails logged yet. When onboarding, rent chases, or maintenance messages go to a tenant address, they appear here."
+                        : "No messages in this view."}
                     </td>
                   </tr>
                 ) : (
@@ -246,16 +314,31 @@ export function EmailsSentRegistry({
                         selected?.id === row.id ? "bg-zinc-900/70" : "",
                       )}
                     >
-                      <td className="truncate px-4 py-3 text-zinc-300 sm:px-6">
-                        <div className="truncate">{row.recipientEmail}</div>
+                      <td className="px-4 py-3 sm:px-6">
+                        {row.isTenantRecipient ? (
+                          <div className="min-w-0">
+                            <div className="truncate font-sans text-[13px] font-semibold text-white">
+                              {row.recipientName}
+                            </div>
+                            <div className="truncate font-mono text-[11px] text-zinc-500">{row.recipientEmail}</div>
+                          </div>
+                        ) : (
+                          <div className="min-w-0 truncate font-mono text-[11px] text-zinc-400">{row.recipientEmail}</div>
+                        )}
                       </td>
                       <td className="px-2 py-3">
-                        <div className="truncate text-zinc-400">{row.subject}</div>
+                        <div className="line-clamp-2 font-sans text-[12px] leading-snug text-zinc-300">{row.subject}</div>
                       </td>
                       <td className="px-2 py-3">
-                        <span className="inline-flex border border-[#2a2a2a] bg-zinc-900/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-500">
-                          {row.source === "email_log" ? "Workflow" : "Draft"}
-                        </span>
+                        {row.isTenantRecipient ? (
+                          <span className="inline-flex border border-emerald-800/40 bg-emerald-950/25 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-300/95">
+                            Tenant
+                          </span>
+                        ) : (
+                          <span className="inline-flex border border-[#2a2a2a] bg-zinc-900/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-500">
+                            {row.source === "email_log" ? "Other" : "Draft"}
+                          </span>
+                        )}
                       </td>
                       <td className="px-2 py-3">
                         <StatusPill status={row.uiStatus} />
@@ -298,15 +381,29 @@ export function EmailsSentRegistry({
         </section>
 
         <aside className="flex min-h-0 flex-col border-t border-[#1f1f1f] bg-[#0B0B0B] xl:border-l xl:border-t-0">
-          <div className="border-b border-[#1f1f1f] px-4 py-4">
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">Communication Detail</p>
-            <h2 className="mt-2 line-clamp-2 text-sm font-semibold text-zinc-200">
+          <div className="border-b border-[#1f1f1f] px-4 py-5">
+            {selected?.isTenantRecipient ? (
+              <p className="inline-flex border border-emerald-800/45 bg-emerald-950/30 px-2 py-1 text-[0.6rem] font-bold uppercase tracking-[0.16em] text-emerald-300/95">
+                Tenant message
+              </p>
+            ) : (
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">Communication detail</p>
+            )}
+            <h2
+              className={cn(
+                "mt-3 line-clamp-4 font-headline font-light tracking-tight text-zinc-100",
+                selected?.isTenantRecipient ? "text-lg sm:text-xl" : "text-sm font-semibold",
+              )}
+            >
               {selected?.subject ?? "No message selected"}
             </h2>
             {selected ? (
-              <div className="mt-2 flex items-center gap-2 text-[11px] text-zinc-500">
-                <span className="truncate">{selected.recipientEmail}</span>
-                <StatusPill status={selected.uiStatus} />
+              <div className="mt-3 space-y-1">
+                <p className="font-sans text-sm font-medium text-white">{selected.recipientName}</p>
+                <div className="flex flex-wrap items-center gap-2 text-[12px] text-zinc-500">
+                  <span className="truncate font-mono">{selected.recipientEmail}</span>
+                  <StatusPill status={selected.uiStatus} />
+                </div>
               </div>
             ) : null}
           </div>
@@ -314,8 +411,18 @@ export function EmailsSentRegistry({
           <div className="min-h-0 flex-1 space-y-5 overflow-auto p-4">
             <section>
               <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">Message content</h3>
-              <div className="border border-[#1f1f1f] bg-zinc-900/30 p-3">
-                <pre className="whitespace-pre-wrap break-words text-[11px] leading-relaxed text-zinc-400">
+              <div
+                className={cn(
+                  "border bg-zinc-900/30 p-4",
+                  selected?.isTenantRecipient ? "border-emerald-900/25" : "border-[#1f1f1f]",
+                )}
+              >
+                <pre
+                  className={cn(
+                    "whitespace-pre-wrap break-words leading-relaxed text-zinc-300",
+                    selected?.isTenantRecipient ? "font-sans text-[0.9375rem]" : "font-mono text-[11px] text-zinc-400",
+                  )}
+                >
                   {selected?.body ?? "Select a message to preview body content."}
                 </pre>
               </div>

@@ -17,6 +17,8 @@ export type ComplianceRecordRow = {
   status: "valid" | "expiring" | "expired" | "missing";
   /** Path inside `compliance-vault` bucket (not a public URL). */
   documentUrl: string | null;
+  /** Optional label from upload (column may be absent on older DBs). */
+  documentLabel: string | null;
 };
 
 const COMPLIANCE_TYPES: ComplianceType[] = ["EPC", "Gas Safety", "Electric Safety"];
@@ -41,7 +43,7 @@ export async function getComplianceRecordsForUser(userId: string): Promise<Compl
 
   const { data: rows, error } = await supabase
     .from("compliance_records")
-    .select("id, property_id, type, expiry_date, status, document_url")
+    .select("id, property_id, type, expiry_date, status, document_url, document_label")
     .in("property_id", ids);
 
   if (error) {
@@ -59,6 +61,7 @@ export async function getComplianceRecordsForUser(userId: string): Promise<Compl
     const statusNorm = (["valid", "expiring", "expired", "missing"].includes(st)
       ? st
       : "valid") as ComplianceRecordRow["status"];
+    const docLabel = (r as { document_label?: string | null }).document_label;
     return {
       id: r.id as string,
       propertyId: r.property_id as string,
@@ -66,6 +69,8 @@ export async function getComplianceRecordsForUser(userId: string): Promise<Compl
       expiryDate: exp,
       status: statusNorm,
       documentUrl: ((r as { document_url?: string | null }).document_url ?? null) as string | null,
+      documentLabel:
+        docLabel != null && String(docLabel).trim() !== "" ? String(docLabel).trim() : null,
     };
   });
 }
@@ -100,6 +105,13 @@ export async function uploadComplianceDocument(
   if (file.size > maxBytes) {
     return { ok: false, error: "File is too large (max 15 MB)." };
   }
+
+  const hasDocumentLabel = formData.has("documentLabel");
+  const labelRaw = formData.get("documentLabel");
+  const documentLabel =
+    typeof labelRaw === "string" && labelRaw.trim().length > 0
+      ? labelRaw.trim().slice(0, 200)
+      : null;
 
   const supabase = await createClient();
   const {
@@ -150,7 +162,11 @@ export async function uploadComplianceDocument(
   if (existing?.id) {
     const { data: updated, error: upErr } = await supabase
       .from("compliance_records")
-      .update({ document_url: path, updated_at: now })
+      .update({
+        document_url: path,
+        updated_at: now,
+        ...(hasDocumentLabel ? { document_label: documentLabel } : {}),
+      })
       .eq("id", existing.id as string)
       .select("id, document_url")
       .maybeSingle();
@@ -170,6 +186,7 @@ export async function uploadComplianceDocument(
         type,
         expiry_date: null,
         document_url: path,
+        ...(hasDocumentLabel ? { document_label: documentLabel } : {}),
       })
       .select("id, document_url")
       .maybeSingle();

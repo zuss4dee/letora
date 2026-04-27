@@ -7,8 +7,7 @@ export function CommandCenterOnboardingTasksSkeleton() {
         <span className="size-1.5 bg-zinc-500" />
         <h2 className="text-xs font-bold uppercase tracking-widest text-white">Active Tasks</h2>
       </div>
-      <div className="grid animate-pulse grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="h-28 border border-[#333333] bg-[#161616]" />
+      <div className="animate-pulse">
         <div className="h-28 border border-[#333333] bg-[#161616]" />
       </div>
     </div>
@@ -36,37 +35,20 @@ export async function CommandCenterOnboardingTasks({ userId }: { userId: string 
         <span className="size-1.5 shrink-0 bg-zinc-500" />
         Active Tasks
       </h2>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div className="border border-[#333333] bg-[#161616] p-4">
-          <p className="mb-3 text-[10px] font-bold uppercase text-zinc-500">Onboarding Funnel</p>
-          <div className="space-y-3">
-            {rows.map((b) => (
-              <div key={b.id}>
-                <div className="flex items-center justify-between text-[11px]">
-                  <span className="truncate text-zinc-400">{b.label}</span>
-                  <span className="shrink-0 pl-2 font-mono text-white tabular-nums">{b.pct}%</span>
-                </div>
-                <div className="mt-1 h-1 w-full bg-[#282828]">
-                  <div className="h-full bg-white" style={{ width: `${Math.min(100, Math.max(0, b.pct))}%` }} />
-                </div>
+      <div className="border border-[#333333] bg-[#161616] p-4">
+        <p className="mb-3 text-[10px] font-bold uppercase text-zinc-500">Onboarding Funnel</p>
+        <div className="space-y-3">
+          {rows.map((b) => (
+            <div key={b.id}>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="truncate text-zinc-400">{b.label}</span>
+                <span className="shrink-0 pl-2 font-mono text-white tabular-nums">{b.pct}%</span>
               </div>
-            ))}
-          </div>
-        </div>
-        <div className="border border-[#333333] bg-[#161616] p-4">
-          <p className="mb-3 text-[10px] font-bold uppercase text-zinc-500">System Health</p>
-          <div className="mb-4 flex items-center gap-4">
-            <div className="text-center">
-              <p className="text-lg font-bold text-white">98%</p>
-              <p className="text-[9px] uppercase text-zinc-500">Uptime</p>
+              <div className="mt-1 h-1 w-full bg-[#282828]">
+                <div className="h-full bg-white" style={{ width: `${Math.min(100, Math.max(0, b.pct))}%` }} />
+              </div>
             </div>
-            <div className="h-8 w-px bg-[#282828]" />
-            <div className="text-center">
-              <p className="text-lg font-bold text-white">1.2s</p>
-              <p className="text-[9px] uppercase text-zinc-500">Sync Latency</p>
-            </div>
-          </div>
-          <p className="text-[10px] italic text-zinc-400">&quot;Global services running normal.&quot;</p>
+          ))}
         </div>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import { approvalActionTypeKey } from "@/lib/approvals/action-type-key";
 import type { AgentApprovalRow } from "@/lib/approvals/types";
 
 /**
@@ -27,7 +28,8 @@ export function computeApprovalQueueStats(
   let stalePendingCount = 0;
 
   for (const row of pending) {
-    const key = row.action_type;
+    const key = approvalActionTypeKey(row.action_type);
+    if (!key) continue;
     byActionType[key] = (byActionType[key] ?? 0) + 1;
 
     const t = new Date(row.created_at).getTime();

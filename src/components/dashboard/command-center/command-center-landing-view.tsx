@@ -26,7 +26,7 @@ import { CommandCenterAiComposer } from "@/components/dashboard/command-center/c
 export function CommandCenterLandingView({ userId }: { userId: string }) {
   return (
     <>
-      <main className="flex min-h-0 flex-1 flex-col px-4 pb-28 pt-4 font-['Inter',system-ui,sans-serif] text-[#e5e2e1] md:px-6 md:pb-32 md:pt-6">
+      <main className="flex min-h-0 flex-1 flex-col px-4 pb-36 pt-4 font-['Inter',system-ui,sans-serif] text-[#e5e2e1] md:px-6 md:pb-40 md:pt-6">
         <CommandCenterActionBar />
 
         <Suspense fallback={<CommandCenterKpiGridSkeleton />}>

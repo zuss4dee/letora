@@ -10,6 +10,11 @@ import { getProperties } from "@/lib/actions/properties";
 import { getTenants } from "@/lib/actions/tenants";
 import { createClient } from "@/lib/supabase/server";
 
+import {
+  loadTenancyInspectorActivityByTenancyId,
+  loadTenancyOnboardingTasksByTenancyId,
+} from "./tenancy-inspector-data";
+
 async function TenanciesDataSection() {
   const supabase = await createClient();
   const {
@@ -32,6 +37,15 @@ async function TenanciesDataSection() {
       ])
     : [[], [], [], []];
 
+  const tenancyIds = tenancies.map((t) => t.id);
+  const [activityByTenancyId, onboardingTasksByTenancyId] =
+    tenancyIds.length > 0
+      ? await Promise.all([
+          loadTenancyInspectorActivityByTenancyId(tenancies),
+          loadTenancyOnboardingTasksByTenancyId(tenancyIds),
+        ])
+      : [{}, {}];
+
   const propertyOptions = properties.map((p) => ({
     id: p.id,
     label: p.address ?? "Property",
@@ -49,6 +63,8 @@ async function TenanciesDataSection() {
       userId={userId}
       propertyOptions={propertyOptions}
       tenantOptions={tenantOptions}
+      activityByTenancyId={activityByTenancyId}
+      onboardingTasksByTenancyId={onboardingTasksByTenancyId}
     />
   );
 }

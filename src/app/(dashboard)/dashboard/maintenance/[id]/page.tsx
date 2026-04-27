@@ -103,7 +103,10 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
         </header>
 
         <div className="grid gap-6 px-4 lg:px-6">
-                  <Card className="overflow-hidden border-border bg-card shadow-sm ring-1 ring-border/60">
+                  <Card
+                    id="request-issue"
+                    className="scroll-mt-24 overflow-hidden border-border bg-card shadow-sm ring-1 ring-border/60"
+                  >
                     <CardHeader className="border-b border-border bg-muted/30">
                       <CardTitle className="font-headline text-lg font-light tracking-tight text-foreground">Issue</CardTitle>
                     </CardHeader>
@@ -164,12 +167,14 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
                     </CardContent>
                   </Card>
 
-                  <AssignContractorForm
-                    requestId={detail.id}
-                    contractorName={detail.contractorName}
-                    contractorEmail={detail.contractorEmail}
-                    status={detail.status}
-                  />
+                  <div id="assign-contractor" className="scroll-mt-24">
+                    <AssignContractorForm
+                      requestId={detail.id}
+                      contractorName={detail.contractorName}
+                      contractorEmail={detail.contractorEmail}
+                      status={detail.status}
+                    />
+                  </div>
 
                   <Card className="overflow-hidden border-border bg-card shadow-sm ring-1 ring-border/60">
                     <CardHeader className="border-b border-border bg-muted/30">

@@ -1,22 +1,25 @@
-/** Shared tonal surfaces for tenancy detail / onboarding / referencing (DESIGN.md). */
+/** Shared tonal surfaces for tenancy detail / onboarding / referencing (operational dashboard shell). */
 
 export const TENANCY_CARD =
-  "gap-0 overflow-hidden border-0 bg-card py-0 shadow-lg backdrop-blur-md ring-1 ring-border dark:bg-gradient-to-b dark:from-[#1c1b1a]/95 dark:to-[#141312]/98 dark:shadow-[0_24px_48px_rgba(0,0,0,0.35)]";
+  "gap-0 overflow-hidden rounded-none border-0 bg-[#f8f8f7] py-0 shadow-none ring-0 dark:bg-[#1A1A1A]";
 
 export const TENANCY_CARD_HEADER =
-  "border-0 bg-muted/50 px-6 pb-5 pt-7 dark:bg-[#1a1918]/50 sm:px-8";
+  "rounded-none border-0 border-b border-zinc-200/70 bg-transparent px-4 pb-4 pt-5 dark:border-zinc-800 sm:px-6";
 
-export const TENANCY_CARD_TITLE = "font-headline text-lg font-light tracking-tight text-foreground";
+export const TENANCY_CARD_TITLE =
+  "font-headline text-[16px] font-semibold tracking-[-0.02em] text-zinc-900 dark:text-zinc-100";
 
-export const TENANCY_CARD_CONTENT = "space-y-4 px-6 pb-8 pt-2 sm:px-8";
+export const TENANCY_CARD_CONTENT = "space-y-5 px-4 pb-6 pt-4 sm:px-6 sm:pb-8 sm:pt-5";
 
+/** Dense inline stat / label chip (optional use outside the main grid). */
 export const TENANCY_STAT_TILE =
-  "rounded-xl border border-border/80 bg-card p-4 shadow-sm ring-1 ring-border/60 transition-colors hover:bg-muted/80 dark:border-transparent dark:bg-[#0e0e0e]/40 dark:shadow-none dark:hover:bg-[#131313]/55";
+  "rounded-[2px] border border-zinc-200/80 bg-zinc-100/35 p-3.5 transition-colors hover:bg-zinc-100/55 dark:border-zinc-800 dark:bg-zinc-900/25 dark:hover:bg-zinc-900/40";
 
-export const TENANCY_LABEL = "font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground";
+export const TENANCY_LABEL =
+  "font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 dark:text-zinc-500";
 
 export const TENANCY_PRIMARY_BTN =
-  "rounded-md bg-[#BD9952] px-5 text-[#2c1e00] shadow-none hover:bg-[#c9a660]";
+  "rounded-[2px] bg-[#BD9952] px-5 text-[#2c1e00] shadow-none hover:bg-[#c9a660]";
 
 export const TENANCY_OUTLINE_BTN =
-  "rounded-md border-border bg-card font-[family-name:var(--font-inter)] text-xs font-semibold uppercase tracking-[0.1em] text-foreground shadow-none hover:border-secondary/45 hover:bg-secondary/10 hover:text-[#BD9952]";
+  "rounded-[2px] border-zinc-300/90 bg-white font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-800 shadow-none hover:border-zinc-400 hover:bg-zinc-50 hover:text-[#BD9952] dark:border-zinc-700 dark:bg-zinc-900/40 dark:text-zinc-100 dark:hover:border-zinc-600 dark:hover:bg-zinc-800/50 dark:hover:text-[#BD9952]";

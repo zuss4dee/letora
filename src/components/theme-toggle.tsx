@@ -5,8 +5,13 @@ import { useEffect, useState } from "react";
 
 import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-export function ThemeToggle() {
+type ThemeToggleProps = {
+  className?: string;
+};
+
+export function ThemeToggle({ className }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -23,10 +28,13 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="h-9 w-9 rounded-sm border border-border bg-transparent text-muted-foreground shadow-none hover:bg-accent hover:text-secondary"
-      aria-label="Toggle theme"
+      className={cn(
+        "h-9 w-9 shrink-0 rounded-sm border border-border bg-transparent text-muted-foreground shadow-none hover:bg-accent hover:text-secondary",
+        className,
+      )}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
-      {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      {isDark ? <Sun className="h-4 w-4" aria-hidden /> : <Moon className="h-4 w-4" aria-hidden />}
     </Button>
   );
 }

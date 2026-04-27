@@ -627,6 +627,8 @@ export async function runTenantOnboardingAgent(
         payload: {
           tenancyId,
           userId,
+          emailSubject: subject,
+          emailBody: body,
         },
         evidence,
       } satisfies CreateAgentApprovalContract,

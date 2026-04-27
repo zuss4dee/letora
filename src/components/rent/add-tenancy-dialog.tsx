@@ -41,13 +41,20 @@ export function AddTenancyDialog({
   properties,
   tenants,
   trigger,
+  open: openProp,
+  onOpenChange: onOpenChangeProp,
 }: {
   properties: Array<{ id: string; label: string }>;
   tenants: Array<{ id: string; label: string }>;
   trigger?: ReactElement;
+  /** When set with `onOpenChange`, the dialog is controlled (no trigger rendered). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const isControlled = openProp !== undefined && onOpenChangeProp !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isControlled ? openProp : internalOpen;
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [postCreate, setPostCreate] = useState<{ hasPendingApproval: boolean } | null>(null);
   const wasOpenRef = useRef(false);
@@ -82,7 +89,11 @@ export function AddTenancyDialog({
       setSubmitError(null);
     }
     wasOpenRef.current = next;
-    setOpen(next);
+    if (isControlled) {
+      onOpenChangeProp?.(next);
+    } else {
+      setInternalOpen(next);
+    }
   }
 
   async function onSubmit(values: AddTenancyInput) {
@@ -92,7 +103,6 @@ export function AddTenancyDialog({
       setSubmitError(result.error);
       return;
     }
-    setOpen(true);
     router.refresh();
 
     let pending = await getPendingApprovalsForTenancy(result.tenancyId);
@@ -108,16 +118,18 @@ export function AddTenancyDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button
-            className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-            disabled={disabled}
-          >
-            Add Tenancy
-          </Button>
-        )}
-      </DialogTrigger>
+      {!isControlled ? (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button
+              className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+              disabled={disabled}
+            >
+              Add Tenancy
+            </Button>
+          )}
+        </DialogTrigger>
+      ) : null}
       <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
         <DialogHeader>
           <DialogTitle>{postCreate ? "Tenancy added" : "Add tenancy"}</DialogTitle>

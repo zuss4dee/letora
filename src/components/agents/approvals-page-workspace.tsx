@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { ApprovalsPendingInteractive } from "@/components/agents/approvals-pending-interactive";
 import { ApprovalsResolvedSection } from "@/components/agents/approvals-resolved-section";
+import { approvalActionTypeKey } from "@/lib/approvals/action-type-key";
 import type { AgentApprovalActionType, AgentApprovalRow } from "@/lib/approvals/types";
 import { MVP_TERMS } from "@/components/dashboard/workspace-terminology";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,27 +26,37 @@ function sortOldestFirst(rows: AgentApprovalRow[]): AgentApprovalRow[] {
 
 function filterByAction(rows: AgentApprovalRow[], f: ActionFilter): AgentApprovalRow[] {
   if (f === "all") return rows;
-  return rows.filter((r) => r.action_type === f);
+  return rows.filter((r) => approvalActionTypeKey(r.action_type) === f);
 }
 
 function ActionFilterChips({
   value,
   onChange,
   idPrefix,
+  countsByAction,
+  totalAll,
 }: {
   value: ActionFilter;
   onChange: (v: ActionFilter) => void;
   idPrefix: string;
+  /** Live counts from the same pending/resolved rows (keys normalized via {@link approvalActionTypeKey}). */
+  countsByAction: Record<string, number>;
+  totalAll: number;
 }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {FILTERS.map((f) => {
         const active = value === f.value;
+        const n =
+          f.value === "all"
+            ? totalAll
+            : (countsByAction[f.value] ?? 0);
         return (
           <button
             key={`${idPrefix}-${f.value}`}
             type="button"
             onClick={() => onChange(f.value)}
+            aria-pressed={active}
             className={cn(
               "border px-2.5 py-1 font-[family-name:var(--font-inter)] text-[0.62rem] font-medium uppercase tracking-[0.11em] transition-colors",
               active
@@ -54,6 +65,7 @@ function ActionFilterChips({
             )}
           >
             {f.label}
+            <span className="ml-1.5 tabular-nums text-[0.9em] opacity-80">({n})</span>
           </button>
         );
       })}
@@ -64,12 +76,25 @@ function ActionFilterChips({
 export function ApprovalsPageWorkspace({
   pending,
   resolved,
+  pendingByActionType,
 }: {
   pending: AgentApprovalRow[];
   resolved: AgentApprovalRow[];
+  /** From {@link computeApprovalQueueStats}; same normalization as filter chips. */
+  pendingByActionType: Record<string, number>;
 }) {
   const [tab, setTab] = useState<"queue" | "decisions">("queue");
   const [actionFilter, setActionFilter] = useState<ActionFilter>("all");
+
+  const resolvedByActionType = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const row of resolved) {
+      const k = approvalActionTypeKey(row.action_type);
+      if (!k) continue;
+      m[k] = (m[k] ?? 0) + 1;
+    }
+    return m;
+  }, [resolved]);
 
   const filteredPending = useMemo(
     () => sortOldestFirst(filterByAction(pending, actionFilter)),
@@ -134,7 +159,13 @@ export function ApprovalsPageWorkspace({
                     Sorted oldest first. Select a row to inspect rationale and run decision actions.
                   </p>
                 </div>
-                <ActionFilterChips idPrefix="q" value={actionFilter} onChange={setActionFilter} />
+                <ActionFilterChips
+                  idPrefix="q"
+                  value={actionFilter}
+                  onChange={setActionFilter}
+                  countsByAction={pendingByActionType}
+                  totalAll={pending.length}
+                />
               </div>
               <div className="flex flex-wrap items-center gap-3 px-0.5">
                 <p className="font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-zinc-600">
@@ -179,7 +210,13 @@ export function ApprovalsPageWorkspace({
                 <p className="font-[family-name:var(--font-inter)] text-[0.7rem] text-zinc-400">
                   Use the same action filters on the decision log.
                 </p>
-                <ActionFilterChips idPrefix="d" value={actionFilter} onChange={setActionFilter} />
+                <ActionFilterChips
+                  idPrefix="d"
+                  value={actionFilter}
+                  onChange={setActionFilter}
+                  countsByAction={resolvedByActionType}
+                  totalAll={resolved.length}
+                />
               </div>
               {filteredResolved.length === 0 ? (
                 <section className="border border-dashed border-white/[0.12] bg-[#111111] p-5">

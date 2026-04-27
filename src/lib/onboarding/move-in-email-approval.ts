@@ -47,6 +47,8 @@ export async function buildMoveInEmailApprovalPackage(
     payload: {
       userId,
       tenancyId,
+      emailSubject: subject,
+      emailBody: body,
     },
     evidence: { ...evidence },
   };

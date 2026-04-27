@@ -1,16 +1,14 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import Link from "next/link";
+import { useEffect, useState, type ReactNode } from "react";
 
+import { getEmailLogSnapshotForUser, type EmailLogSnapshot } from "@/lib/actions/email-drafts";
 import {
   formatApprovalAbsoluteTime,
   formatApprovalActionType,
-  formatApprovalAgentType,
-  formatApprovalDecisionStatus,
-  formatApprovalTargetLine,
 } from "@/components/dashboard/approval-display";
-import { parseStaleReminderAudit, STALE_REMINDER_EVIDENCE_KEY } from "@/lib/approvals/stale-approval-reminders";
-import { MVP_TERMS } from "@/components/dashboard/workspace-terminology";
+import { STALE_REMINDER_EVIDENCE_KEY } from "@/lib/approvals/stale-approval-reminders";
 import type { AgentApprovalActionType, AgentApprovalRow } from "@/lib/approvals/types";
 import { Button } from "@/components/ui/button";
 import {
@@ -196,15 +194,141 @@ function shortId(id: string | null | undefined): string {
   return id.length <= 12 ? id : `${id.slice(0, 8)}…`;
 }
 
+function readEmailLogId(payload: Record<string, unknown>): string | null {
+  for (const key of ["emailLogId", "email_log_id"] as const) {
+    const v = payload[key];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return null;
+}
+
+function emailIntroLine(actionType: AgentApprovalActionType): string {
+  switch (actionType) {
+    case "send_onboarding_email":
+    case "send_move_in_email":
+      return "Message the AI proposes to send to the tenant (review before approving).";
+    case "send_rent_chase_email":
+      return "Rent reminder the AI proposes to email to the tenant.";
+    case "approve_maintenance_dispatch":
+      return "Email draft to the contractor (tenant notices are separate).";
+    default:
+      return "Outbound email associated with this approval.";
+  }
+}
+
+function ApprovalEmailAuditSection({ approval }: { approval: AgentApprovalRow }) {
+  const payload = (approval.payload ?? {}) as Record<string, unknown>;
+  const ev = (approval.evidence ?? {}) as Record<string, unknown>;
+  const logId = readEmailLogId(payload);
+  const [snapshot, setSnapshot] = useState<EmailLogSnapshot | null>(null);
+  const [snapLoading, setSnapLoading] = useState(false);
+
+  useEffect(() => {
+    if (!logId) {
+      setSnapshot(null);
+      setSnapLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setSnapLoading(true);
+    void getEmailLogSnapshotForUser(logId).then((s) => {
+      if (!cancelled) {
+        setSnapshot(s);
+        setSnapLoading(false);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [logId]);
+
+  const subject =
+    str(payload.emailSubject) ??
+    str(payload.email_subject) ??
+    str(ev.subject) ??
+    str(ev.emailSubject) ??
+    snapshot?.subject ??
+    null;
+
+  const body =
+    str(payload.emailBody) ??
+    str(payload.email_body) ??
+    str(ev.bodyPreview) ??
+    str(ev.dispatchPreview) ??
+    snapshot?.body ??
+    null;
+
+  const hasCopy = Boolean(subject?.trim() || body?.trim());
+  const hubHref = logId ? `/dashboard/emails?logId=${encodeURIComponent(logId)}` : "/dashboard/emails";
+
+  return (
+    <div className="space-y-2">
+      {sectionTitle("Email message")}
+      <p className="font-[family-name:var(--font-inter)] text-[0.72rem] leading-relaxed text-muted-foreground">
+        {emailIntroLine(approval.action_type)}
+      </p>
+      {logId ? (
+        <p className="font-[family-name:var(--font-inter)] text-[0.68rem] text-muted-foreground">
+          Workflow log ID:{" "}
+          <span className="font-mono text-foreground/80" title={logId}>
+            {shortId(logId)}
+          </span>
+          {snapshot?.status ? (
+            <span className="ml-2 rounded-sm border border-border/60 px-1.5 py-0.5 text-[0.62rem] uppercase tracking-wide text-muted-foreground dark:border-white/[0.08]">
+              {snapshot.status}
+            </span>
+          ) : null}
+        </p>
+      ) : null}
+      {hasCopy ? (
+        <div className="space-y-2 rounded-lg border border-border/60 bg-muted/10 px-3 py-3 dark:border-white/[0.06]">
+          <AuditRow label="Subject">{subject?.trim() ? subject : "—"}</AuditRow>
+          <div>
+            <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-medium text-muted-foreground">
+              Body
+            </p>
+            {previewBlock(body, "max-h-64")}
+          </div>
+        </div>
+      ) : (
+        <p className="font-[family-name:var(--font-inter)] text-[0.72rem] text-muted-foreground">
+          {logId && snapLoading
+            ? "Loading message from Communications…"
+            : logId
+              ? "No body text on file for this log — open Communications to inspect the row."
+              : "No full copy stored on this approval yet. Check Review context above for metadata."}
+        </p>
+      )}
+      <div className="flex flex-wrap gap-2 pt-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="font-[family-name:var(--font-inter)] text-[0.62rem] uppercase tracking-[0.1em]"
+          asChild
+        >
+          <Link href={hubHref}>
+            {logId ? "Open in Communications" : "View all emails & drafts"}
+          </Link>
+        </Button>
+        {logId && snapshot?.status === "draft" ? (
+          <p className="w-full font-[family-name:var(--font-inter)] text-[0.65rem] text-amber-600/90 dark:text-amber-400/90">
+            This row is still a draft in Communications until you send it from there or complete the approval flow.
+          </p>
+        ) : null}
+        {logId && snapshot?.status === "sent" ? (
+          <p className="w-full font-[family-name:var(--font-inter)] text-[0.65rem] text-emerald-600/90 dark:text-emerald-400/90">
+            Logged as sent — Communications hub lists tenant-facing delivery with the rest of your mail.
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export function ApprovalAuditSheetBody({ approval }: { approval: AgentApprovalRow }) {
   const ev = (approval.evidence ?? {}) as Record<string, unknown>;
   const payload = (approval.payload ?? {}) as Record<string, unknown>;
-  const reminder = parseStaleReminderAudit(ev);
-  const targetLine = formatApprovalTargetLine(approval.target_type, approval.target_id);
-  const correlation =
-    typeof ev.run_correlation_id === "string" && ev.run_correlation_id.trim()
-      ? ev.run_correlation_id.trim()
-      : null;
 
   return (
     <div className="flex flex-col gap-6 px-4 pb-8 pt-2">
@@ -219,84 +343,11 @@ export function ApprovalAuditSheetBody({ approval }: { approval: AgentApprovalRo
       </div>
 
       <div className="space-y-2">
-        {sectionTitle("Lifecycle")}
-        <dl className="space-y-2.5">
-          <AuditRow label="Status">
-            <span className="font-medium">{formatApprovalDecisionStatus(approval.status)}</span>
-          </AuditRow>
-          <AuditRow label="Action">{formatApprovalActionType(approval.action_type)}</AuditRow>
-          <AuditRow label="Created">{formatApprovalAbsoluteTime(approval.created_at)}</AuditRow>
-          <AuditRow label="Decided">
-            {approval.decided_at ? formatApprovalAbsoluteTime(approval.decided_at) : "—"}
-          </AuditRow>
-          <AuditRow label="Completed at">
-            {approval.executed_at ? formatApprovalAbsoluteTime(approval.executed_at) : "—"}
-          </AuditRow>
-          {approval.status === "denied" && approval.deny_reason?.trim() ? (
-            <AuditRow label="Deny reason">{approval.deny_reason.trim()}</AuditRow>
-          ) : null}
-        </dl>
-      </div>
-
-      <div className="space-y-2">
-        {sectionTitle("Agent & target")}
-        <dl className="space-y-2.5">
-          <AuditRow label="Agent type">{formatApprovalAgentType(approval.agent_type)}</AuditRow>
-          <AuditRow label="Target">{targetLine ?? "—"}</AuditRow>
-        </dl>
-      </div>
-
-      <div className="space-y-2">
         {sectionTitle("Review context")}
         <ContextForAction actionType={approval.action_type} evidence={ev} payload={payload} />
       </div>
 
-      {reminder ? (
-        <div className="space-y-2 rounded-lg border border-border/60 bg-muted/15 px-3 py-3 dark:border-white/[0.06]">
-          {sectionTitle("Reminder audit")}
-          <dl className="space-y-2">
-            <AuditRow label="Channel">Operator email</AuditRow>
-            <AuditRow label={`Last ${MVP_TERMS.sent.toLowerCase()}`}>{formatApprovalAbsoluteTime(reminder.last_sent_at)}</AuditRow>
-            <AuditRow label={`${MVP_TERMS.reminded} count`}>{String(reminder.send_count)}</AuditRow>
-          </dl>
-        </div>
-      ) : approval.status === "pending" ? (
-        <p className="font-[family-name:var(--font-inter)] text-[0.7rem] text-muted-foreground">
-          Not {MVP_TERMS.reminded.toLowerCase()} yet (operator nudge only when an item is {MVP_TERMS.aging.toLowerCase()}{" "}
-          in queue).
-        </p>
-      ) : null}
-
-      <details className="group rounded-lg border border-border/60 bg-card/30 dark:border-white/[0.06]">
-        <summary className="cursor-pointer list-none px-3 py-2.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.12em] text-muted-foreground marker:content-none [&::-webkit-details-marker]:hidden">
-          <span className="underline-offset-4 group-open:underline">Technical details</span>
-        </summary>
-        <div className="space-y-3 border-t border-border/50 px-3 py-3 dark:border-white/[0.06]">
-          <dl className="space-y-2">
-            <AuditRow label="Approval ID">{approval.id}</AuditRow>
-            <AuditRow label="Agent run">{approval.agent_run_id ?? "—"}</AuditRow>
-            <AuditRow label="Decided by (user id)">{approval.decided_by ?? "—"}</AuditRow>
-            <AuditRow label="Target id (full)">{approval.target_id ?? "—"}</AuditRow>
-            {correlation ? <AuditRow label="Correlation">{correlation}</AuditRow> : null}
-          </dl>
-          <div className="space-y-1">
-            <p className="font-[family-name:var(--font-inter)] text-[0.6rem] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-              Raw payload
-            </p>
-            <pre className="max-h-40 overflow-auto rounded-md border border-border/50 bg-muted/25 p-2 font-mono text-[0.62rem] leading-relaxed text-foreground/80 dark:border-white/[0.06]">
-              {JSON.stringify(payload, null, 2)}
-            </pre>
-          </div>
-          <div className="space-y-1">
-            <p className="font-[family-name:var(--font-inter)] text-[0.6rem] font-medium uppercase tracking-[0.1em] text-muted-foreground">
-              Raw evidence (includes reminder metadata)
-            </p>
-            <pre className="max-h-40 overflow-auto rounded-md border border-border/50 bg-muted/25 p-2 font-mono text-[0.62rem] leading-relaxed text-foreground/80 dark:border-white/[0.06]">
-              {JSON.stringify(ev, null, 2)}
-            </pre>
-          </div>
-        </div>
-      </details>
+      <ApprovalEmailAuditSection approval={approval} />
     </div>
   );
 }

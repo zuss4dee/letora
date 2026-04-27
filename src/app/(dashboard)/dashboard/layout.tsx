@@ -7,8 +7,8 @@ import { OnboardingGateBoundary } from "@/components/dashboard/onboarding-gate-b
 import { SidebarApprovalsMeta } from "@/components/dashboard/sidebar-approvals-meta";
 import { SidebarAttentionBadges } from "@/components/dashboard/sidebar-attention-badges";
 import { SidebarDynamicProvider } from "@/components/dashboard/sidebar-dynamic-context";
+import { DashboardMobileInsetBar } from "@/components/dashboard/dashboard-mobile-inset-bar";
 import { SidebarSubscriptionMeta } from "@/components/dashboard/sidebar-subscription-meta";
-import { SiteHeader } from "@/components/dashboard/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { redirect } from "next/navigation";
@@ -49,7 +49,7 @@ export default async function DashboardShellLayout({ children }: { children: Rea
             </Suspense>
           </SidebarDynamicProvider>
           <SidebarInset className="bg-background">
-            <SiteHeader />
+            <DashboardMobileInsetBar />
             <Suspense fallback={null}>
               <OnboardingGateBoundary userId={userId} />
             </Suspense>

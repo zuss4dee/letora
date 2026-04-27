@@ -54,12 +54,16 @@ export async function ApprovalsQueueHealthSection() {
 }
 
 export async function ApprovalsWorkspaceSection() {
-  const { pending, resolved } = await getApprovalsData();
+  const { pending, resolved, queueStats } = await getApprovalsData();
 
   return (
     <section aria-label="Approvals workspace">
       <h2 className="sr-only">Approval queue and recent decisions</h2>
-      <ApprovalsPageWorkspace pending={pending} resolved={resolved} />
+      <ApprovalsPageWorkspace
+        pending={pending}
+        resolved={resolved}
+        pendingByActionType={queueStats.byActionType}
+      />
     </section>
   );
 }

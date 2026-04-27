@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ArrowLeft } from "lucide-react";
 
 import { EditTenancyDialog } from "@/components/tenancies/edit-tenancy-dialog";
 import { ReferencingPanel } from "@/components/tenancies/referencing-panel";
 import { TenancyOnboardingPanel } from "@/components/tenancies/tenancy-onboarding-panel";
-import { TENANCY_LABEL, TENANCY_STAT_TILE } from "@/components/tenancies/tenancy-letora-surfaces";
+import { TENANCY_LABEL } from "@/components/tenancies/tenancy-letora-surfaces";
 import { getReferencingEvents } from "@/lib/actions/referencing";
 import { getTenancyOnboardingDetail } from "@/lib/actions/onboarding";
 import { createClient } from "@/lib/supabase/server";
@@ -64,110 +65,126 @@ export default async function TenancyDetailPage({ params }: { params: Promise<{ 
   }
 
   return (
-    <div className="@container/main relative flex flex-1 flex-col">
-      <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[min(42vh,420px)] bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(189,153,82,0.12),transparent_65%)] dark:bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(61,26,10,0.35),transparent_65%)]"
-        aria-hidden
-      />
-      <div className="relative flex flex-col gap-10 py-8 md:py-10">
-        <header className="flex flex-col gap-6 px-4 lg:flex-row lg:items-end lg:justify-between lg:px-6">
-          <div className="max-w-3xl space-y-3">
-            <Link
-              href="/dashboard/tenancies"
-              className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-sm font-medium text-muted-foreground transition-colors hover:text-[#BD9952]"
-            >
-              <span aria-hidden>←</span> Tenancies
-            </Link>
-            <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
-              Tenancy
-            </p>
-            <h1 className="font-headline text-3xl font-extralight tracking-[-0.04em] text-foreground md:text-[2.15rem] md:leading-tight">
-              {detail.propertyAddress ?? "Property"}
-            </h1>
-            <p className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
-              {detail.tenantName ?? "Tenant"} · Dates, financials, referencing, and onboarding in one place.
-            </p>
-          </div>
-          {userId ? (
-            <div className="shrink-0 lg:pb-1">
-              <EditTenancyDialog
+    <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
+      <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-y border-zinc-200/70 bg-[#161616] dark:border-zinc-800 dark:bg-[#1A1A1A]">
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-[min(38vh,360px)] bg-[radial-gradient(ellipse_70%_60%_at_50%_-8%,rgba(189,153,82,0.08),transparent_62%)] dark:bg-[radial-gradient(ellipse_70%_60%_at_50%_-8%,rgba(61,26,10,0.28),transparent_62%)]"
+            aria-hidden
+          />
+          <div className="relative flex min-h-0 flex-1 flex-col">
+            <header className="flex flex-col gap-4 border-b border-zinc-200/70 bg-zinc-100 px-4 py-5 dark:border-zinc-800 dark:bg-[#161616] md:flex-row md:items-start md:justify-between md:px-6">
+              <div className="max-w-3xl space-y-3">
+                <Link
+                  href="/dashboard/tenancies"
+                  className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-500 transition-colors hover:text-[#BD9952] dark:text-zinc-500 dark:hover:text-[#BD9952]"
+                >
+                  <ArrowLeft className="size-3.5 shrink-0" aria-hidden />
+                  Tenancies
+                </Link>
+                <p className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.14em] text-[#BD9952]">
+                  Tenancy
+                </p>
+                <h1 className="font-headline text-[22px] font-semibold tracking-[-0.03em] text-zinc-900 dark:text-white sm:text-[24px]">
+                  {detail.propertyAddress ?? "Property"}
+                </h1>
+                <p className="font-[family-name:var(--font-inter)] text-[12px] leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                    {detail.tenantName ?? "Tenant"}
+                  </span>
+                  <span className="text-zinc-400 dark:text-zinc-600"> · </span>
+                  Dates, financials, referencing, and onboarding in one place.
+                </p>
+              </div>
+              {userId ? (
+                <div className="shrink-0 md:pt-1">
+                  <EditTenancyDialog
+                    tenancyId={id}
+                    userId={userId}
+                    initial={{
+                      startDate,
+                      endDate,
+                      moveInDate,
+                      monthlyRent,
+                      depositAmount: deposit,
+                      status: tenancyStatus,
+                    }}
+                    triggerLabel="Edit tenancy"
+                  />
+                </div>
+              ) : null}
+            </header>
+
+            <div className="flex min-h-0 flex-1 flex-col gap-px bg-zinc-200/70 dark:bg-zinc-800">
+              <section className="bg-[#f8f8f7] dark:bg-[#1A1A1A]">
+                <div className="border-b border-zinc-200/70 px-4 py-3 dark:border-zinc-800 md:px-6">
+                  <h2 className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
+                    Dates &amp; financials
+                  </h2>
+                </div>
+                <div className="grid gap-x-6 gap-y-5 px-4 py-5 sm:grid-cols-2 md:grid-cols-3 md:px-6 md:py-6">
+                  <div className="space-y-1.5">
+                    <span className={TENANCY_LABEL}>Start date</span>
+                    <p className="font-[family-name:var(--font-inter)] text-[13px] font-medium text-zinc-900 dark:text-zinc-100">
+                      {startDate ?? "—"}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <span className={TENANCY_LABEL}>End date</span>
+                    <p className="font-[family-name:var(--font-inter)] text-[13px] font-medium text-zinc-900 dark:text-zinc-100">
+                      {endDate ?? "—"}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <span className={TENANCY_LABEL}>Move-in date</span>
+                    <p className="font-[family-name:var(--font-inter)] text-[13px] font-medium text-zinc-900 dark:text-zinc-100">
+                      {moveInDate ?? "—"}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <span className={TENANCY_LABEL}>Status</span>
+                    <p className="font-[family-name:var(--font-inter)] text-[13px] font-medium capitalize text-zinc-900 dark:text-zinc-100">
+                      {tenancyStatus ?? "—"}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <span className={TENANCY_LABEL}>Monthly rent</span>
+                    <p className="font-[family-name:var(--font-inter)] text-[13px] font-medium text-zinc-900 dark:text-zinc-100">
+                      {monthlyRent != null && Number.isFinite(monthlyRent) ? gbp.format(monthlyRent) : "—"}
+                    </p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <span className={TENANCY_LABEL}>Deposit</span>
+                    <p className="font-[family-name:var(--font-inter)] text-[13px] font-medium text-zinc-900 dark:text-zinc-100">
+                      {deposit != null && Number.isFinite(deposit) ? gbp.format(deposit) : "—"}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              {userId ? (
+                <ReferencingPanel
+                  tenancyId={id}
+                  userId={userId}
+                  initialEvents={referencingEvents}
+                  referencingToken={detail.referencing_token}
+                  referencingAgencyEmailOverride={detail.referencing_agency_email_override}
+                  defaultReferencingAgencyEmail={defaultReferencingAgencyEmail}
+                  hasDefaultReferencingAgencyEmail={hasDefaultReferencingAgencyEmail}
+                  lastOutboundAt={detail.referencing_last_outbound_at}
+                  lastInboundAt={detail.referencing_last_inbound_at}
+                  onboardingStatus={detail.onboarding_status}
+                />
+              ) : null}
+              <TenancyOnboardingPanel
                 tenancyId={id}
-                userId={userId}
-                initial={{
-                  startDate,
-                  endDate,
-                  moveInDate,
-                  monthlyRent,
-                  depositAmount: deposit,
-                  status: tenancyStatus,
-                }}
-                triggerLabel="Edit tenancy"
+                onboardingStatus={detail.onboarding_status}
+                tasks={detail.tasks}
               />
             </div>
-          ) : null}
-        </header>
-
-        <section className="grid gap-3 px-4 sm:grid-cols-2 lg:grid-cols-3 lg:px-6">
-          <div className={TENANCY_STAT_TILE}>
-            <div className={TENANCY_LABEL}>Start date</div>
-            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-foreground">
-              {startDate ?? "—"}
-            </div>
           </div>
-          <div className={TENANCY_STAT_TILE}>
-            <div className={TENANCY_LABEL}>End date</div>
-            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-foreground">
-              {endDate ?? "—"}
-            </div>
-          </div>
-          <div className={TENANCY_STAT_TILE}>
-            <div className={TENANCY_LABEL}>Move-in date</div>
-            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-foreground">
-              {moveInDate ?? "—"}
-            </div>
-          </div>
-          <div className={TENANCY_STAT_TILE}>
-            <div className={TENANCY_LABEL}>Status</div>
-            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium capitalize text-foreground">
-              {tenancyStatus ?? "—"}
-            </div>
-          </div>
-          <div className={TENANCY_STAT_TILE}>
-            <div className={TENANCY_LABEL}>Monthly rent</div>
-            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-foreground">
-              {monthlyRent != null && Number.isFinite(monthlyRent) ? gbp.format(monthlyRent) : "—"}
-            </div>
-          </div>
-          <div className={TENANCY_STAT_TILE}>
-            <div className={TENANCY_LABEL}>Deposit</div>
-            <div className="mt-1 font-[family-name:var(--font-inter)] text-base font-medium text-foreground">
-              {deposit != null && Number.isFinite(deposit) ? gbp.format(deposit) : "—"}
-            </div>
-          </div>
-        </section>
-
-        <section className="grid gap-6 px-4 lg:px-6">
-          {userId ? (
-            <ReferencingPanel
-              tenancyId={id}
-              userId={userId}
-              initialEvents={referencingEvents}
-              referencingToken={detail.referencing_token}
-              referencingAgencyEmailOverride={detail.referencing_agency_email_override}
-              defaultReferencingAgencyEmail={defaultReferencingAgencyEmail}
-              hasDefaultReferencingAgencyEmail={hasDefaultReferencingAgencyEmail}
-              lastOutboundAt={detail.referencing_last_outbound_at}
-              lastInboundAt={detail.referencing_last_inbound_at}
-              onboardingStatus={detail.onboarding_status}
-            />
-          ) : null}
-          <TenancyOnboardingPanel
-            tenancyId={id}
-            onboardingStatus={detail.onboarding_status}
-            tasks={detail.tasks}
-          />
-        </section>
-      </div>
+        </div>
+      </section>
     </div>
   );
 }

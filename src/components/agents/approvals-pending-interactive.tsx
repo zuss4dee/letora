@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { approveAgentApproval, denyAgentApproval } from "@/lib/actions/agent-approvals";
@@ -36,6 +36,16 @@ export function ApprovalsPendingInteractive({
     () => approvals.find((approval) => approval.id === selectedId) ?? approvals[0] ?? null,
     [approvals, selectedId],
   );
+
+  useEffect(() => {
+    if (approvals.length === 0) {
+      setSelectedId(null);
+      return;
+    }
+    if (!selectedId || !approvals.some((a) => a.id === selectedId)) {
+      setSelectedId(approvals[0]!.id);
+    }
+  }, [approvals, selectedId]);
 
   const runApprove = useCallback(
     async (id: string) => {

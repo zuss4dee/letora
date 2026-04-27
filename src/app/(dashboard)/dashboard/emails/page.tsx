@@ -7,9 +7,17 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-async function EmailsDispatchContent({ userId }: { userId: string }) {
+async function EmailsDispatchContent({
+  userId,
+  initialLogId,
+}: {
+  userId: string;
+  initialLogId?: string;
+}) {
   const rows = await getEmailDispatchLogs(userId);
-  return <EmailsSentRegistry rows={rows} totalDispatched={rows.length} />;
+  return (
+    <EmailsSentRegistry rows={rows} totalDispatched={rows.length} initialLogId={initialLogId ?? null} />
+  );
 }
 
 function EmailsDispatchFallback() {
@@ -39,7 +47,11 @@ function EmailsDispatchFallback() {
   );
 }
 
-export default async function EmailsPage() {
+export default async function EmailsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ logId?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -47,10 +59,14 @@ export default async function EmailsPage() {
 
   if (!user) notFound();
 
+  const sp = await searchParams;
+  const raw = sp.logId;
+  const initialLogId = typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : undefined;
+
   return (
     <div className="@container/main flex min-h-0 flex-1 flex-col bg-[#0B0B0B]">
       <Suspense fallback={<EmailsDispatchFallback />}>
-        <EmailsDispatchContent userId={user.id} />
+        <EmailsDispatchContent userId={user.id} initialLogId={initialLogId} />
       </Suspense>
     </div>
   );

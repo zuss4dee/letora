@@ -42,6 +42,9 @@ export type SendOnboardingEmailApprovalPayload = {
   tenancyId: string;
   userId: string;
   emailLogId?: string | null;
+  /** Present when the approval is created so Approvals audit can show the drafted message. */
+  emailSubject?: string;
+  emailBody?: string;
 };
 
 /** Payload stored on send_rent_chase_email approvals (execution after approve). */
@@ -99,6 +102,9 @@ export type ApproveMaintenanceDispatchPayload = {
 export type SendMoveInEmailApprovalPayload = {
   userId: string;
   tenancyId: string;
+  /** Draft copy for Approvals audit (send path recomposes from tenancy). */
+  emailSubject?: string;
+  emailBody?: string;
 };
 
 /** Evidence for move-in email approvals (dashboard + audit). */

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
+import { PropertyPortfolioBackLink } from "@/components/dashboard/property-portfolio-back-link";
 import { RentTrackerContent } from "@/components/rent-tracker/rent-tracker-content";
 import { getRentPayments } from "@/lib/actions/rent-tracker";
 import { computeRentTrackerStats } from "@/lib/rent-tracker-stats";
@@ -8,7 +9,11 @@ import { getTenancies } from "@/lib/actions/tenancies";
 import { DashboardPollRefresh } from "@/hooks/use-dashboard-poll-refresh";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function RentTrackerPage() {
+export default async function RentTrackerPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ propertyId?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -18,6 +23,11 @@ export default async function RentTrackerPage() {
 
   if (!userId) notFound();
 
+  const sp = await searchParams;
+  const raw = sp.propertyId;
+  const propertyId =
+    typeof raw === "string" && raw.trim().length > 0 ? raw.trim() : undefined;
+
   const todayIso = new Date().toISOString().slice(0, 10);
 
   return (
@@ -25,7 +35,11 @@ export default async function RentTrackerPage() {
       <DashboardPollRefresh />
       <div className="@container/main flex flex-1 flex-col gap-2">
         <Suspense fallback={<RentTrackerLoadingShell todayIso={todayIso} />}>
-          <RentTrackerAsyncSection userId={userId} todayIso={todayIso} />
+          <RentTrackerAsyncSection
+            userId={userId}
+            todayIso={todayIso}
+            propertyId={propertyId}
+          />
         </Suspense>
       </div>
     </>
@@ -35,23 +49,39 @@ export default async function RentTrackerPage() {
 async function RentTrackerAsyncSection({
   userId,
   todayIso,
+  propertyId,
 }: {
   userId: string;
   todayIso: string;
+  propertyId?: string;
 }) {
   const [payments, tenancies] = await Promise.all([
     getRentPayments(),
     getTenancies(userId),
   ]);
-  const stats = computeRentTrackerStats(payments, todayIso);
+  const scopedTenancies =
+    propertyId == null ? tenancies : tenancies.filter((t) => t.propertyId === propertyId);
+  const tenancyIdSet = new Set(scopedTenancies.map((t) => t.id));
+  const scopedPayments =
+    propertyId == null
+      ? payments
+      : payments.filter((p) => p.tenancyId != null && tenancyIdSet.has(p.tenancyId));
+  const stats = computeRentTrackerStats(scopedPayments, todayIso);
 
   return (
-    <RentTrackerContent
-      payments={payments}
-      stats={stats}
-      tenancies={tenancies}
-      todayIso={todayIso}
-    />
+    <div className="flex min-h-0 flex-1 flex-col">
+      {propertyId ? (
+        <div className="shrink-0 border-b border-[#282828] bg-[#141414] px-5 py-2">
+          <PropertyPortfolioBackLink propertyId={propertyId} className="text-[#868686] hover:text-[#BD9952]" />
+        </div>
+      ) : null}
+      <RentTrackerContent
+        payments={scopedPayments}
+        stats={stats}
+        tenancies={scopedTenancies}
+        todayIso={todayIso}
+      />
+    </div>
   );
 }
 

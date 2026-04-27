@@ -1,8 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { EmailDispatchRow } from "@/lib/email-dispatch";
+import { isLikelyTenantAutomatedDispatch } from "@/lib/email-dispatch";
 import { buildResendFromHeader } from "@/lib/tools/send-email";
 import { createClient } from "@/lib/supabase/server";
 import { Resend } from "resend";
@@ -35,13 +37,25 @@ function mapLogToUiStatus(row: {
   bounced_at?: string | null;
   opened_at?: string | null;
   delivery_status?: string | null;
-}): "delivered" | "opened" | "bounced" {
+}): "delivered" | "opened" | "bounced" | "draft" {
   const st = (row.status ?? "").toLowerCase();
+  if (st === "draft") return "draft";
   if (st === "failed" || row.bounced_at || (row.delivery_status ?? "").toLowerCase().includes("bounce")) {
     return "bounced";
   }
   if (row.opened_at) return "opened";
   return "delivered";
+}
+
+async function loadTenantEmailSet(supabase: SupabaseClient, userId: string): Promise<Set<string>> {
+  const { data, error } = await supabase.from("tenants").select("email").eq("user_id", userId);
+  if (error || !data) return new Set();
+  const s = new Set<string>();
+  for (const row of data) {
+    const e = typeof row.email === "string" ? row.email.trim().toLowerCase() : "";
+    if (e) s.add(e);
+  }
+  return s;
 }
 
 /**
@@ -50,6 +64,7 @@ function mapLogToUiStatus(row: {
  */
 export async function getEmailDispatchLogs(userId: string): Promise<EmailDispatchRow[]> {
   const supabase = await createClient();
+  const tenantEmails = await loadTenantEmailSet(supabase, userId);
 
   const { data: logs, error: logError } = await supabase
     .from("email_logs")
@@ -57,7 +72,7 @@ export async function getEmailDispatchLogs(userId: string): Promise<EmailDispatc
       "id,to_name,to_email,subject,body,status,sent_at,created_at,agent_type,opened_at,bounced_at,delivery_status",
     )
     .eq("user_id", userId)
-    .in("status", ["sent", "failed"])
+    .in("status", ["sent", "failed", "draft"])
     .order("created_at", { ascending: false })
     .limit(400);
 
@@ -66,12 +81,21 @@ export async function getEmailDispatchLogs(userId: string): Promise<EmailDispatc
   }
 
   const fromLogs: EmailDispatchRow[] = (logs ?? []).map((row) => {
-    const sentAt = (row.sent_at as string | null) ?? (row.created_at as string);
+    const st = String(row.status ?? "").toLowerCase();
+    const sentAt =
+      st === "draft"
+        ? (row.created_at as string)
+        : (row.sent_at as string | null) ?? (row.created_at as string);
+    const toNorm = String(row.to_email ?? "").trim().toLowerCase();
+    const agentType = (row.agent_type as string | null) ?? null;
+    const isTenantRecipient =
+      (toNorm.length > 0 && tenantEmails.has(toNorm)) || isLikelyTenantAutomatedDispatch(agentType);
     return {
       id: row.id as string,
       source: "email_log" as const,
       recipientName: (row.to_name as string | null)?.trim() || "Recipient",
       recipientEmail: String(row.to_email ?? ""),
+      isTenantRecipient,
       subject: String(row.subject ?? "—"),
       body: String(row.body ?? ""),
       sentAt,
@@ -81,7 +105,7 @@ export async function getEmailDispatchLogs(userId: string): Promise<EmailDispatc
         opened_at: row.opened_at as string | null | undefined,
         delivery_status: row.delivery_status as string | null | undefined,
       }),
-      agentType: (row.agent_type as string | null) ?? null,
+      agentType,
     };
   });
 
@@ -119,6 +143,7 @@ export async function getEmailDispatchLogs(userId: string): Promise<EmailDispatc
       source: "email_draft" as const,
       recipientName: fullName?.trim() || "Tenant",
       recipientEmail: email?.trim() || "—",
+      isTenantRecipient: true,
       subject: String(row.subject ?? "—"),
       body: String(row.body ?? ""),
       sentAt,
@@ -295,6 +320,49 @@ export type ReviewEmailDraftResult = {
  * Loads a draft from `email_logs` for the review modal (send infrastructure).
  * For AI-generated drafts visible on /dashboard/emails, see `getAllEmailDrafts`.
  */
+export type EmailLogSnapshot = {
+  id: string;
+  status: string;
+  to_email: string;
+  to_name: string | null;
+  subject: string;
+  body: string;
+  sent_at: string | null;
+  created_at: string;
+};
+
+/**
+ * Read a single `email_logs` row for the signed-in user (any status).
+ * Used from Approvals audit to deep-link / label draft vs sent.
+ */
+export async function getEmailLogSnapshotForUser(logId: string): Promise<EmailLogSnapshot | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: row, error } = await supabase
+    .from("email_logs")
+    .select("id,user_id,status,to_email,to_name,subject,body,sent_at,created_at")
+    .eq("id", logId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error || !row) return null;
+
+  return {
+    id: row.id as string,
+    status: String(row.status ?? ""),
+    to_email: String(row.to_email ?? ""),
+    to_name: (row.to_name as string | null) ?? null,
+    subject: String(row.subject ?? ""),
+    body: String(row.body ?? ""),
+    sent_at: (row.sent_at as string | null) ?? null,
+    created_at: String(row.created_at ?? ""),
+  };
+}
+
 export async function reviewEmailDraft(draftId: string): Promise<ReviewEmailDraftResult> {
   const supabase = await createClient();
   const {

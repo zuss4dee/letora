@@ -86,7 +86,7 @@ function onboardingStatusBadge(status: string) {
 
 function taskTypeBadge(type: string) {
   return (
-    <span className="inline-flex rounded-md bg-muted px-2 py-0.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.08em] text-muted-foreground ring-1 ring-border dark:bg-[#0e0e0e]/50 dark:ring-[rgb(72_72_72_/0.1)]">
+    <span className="inline-flex rounded-[2px] border border-zinc-200/80 bg-zinc-100/50 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900/35 dark:text-zinc-400">
       {type}
     </span>
   );
@@ -219,11 +219,11 @@ export function TenancyOnboardingPanel({
     <Card className={TENANCY_CARD}>
       <CardHeader className={`${TENANCY_CARD_HEADER} flex flex-row flex-wrap items-start justify-between gap-3`}>
         <div className="space-y-2">
-          <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[#BD9952]/95">
+          <p className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.14em] text-[#BD9952]">
             Workflow
           </p>
           <CardTitle className={TENANCY_CARD_TITLE}>Tenant onboarding</CardTitle>
-          <p className="max-w-2xl font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">
+          <p className="max-w-2xl font-[family-name:var(--font-inter)] text-[12px] font-light leading-relaxed text-zinc-600 dark:text-zinc-400">
             Welcome emails, references, and move-in tasks. Track progress and mark manual steps done here.
           </p>
         </div>
@@ -231,8 +231,8 @@ export function TenancyOnboardingPanel({
       </CardHeader>
       <CardContent className={`${TENANCY_CARD_CONTENT} space-y-6`}>
         {onboardingStatus === "not_started" ? (
-          <div className="flex flex-col gap-4 rounded-xl border border-border bg-muted/70 p-5 ring-1 ring-border/60 sm:flex-row sm:items-center sm:justify-between dark:border-transparent dark:bg-[#0e0e0e]/35 dark:ring-[rgb(72_72_72_/0.1)]">
-            <p className="max-w-xl font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-muted-foreground">
+          <div className="flex flex-col gap-4 rounded-[2px] border border-zinc-200/80 bg-zinc-100/40 p-5 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800 dark:bg-zinc-900/25">
+            <p className="max-w-xl font-[family-name:var(--font-inter)] text-[12px] font-light leading-relaxed text-zinc-600 dark:text-zinc-400">
               Creates welcome email (draft or send), reference checks, and move-in tasks.
             </p>
             <Button type="button" disabled={pending} onClick={() => void startOnboarding()} className={cn(TENANCY_PRIMARY_BTN, "shrink-0 px-6")}>
@@ -242,23 +242,23 @@ export function TenancyOnboardingPanel({
         ) : null}
 
         {onboardingStatus !== "not_started" && tasks.length > 0 ? (
-          <div className="overflow-hidden rounded-xl border border-border ring-1 ring-border/60 dark:border-transparent dark:ring-[rgb(72_72_72_/0.08)]">
+          <div className="overflow-hidden rounded-[2px] border border-zinc-200/70 dark:border-zinc-800">
             <Table>
-              <TableHeader className="[&_tr]:border-0">
-                <TableRow className="border-0 hover:bg-transparent">
-                  <TableHead className="w-12 text-center font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              <TableHeader className="sticky top-0 z-10 bg-zinc-100 dark:bg-[#131313] [&_tr]:border-0">
+                <TableRow className="border-0 border-b border-zinc-200/70 hover:bg-transparent dark:border-zinc-800">
+                  <TableHead className="w-12 text-center font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                     Done
                   </TableHead>
-                  <TableHead className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <TableHead className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                     Task
                   </TableHead>
-                  <TableHead className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <TableHead className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                     Type
                   </TableHead>
-                  <TableHead className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <TableHead className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                     Due
                   </TableHead>
-                  <TableHead className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                  <TableHead className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                     Status
                   </TableHead>
                 </TableRow>
@@ -267,7 +267,7 @@ export function TenancyOnboardingPanel({
                 {tasks.map((task) => (
                   <TableRow
                     key={task.id}
-                    className="border-0 border-b border-border last:border-0 hover:bg-muted/80 dark:border-[rgb(72_72_72_/0.06)] dark:hover:bg-[#0e0e0e]/45"
+                    className="border-0 border-b border-zinc-200/60 last:border-0 hover:bg-zinc-100/80 dark:border-zinc-800 dark:hover:bg-zinc-800/35"
                   >
                     <TableCell className="text-center align-middle">
                       <Checkbox
@@ -289,14 +289,14 @@ export function TenancyOnboardingPanel({
                             void revertToPending(task.id);
                           }
                         }}
-                        className="border-[rgb(72_72_72_/0.35)] data-checked:border-[#BD9952] data-checked:bg-[#BD9952] data-checked:text-[#2c1e00]"
+                        className="border-zinc-400/60 data-checked:border-[#BD9952] data-checked:bg-[#BD9952] data-checked:text-[#2c1e00] dark:border-zinc-600"
                       />
                     </TableCell>
-                    <TableCell className="font-[family-name:var(--font-inter)] font-medium text-foreground">
+                    <TableCell className="font-[family-name:var(--font-inter)] text-[12px] font-medium text-zinc-900 dark:text-zinc-100">
                       {task.task_name}
                     </TableCell>
                     <TableCell>{taskTypeBadge(task.task_type)}</TableCell>
-                    <TableCell className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
+                    <TableCell className="font-[family-name:var(--font-inter)] text-[12px] text-zinc-600 dark:text-zinc-400">
                       {task.due_date
                         ? new Date(`${task.due_date}T12:00:00.000Z`).toLocaleDateString("en-GB")
                         : task.task_type === "email"
@@ -317,7 +317,7 @@ export function TenancyOnboardingPanel({
         ) : null}
 
         {onboardingStatus !== "not_started" && tasks.length === 0 ? (
-          <p className="font-[family-name:var(--font-inter)] text-sm font-light text-muted-foreground">
+          <p className="font-[family-name:var(--font-inter)] text-[12px] font-light text-zinc-500 dark:text-zinc-500">
             No onboarding tasks recorded yet.
           </p>
         ) : null}

@@ -5,10 +5,12 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BadgeCheck,
+  Bell,
   Building2,
   ChevronDown,
   CircleDollarSign,
   ClipboardCheck,
+  Command,
   CreditCard,
   FileText,
   HelpCircle,
@@ -20,11 +22,13 @@ import {
   PlusCircle,
   Settings,
   Upload,
+  UserCircle2,
   UserPlus,
   Users,
   Wrench,
 } from "lucide-react";
 
+import { useOpenCommandPalette } from "@/components/dashboard/dashboard-command-palette";
 import { SidebarAgentActivityButton } from "@/components/dashboard/sidebar-agent-activity-button";
 import { useSidebarDynamicOptional } from "@/components/dashboard/sidebar-dynamic-context";
 import { getSidebarPlanStatusCompact } from "@/lib/billing/subscription-display";
@@ -36,6 +40,8 @@ import {
   SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type NavItem = {
@@ -224,6 +230,7 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { openPalette } = useOpenCommandPalette();
   const { isMobile, setOpenMobile } = useSidebar();
   const dyn = useSidebarDynamicOptional();
   const d = dyn?.state;
@@ -417,6 +424,43 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter className="border-none bg-transparent px-0 pb-4 pt-2">
+        <div
+          className="mx-5 mb-3 flex flex-wrap items-center justify-center gap-x-1 gap-y-2 sm:gap-x-2"
+          aria-label="Theme and quick actions"
+        >
+          <ThemeToggle className="size-8 shrink-0 text-muted-foreground hover:bg-transparent hover:text-foreground dark:text-zinc-500 dark:hover:text-white" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8 text-muted-foreground hover:bg-transparent hover:text-foreground dark:text-zinc-500 dark:hover:text-white"
+            aria-label="Notifications"
+          >
+            <Bell className="size-[18px] stroke-[1.25]" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8 text-muted-foreground hover:bg-transparent hover:text-foreground dark:text-zinc-500 dark:hover:text-white"
+            aria-label="Command palette"
+            onClick={openPalette}
+          >
+            <Command className="size-[18px] stroke-[1.25]" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8 text-muted-foreground hover:bg-transparent hover:text-foreground dark:text-zinc-500 dark:hover:text-white"
+            aria-label="Profile"
+            asChild
+          >
+            <Link href="/dashboard/settings" onClick={closeMobileNav}>
+              <UserCircle2 className="size-[18px] stroke-[1.25]" />
+            </Link>
+          </Button>
+        </div>
         <div className="mx-5 mb-2.5 h-px bg-black/[0.09] dark:bg-white/[0.07]" aria-hidden />
         <button
           type="button"

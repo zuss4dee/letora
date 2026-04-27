@@ -1,7 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
-import { SiteHeader } from "@/components/dashboard/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { createClient } from "@/lib/supabase/server";
@@ -25,7 +24,6 @@ export default async function AgentsLayout({ children }: { children: ReactNode }
       >
         <AppSidebar variant="inset" userEmail={userEmail} />
         <SidebarInset>
-          <SiteHeader />
           <div className="flex flex-1 flex-col">{children}</div>
         </SidebarInset>
       </SidebarProvider>
