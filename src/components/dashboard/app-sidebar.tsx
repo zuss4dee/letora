@@ -21,6 +21,7 @@ import {
   Mail,
   PlusCircle,
   Settings,
+  Sparkles,
   Upload,
   UserCircle2,
   UserPlus,
@@ -66,6 +67,7 @@ const workflowItemsBase: NavItem[] = [
 ];
 
 const moreItems: NavItem[] = [
+  { title: "AI Assistant", url: "/dashboard/assistant", icon: Sparkles },
   { title: "Rent Tracker", url: "/dashboard/rent-tracker", icon: CircleDollarSign },
   { title: "Leads", url: "/dashboard/leads", icon: UserPlus },
   { title: "Import", url: "/dashboard/import", icon: Upload },

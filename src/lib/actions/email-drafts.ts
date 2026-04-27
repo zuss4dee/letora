@@ -118,7 +118,7 @@ export async function getEmailDispatchLogs(userId: string): Promise<EmailDispatc
     `,
     )
     .eq("user_id", userId)
-    .eq("status", "sent")
+    .in("status", ["sent", "draft"])
     .order("updated_at", { ascending: false })
     .limit(200);
 
@@ -147,7 +147,7 @@ export async function getEmailDispatchLogs(userId: string): Promise<EmailDispatc
       subject: String(row.subject ?? "—"),
       body: String(row.body ?? ""),
       sentAt,
-      uiStatus: "delivered" as const,
+      uiStatus: (row.status === "draft" ? "draft" : "delivered") as const,
       agentType: null,
     };
   });

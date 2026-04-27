@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Download, Filter, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, ExternalLink, Filter, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { EmailDraftViewButton } from "@/components/emails/email-draft-view-button";
@@ -8,84 +8,94 @@ import type { EmailDispatchRow } from "@/lib/email-dispatch";
 import { isAutomatedEmailDispatch } from "@/lib/email-dispatch";
 import { cn } from "@/lib/utils";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 15;
 
-type LogTab = "tenants" | "all" | "automated" | "manual";
+type LogTab = "all" | "tenants" | "automated" | "manual";
+type StatusFilter = EmailDispatchRow["uiStatus"] | "all";
 
-function formatSentDate(iso: string): string {
+/* ── Helpers ─────────────────────────────────────────────────────── */
+
+function formatDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  const date = d.toLocaleDateString("en-GB", {
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
+function formatDateFull(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString("en-GB", {
     day: "numeric",
     month: "short",
     year: "numeric",
-  });
-  const time = d.toLocaleTimeString("en-GB", {
     hour: "2-digit",
     minute: "2-digit",
     hour12: true,
   });
-  return `${date} · ${time}`;
 }
 
-function StatusPill({ status }: { status: EmailDispatchRow["uiStatus"] }) {
-  if (status === "draft") {
-    return (
-      <span className="inline-flex items-center gap-1.5 border border-zinc-600/40 bg-zinc-900/40 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-400/95">
-        <span className="size-1 rounded-full bg-zinc-500" />
-        Draft
-      </span>
-    );
-  }
-  if (status === "delivered") {
-    return (
-      <span className="inline-flex items-center gap-1.5 border border-emerald-900/30 bg-emerald-950/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-400/90">
-        <span className="size-1 rounded-full bg-emerald-400" />
-        Delivered
-      </span>
-    );
-  }
-  if (status === "opened") {
-    return (
-      <span className="inline-flex items-center gap-1.5 border border-amber-900/35 bg-amber-950/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-amber-400/90">
-        <span className="size-1 rounded-full bg-amber-400" />
-        Opened
-      </span>
-    );
-  }
+function getTypeBadge(row: EmailDispatchRow): string {
+  if (row.agentType) return row.agentType.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  if (row.isTenantRecipient) return "Tenant";
+  return row.source === "email_log" ? "System" : "Draft";
+}
+
+/* ── Status dot (table cell) ────────────────────────────────────── */
+function StatusDot({ status }: { status: EmailDispatchRow["uiStatus"] }) {
+  const map: Record<string, { dot: string; text: string; label: string }> = {
+    draft:     { dot: "bg-yellow-400",  text: "text-yellow-400",  label: "Draft" },
+    delivered: { dot: "bg-emerald-400", text: "text-emerald-400", label: "Sent" },
+    opened:    { dot: "bg-emerald-300", text: "text-emerald-300", label: "Opened" },
+    bounced:   { dot: "bg-red-400",     text: "text-red-400",     label: "Failed" },
+  };
+  const s = map[status] ?? map.draft;
   return (
-    <span className="inline-flex items-center gap-1.5 border border-red-900/35 bg-red-950/20 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-red-400/90">
-      <span className="size-1 rounded-full bg-red-400" />
-      Bounced
+    <span className={cn("flex items-center gap-1.5 font-bold text-[9px] uppercase tracking-wider", s.text)}>
+      <span className={cn("size-1.5 rounded-full", s.dot)} />
+      {s.label}
     </span>
   );
 }
 
+function StatusPill({ status }: { status: EmailDispatchRow["uiStatus"] }) {
+  const map: Record<string, string> = {
+    draft:     "border border-yellow-700/40 bg-yellow-950/30 text-yellow-400",
+    delivered: "border border-emerald-800/40 bg-emerald-950/25 text-emerald-400",
+    opened:    "border border-emerald-700/40 bg-emerald-950/20 text-emerald-300",
+    bounced:   "border border-red-800/40 bg-red-950/25 text-red-400",
+  };
+  const labels: Record<string, string> = { draft: "Draft", delivered: "Sent", opened: "Opened", bounced: "Failed" };
+  return (
+    <span className={cn("inline-flex items-center px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest", map[status] ?? map.draft)}>
+      {labels[status] ?? status}
+    </span>
+  );
+}
+
+/* ── CSV export ──────────────────────────────────────────────────── */
 function downloadCsv(rows: EmailDispatchRow[]) {
-  const h = ["Tenant", "Recipient", "Email", "Subject", "Date sent", "Status", "Source"];
+  const h = ["Recipient", "Email", "Subject", "Date", "Status", "Source"];
   const lines = [h.join(",")];
   for (const r of rows) {
-    lines.push(
-      [
-        r.isTenantRecipient ? "yes" : "no",
-        `"${r.recipientName.replace(/"/g, '""')}"`,
-        `"${r.recipientEmail.replace(/"/g, '""')}"`,
-        `"${r.subject.replace(/"/g, '""')}"`,
-        r.sentAt,
-        r.uiStatus,
-        r.source,
-      ].join(","),
-    );
+    lines.push([
+      `"${r.recipientName.replace(/"/g, '""')}"`,
+      `"${r.recipientEmail.replace(/"/g, '""')}"`,
+      `"${r.subject.replace(/"/g, '""')}"`,
+      r.sentAt,
+      r.uiStatus,
+      r.source,
+    ].join(","));
   }
   const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `letora-emails-sent-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `letora-emails-${new Date().toISOString().slice(0, 10)}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
+/* ── Main Component ──────────────────────────────────────────────── */
 export function EmailsSentRegistry({
   rows,
   totalDispatched,
@@ -93,18 +103,35 @@ export function EmailsSentRegistry({
 }: {
   rows: EmailDispatchRow[];
   totalDispatched: number;
-  /** Deep-link from Approvals audit: select this `email_logs` row when present. */
   initialLogId?: string | null;
 }) {
-  const [tab, setTab] = useState<LogTab>("tenants");
+  const [tab, setTab] = useState<LogTab>("all");
   const [query, setQuery] = useState("");
-  const [statusOnly, setStatusOnly] = useState<EmailDispatchRow["uiStatus"] | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [page, setPage] = useState(1);
-  const tenantRows = useMemo(() => rows.filter((r) => r.isTenantRecipient), [rows]);
-  const tenantTotal = tenantRows.length;
-  const [selectedId, setSelectedId] = useState<string | null>(
-    tenantRows[0]?.id ?? rows[0]?.id ?? null,
-  );
+  const [selectedId, setSelectedId] = useState<string | null>(rows[0]?.id ?? null);
+  const [inspectorOpen, setInspectorOpen] = useState(true);
+
+  function closeInspector() {
+    setInspectorOpen(false);
+    setSelectedId(null);
+  }
+
+  function openRow(id: string) {
+    setSelectedId(id);
+    setInspectorOpen(true);
+  }
+
+  const tenantTotal = useMemo(() => rows.filter((r) => r.isTenantRecipient).length, [rows]);
+  const draftCount = useMemo(() => rows.filter((r) => r.uiStatus === "draft").length, [rows]);
+  const failedCount = useMemo(() => rows.filter((r) => r.uiStatus === "bounced").length, [rows]);
+
+  /* deep-link from Approvals */
+  useEffect(() => {
+    if (!initialLogId?.trim()) return;
+    const hit = rows.find((r) => r.source === "email_log" && r.id === initialLogId.trim());
+    if (hit) { setSelectedId(hit.id); setTab("all"); }
+  }, [initialLogId, rows]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -112,30 +139,11 @@ export function EmailsSentRegistry({
       if (tab === "tenants" && !r.isTenantRecipient) return false;
       if (tab === "automated" && !isAutomatedEmailDispatch(r.agentType)) return false;
       if (tab === "manual" && isAutomatedEmailDispatch(r.agentType)) return false;
-      if (statusOnly !== "all" && r.uiStatus !== statusOnly) return false;
+      if (statusFilter !== "all" && r.uiStatus !== statusFilter) return false;
       if (!q) return true;
-      const hay = [r.recipientName, r.recipientEmail, r.subject].join(" ").toLowerCase();
-      return hay.includes(q);
+      return [r.recipientName, r.recipientEmail, r.subject].join(" ").toLowerCase().includes(q);
     });
-  }, [rows, tab, query, statusOnly]);
-
-  useEffect(() => {
-    if (!initialLogId?.trim()) return;
-    const id = initialLogId.trim();
-    const hit = rows.find((r) => r.source === "email_log" && r.id === id);
-    if (!hit) return;
-    setSelectedId(hit.id);
-    if (hit.isTenantRecipient) setTab("tenants");
-    if (hit.uiStatus === "draft") setStatusOnly("draft");
-  }, [initialLogId, rows]);
-
-  useEffect(() => {
-    if (!initialLogId?.trim()) return;
-    const id = initialLogId.trim();
-    const idx = filtered.findIndex((r) => r.source === "email_log" && r.id === id);
-    if (idx < 0) return;
-    setPage(Math.floor(idx / PAGE_SIZE) + 1);
-  }, [initialLogId, filtered]);
+  }, [rows, tab, query, statusFilter]);
 
   const total = filtered.length;
   const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -144,217 +152,231 @@ export function EmailsSentRegistry({
   const slice = filtered.slice(start, start + PAGE_SIZE);
 
   const selected = useMemo(() => {
-    if (slice.length === 0) return null;
-    const row = slice.find((item) => item.id === selectedId);
-    return row ?? slice[0];
-  }, [selectedId, slice]);
+    if (!inspectorOpen) return null;
+    const hit = slice.find((r) => r.id === selectedId);
+    return hit ?? (inspectorOpen ? (slice[0] ?? null) : null);
+  }, [selectedId, slice, inspectorOpen]);
 
   useEffect(() => {
-    if (!selected) {
-      setSelectedId(null);
-      return;
-    }
-    if (selectedId !== selected.id) {
-      setSelectedId(selected.id);
-    }
+    if (selected && selected.id !== selectedId) setSelectedId(selected.id);
   }, [selected, selectedId]);
 
-  const tabs: { id: LogTab; label: string; hint?: string }[] = [
-    { id: "tenants", label: "To tenants", hint: `${tenantTotal}` },
-    { id: "all", label: "All mail" },
+  const TABS: { id: LogTab; label: string; badge?: number | string }[] = [
+    { id: "all",       label: "All" },
+    { id: "tenants",   label: "To Tenants", badge: tenantTotal },
     { id: "automated", label: "Automated" },
-    { id: "manual", label: "Manual" },
+    { id: "manual",    label: "Manual" },
   ];
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[#0B0B0B] text-[#e5e2e1]">
-      <div className="border-b border-[#1f1f1f] px-4 py-3 sm:px-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-4">
-            <h1 className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-300">Communications Hub</h1>
-            <span className="hidden text-[11px] text-zinc-500 sm:inline">
-              {totalDispatched.toLocaleString("en-GB")} total dispatches ·{" "}
-              <span className="text-zinc-400">{tenantTotal.toLocaleString("en-GB")} to tenants</span>
-            </span>
+
+      {/* ── Page header ── */}
+      <header className="border-b border-[#1f1f1f] bg-[#0B0B0B] px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#555555]">
+              Communications Hub
+            </p>
+            <h1 className="mt-1 text-xl font-bold uppercase tracking-tight text-white">
+              Emails
+            </h1>
+            <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
+              {totalDispatched.toLocaleString("en-GB")} total dispatches · {tenantTotal.toLocaleString("en-GB")} to tenants
+            </p>
           </div>
-          <div className="flex w-full items-center gap-3 sm:w-auto">
-            <div className="relative flex-1 sm:w-72 sm:flex-none">
-              <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-zinc-600" />
+
+          {/* Search + Export */}
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[#444748]" />
               <input
                 type="search"
                 value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setPage(1);
-                }}
+                onChange={(e) => { setQuery(e.target.value); setPage(1); }}
                 placeholder="Search communications..."
-                className="h-8 w-full border border-[#2a2a2a] bg-[#0a0a0a] pl-7 pr-2 text-xs text-zinc-300 placeholder:text-zinc-600 focus:outline-none"
+                className="h-8 w-64 border border-[#282828] bg-[#0a0a0a] pl-8 pr-3 font-mono text-[10px] text-[#c4c7c8] placeholder-[#444748] focus:border-white focus:outline-none"
                 aria-label="Search emails"
               />
             </div>
             <button
               type="button"
               onClick={() => downloadCsv(filtered)}
-              className="inline-flex h-8 items-center gap-1.5 border border-[#2a2a2a] px-2.5 text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-white"
+              className="inline-flex h-8 items-center gap-1.5 border border-[#282828] bg-[#0a0a0a] px-3 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
             >
-              <Download className="size-3.5" />
+              <Download className="size-3" />
               Export
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      <section
-        className="border-b border-[#BD9952]/25 bg-gradient-to-b from-[#1a1814]/95 to-[#0B0B0B] px-4 py-5 sm:px-6"
-        aria-label="Tenant email summary"
-      >
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="min-w-0 max-w-3xl space-y-2">
-            <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]">
-              Tenant communications
-            </p>
-            <h2 className="font-headline text-xl font-light tracking-tight text-white sm:text-2xl">
-              See every email sent to your tenants
-            </h2>
-            <p className="text-sm leading-relaxed text-zinc-400">
-              Welcome and move-in messages, rent chases, maintenance acknowledgements, and other workflow mail to tenant
-              addresses on your portfolio. Switch tabs to include contractor or landlord-only messages.
-            </p>
-          </div>
-          <div className="flex shrink-0 flex-col items-start gap-1 border border-white/[0.08] bg-black/20 px-5 py-4 sm:items-end">
-            <p className="text-[0.6rem] font-bold uppercase tracking-[0.18em] text-zinc-500">Tenant messages logged</p>
-            <p className="font-mono text-4xl font-light tabular-nums leading-none text-white">{tenantTotal}</p>
-          </div>
-        </div>
-      </section>
+      {/* ── Body: table + inspector ── */}
+      <div className="flex min-h-0 flex-1 overflow-hidden">
 
-      <div className="grid min-h-0 flex-1 grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,26rem)]">
-        <section className="flex min-h-0 flex-col border-r border-[#1f1f1f]">
-          <div className="flex min-h-10 flex-wrap items-center justify-between gap-2 border-b border-[#1f1f1f] px-4 sm:px-6">
-            <div className="flex h-full min-h-10 flex-wrap items-center gap-x-4 gap-y-1">
-              {tabs.map((t) => (
+        {/* ── Left: Communications Table ── */}
+        <section className={cn(
+          "flex min-h-0 flex-col overflow-hidden transition-all",
+          inspectorOpen && selected ? "flex-1 border-r border-[#1f1f1f]" : "w-full flex-1"
+        )}>
+
+          {/* Tab bar */}
+          <div className="flex items-center justify-between border-b border-[#1f1f1f] bg-[#0B0B0B] px-6">
+            <div className="flex h-11 items-center gap-6">
+              {TABS.map((t) => (
                 <button
                   key={t.id}
                   type="button"
-                  onClick={() => {
-                    setTab(t.id);
-                    setPage(1);
-                  }}
+                  onClick={() => { setTab(t.id); setPage(1); }}
                   className={cn(
-                    "border-b-2 py-2.5 text-[10px] font-bold uppercase tracking-[0.14em] transition-colors",
+                    "flex h-full items-center gap-1.5 border-b-[1.5px] font-mono text-[10px] font-bold uppercase tracking-widest transition-colors",
                     tab === t.id
-                      ? "border-[#BD9952] text-white"
-                      : "border-transparent text-zinc-500 hover:text-zinc-300",
-                    t.id === "tenants" && tab === t.id && "text-[#e8d4a8]",
+                      ? "border-white text-white"
+                      : "border-transparent text-[#555555] hover:text-[#c4c7c8]",
                   )}
                 >
                   {t.label}
-                  {t.hint ? (
-                    <span className="ml-1.5 tabular-nums opacity-80">({t.hint})</span>
-                  ) : null}
+                  {t.badge !== undefined && (
+                    <span className={cn(
+                      "rounded-sm border px-1 py-px text-[8px] font-bold tabular-nums",
+                      tab === t.id ? "border-[#333333] bg-[#1a1a1a] text-[#888888]" : "border-[#1f1f1f] bg-[#0e0e0e] text-[#444748]"
+                    )}>
+                      {t.badge}
+                    </span>
+                  )}
                 </button>
               ))}
+              {draftCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setStatusFilter(statusFilter === "draft" ? "all" : "draft"); setPage(1); }}
+                  className={cn(
+                    "flex h-full items-center gap-1.5 border-b-[1.5px] font-mono text-[10px] font-bold uppercase tracking-widest transition-colors",
+                    statusFilter === "draft"
+                      ? "border-white text-white"
+                      : "border-transparent text-[#555555] hover:text-[#c4c7c8]",
+                  )}
+                >
+                  Drafts
+                  <span className="rounded-sm border border-[#1f1f1f] bg-[#0e0e0e] px-1 py-px text-[8px] font-bold tabular-nums text-[#444748]">
+                    {draftCount}
+                  </span>
+                </button>
+              )}
+              {failedCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setStatusFilter(statusFilter === "bounced" ? "all" : "bounced"); setPage(1); }}
+                  className={cn(
+                    "flex h-full items-center gap-1.5 border-b-[1.5px] font-mono text-[10px] font-bold uppercase tracking-widest transition-colors",
+                    statusFilter === "bounced"
+                      ? "border-white text-white"
+                      : "border-transparent text-[#555555] hover:text-[#c4c7c8]",
+                  )}
+                >
+                  Failed
+                  <span className="rounded-sm border border-[#BB5551]/30 bg-[#7f2927]/10 px-1 py-px text-[8px] font-bold tabular-nums text-[#ee7d77]">
+                    {failedCount}
+                  </span>
+                </button>
+              )}
             </div>
+
+            {/* Status filter */}
             <div className="flex items-center gap-2">
-              <Filter className="size-3.5 text-zinc-600" />
+              <Filter className="size-3 text-[#444748]" />
               <select
-                value={statusOnly}
-                onChange={(e) => {
-                  setStatusOnly(e.target.value as typeof statusOnly);
-                  setPage(1);
-                }}
-                className="h-7 border border-[#2a2a2a] bg-[#0a0a0a] px-2 text-[10px] uppercase tracking-wider text-zinc-400 focus:outline-none"
+                value={statusFilter}
+                onChange={(e) => { setStatusFilter(e.target.value as StatusFilter); setPage(1); }}
+                className="h-7 border border-[#282828] bg-[#0a0a0a] px-2 font-mono text-[9px] uppercase tracking-wider text-[#888888] focus:outline-none"
               >
                 <option value="all">All status</option>
                 <option value="draft">Draft</option>
-                <option value="delivered">Delivered</option>
+                <option value="delivered">Sent</option>
                 <option value="opened">Opened</option>
-                <option value="bounced">Bounced</option>
+                <option value="bounced">Failed</option>
               </select>
             </div>
           </div>
 
+          {/* Table */}
           <div className="min-h-0 flex-1 overflow-auto">
             <table className="w-full table-fixed border-collapse text-left">
               <thead>
                 <tr className="sticky top-0 z-10 border-b border-[#1f1f1f] bg-[#0B0B0B]">
-                  <th className="w-[26%] px-4 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600 sm:px-6">
-                    To
-                  </th>
-                  <th className="w-[34%] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">
-                    Subject
-                  </th>
-                  <th className="w-[12%] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">
-                    Audience
-                  </th>
-                  <th className="w-[16%] px-2 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">
-                    Status
-                  </th>
-                  <th className="w-[18%] px-2 py-2 text-right text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600 sm:px-6">
-                    Date
-                  </th>
+                  <th className="w-[22%] py-2.5 pl-6 pr-4 font-mono text-[9px] font-bold uppercase tracking-widest text-[#555555]">Recipient</th>
+                  <th className="w-[30%] px-4 py-2.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#555555]">Subject</th>
+                  <th className="w-[13%] px-4 py-2.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#555555]">Type</th>
+                  <th className="w-[13%] px-4 py-2.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#555555]">Status</th>
+                  <th className="w-[12%] py-2.5 pl-4 pr-6 text-right font-mono text-[9px] font-bold uppercase tracking-widest text-[#555555]">Date</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1f1f1f] font-mono text-[11px]">
+              <tbody className="divide-y divide-[#1a1a1a]">
                 {slice.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center font-sans text-sm text-zinc-500">
+                    <td colSpan={5} className="px-6 py-16 text-center font-mono text-[11px] text-[#444748]">
                       {tab === "tenants"
-                        ? "No tenant emails logged yet. When onboarding, rent chases, or maintenance messages go to a tenant address, they appear here."
-                        : "No messages in this view."}
+                        ? "No tenant emails logged yet."
+                        : "No messages match this view."}
                     </td>
                   </tr>
                 ) : (
-                  slice.map((row) => (
-                    <tr
-                      key={`${row.source}-${row.id}`}
-                      onClick={() => setSelectedId(row.id)}
-                      className={cn(
-                        "cursor-pointer transition-colors hover:bg-zinc-900/50",
-                        selected?.id === row.id ? "bg-zinc-900/70" : "",
-                      )}
-                    >
-                      <td className="px-4 py-3 sm:px-6">
-                        {row.isTenantRecipient ? (
-                          <div className="min-w-0">
-                            <div className="truncate font-sans text-[13px] font-semibold text-white">
-                              {row.recipientName}
+                  slice.map((row) => {
+                    const isSelected = selected?.id === row.id;
+                    return (
+                      <tr
+                        key={`${row.source}-${row.id}`}
+                        onClick={() => openRow(row.id)}
+                        className={cn(
+                          "cursor-pointer transition-colors",
+                          isSelected && inspectorOpen
+                            ? "border-l-2 border-white bg-[#181818]"
+                            : row.uiStatus === "bounced"
+                              ? "border-l-2 border-transparent bg-red-950/[0.04] hover:bg-[#1a1a1a]"
+                              : row.uiStatus === "draft"
+                                ? "border-l-2 border-transparent bg-yellow-950/[0.03] hover:bg-[#131313]"
+                                : "border-l-2 border-transparent hover:bg-[#131313]",
+                        )}
+                      >
+                        <td className="py-3 pl-5 pr-4 font-mono text-[11px]">
+                          {row.isTenantRecipient ? (
+                            <div className="min-w-0">
+                              <div className={cn("truncate text-[11px] font-semibold", isSelected ? "text-white" : "text-[#c4c7c8]")}>
+                                {row.recipientName}
+                              </div>
+                              <div className="truncate text-[10px] text-[#555555]">{row.recipientEmail}</div>
                             </div>
-                            <div className="truncate font-mono text-[11px] text-zinc-500">{row.recipientEmail}</div>
+                          ) : (
+                            <div className="truncate text-[10px] text-[#888888]">{row.recipientEmail}</div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className={cn("line-clamp-2 text-[11px] leading-snug", isSelected ? "text-[#e5e2e1]" : "text-[#888888]")}>
+                            {row.subject}
                           </div>
-                        ) : (
-                          <div className="min-w-0 truncate font-mono text-[11px] text-zinc-400">{row.recipientEmail}</div>
-                        )}
-                      </td>
-                      <td className="px-2 py-3">
-                        <div className="line-clamp-2 font-sans text-[12px] leading-snug text-zinc-300">{row.subject}</div>
-                      </td>
-                      <td className="px-2 py-3">
-                        {row.isTenantRecipient ? (
-                          <span className="inline-flex border border-emerald-800/40 bg-emerald-950/25 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-300/95">
-                            Tenant
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="inline-block border border-[#282828] bg-[#0e0e0e] px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-[#555555]">
+                            {getTypeBadge(row)}
                           </span>
-                        ) : (
-                          <span className="inline-flex border border-[#2a2a2a] bg-zinc-900/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-500">
-                            {row.source === "email_log" ? "Other" : "Draft"}
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-2 py-3">
-                        <StatusPill status={row.uiStatus} />
-                      </td>
-                      <td className="px-2 py-3 text-right text-zinc-600 sm:px-6">
-                        {formatSentDate(row.sentAt)}
-                      </td>
-                    </tr>
-                  ))
+                        </td>
+                        <td className="px-4 py-3">
+                          <StatusDot status={row.uiStatus} />
+                        </td>
+                        <td className="py-3 pl-4 pr-6 text-right font-mono text-[10px] text-[#555555]">
+                          {formatDate(row.sentAt)}
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
 
-          <div className="flex items-center justify-between border-t border-[#1f1f1f] px-4 py-2 sm:px-6">
-            <span className="text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+          {/* Pagination */}
+          <div className="flex items-center justify-between border-t border-[#1f1f1f] bg-[#0B0B0B] px-6 py-2">
+            <span className="font-mono text-[9px] uppercase tracking-widest text-[#444748]">
               Page {safePage} / {pageCount}
             </span>
             <div className="flex items-center gap-1">
@@ -363,83 +385,187 @@ export function EmailsSentRegistry({
                 aria-label="Previous page"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="flex size-6 items-center justify-center border border-[#2a2a2a] text-zinc-500 hover:text-white disabled:opacity-40"
+                className="flex size-6 items-center justify-center border border-[#282828] text-[#555555] transition-colors hover:text-white disabled:opacity-30"
               >
-                <ChevronLeft className="size-4" />
+                <ChevronLeft className="size-3.5" />
               </button>
               <button
                 type="button"
                 aria-label="Next page"
                 disabled={safePage >= pageCount}
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="flex size-6 items-center justify-center border border-[#2a2a2a] text-zinc-500 hover:text-white disabled:opacity-40"
+                className="flex size-6 items-center justify-center border border-[#282828] text-[#555555] transition-colors hover:text-white disabled:opacity-30"
               >
-                <ChevronRight className="size-4" />
+                <ChevronRight className="size-3.5" />
               </button>
             </div>
           </div>
         </section>
 
-        <aside className="flex min-h-0 flex-col border-t border-[#1f1f1f] bg-[#0B0B0B] xl:border-l xl:border-t-0">
-          <div className="border-b border-[#1f1f1f] px-4 py-5">
-            {selected?.isTenantRecipient ? (
-              <p className="inline-flex border border-emerald-800/45 bg-emerald-950/30 px-2 py-1 text-[0.6rem] font-bold uppercase tracking-[0.16em] text-emerald-300/95">
-                Tenant message
-              </p>
-            ) : (
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-600">Communication detail</p>
-            )}
-            <h2
-              className={cn(
-                "mt-3 line-clamp-4 font-headline font-light tracking-tight text-zinc-100",
-                selected?.isTenantRecipient ? "text-lg sm:text-xl" : "text-sm font-semibold",
-              )}
-            >
-              {selected?.subject ?? "No message selected"}
-            </h2>
+        {/* ── Right: Inspector Panel (conditional) ── */}
+        {inspectorOpen && selected && (
+        <aside className="flex w-80 shrink-0 flex-col border-l border-[#1f1f1f] bg-[#0B0B0B]">
+
+          {/* Inspector header */}
+          <div className="border-b border-[#1f1f1f] bg-[#0e0e0e] px-5 pb-4 pt-5">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="font-mono text-[9px] font-extrabold uppercase tracking-[0.2em] text-[#444748]">
+                Communication Detail
+              </span>
+              <button
+                type="button"
+                onClick={closeInspector}
+                className="text-[#444748] transition-colors hover:text-white"
+                aria-label="Close inspector"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
             {selected ? (
-              <div className="mt-3 space-y-1">
-                <p className="font-sans text-sm font-medium text-white">{selected.recipientName}</p>
-                <div className="flex flex-wrap items-center gap-2 text-[12px] text-zinc-500">
-                  <span className="truncate font-mono">{selected.recipientEmail}</span>
+              <>
+                <h2 className="text-[13px] font-bold leading-snug text-white">
+                  {selected.subject}
+                </h2>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="font-mono text-[10px] text-[#888888]">{selected.recipientEmail}</span>
                   <StatusPill status={selected.uiStatus} />
                 </div>
-              </div>
-            ) : null}
+              </>
+            ) : (
+              <p className="text-[11px] text-[#444748]">Select a message to view details.</p>
+            )}
           </div>
 
-          <div className="min-h-0 flex-1 space-y-5 overflow-auto p-4">
-            <section>
-              <h3 className="mb-2 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">Message content</h3>
-              <div
-                className={cn(
-                  "border bg-zinc-900/30 p-4",
-                  selected?.isTenantRecipient ? "border-emerald-900/25" : "border-[#1f1f1f]",
-                )}
-              >
-                <pre
+          {/* Inspector tabs */}
+          {selected && (
+            <div className="flex border-b border-[#1f1f1f] px-5">
+              {["Overview", "Activity", "Files"].map((t) => (
+                <button
+                  key={t}
+                  type="button"
                   className={cn(
-                    "whitespace-pre-wrap break-words leading-relaxed text-zinc-300",
-                    selected?.isTenantRecipient ? "font-sans text-[0.9375rem]" : "font-mono text-[11px] text-zinc-400",
+                    "py-2.5 pr-4 font-mono text-[9px] font-bold uppercase tracking-widest transition-colors",
+                    t === "Overview"
+                      ? "border-b border-white text-white"
+                      : "text-[#444748] hover:text-[#888888]"
                   )}
                 >
-                  {selected?.body ?? "Select a message to preview body content."}
-                </pre>
-              </div>
-            </section>
+                  {t}
+                </button>
+              ))}
+            </div>
+          )}
 
+          {/* Inspector body */}
+          <div className="min-h-0 flex-1 space-y-6 overflow-auto p-5">
             {selected ? (
-              <section className="space-y-2">
-                <h3 className="text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-600">Actions</h3>
-                <EmailDraftViewButton
-                  subject={selected.subject}
-                  body={selected.body}
-                  buttonClassName="h-8 w-full border-[#2a2a2a] bg-transparent px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-zinc-300 hover:border-zinc-500 hover:bg-zinc-900/40 hover:text-white"
-                />
-              </section>
-            ) : null}
+              <>
+                {/* Message content */}
+                <section>
+                  <div className="mb-3 flex items-center justify-between">
+                    <h3 className="font-mono text-[9px] font-bold uppercase tracking-widest text-[#444748]">
+                      Message Content
+                    </h3>
+                    {/* Always-visible Full Preview button */}
+                    <EmailDraftViewButton
+                      subject={selected.subject}
+                      body={selected.body}
+                      buttonClassName="inline-flex items-center gap-1 border-0 bg-transparent px-0 py-0 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] hover:text-white transition-colors"
+                    />
+                  </div>
+                  <div className="border border-[#1f1f1f] bg-[#0e0e0e] p-4">
+                    <pre className="whitespace-pre-wrap break-words font-mono text-[10px] leading-relaxed text-[#888888]">
+                      {selected.body || "No body content available."}
+                    </pre>
+                  </div>
+                </section>
+
+                {/* Meta info */}
+                <section className="space-y-2">
+                  <h3 className="font-mono text-[9px] font-bold uppercase tracking-widest text-[#444748]">
+                    Details
+                  </h3>
+                  <div className="space-y-1.5">
+                    {[
+                      { label: "Recipient", val: selected.recipientName },
+                      { label: "Email", val: selected.recipientEmail },
+                      { label: "Type", val: getTypeBadge(selected) },
+                      { label: "Date", val: formatDateFull(selected.sentAt) },
+                      { label: "Status", val: selected.uiStatus.toUpperCase() },
+                    ].map(({ label, val }) => (
+                      <div key={label} className="flex items-start justify-between gap-2 border-b border-[#0e0e0e] pb-1.5">
+                        <span className="shrink-0 font-mono text-[9px] uppercase tracking-widest text-[#444748]">{label}</span>
+                        <span className="truncate text-right font-mono text-[10px] text-[#888888]">{val}</span>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Activity log */}
+                <section>
+                  <h3 className="mb-4 font-mono text-[9px] font-bold uppercase tracking-widest text-[#444748]">
+                    Activity Log
+                  </h3>
+                  <div className="relative space-y-4 border-l border-[#1f1f1f] pl-4">
+                    <div className="relative">
+                      <span className="absolute -left-[17px] top-1.5 size-2 rounded-full border border-[#333333] bg-[#0B0B0B]" />
+                      <p className="text-[11px] font-semibold text-[#c4c7c8]">Created</p>
+                      <p className="font-mono text-[9px] text-[#444748]">{formatDateFull(selected.sentAt)}</p>
+                    </div>
+                    <div className="relative">
+                      <span className={cn(
+                        "absolute -left-[17px] top-1.5 size-2 rounded-full",
+                        selected.uiStatus === "delivered" ? "bg-emerald-400" :
+                        selected.uiStatus === "opened" ? "bg-amber-400" :
+                        selected.uiStatus === "bounced" ? "bg-[#ee7d77]" :
+                        "border border-[#333333] bg-[#0B0B0B]"
+                      )} />
+                      <p className={cn(
+                        "text-[11px] font-bold",
+                        selected.uiStatus === "delivered" ? "text-emerald-400" :
+                        selected.uiStatus === "opened" ? "text-amber-400" :
+                        selected.uiStatus === "bounced" ? "text-[#ee7d77]" :
+                        "text-[#888888]"
+                      )}>
+                        {selected.uiStatus === "delivered" ? "Delivered" :
+                         selected.uiStatus === "opened" ? "Opened" :
+                         selected.uiStatus === "bounced" ? "Delivery Failed" :
+                         "Draft Saved"}
+                      </p>
+                      <p className="font-mono text-[9px] text-[#444748]">{formatDateFull(selected.sentAt)}</p>
+                    </div>
+                  </div>
+                </section>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <p className="font-mono text-[10px] uppercase tracking-widest text-[#333333]">
+                  No message selected
+                </p>
+                <p className="mt-2 text-[10px] text-[#2a2a2a]">
+                  Click a row to view communication details.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Inspector actions */}
+          <div className="space-y-2 border-t border-[#1f1f1f] bg-[#0e0e0e] p-4">
+            <EmailDraftViewButton
+              subject={selected.subject}
+              body={selected.body}
+              buttonClassName="inline-flex w-full items-center justify-center gap-2 bg-white py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-opacity hover:opacity-90"
+            />
+            <button
+              type="button"
+              onClick={closeInspector}
+              className="w-full border border-[#282828] py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#555555] transition-colors hover:border-[#444444] hover:text-[#888888]"
+            >
+              Discard
+            </button>
           </div>
         </aside>
+        )}
       </div>
     </div>
   );

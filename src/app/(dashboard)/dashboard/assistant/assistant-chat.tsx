@@ -6,11 +6,13 @@ import {
   FileCheck2,
   Home,
   Loader2,
-  Menu,
+  MessageSquare,
   MessageSquarePlus,
   Send,
   ShieldCheck,
+  Sparkles,
   Wrench,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -475,78 +477,65 @@ function MessageBubble({
   suggestedActions,
   isTransitional,
   onPickSuggestedMessage,
-  compact,
 }: ChatMessage & {
   onPickSuggestedMessage?: (text: string) => void;
-  /** Drawer / narrow column: full width + tighter typography. */
-  compact?: boolean;
 }) {
   const isUser = role === "user";
-  const bubbleText = cn(
-    "whitespace-pre-wrap [word-break:normal] break-words [overflow-wrap:anywhere]",
-    role === "assistant"
-      ? "text-[0.95rem] font-normal leading-relaxed text-foreground sm:text-base"
-      : "text-[0.9375rem] font-normal leading-[1.65] text-foreground",
-  );
-  if (role === "assistant") {
-    const parsed = parseLeadQualifyEmbed(content);
-    if (parsed) {
-      return (
-        <div className="flex w-full min-w-0 justify-start">
-          <div
-            className={cn(
-              "min-w-0 rounded-xl border border-border bg-muted/50 px-4 py-3.5 font-headline shadow-none dark:bg-[#111]/80",
-              compact ? "w-full max-w-full" : "max-w-[min(100%,40rem)]",
-            )}
-          >
-            <p className={bubbleText}>{parsed.introText}</p>
-            <LeadQualifyPanel payload={parsed.payload} />
-          </div>
-        </div>
-      );
-    }
-  }
-  const { cleanText, actions: navActions } = role === "assistant"
-    ? parseActionTags(content)
-    : { cleanText: content, actions: [] as ActionTag[] };
-  const statusChips = role === "assistant" ? extractStatusChips(cleanText) : [];
-  const structured = role === "assistant"
-    ? parseStructuredSections(cleanText)
-    : { intro: cleanText, sections: [] as StructuredSection[] };
 
   return (
-    <div className={cn("flex w-full min-w-0", isUser ? "justify-end" : "justify-start")}>
-      <div
-        className={cn(
-          "min-w-0 rounded-2xl px-3 py-2.5 font-headline shadow-none sm:px-3.5 sm:py-2.5",
-          compact ? "w-full max-w-full" : "max-w-[min(100%,40rem)]",
-          isUser
-            ? "border border-secondary/35 bg-secondary/10 text-foreground dark:border-[#BD9952]/22 dark:bg-[#1a1610] dark:text-slate-100"
-            : "border border-border bg-muted/40 dark:bg-[#111]/90",
-          isTransitional && !isUser && "animate-pulse border-secondary/25 opacity-70 dark:border-[#BD9952]/15",
-        )}
-      >
-        {role === "assistant" ? (
-          <div className="space-y-3">
-            <StatusChipsRow chips={statusChips} />
-            {structured.intro ? (
-              <div className={cn((statusChips.length > 0 || structured.sections.length > 0) && "border-t border-border/50 pt-2.5")}>
-                <p className={bubbleText}>{structured.intro}</p>
-              </div>
-            ) : null}
-            {structured.sections.length > 0 ? (
-              <div className={cn((statusChips.length > 0 || structured.intro) && "border-t border-border/50 pt-2.5")}>
-                <StructuredSections sections={structured.sections} />
-              </div>
-            ) : null}
-          </div>
+    <div className="flex items-start gap-4">
+      {/* Avatar */}
+      <div className={cn(
+        "size-8 shrink-0 rounded-sm overflow-hidden flex items-center justify-center",
+        isUser ? "bg-zinc-800" : "bg-white text-[#0B0B0B]"
+      )}>
+        {isUser ? (
+          <img
+            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCvWyXI2Rsfk9_7tX8PD1vxRWWrYdFQPDu0lnFR45WhQibM2uE58c_cqsz0Una7tS-uNyHYaq3KIKXBPgXGwIxf1q0WJFL5RccJKVEqnVKeVINAMrmrS8nQNaPgGtwUY5_PGGp7JvUs1z0_mWt3KaJ55iNvMtPH_aY3nV6Of2XO0U-PTkT4E2Zvj_BxO9dPTQhEQ4JHzXWu9RTxPUukxPZKjIDZ_p2dblKs2oZpkZfWmpE7qquFsWTlK5q-s_8DXB1OFw_J7eWUFgP2"
+            alt="User"
+            className="size-full object-cover"
+          />
         ) : (
-          <p className={bubbleText}>{cleanText}</p>
+          <Sparkles className="size-4" fill="currentColor" />
         )}
-        {role === "assistant" && suggestedActions && suggestedActions.length > 0 && onPickSuggestedMessage ? (
-          <SuggestedActionChips actions={suggestedActions} onMessagePick={onPickSuggestedMessage} />
-        ) : null}
-        {role === "assistant" ? <NavigationButtons actions={navActions} /> : null}
+      </div>
+
+      <div className="flex-1 pt-1 min-w-0">
+        <div className="mb-1.5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
+          <span>{isUser ? "User" : "Letora Assistant"}</span>
+          <span>/</span>
+          <span>{isTransitional ? "Thinking..." : "Now"}</span>
+        </div>
+
+        {/* Message Content */}
+        <div className={cn(
+          "max-w-2xl border transition-opacity",
+          isUser
+            ? "border-[#282828] bg-[#161616] p-4 text-[13px] text-zinc-200"
+            : "border-transparent text-[13px] text-zinc-300"
+        )}>
+          {role === "assistant" ? (
+            <div className="space-y-4">
+              <p className="leading-relaxed whitespace-pre-wrap">{content}</p>
+              
+              {suggestedActions && suggestedActions.length > 0 && onPickSuggestedMessage && (
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {suggestedActions.map((a) => (
+                    <button
+                      key={a.id}
+                      onClick={() => onPickSuggestedMessage(a.message || a.label)}
+                      className="border border-[#282828] bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
+                    >
+                      {a.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="leading-relaxed whitespace-pre-wrap">{content}</p>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -712,6 +701,7 @@ export function AssistantChat({
     getPendingCeoActionFromMessages(initialMessages),
   );
   const [conversationListOpen, setConversationListOpen] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const starterFiredRef = useRef(false);
 
@@ -726,17 +716,27 @@ export function AssistantChat({
     setPendingAction(getPendingCeoActionFromMessages(next));
   }, [activeConversationId, initialMessages]);
 
-  const scrollToLatest = useCallback(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = "smooth") => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior,
+      });
+    }
   }, []);
 
   useEffect(() => {
     scrollToLatest();
   }, [messages, loading, assistantStream, scrollToLatest]);
 
+  // Initial scroll on load
+  useEffect(() => {
+    scrollToLatest("instant");
+  }, [activeConversationId, scrollToLatest]);
+
   function createNewChat() {
     setConversationListOpen(false);
-    router.push("/dashboard");
+    router.push("/dashboard/assistant");
   }
 
   type ProcessedChatResult = {
@@ -820,7 +820,7 @@ export function AssistantChat({
     if (!trimmed || loading) return;
 
     if (overrideText !== undefined) {
-      router.replace(`/dashboard?c=${activeConversationId}`, { scroll: false });
+      router.replace(`/dashboard/assistant?c=${activeConversationId}`, { scroll: false });
     }
 
     const userMessage: ChatMessage = { role: "user", content: trimmed };
@@ -953,152 +953,163 @@ export function AssistantChat({
   );
 
   return (
-    <div className="@container/main flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 flex-col border-b border-border bg-background/90 px-5 py-4 lg:px-8">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="font-headline text-[0.9375rem] font-medium tracking-[-0.02em] text-foreground">
-              Assistant
-            </h1>
-            <p className="mt-0.5 font-headline text-[0.75rem] font-normal text-muted-foreground">
-              Rent · maintenance · tenants · contracts · leads
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-2 md:hidden">
-            <Sheet open={conversationListOpen} onOpenChange={setConversationListOpen}>
-              <SheetTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="rounded-full border-border bg-muted"
-                  aria-label="Open conversations"
-                >
-                  <Menu className="size-4" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent
-                side="left"
-                className="flex w-[min(100%,20rem)] flex-col gap-0 border-border bg-background p-0"
-              >
-                <SheetHeader className="border-b border-border px-4 py-3 text-left">
-                  <SheetTitle className="font-headline text-sm font-medium text-foreground">
-                    Chats
-                  </SheetTitle>
-                </SheetHeader>
-                {sidebar}
-              </SheetContent>
-            </Sheet>
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              className="rounded-full border-border bg-muted"
-              onClick={() => createNewChat()}
-              aria-label="New chat"
-            >
-              <MessageSquarePlus className="size-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-[17rem] shrink-0 border-r border-border bg-sidebar/20 dark:bg-[#0a0a0a]/50 md:flex md:flex-col">
-          {sidebar}
-        </aside>
-
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="min-h-0 flex-1 overflow-y-auto scroll-smooth px-5 py-6 lg:px-10 lg:py-8">
-              {showEmptyPlaceholder ? (
-                <div className="mx-auto max-w-xl text-center">
-                  <p className="font-headline text-sm font-light text-muted-foreground">
-                    Describe a task in plain English. Mention a tenant, property, or street when it helps.
-                  </p>
+    <div className="flex min-h-0 flex-1 overflow-hidden">
+      {/* ── Center: Workspace ── */}
+      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-[#0B0B0B]">
+        <div 
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto p-6 custom-scrollbar"
+        >
+          <div className="mx-auto w-full max-w-4xl space-y-8">
+            {showEmptyPlaceholder ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="mb-4 flex size-12 items-center justify-center border border-[#1f1f1f] bg-[#0e0e0e]">
+                  <Sparkles className="size-6 text-white" />
                 </div>
-              ) : (
-                <div className="mx-auto flex w-full max-w-[40rem] flex-col gap-5 sm:gap-5">
-                  {messages.map((m, i) => (
-                    <MessageBubble
-                      key={`${m.role}-${i}-${m.content.slice(0, 24)}`}
-                      role={m.role}
-                      content={m.content}
-                      suggestedActions={m.suggestedActions}
-                      isTransitional={m.isTransitional}
-                      onPickSuggestedMessage={(text) => setInput(text)}
-                    />
-                  ))}
-                  {showAssistantStreamSection ? (
-                    <div className="flex w-full min-w-0 flex-col gap-0">
-                      <div
-                        className={cn(
-                          "overflow-hidden transition-[opacity,max-height] duration-300 ease-out",
-                          assistantWaitingForToken
-                            ? "pointer-events-auto max-h-10 opacity-100"
-                            : "pointer-events-none max-h-0 opacity-0",
-                        )}
-                      >
-                        <AssistantThinkingIndicator />
-                      </div>
-                      {assistantStreamVisible ? (
-                        <div className="assistant-reply-enter">
-                          <MessageBubble role="assistant" content={assistantStream.text} />
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : null}
-                  <div ref={endRef} />
-                </div>
-              )}
-            </div>
-
-            {error ? (
-              <div className="shrink-0 border-t border-red-500/20 bg-red-950/30 px-5 py-2.5 font-headline text-sm text-red-400/95 lg:px-8">
-                {error}
+                <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-white">
+                  Letora AI Ready
+                </h2>
+                <p className="mt-2 text-[12px] text-[#555555]">
+                  Audit properties, check compliance, or draft communications.
+                </p>
               </div>
-            ) : null}
-
-            <div className="shrink-0 border-t border-border bg-background/95 px-4 py-3 sm:px-5 sm:py-4 lg:px-8 lg:py-5 dark:bg-[#0a0a0a]/95">
-              <form
-                className="mx-auto flex w-full max-w-[40rem] flex-col gap-3 sm:flex-row sm:items-end"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  void sendMessage();
-                }}
-              >
-                <Textarea
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={onKeyDown}
-                  placeholder="Write a message…"
-                  rows={2}
-                  disabled={loading}
-                  className="min-h-[48px] min-w-0 flex-1 resize-none rounded-xl border border-border bg-muted/50 px-4 py-3 font-headline text-[0.9375rem] font-light leading-[1.5] text-foreground placeholder:text-placeholder-foreground transition-[color,background-color,border-color,box-shadow] duration-200 ease-out focus-visible:border-ring focus-visible:ring-0 sm:min-h-[52px] dark:bg-[#121212]"
-                  aria-label="Message"
-                />
-                <Button
-                  type="submit"
-                  disabled={!canSend}
-                  className="h-11 shrink-0 rounded-full bg-[#BD9952] px-6 font-headline text-xs font-semibold uppercase tracking-[0.12em] text-[#1f1608] transition-colors duration-200 ease-out hover:bg-[#c4a45e] sm:h-12 sm:min-w-[7rem]"
-                >
-                  {loading ? (
-                    <Loader2 className="size-4 animate-spin" aria-hidden />
-                  ) : (
-                    <>
-                      <Send className="size-3.5" aria-hidden />
-                      <span className="sr-only sm:not-sr-only sm:ml-2">Send</span>
-                    </>
-                  )}
-                </Button>
-              </form>
-              <p className="mx-auto mt-3 hidden max-w-[40rem] font-headline text-[0.65rem] text-muted-foreground md:block">
-                Enter to send · Shift+Enter for a new line
-              </p>
-            </div>
+            ) : (
+              <>
+                {messages.map((m, i) => (
+                  <MessageBubble
+                    key={`${m.role}-${i}`}
+                    role={m.role}
+                    content={m.content}
+                    suggestedActions={m.suggestedActions}
+                    isTransitional={m.isTransitional}
+                    onPickSuggestedMessage={(text) => setInput(text)}
+                  />
+                ))}
+                {showAssistantStreamSection && (
+                  <div className="flex items-start gap-4">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-white text-[#0B0B0B]">
+                      <Sparkles className="size-4" fill="currentColor" />
+                    </div>
+                    <div className="flex-1 pt-1">
+                      <div className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
+                        Letora Assistant / Thinking...
+                      </div>
+                      <div className="max-w-2xl">
+                        {assistantStreamVisible ? (
+                          <p className="text-[13px] leading-relaxed text-zinc-300 whitespace-pre-wrap">
+                            {assistantStream.text}
+                          </p>
+                        ) : (
+                          <div className="flex gap-1.5 py-2">
+                            <div className="size-1 animate-pulse rounded-full bg-[#333333]" />
+                            <div className="size-1 animate-pulse rounded-full bg-[#333333] [animation-delay:200ms]" />
+                            <div className="size-1 animate-pulse rounded-full bg-[#333333] [animation-delay:400ms]" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+            <div ref={endRef} />
           </div>
         </div>
-      </div>
+
+        {/* ── Bottom Input ── */}
+        <div className="shrink-0 border-t border-[#1f1f1f] bg-[#0B0B0B] p-6">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void sendMessage();
+            }}
+            className="mx-auto w-full max-w-4xl"
+          >
+            <div className="flex items-center border border-[#282828] bg-[#1A1A1A] p-1.5 shadow-2xl">
+              <input
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Ask Letora..."
+                className="flex-1 bg-transparent px-4 py-3 text-[13px] text-zinc-200 placeholder-[#444748] outline-none"
+                disabled={loading}
+              />
+              <button
+                type="submit"
+                disabled={!canSend}
+                className="flex items-center gap-2 bg-white px-6 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#0B0B0B] transition-all hover:bg-zinc-200 disabled:opacity-50 active:scale-95"
+              >
+                {loading ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <>
+                    Send Message
+                    <ArrowUpRight className="size-3.5" />
+                  </>
+                )}
+              </button>
+            </div>
+            <div className="mt-3 flex justify-center">
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#333333]">
+                Agent LX-Core v4.2 Active
+              </span>
+            </div>
+          </form>
+        </div>
+      </main>
+
+      {/* ── Right: History Sidebar ── */}
+      <aside className="flex w-72 shrink-0 flex-col border-l border-[#1f1f1f] bg-[#0E0E0E]">
+        <div className="flex items-center justify-between border-b border-[#1f1f1f] px-4 py-3.5">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#555555]">
+            Active Sessions
+          </span>
+          <button
+            onClick={() => createNewChat()}
+            className="text-[#555555] transition-colors hover:text-white"
+            title="New Session"
+          >
+            <MessageSquarePlus className="size-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="space-y-px p-1">
+            {conversations.map((conv) => {
+              const isActive = conv.id === activeConversationId;
+              return (
+                <Link
+                  key={conv.id}
+                  href={`/dashboard/assistant?c=${conv.id}`}
+                  className={cn(
+                    "flex w-full flex-col border-l-2 p-3 text-left transition-colors",
+                    isActive
+                      ? "border-white bg-[#181818]"
+                      : "border-transparent hover:bg-[#131313]"
+                  )}
+                >
+                  <div className={cn(
+                    "text-[11px] font-medium leading-tight",
+                    isActive ? "text-white" : "text-[#888888]"
+                  )}>
+                    {conv.title || "New session"}
+                  </div>
+                  <div className="mt-1 flex items-center justify-between font-mono text-[9px] uppercase text-[#444748]">
+                    <span>{conv.updatedAt ? new Date(conv.updatedAt).toLocaleDateString() : "Now"}</span>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="border-t border-[#1f1f1f] bg-[#0B0B0B] p-4">
+          <div className="flex items-center justify-between font-mono text-[9px] uppercase text-[#333333]">
+            <span>Shard Ops Center</span>
+            <div className="size-1.5 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }

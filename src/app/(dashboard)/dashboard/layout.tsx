@@ -28,6 +28,7 @@ export default async function DashboardShellLayout({ children }: { children: Rea
   return (
     <TooltipProvider>
       <SidebarProvider
+        className="h-svh overflow-hidden"
         style={
           {
             "--sidebar-width": "220px",

@@ -39,9 +39,11 @@ import { toast } from "sonner";
 export function AddRentPaymentDialog({
   tenancies,
   trigger,
+  defaultTenancyId,
 }: {
   tenancies: TenancyRow[];
   trigger?: ReactElement;
+  defaultTenancyId?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -49,7 +51,7 @@ export function AddRentPaymentDialog({
 
   const defaultValues = useMemo<AddRentPaymentInput>(
     () => ({
-      tenancyId: tenancies[0]?.id ?? "",
+      tenancyId: defaultTenancyId || (tenancies[0]?.id ?? ""),
       amount:
         tenancies[0]?.monthlyRent && tenancies[0].monthlyRent > 0
           ? tenancies[0].monthlyRent

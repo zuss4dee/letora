@@ -14,7 +14,6 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { Textarea } from "@/components/ui/textarea";
 import {
   previewBatchOnboardingFromFormData,
   startBatchOnboardingAction,
@@ -46,113 +45,65 @@ function rowStatusLabel(row: PreparedRow): { label: string; tone: Tone } {
   return { label: "Ready", tone: "ok" };
 }
 
-/** Editorial pill style — rounded-full, dot prefix, brand color per tone. */
 function StatusPill({ label, tone }: { label: string; tone: Tone }) {
-  const map: Record<Tone, { wrap: string; dot: string }> = {
-    error: {
-      wrap: "bg-[#7f2927]/10 text-[#BB5551]",
-      dot: "bg-[#ee7d77]",
-    },
-    skip: {
-      wrap: "bg-muted text-muted-foreground",
-      dot: "bg-muted-foreground/60",
-    },
-    new: {
-      wrap: "bg-[#b7f8e6]/10 text-[#7fc9b3] dark:text-[#afefdd]",
-      dot: "bg-[#9bdcc7]",
-    },
-    matched: {
-      wrap: "bg-[#4f3700]/10 text-[#BD9952]",
-      dot: "bg-[#BD9952]",
-    },
-    ok: {
-      wrap: "bg-[#4f3700]/10 text-[#BD9952]",
-      dot: "bg-[#BD9952]",
-    },
+  const map: Record<Tone, string> = {
+    error: "border border-[#BB5551]/30 bg-[#7f2927]/20 text-[#ee7d77]",
+    skip: "border border-[#333333] bg-[#1a1a1a] text-[#888888]",
+    new: "border border-[#afefdd]/25 bg-[#1a2e28]/80 text-[#afefdd]",
+    matched: "border border-[#4f3700]/40 bg-[#4f3700]/25 text-[#f8cf83]",
+    ok: "border border-[#306f60]/30 bg-[#206153]/20 text-[#afefdd]",
   };
-  const s = map[tone];
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-wider",
-        s.wrap,
+        "inline-flex items-center px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest",
+        map[tone],
       )}
     >
-      <span className={cn("size-1 rounded-full", s.dot)} aria-hidden />
       {label}
     </span>
   );
 }
 
-/** Letora's signature gunmetal CTA — matches New property button on /properties. */
-function MetallicButton({
-  onClick,
-  disabled,
-  type = "button",
-  children,
-  className,
+function Stat({
+  label,
+  value,
+  accent,
+  muted,
+  danger,
 }: {
-  onClick?: () => void;
-  disabled?: boolean;
-  type?: "button" | "submit";
-  children: React.ReactNode;
-  className?: string;
+  label: string;
+  value: number;
+  accent?: boolean;
+  muted?: boolean;
+  danger?: boolean;
 }) {
   return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        "group relative overflow-hidden rounded-sm px-8 py-3 transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60",
-        className,
-      )}
-    >
-      <span
-        className="absolute inset-0 bg-gradient-to-tr from-[#C9C6C5] to-[#474646]"
-        aria-hidden
-      />
-      <span className="relative flex items-center justify-center gap-3 font-[family-name:var(--font-inter)] text-[0.6875rem] font-semibold uppercase tracking-[0.15em] text-[#414040]">
-        {children}
-      </span>
-    </button>
+    <div>
+      <p className="text-[9px] uppercase tracking-widest text-[#888888]">{label}</p>
+      <p
+        className={cn(
+          "mt-0.5 font-mono text-xl font-semibold tabular-nums",
+          danger
+            ? "text-[#ee7d77]"
+            : accent
+              ? "text-[#f8cf83]"
+              : muted
+                ? "text-[#555555]"
+                : "text-white",
+        )}
+      >
+        {value.toLocaleString("en-GB")}
+      </p>
+    </div>
   );
 }
 
-/** Outlined editorial button — for secondary actions like "Download template", "Reset". */
-function GhostButton({
-  onClick,
-  href,
-  download,
-  disabled,
-  children,
-  className,
-  asLink,
-}: {
-  onClick?: () => void;
-  href?: string;
-  download?: boolean;
-  disabled?: boolean;
-  children: React.ReactNode;
-  className?: string;
-  asLink?: boolean;
-}) {
-  const sharedClass = cn(
-    "inline-flex items-center gap-2 rounded-sm border border-border px-4 py-2.5 font-[family-name:var(--font-inter)] text-[0.6875rem] font-semibold uppercase tracking-[0.15em] text-foreground transition-colors hover:bg-muted disabled:pointer-events-none disabled:opacity-40 dark:hover:bg-[#1F2020]",
-    className,
-  );
-  if (asLink && href) {
-    return (
-      <a href={href} download={download} className={sharedClass}>
-        {children}
-      </a>
-    );
-  }
-  return (
-    <button type="button" onClick={onClick} disabled={disabled} className={sharedClass}>
-      {children}
-    </button>
-  );
+function StatusIcon({ status }: { status: string }) {
+  if (status === "completed") return <CheckCircle2 className="size-3.5 text-[#afefdd]" />;
+  if (status === "failed") return <XCircle className="size-3.5 text-[#ee7d77]" />;
+  if (status === "running") return <Loader2 className="size-3.5 animate-spin text-[#f8cf83]" />;
+  return <CheckCircle2 className="size-3.5 text-[#555555]" />;
 }
 
 export function BatchOnboardingImport({ history }: { history: BatchImportHistoryRow[] }) {
@@ -167,6 +118,17 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
   const [runBatchId, setRunBatchId] = useState<string | null>(null);
   const [isPreviewing, startPreview] = useTransition();
   const [isRunning, startRun] = useTransition();
+  const [isDragging, setIsDragging] = useState(false);
+
+  function handleDrop(e: React.DragEvent<HTMLLabelElement>) {
+    e.preventDefault();
+    setIsDragging(false);
+    const dropped = e.dataTransfer.files?.[0] ?? null;
+    if (!dropped) return;
+    setFile(dropped);
+    setCsvText("");
+    resetPreview();
+  }
 
   const canRun = useMemo(() => {
     if (!rows || rows.length === 0) return false;
@@ -227,435 +189,450 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
   }
 
   return (
-    <div className="relative min-h-0 flex-1 bg-background">
-      <section className="mx-auto w-full max-w-6xl px-4 pb-8 pt-2 sm:px-6 md:px-12 md:pb-28 md:pt-4">
-        {/* ───────────── Editorial header ───────────── */}
-        <header className="mb-8 max-w-6xl md:mb-16">
-          <h1 className="font-headline text-2xl font-extralight tracking-[0.05em] text-foreground sm:text-3xl md:text-5xl">
-            Batch Onboarding
-          </h1>
-          <div className="mt-3 hidden items-center gap-4 sm:flex">
-            <span className="h-px w-12 bg-[#BD9952]" aria-hidden />
-            <p className="font-[family-name:var(--font-inter)] text-sm uppercase tracking-widest text-muted-foreground">
-              Import portfolio · run agents at scale
-            </p>
-          </div>
-          <p className="mt-4 hidden max-w-2xl font-[family-name:var(--font-inter)] text-sm font-light tracking-wide text-muted-foreground sm:block">
-            One CSV per tenancy. Letora resolves duplicates, creates the property and tenant
-            records, opens the tenancy and dispatches the onboarding agent — welcome email,
-            ID & Right-to-Rent, references.
-          </p>
-        </header>
+    <div className="flex min-h-0 flex-1 flex-col bg-[#131313] text-[#e5e2e1]">
+      {/* ── Page Header ── */}
+      <header className="border-b border-[#282828] bg-[#161616] px-6 py-4">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#555555]">
+          Import Console
+        </p>
+        <h1 className="mt-1 text-xl font-bold uppercase tracking-tight text-white">
+          Batch Onboarding
+        </h1>
+        <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
+          Import Portfolio · Run agents at scale
+        </p>
+      </header>
 
-        {/* ───────────── Step 1 · Upload ───────────── */}
-        <div className="mb-6 border border-border bg-card">
-          <div className="flex flex-col gap-3 border-b border-border/70 px-5 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-8 sm:py-5">
-            <div>
-              <p className="font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                Step 01
-              </p>
-              <h2 className="mt-1 font-headline text-lg font-light text-foreground sm:text-xl">
-                Provide your portfolio
-              </h2>
-            </div>
-            <GhostButton asLink href="/templates/tenant-batch-template.csv" download>
-              <Download className="size-3.5" />
-              Template
-            </GhostButton>
-          </div>
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {/* ── Left: Main Flow ── */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+          <div className="flex flex-col gap-px">
 
-          <div className="grid gap-px bg-border/60 sm:grid-cols-2">
-            {/* Drop zone */}
-            <label
-              htmlFor="batch-file"
-              className={cn(
-                "group relative flex h-44 cursor-pointer flex-col items-center justify-center gap-2 bg-card px-6 text-center transition-colors",
-                file
-                  ? "bg-[#BD9952]/[0.06]"
-                  : "hover:bg-muted/50 dark:hover:bg-[#1F2020]",
-              )}
-            >
-              <Upload className="size-5 text-muted-foreground transition-colors group-hover:text-[#BD9952]" />
-              <span className="font-[family-name:var(--font-inter)] text-sm font-medium text-foreground">
-                {file ? file.name : "Drop or choose a file"}
-              </span>
-              <span className="font-[family-name:var(--font-inter)] text-[11px] uppercase tracking-widest text-muted-foreground">
-                {file
-                  ? `${(file.size / 1024).toFixed(1)} KB`
-                  : "CSV · TSV · TXT · DOCX · PDF"}
-              </span>
-              <input
-                id="batch-file"
-                type="file"
-                accept=".csv,.tsv,.txt,.docx,.pdf"
-                className="sr-only"
-                onChange={(e) => {
-                  const next = e.target.files?.[0] ?? null;
-                  setFile(next);
-                  if (next) setCsvText("");
-                  resetPreview();
-                }}
-              />
-            </label>
+            {/* ── Step 01: Provide Portfolio ── */}
+            <section className="border-b border-[#282828]">
+              {/* Step header */}
+              <div className="flex items-center justify-between border-b border-[#282828] bg-[#1A1A1A] px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <span className="bg-white px-1.5 py-0.5 font-mono text-[10px] font-black text-[#161616]">
+                    01
+                  </span>
+                  <h2 className="text-[11px] font-bold uppercase tracking-widest text-white">
+                    Provide your portfolio
+                  </h2>
+                </div>
+                <a
+                  href="/templates/tenant-batch-template.csv"
+                  download
+                  className="inline-flex items-center gap-1.5 border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+                >
+                  <Download className="size-3" />
+                  Template
+                </a>
+              </div>
 
-            {/* Paste */}
-            <div className="relative bg-card p-5 sm:p-6">
-              <label
-                htmlFor="batch-csv"
-                className="font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground"
-              >
-                Or paste CSV
-              </label>
-              <Textarea
-                id="batch-csv"
-                placeholder={`property_address,city,tenant_name,tenant_email,monthly_rent,start_date\n12 Oak St,London,Alex Stone,alex@mail.com,1850,2026-05-01`}
-                value={csvText}
-                onChange={(e) => {
-                  setCsvText(e.target.value);
-                  if (e.target.value) setFile(null);
-                  resetPreview();
-                }}
-                className="mt-2 h-28 resize-none rounded-sm border-border/70 bg-transparent font-mono text-[11px] leading-relaxed text-foreground/90 focus-visible:ring-[#BD9952]/30"
-              />
-            </div>
-          </div>
+              {/* Upload + Paste grid */}
+              <div className="grid grid-cols-1 gap-px bg-[#282828] sm:grid-cols-2">
+                {/* Drop zone */}
+                <label
+                  htmlFor="batch-file"
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={handleDrop}
+                  className={cn(
+                    "group flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 px-6 text-center transition-colors",
+                    isDragging
+                      ? "border border-dashed border-white bg-[#1A1A1A]"
+                      : file
+                        ? "bg-[#152420]"
+                        : "bg-[#131313] hover:bg-[#1A1A1A]",
+                  )}
+                >
+                  <Upload
+                    className={cn(
+                      "size-6 transition-colors",
+                      isDragging
+                        ? "text-white"
+                        : file
+                          ? "text-[#afefdd]"
+                          : "text-[#444748] group-hover:text-[#888888]",
+                    )}
+                  />
+                  <span className="text-[11px] font-medium text-white">
+                    {isDragging ? "Drop to upload" : file ? file.name : "Drop or choose a file"}
+                  </span>
+                  <span className="font-mono text-[9px] uppercase tracking-widest text-[#444748]">
+                    {file && !isDragging ? `${(file.size / 1024).toFixed(1)} KB` : "CSV · TSV · TXT · DOCX · PDF"}
+                  </span>
+                  <input
+                    id="batch-file"
+                    type="file"
+                    accept=".csv,.tsv,.txt,.docx,.pdf"
+                    className="sr-only"
+                    onChange={(e) => {
+                      const next = e.target.files?.[0] ?? null;
+                      setFile(next);
+                      if (next) setCsvText("");
+                      resetPreview();
+                    }}
+                  />
+                </label>
 
-          <div className="flex flex-col gap-3 border-t border-border/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-5">
-            <p className="font-[family-name:var(--font-inter)] text-[11px] uppercase tracking-widest text-muted-foreground">
-              Up to 100 rows · duplicates reuse existing records
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              {rows ? (
-                <GhostButton onClick={resetPreview}>Reset</GhostButton>
+                {/* Paste CSV */}
+                <div className="flex flex-col gap-2 bg-[#131313] p-4">
+                  <div className="flex items-center justify-between">
+                    <label
+                      htmlFor="batch-csv"
+                      className="text-[9px] font-bold uppercase tracking-widest text-[#555555]"
+                    >
+                      Or paste CSV
+                    </label>
+                    <span className="font-mono text-[9px] text-[#444748]">
+                      detecting_headers...
+                    </span>
+                  </div>
+                  <textarea
+                    id="batch-csv"
+                    placeholder={`property_address,city,tenant_name,tenant_email,monthly_rent,start_date\n12 Oak St,London,Alex Stone,alex@mail.com,1850,2026-05-01`}
+                    value={csvText}
+                    onChange={(e) => {
+                      setCsvText(e.target.value);
+                      if (e.target.value) setFile(null);
+                      resetPreview();
+                    }}
+                    className="min-h-[164px] flex-1 resize-none border border-[#282828] bg-[#0B0B0B] p-3 font-mono text-[11px] leading-relaxed text-[#c4c7c8] placeholder-[#333333] focus:border-white focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Footer bar */}
+              <div className="flex items-center justify-between border-t border-[#282828] bg-[#1A1A1A] px-4 py-3">
+                <div className="flex items-center gap-4 text-[9px] uppercase tracking-widest text-[#555555]">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="size-3 text-[#afefdd]" />
+                    UTF-8 Encoding
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="size-3 text-[#afefdd]" />
+                    Auto-mapping
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {rows ? (
+                    <button
+                      type="button"
+                      onClick={resetPreview}
+                      className="border border-[#333333] bg-[#0B0B0B] px-4 py-2 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+                    >
+                      Reset
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={onPreview}
+                    disabled={isPreviewing}
+                    className="flex items-center gap-2 bg-white px-5 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-opacity hover:opacity-90 disabled:opacity-50"
+                  >
+                    {isPreviewing ? (
+                      <>
+                        <Loader2 className="size-3 animate-spin" />
+                        Analysing
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="size-3" />
+                        Preview Rows
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              {/* Error bar */}
+              {error ? (
+                <div className="flex items-start gap-2 border-t border-[#BB5551]/30 bg-[#7f2927]/10 px-4 py-3">
+                  <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-[#ee7d77]" />
+                  <span className="text-[11px] text-[#ee7d77]">{error}</span>
+                </div>
               ) : null}
-              <MetallicButton onClick={onPreview} disabled={isPreviewing}>
-                {isPreviewing ? (
-                  <>
-                    <Loader2 className="size-3.5 animate-spin" />
-                    Analysing
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="size-3.5" />
-                    Preview rows
-                  </>
-                )}
-              </MetallicButton>
-            </div>
-          </div>
+            </section>
 
-          {error ? (
-            <div className="flex items-start gap-2 border-t border-destructive/30 bg-destructive/[0.06] px-5 py-3 sm:px-8">
-              <AlertTriangle className="mt-0.5 size-4 text-destructive" />
-              <span className="font-[family-name:var(--font-inter)] text-xs text-destructive">
-                {error}
-              </span>
-            </div>
-          ) : null}
-        </div>
-
-        {/* ───────────── Step 2 · Preview ───────────── */}
-        {summary && rows ? (
-          <div className="mb-6 border border-border bg-card">
-            <div className="flex flex-col gap-4 border-b border-border/70 px-5 py-4 sm:flex-row sm:items-end sm:justify-between sm:px-8 sm:py-5">
-              <div>
-                <p className="font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                  Step 02
-                </p>
-                <h2 className="mt-1 font-headline text-lg font-light text-foreground sm:text-xl">
-                  Review the manifest
-                </h2>
-              </div>
-              <div className="flex flex-wrap items-end gap-x-8 gap-y-3">
-                <Stat label="Total" value={summary.total} />
-                <Stat label="New" value={summary.newProperties} accent />
-                <Stat label="Matched" value={summary.matchedProperties} />
-                {summary.skippedActiveTenancies > 0 ? (
-                  <Stat label="Skip" value={summary.skippedActiveTenancies} muted />
-                ) : null}
-                {summary.validationErrors > 0 ? (
-                  <Stat label="Errors" value={summary.validationErrors} danger />
-                ) : null}
-              </div>
-            </div>
-
-            {/* Mobile cards */}
-            <ul className="divide-y divide-border/70 sm:hidden">
-              {rows.map((row) => {
-                const status = rowStatusLabel(row);
-                return (
-                  <li key={`m-${row.rowIndex}`} className="px-5 py-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate font-[family-name:var(--font-inter)] text-sm font-semibold text-foreground">
-                          {row.raw.propertyAddress || "—"}
-                        </p>
-                        <p className="truncate font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
-                          {row.raw.tenantFullName || "—"} · {row.raw.tenantEmail || "—"}
-                        </p>
-                      </div>
-                      <StatusPill label={status.label} tone={status.tone} />
-                    </div>
-                    <div className="mt-3 flex items-center justify-between border-t border-border/60 pt-3 font-[family-name:var(--font-inter)] text-[11px] tracking-wide text-muted-foreground">
-                      <span className="tabular-nums">
-                        {row.raw.monthlyRent > 0
-                          ? `£${row.raw.monthlyRent.toLocaleString()}/mo`
-                          : "—"}
-                      </span>
-                      <span className="tabular-nums">{row.raw.startDate || "—"}</span>
-                    </div>
-                    {row.raw.rowErrors.length > 0 || row.skipReason ? (
-                      <p className="mt-2 font-[family-name:var(--font-inter)] text-[11px] text-muted-foreground">
-                        {row.raw.rowErrors.length > 0
-                          ? row.raw.rowErrors.join(", ")
-                          : row.skipReason}
-                      </p>
+            {/* ── Step 02: Review Manifest ── */}
+            {summary && rows ? (
+              <section className="border-b border-[#282828]">
+                {/* Step header */}
+                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#282828] bg-[#1A1A1A] px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="bg-white px-1.5 py-0.5 font-mono text-[10px] font-black text-[#161616]">
+                      02
+                    </span>
+                    <h2 className="text-[11px] font-bold uppercase tracking-widest text-white">
+                      Review the manifest
+                    </h2>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-6">
+                    <Stat label="Total" value={summary.total} />
+                    <Stat label="New" value={summary.newProperties} accent />
+                    <Stat label="Matched" value={summary.matchedProperties} />
+                    {summary.skippedActiveTenancies > 0 ? (
+                      <Stat label="Skip" value={summary.skippedActiveTenancies} muted />
                     ) : null}
-                  </li>
-                );
-              })}
-            </ul>
+                    {summary.validationErrors > 0 ? (
+                      <Stat label="Errors" value={summary.validationErrors} danger />
+                    ) : null}
+                  </div>
+                </div>
 
-            {/* Desktop table */}
-            <div className="hidden overflow-x-auto sm:block">
-              <table className="w-full min-w-[760px] border-collapse text-left">
-                <thead>
-                  <tr className="bg-muted dark:bg-[#1F2020]">
-                    <th className="px-6 py-4 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                      #
-                    </th>
-                    <th className="px-6 py-4 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                      Status
-                    </th>
-                    <th className="px-6 py-4 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                      Property
-                    </th>
-                    <th className="px-6 py-4 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                      Tenant
-                    </th>
-                    <th className="px-6 py-4 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                      Rent
-                    </th>
-                    <th className="px-6 py-4 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                      Start
-                    </th>
-                    <th className="px-6 py-4 font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                      Notes
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border/70">
+                {/* Mobile cards */}
+                <ul className="divide-y divide-[#282828] sm:hidden">
                   {rows.map((row) => {
                     const status = rowStatusLabel(row);
                     return (
-                      <tr
-                        key={row.rowIndex}
-                        className="align-top transition-colors hover:bg-muted/60 dark:hover:bg-[#252626]"
-                      >
-                        <td className="px-6 py-4 font-[family-name:var(--font-inter)] text-xs tabular-nums text-muted-foreground">
-                          {String(row.rowIndex + 1).padStart(2, "0")}
-                        </td>
-                        <td className="px-6 py-4">
+                      <li key={`m-${row.rowIndex}`} className="px-4 py-3">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-[11px] font-medium text-white">
+                              {row.raw.propertyAddress || "—"}
+                            </p>
+                            <p className="truncate font-mono text-[10px] text-[#888888]">
+                              {row.raw.tenantFullName || "—"} · {row.raw.tenantEmail || "—"}
+                            </p>
+                          </div>
                           <StatusPill label={status.label} tone={status.tone} />
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="font-[family-name:var(--font-inter)] text-sm text-foreground">
-                            {row.raw.propertyAddress || "—"}
+                        </div>
+                        <div className="mt-2 flex items-center justify-between border-t border-[#282828] pt-2 font-mono text-[10px] text-[#888888]">
+                          <span>{row.raw.monthlyRent > 0 ? `£${row.raw.monthlyRent.toLocaleString()}/mo` : "—"}</span>
+                          <span>{row.raw.startDate || "—"}</span>
+                        </div>
+                        {row.raw.rowErrors.length > 0 || row.skipReason ? (
+                          <p className="mt-1 font-mono text-[10px] text-[#ee7d77]">
+                            {row.raw.rowErrors.length > 0 ? row.raw.rowErrors.join(", ") : row.skipReason}
                           </p>
-                          <p className="font-[family-name:var(--font-inter)] text-[11px] tracking-wide text-muted-foreground">
-                            {[row.raw.city, row.raw.postcode].filter(Boolean).join(", ") || "—"}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4">
-                          <p className="font-[family-name:var(--font-inter)] text-sm text-foreground">
-                            {row.raw.tenantFullName || "—"}
-                          </p>
-                          <p className="truncate font-[family-name:var(--font-inter)] text-[11px] tracking-wide text-muted-foreground">
-                            {row.raw.tenantEmail || "—"}
-                          </p>
-                        </td>
-                        <td className="px-6 py-4 font-[family-name:var(--font-inter)] text-sm tabular-nums text-foreground">
-                          {row.raw.monthlyRent > 0
-                            ? `£${row.raw.monthlyRent.toLocaleString()}`
-                            : "—"}
-                        </td>
-                        <td className="px-6 py-4 font-[family-name:var(--font-inter)] text-xs tabular-nums text-muted-foreground">
-                          {row.raw.startDate || "—"}
-                        </td>
-                        <td className="px-6 py-4 font-[family-name:var(--font-inter)] text-[11px] tracking-wide text-muted-foreground">
-                          {row.raw.rowErrors.length > 0
-                            ? row.raw.rowErrors.join(", ")
-                            : row.skipReason ?? "Ready"}
-                        </td>
-                      </tr>
+                        ) : null}
+                      </li>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
+                </ul>
 
-            <div className="flex flex-col gap-3 border-t border-border/70 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-5">
-              <p className="font-[family-name:var(--font-inter)] text-[11px] uppercase tracking-widest text-muted-foreground">
-                {summary.actionableRows} row{summary.actionableRows === 1 ? "" : "s"} ready ·
-                errors and duplicates skipped
-              </p>
-              <MetallicButton onClick={onRun} disabled={!canRun || isRunning}>
-                {isRunning ? (
-                  <>
-                    <Loader2 className="size-3.5 animate-spin" />
-                    Onboarding
-                  </>
-                ) : (
-                  <>
-                    Onboard {summary.actionableRows} row
-                    {summary.actionableRows === 1 ? "" : "s"}
-                  </>
-                )}
-              </MetallicButton>
-            </div>
-          </div>
-        ) : null}
+                {/* Desktop table */}
+                <div className="hidden overflow-x-auto sm:block">
+                  <table className="w-full min-w-[760px] border-collapse text-left">
+                    <thead>
+                      <tr className="border-b border-[#282828] bg-[#161616] text-[9px] uppercase tracking-widest text-[#555555]">
+                        {["#", "Status", "Property", "Tenant", "Rent", "Start", "Notes"].map((h) => (
+                          <th key={h} className="px-4 py-2.5 font-medium">
+                            {h}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row) => {
+                        const status = rowStatusLabel(row);
+                        return (
+                          <tr
+                            key={row.rowIndex}
+                            className="border-b border-[#282828] align-top transition-colors hover:bg-[#1A1A1A]"
+                          >
+                            <td className="px-4 py-3 font-mono text-[10px] tabular-nums text-[#555555]">
+                              {String(row.rowIndex + 1).padStart(2, "0")}
+                            </td>
+                            <td className="px-4 py-3">
+                              <StatusPill label={status.label} tone={status.tone} />
+                            </td>
+                            <td className="px-4 py-3">
+                              <p className="text-[11px] font-medium text-white">
+                                {row.raw.propertyAddress || "—"}
+                              </p>
+                              <p className="font-mono text-[10px] text-[#888888]">
+                                {[row.raw.city, row.raw.postcode].filter(Boolean).join(", ") || "—"}
+                              </p>
+                            </td>
+                            <td className="px-4 py-3">
+                              <p className="text-[11px] font-medium text-white">
+                                {row.raw.tenantFullName || "—"}
+                              </p>
+                              <p className="truncate font-mono text-[10px] text-[#888888]">
+                                {row.raw.tenantEmail || "—"}
+                              </p>
+                            </td>
+                            <td className="px-4 py-3 font-mono text-[11px] tabular-nums text-white">
+                              {row.raw.monthlyRent > 0 ? `£${row.raw.monthlyRent.toLocaleString()}` : "—"}
+                            </td>
+                            <td className="px-4 py-3 font-mono text-[10px] tabular-nums text-[#888888]">
+                              {row.raw.startDate || "—"}
+                            </td>
+                            <td className="px-4 py-3 font-mono text-[10px] text-[#888888]">
+                              {row.raw.rowErrors.length > 0
+                                ? row.raw.rowErrors.join(", ")
+                                : (row.skipReason ?? "Ready")}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
 
-        {/* ───────────── Run result ───────────── */}
-        {runTotals ? (
-          <div className="mb-6 border border-[#BD9952]/40 bg-[#BD9952]/[0.04]">
-            <div className="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-6">
-              <div>
-                <p className="font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-[#BD9952]">
-                  Batch complete
-                </p>
-                <p className="mt-1 font-headline text-lg font-light text-foreground sm:text-xl">
-                  {runTotals.succeeded} onboarded · {runTotals.skipped} skipped ·{" "}
-                  {runTotals.failed} failed
-                </p>
-                {runBatchId ? (
-                  <p className="mt-1 font-[family-name:var(--font-inter)] text-[11px] uppercase tracking-widest text-muted-foreground">
-                    Ref {runBatchId.slice(0, 8)}
+                {/* Run footer */}
+                <div className="flex flex-col gap-3 border-t border-[#282828] bg-[#1A1A1A] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="font-mono text-[9px] uppercase tracking-widest text-[#555555]">
+                    {summary.actionableRows} row{summary.actionableRows === 1 ? "" : "s"} ready ·
+                    errors and duplicates skipped
                   </p>
-                ) : null}
-              </div>
-              <div className="flex flex-wrap items-center gap-3">
-                <GhostButton asLink href="/dashboard/tenants">
-                  View tenants
-                </GhostButton>
-                <Link
-                  href="/dashboard/tenancies"
-                  className="inline-flex items-center gap-2 rounded-sm bg-foreground px-4 py-2.5 font-[family-name:var(--font-inter)] text-[0.6875rem] font-semibold uppercase tracking-[0.15em] text-background transition-opacity hover:opacity-90"
-                >
-                  View tenancies
-                </Link>
-              </div>
-            </div>
-          </div>
-        ) : null}
+                  <button
+                    type="button"
+                    onClick={onRun}
+                    disabled={!canRun || isRunning}
+                    className="flex items-center gap-2 bg-white px-6 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-opacity hover:opacity-90 disabled:opacity-40"
+                  >
+                    {isRunning ? (
+                      <>
+                        <Loader2 className="size-3 animate-spin" />
+                        Onboarding
+                      </>
+                    ) : (
+                      <>Onboard {summary.actionableRows} row{summary.actionableRows === 1 ? "" : "s"}</>
+                    )}
+                  </button>
+                </div>
+              </section>
+            ) : null}
 
-        {/* ───────────── Recent batches ───────────── */}
-        <div className="mb-6">
-          <div className="mb-4 flex items-center gap-4">
-            <h2 className="font-headline text-lg font-light text-foreground sm:text-xl">
-              Recent batches
-            </h2>
-            <span className="h-px flex-1 bg-border" aria-hidden />
+            {/* ── Run Result ── */}
+            {runTotals ? (
+              <section className="border border-[#afefdd]/20 bg-[#152420]">
+                <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-mono text-[9px] uppercase tracking-widest text-[#afefdd]">
+                      Batch complete
+                    </p>
+                    <p className="mt-1 font-mono text-sm text-white">
+                      {runTotals.succeeded} onboarded · {runTotals.skipped} skipped ·{" "}
+                      {runTotals.failed} failed
+                    </p>
+                    {runBatchId ? (
+                      <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
+                        Ref {runBatchId.slice(0, 8)}
+                      </p>
+                    ) : null}
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href="/dashboard/tenants"
+                      className="border border-[#333333] bg-[#0B0B0B] px-4 py-2 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+                    >
+                      View Tenants
+                    </Link>
+                    <Link
+                      href="/dashboard/tenancies"
+                      className="bg-white px-4 py-2 font-mono text-[9px] font-bold uppercase tracking-widest text-[#161616] transition-opacity hover:opacity-90"
+                    >
+                      View Tenancies
+                    </Link>
+                  </div>
+                </div>
+              </section>
+            ) : null}
+
+            {/* ── Or Use Chat ── */}
+            <section className="border-t border-[#282828] bg-[#0B0B0B] px-4 py-5">
+              <div className="flex items-start gap-4">
+                <div className="flex size-8 shrink-0 items-center justify-center border border-[#333333] bg-[#1A1A1A]">
+                  <MessageSquare className="size-3.5 text-[#555555]" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-[#555555]">
+                    Or use Chat
+                  </p>
+                  <p className="mt-1 text-[11px] text-[#888888]">
+                    Paste the same CSV into the assistant and say{" "}
+                    <span className="font-medium text-white">&ldquo;onboard these tenants&rdquo;</span>. The CEO agent
+                    previews and onboards after you confirm.
+                  </p>
+                  <Link
+                    href="/dashboard/assistant"
+                    className="mt-3 inline-block border-b border-[#444748] pb-0.5 font-mono text-[9px] uppercase tracking-widest text-[#888888] transition-all hover:border-white hover:text-white"
+                  >
+                    Open Assistant
+                  </Link>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+
+        {/* ── Right Sidebar ── */}
+        <aside className="hidden w-72 shrink-0 flex-col border-l border-[#282828] lg:flex">
+          {/* Recent Batches */}
+          <div className="border-b border-[#282828] bg-[#1A1A1A] px-4 py-3">
+            <h3 className="text-[9px] font-bold uppercase tracking-widest text-[#888888]">
+              Recent Batches
+            </h3>
           </div>
 
           {history.length === 0 ? (
-            <div className="border border-dashed border-border bg-card px-6 py-10 text-center">
-              <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
-                No batches yet · your first will appear here
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-12 opacity-40">
+              <div className="flex size-10 items-center justify-center border border-[#333333]">
+                <Upload className="size-4 text-[#555555]" />
+              </div>
+              <p className="text-center font-mono text-[9px] uppercase tracking-widest text-[#555555]">
+                No batches yet
+              </p>
+              <p className="text-center text-[9px] text-[#444748]">
+                Completed imports and historical agent logs will appear here.
               </p>
             </div>
           ) : (
-            <ul className="divide-y divide-border/70 border border-border bg-card">
+            <ul className="flex-1 divide-y divide-[#282828] overflow-y-auto">
               {history.map((h) => (
-                <li
-                  key={h.id}
-                  className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8 sm:py-5"
-                >
-                  <div className="flex items-center gap-4">
-                    <StatusIcon status={h.status} />
-                    <div className="min-w-0">
-                      <p className="font-[family-name:var(--font-inter)] text-sm font-semibold text-foreground">
-                        {h.rowsSucceeded}/{h.rowsTotal} onboarded
-                        {h.rowsFailed > 0 ? ` · ${h.rowsFailed} failed` : ""}
-                      </p>
-                      <p className="font-[family-name:var(--font-inter)] text-[11px] tracking-wide text-muted-foreground">
-                        {h.createdAt ? new Date(h.createdAt).toLocaleString() : ""} · {h.kind}
-                      </p>
+                <li key={h.id} className="px-4 py-3 hover:bg-[#1A1A1A]">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <StatusIcon status={h.status} />
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-medium text-white">
+                          {h.rowsSucceeded}/{h.rowsTotal} onboarded
+                          {h.rowsFailed > 0 ? ` · ${h.rowsFailed} failed` : ""}
+                        </p>
+                        <p className="font-mono text-[9px] text-[#555555]">
+                          {h.createdAt ? new Date(h.createdAt).toLocaleString() : ""} · {h.kind}
+                        </p>
+                      </div>
                     </div>
+                    <span className="shrink-0 font-mono text-[9px] uppercase tracking-widest text-[#555555]">
+                      {h.status}
+                    </span>
                   </div>
-                  <span className="font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                    {h.status}
-                  </span>
                 </li>
               ))}
             </ul>
           )}
-        </div>
 
-        {/* ───────────── Chat hint ───────────── */}
-        <div className="border border-dashed border-border bg-muted/30 px-5 py-5 sm:px-8 sm:py-6 dark:bg-[#1F2020]/40">
-          <div className="flex items-start gap-4">
-            <span className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-background">
-              <MessageSquare className="size-3.5 text-[#BD9952]" />
-            </span>
-            <div>
-              <p className="font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                Or use chat
-              </p>
-              <p className="mt-1 font-[family-name:var(--font-inter)] text-sm font-light text-foreground">
-                Paste the same CSV into the assistant and say{" "}
-                <span className="font-medium">&ldquo;onboard these tenants&rdquo;</span>. The CEO
-                agent previews and onboards after you confirm.
+          {/* Import Guide */}
+          <div className="border-t border-[#282828] bg-[#1A1A1A] p-4">
+            <div className="mb-3 flex items-center gap-2">
+              <p className="text-[9px] font-bold uppercase tracking-widest text-[#555555]">
+                Import Guide
               </p>
             </div>
+            <ul className="space-y-2">
+              {[
+                "Understanding CSV field mapping",
+                "Handling multi-unit properties",
+                "Bulk tenant invite configuration",
+              ].map((item) => (
+                <li
+                  key={item}
+                  className="flex cursor-pointer items-center gap-2 text-[10px] text-[#555555] transition-colors hover:text-white"
+                >
+                  <span className="size-1 rounded-full bg-[#333333]" aria-hidden />
+                  {item}
+                </li>
+              ))}
+            </ul>
           </div>
-        </div>
-      </section>
+        </aside>
+      </div>
     </div>
   );
-}
-
-/** Editorial number readout — Total / New / Matched ticker cells in the preview header. */
-function Stat({
-  label,
-  value,
-  accent,
-  muted,
-  danger,
-}: {
-  label: string;
-  value: number;
-  accent?: boolean;
-  muted?: boolean;
-  danger?: boolean;
-}) {
-  return (
-    <div>
-      <p className="font-[family-name:var(--font-inter)] text-[0.625rem] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-        {label}
-      </p>
-      <p
-        className={cn(
-          "mt-1 font-headline text-2xl font-light tabular-nums",
-          danger
-            ? "text-destructive"
-            : accent
-              ? "text-[#BD9952]"
-              : muted
-                ? "text-muted-foreground"
-                : "text-foreground",
-        )}
-      >
-        {value.toLocaleString("en-GB")}
-      </p>
-    </div>
-  );
-}
-
-function StatusIcon({ status }: { status: string }) {
-  if (status === "completed")
-    return <CheckCircle2 className="size-4 text-[#7fc9b3] dark:text-[#afefdd]" />;
-  if (status === "failed") return <XCircle className="size-4 text-destructive" />;
-  if (status === "running") return <Loader2 className="size-4 animate-spin text-[#BD9952]" />;
-  return <CheckCircle2 className="size-4 text-muted-foreground" />;
 }

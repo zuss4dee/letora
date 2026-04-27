@@ -16,6 +16,7 @@ export type RentPaymentListRow = {
   tenancyId: string | null;
   propertyAddress: string | null;
   tenantName: string | null;
+  tenantId: string | null;
 };
 
 function toAmount(value: unknown): number {
@@ -51,7 +52,7 @@ export async function getRentPayments(): Promise<RentPaymentListRow[]> {
       tenancies!inner (
         property_id,
         properties!inner ( address ),
-        tenants ( full_name )
+        tenants ( id, full_name )
       )
     `,
     )
@@ -67,11 +68,11 @@ export async function getRentPayments(): Promise<RentPaymentListRow[]> {
     const tenancy = unwrapNested(
       row.tenancies as {
         properties?: { address?: string | null } | { address?: string | null }[];
-        tenants?: { full_name?: string | null } | { full_name?: string | null }[];
+        tenants?: { id?: string | null; full_name?: string | null } | { id?: string | null; full_name?: string | null }[];
       } | null,
     );
     const property = unwrapNested(tenancy?.properties as { address?: string | null } | null);
-    const tenant = unwrapNested(tenancy?.tenants as { full_name?: string | null } | null);
+    const tenant = unwrapNested(tenancy?.tenants as { id?: string | null; full_name?: string | null } | null);
 
     const addr = property?.address ?? "";
     return {
@@ -84,6 +85,7 @@ export async function getRentPayments(): Promise<RentPaymentListRow[]> {
       tenancyId: (row.tenancy_id as string | null) ?? null,
       propertyAddress: normalizePropertyAddressLabel(addr) || null,
       tenantName: tenant?.full_name ?? null,
+      tenantId: tenant?.id ?? null,
     };
   });
 }

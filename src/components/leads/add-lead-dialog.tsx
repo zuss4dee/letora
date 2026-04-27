@@ -15,11 +15,14 @@ import {
 } from "@/lib/validations/leads";
 import {
   DIALOG_FIELD_CLASS,
-  DIALOG_FORM_STACK_CLASS,
   DIALOG_SINGLE_COLUMN_CLASS,
-  dialogFormFooterClass,
 } from "@/lib/ui/dialog-form";
 import type { PropertyPickListItem } from "@/lib/actions/properties";
+import { cn } from "@/lib/utils";
+
+const LABEL_CLASS = "text-[10px] uppercase tracking-widest font-semibold text-[#888888]";
+const INPUT_CLASS = "bg-[#0B0B0B] border border-[#333333] text-[11px] text-white py-2 px-3 focus-visible:ring-0 focus-visible:border-white rounded-none placeholder-[#444748] w-full transition-colors font-mono";
+
 
 import { Button } from "@/components/ui/button";
 import {
@@ -108,23 +111,24 @@ export function AddLeadDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300">
+          <Button className="bg-white text-[#161616] py-2 font-bold text-[10px] tracking-wider uppercase active:scale-[0.98] transition-transform rounded-none">
             Add Lead
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
-        <DialogHeader>
-          <DialogTitle>Add lead</DialogTitle>
-          <DialogDescription>Create a new prospective tenant lead.</DialogDescription>
-        </DialogHeader>
+      <DialogContent className={cn(DIALOG_SINGLE_COLUMN_CLASS, "bg-[#161616] border border-[#282828] text-white rounded-none p-0 gap-0 shadow-2xl")}>
+        <div className="p-5 border-b border-[#282828] bg-[#1A1A1A]">
+          <DialogTitle className="text-xs font-bold uppercase tracking-widest text-white">Add lead</DialogTitle>
+          <DialogDescription className="text-[10px] text-[#888888] mt-1 tracking-wide">CREATE A NEW PROSPECTIVE TENANT LEAD</DialogDescription>
+        </div>
 
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className={DIALOG_FORM_STACK_CLASS}>
+          <div className="p-5 flex flex-col gap-4">
             <div className={DIALOG_FIELD_CLASS}>
-              <Label htmlFor="lead-name">Full name</Label>
+              <Label htmlFor="lead-name" className={LABEL_CLASS}>Full name</Label>
               <Input
                 id="lead-name"
+                className={INPUT_CLASS}
                 placeholder="e.g. Sarah Johnson"
                 autoComplete="name"
                 {...form.register("name")}
@@ -138,10 +142,11 @@ export function AddLeadDialog({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className={DIALOG_FIELD_CLASS}>
-                <Label htmlFor="lead-email">Email</Label>
+                <Label htmlFor="lead-email" className={LABEL_CLASS}>Email</Label>
                 <Input
                   id="lead-email"
                   type="email"
+                  className={INPUT_CLASS}
                   placeholder="e.g. sarah@email.com"
                   autoComplete="email"
                   {...form.register("email")}
@@ -153,10 +158,11 @@ export function AddLeadDialog({
                 ) : null}
               </div>
               <div className={DIALOG_FIELD_CLASS}>
-                <Label htmlFor="lead-phone">Phone</Label>
+                <Label htmlFor="lead-phone" className={LABEL_CLASS}>Phone</Label>
                 <Input
                   id="lead-phone"
                   type="tel"
+                  className={INPUT_CLASS}
                   placeholder="e.g. 07700 900123"
                   autoComplete="tel"
                   {...form.register("phone")}
@@ -170,19 +176,19 @@ export function AddLeadDialog({
             </div>
 
             <div className={DIALOG_FIELD_CLASS}>
-              <Label>Property interest</Label>
+              <Label className={LABEL_CLASS}>Property interest</Label>
               <Controller
                 control={form.control}
                 name="propertyId"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className={INPUT_CLASS}>
                       <SelectValue placeholder="No specific property" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={LEAD_OPTION_NONE}>No specific property</SelectItem>
+                    <SelectContent className="bg-[#0B0B0B] border-[#333333] text-white rounded-none font-mono text-[11px]">
+                      <SelectItem value={LEAD_OPTION_NONE} className="focus:bg-[#242424] focus:text-white rounded-none">No specific property</SelectItem>
                       {properties.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
+                        <SelectItem key={p.id} value={p.id} className="focus:bg-[#242424] focus:text-white rounded-none">
                           {p.address?.trim() || "Property"}
                         </SelectItem>
                       ))}
@@ -198,19 +204,19 @@ export function AddLeadDialog({
             </div>
 
             <div className={DIALOG_FIELD_CLASS}>
-              <Label>Source</Label>
+              <Label className={LABEL_CLASS}>Source</Label>
               <Controller
                 control={form.control}
                 name="source"
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="w-full">
+                    <SelectTrigger className={INPUT_CLASS}>
                       <SelectValue placeholder="Select source" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={LEAD_OPTION_NONE}>Not specified</SelectItem>
+                    <SelectContent className="bg-[#0B0B0B] border-[#333333] text-white rounded-none font-mono text-[11px]">
+                      <SelectItem value={LEAD_OPTION_NONE} className="focus:bg-[#242424] focus:text-white rounded-none">Not specified</SelectItem>
                       {LEAD_SOURCE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt} value={opt}>
+                        <SelectItem key={opt} value={opt} className="focus:bg-[#242424] focus:text-white rounded-none">
                           {opt}
                         </SelectItem>
                       ))}
@@ -227,10 +233,11 @@ export function AddLeadDialog({
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className={DIALOG_FIELD_CLASS}>
-                <Label htmlFor="lead-budget">Budget</Label>
+                <Label htmlFor="lead-budget" className={LABEL_CLASS}>Budget</Label>
                 <Input
                   id="lead-budget"
                   type="number"
+                  className={INPUT_CLASS}
                   step="0.01"
                   min={0}
                   placeholder="e.g. 950.00"
@@ -249,8 +256,8 @@ export function AddLeadDialog({
                 ) : null}
               </div>
               <div className={DIALOG_FIELD_CLASS}>
-                <Label htmlFor="lead-move-in">Move-in date</Label>
-                <Input id="lead-move-in" type="date" {...form.register("moveInDate")} />
+                <Label htmlFor="lead-move-in" className={LABEL_CLASS}>Move-in date</Label>
+                <Input id="lead-move-in" type="date" className={INPUT_CLASS} {...form.register("moveInDate")} />
                 {errors.moveInDate ? (
                   <p className="text-sm text-destructive" role="alert">
                     {errors.moveInDate.message}
@@ -260,9 +267,10 @@ export function AddLeadDialog({
             </div>
 
             <div className={DIALOG_FIELD_CLASS}>
-              <Label htmlFor="lead-notes">Notes</Label>
+              <Label htmlFor="lead-notes" className={LABEL_CLASS}>Notes</Label>
               <Textarea
                 id="lead-notes"
+                className={cn(INPUT_CLASS, "min-h-[80px] resize-none")}
                 placeholder="e.g. Looking for 2-bed, flexible on dates"
                 rows={4}
                 {...form.register("notes")}
@@ -275,11 +283,11 @@ export function AddLeadDialog({
             </div>
           </div>
 
-          <div className={dialogFormFooterClass("mt-4")}>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+          <div className="p-4 border-t border-[#282828] bg-[#1A1A1A] flex items-center justify-end gap-3 mt-1">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="text-[#888888] hover:text-white hover:bg-[#242424] font-bold text-[10px] tracking-wider uppercase rounded-none px-4">
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting} className="bg-white text-[#161616] hover:bg-[#e2e2e2] uppercase text-[10px] font-bold tracking-wider rounded-none px-6">
               {isSubmitting ? "Adding…" : "Add lead"}
             </Button>
           </div>
