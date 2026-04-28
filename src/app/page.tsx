@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import type { Metadata } from "next";
 
 import { LetoraLanding } from "@/components/marketing/letora-landing";

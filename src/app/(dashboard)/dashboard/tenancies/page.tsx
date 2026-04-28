@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { Suspense } from "react";
 
 import { TenanciesRegistry } from "@/components/tenancies/tenancies-registry";

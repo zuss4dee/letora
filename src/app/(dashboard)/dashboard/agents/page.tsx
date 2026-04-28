@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { redirect } from "next/navigation";
 
 const LEGACY_URL = "/dashboard/settings?agentRuns=1";

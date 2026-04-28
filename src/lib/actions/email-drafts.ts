@@ -147,7 +147,7 @@ export async function getEmailDispatchLogs(userId: string): Promise<EmailDispatc
       subject: String(row.subject ?? "—"),
       body: String(row.body ?? ""),
       sentAt,
-      uiStatus: (row.status === "draft" ? "draft" : "delivered") as const,
+      uiStatus: (row.status === "draft" ? "draft" : "delivered") as "draft" | "delivered",
       agentType: null,
     };
   });

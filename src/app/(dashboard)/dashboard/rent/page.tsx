@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { AddTenancyDialog } from "@/components/rent/add-tenancy-dialog";
 import { CollectRentButton } from "@/components/rent/collect-rent-button";
 import { LogPaymentDialog } from "@/components/rent/log-payment-dialog";

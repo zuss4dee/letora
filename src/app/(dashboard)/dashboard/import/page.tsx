@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import type { Metadata } from "next";
 
 import { BatchOnboardingImport } from "@/components/import/batch-onboarding-import";
