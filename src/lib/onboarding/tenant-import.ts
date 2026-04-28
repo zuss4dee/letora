@@ -194,12 +194,7 @@ export async function extractTenantsWithLlmFromText(documentText: string): Promi
 
   const slice = trimmed.length > MAX_LLM_CHARS ? trimmed.slice(0, MAX_LLM_CHARS) : trimmed;
 
-  if (!process.env.ANTHROPIC_API_KEY?.trim()) {
-    return {
-      ok: false,
-      error: "AI import needs ANTHROPIC_API_KEY on the server. Add one tenant manually or use a CSV.",
-    };
-  }
+  // We rely on runLLM to handle provider-specific key checks and fallbacks.
 
   const system = `You extract tenant contact rows from landlord documents and spreadsheets.
 Return ONLY a JSON object (no markdown) with shape:
@@ -566,13 +561,7 @@ export async function extractBatchOnboardingRowsWithLlmFromText(documentText: st
 
   const slice = trimmed.length > MAX_LLM_CHARS ? trimmed.slice(0, MAX_LLM_CHARS) : trimmed;
 
-  if (!process.env.ANTHROPIC_API_KEY?.trim()) {
-    return {
-      ok: false,
-      error:
-        "AI import needs ANTHROPIC_API_KEY on the server. Use a CSV with the expected header columns instead.",
-    };
-  }
+  // We rely on runLLM to handle provider-specific key checks and fallbacks.
 
   const system = `You extract landlord onboarding rows from documents and spreadsheets.
 Return ONLY a JSON object (no markdown) with shape:

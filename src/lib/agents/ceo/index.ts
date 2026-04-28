@@ -67,12 +67,119 @@ export type { LetoraSuggestedAction } from "./suggested-actions";
 export type { CEOIntentRoute, CEOPropertyIntentId } from "./intent-router";
 export { formatRouterHintForSystem, routeCEOIntent } from "./intent-router";
 
+import { runDeepSeek } from "@/lib/llm/providers/deepseek";
+import { AGENT_MODEL_CONFIG } from "@/lib/llm/config";
+
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-// Use API model IDs from https://platform.claude.com/docs/en/about-claude/models/overview
-// (Console “Haiku Active” maps to e.g. claude-haiku-4-5 — not legacy claude-3-* snapshot IDs.)
+// Default model IDs from config.ts are preferred; we keep these for legacy fallback logic.
 const ANTHROPIC_CEO_MODEL = process.env.ANTHROPIC_CEO_MODEL?.trim() || "claude-haiku-4-5";
 const geminiApiKey = process.env.GOOGLE_AI_API_KEY?.trim();
 const geminiClient = geminiApiKey ? new GoogleGenerativeAI(geminiApiKey) : null;
+
+/**
+ * Universal completion wrapper for the CEO agent.
+ * Handles switching between Anthropic and DeepSeek (OpenAI-compatible).
+ */
+async function executeCeoCompletion(params: {
+  system: string;
+  messages: MessageParam[];
+  tools?: any[];
+  tool_choice?: any;
+  max_tokens?: number;
+}): Promise<Message> {
+  const provider = AGENT_MODEL_CONFIG.ceo.provider;
+  const { system, messages, tools, tool_choice, max_tokens = 2048 } = params;
+
+  console.log(`[ceo] request: provider=${provider}, tokens=${max_tokens}`);
+
+  if (provider === "deepseek") {
+    const dsMessages: any[] = [];
+    messages.forEach(m => {
+      if (Array.isArray(m.content)) {
+        const toolUseBlocks = m.content.filter(c => c.type === "tool_use");
+        const toolResultBlocks = m.content.filter(c => c.type === "tool_result");
+        
+        if (toolUseBlocks.length > 0) {
+          dsMessages.push({
+            role: "assistant",
+            content: m.content.filter(c => c.type === "text").map((c: any) => c.text).join("\n") || null,
+            tool_calls: toolUseBlocks.map(c => ({
+              id: (c as any).id,
+              type: "function",
+              function: {
+                name: (c as any).name,
+                arguments: JSON.stringify((c as any).input)
+              }
+            }))
+          });
+        } else if (toolResultBlocks.length > 0) {
+          toolResultBlocks.forEach((c: any) => {
+            dsMessages.push({
+              role: "tool",
+              tool_call_id: c.tool_use_id,
+              content: typeof c.content === "string" ? c.content : JSON.stringify(c.content)
+            });
+          });
+        } else {
+          dsMessages.push({
+            role: m.role,
+            content: m.content.map((c: any) => c.text || "").join("\n")
+          });
+        }
+      } else {
+        dsMessages.push({ role: m.role, content: m.content });
+      }
+    });
+
+    const dsResponse = await runDeepSeek({
+      agentName: "ceo",
+      messages: dsMessages as any,
+      system,
+      tools,
+      tool_choice,
+      maxTokens: max_tokens,
+    });
+
+    const choice = dsResponse.rawResponse?.choices?.[0];
+    const message = choice?.message;
+
+    // Convert OpenAI response back to Anthropic Message format for Letora's loop
+    const content: any[] = [];
+    if (message?.content) {
+      content.push({ type: "text", text: message.content });
+    }
+    if (message?.tool_calls) {
+      message.tool_calls.forEach((tc: any) => {
+        content.push({
+          type: "tool_use",
+          id: tc.id,
+          name: tc.function.name,
+          input: JSON.parse(tc.function.arguments)
+        });
+      });
+    }
+
+    return {
+      id: dsResponse.rawResponse?.id || `ds-${Date.now()}`,
+      role: "assistant",
+      content,
+      model: dsResponse.model,
+      stop_reason: choice?.finish_reason === "tool_calls" ? "tool_use" : "end_turn",
+      stop_sequence: null,
+      usage: dsResponse.rawResponse?.usage || { input_tokens: 0, output_tokens: 0 }
+    } as Message;
+  }
+
+  // Default to Anthropic
+  return await anthropic.messages.create({
+    model: ANTHROPIC_CEO_MODEL,
+    max_tokens,
+    system,
+    messages,
+    tools,
+    tool_choice,
+  });
+}
 
 function toErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -767,8 +874,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
       },
     ];
     try {
-      const summaryResp = await anthropic.messages.create({
-        model: ANTHROPIC_CEO_MODEL,
+      const summaryResp = await executeCeoCompletion({
         max_tokens: 2048,
         system: summarySystemPrompt,
         messages: summaryMessages,
@@ -854,8 +960,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
     const approvalsSummarySystem = `${effectiveSystemPrompt}\n\n**Server already ran get_pending_approvals_summary for this user message. Tool JSON (authoritative — your reply MUST follow this data only):**\n${approvalsRaw}\n\n**Mandatory:** Summarize the Approvals queue in plain text only. Include **pending_total**, **by_category** (onboarding, rent_chase, move_in, maintenance), **oldest_waiting_label** when the queue is non-empty (say the queue is empty otherwise), and a short bullet list from **items** (use **title** and **category**). End with the **next_action** path from JSON (open /dashboard/approvals). Do **not** ask the user to reply **yes** or **no** to proceed. Do **not** offer to approve, reject, or send items from chat. Do not call tools.`;
 
     try {
-      const approvalsSummaryResp = await anthropic.messages.create({
-        model: ANTHROPIC_CEO_MODEL,
+      const approvalsSummaryResp = await executeCeoCompletion({
         max_tokens: 2048,
         system: approvalsSummarySystem,
         messages: conversation,
@@ -1034,8 +1139,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
       const draftSummarySystem = `${effectiveSystemPrompt}\n\n**Server already ran draft_contract for this user message. Tool JSON (authoritative — your reply MUST follow this data only):**\n${draftRaw}\n\n**Mandatory:** Summarize the outcome in natural language only. If **saved** is true, confirm the draft was saved and mention the Contracts page in the app. If **code** is **matched_by_fallback**, ask whether the property in **message** is correct. If **code** is **ambiguous_match**, list **candidates** and ask which property. If **code** is **no_property_match**, use **message** in plain language and ask one clarifying question (e.g. which property they meant). Do not repeat the same error on the next turn. If **error** and **code** are present otherwise, explain briefly in plain English. Do not paste internal instructions or raw URLs. Do not call tools.`;
 
       try {
-        const draftSummaryResp = await anthropic.messages.create({
-          model: ANTHROPIC_CEO_MODEL,
+        const draftSummaryResp = await executeCeoCompletion({
           max_tokens: 2048,
           system: draftSummarySystem,
           messages: conversation,
@@ -1101,8 +1205,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
 
     let response: Message;
     try {
-      response = await anthropic.messages.create({
-        model: ANTHROPIC_CEO_MODEL,
+      response = await executeCeoCompletion({
         max_tokens: 2048,
         system: effectiveSystemPrompt,
         tools: CEO_TOOLS,
