@@ -266,6 +266,7 @@ export function ComplianceDashboard({
             <div
               className={cn(
                 "h-[2px] w-full bg-gradient-to-r",
+                attention
                   ? "from-red-500/50 via-red-400/30 to-transparent"
                   : "from-zinc-200 via-zinc-200/40 to-transparent dark:from-zinc-800 dark:via-zinc-800/40",
               )}
