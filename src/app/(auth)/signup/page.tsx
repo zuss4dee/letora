@@ -141,7 +141,7 @@ function SignupEmailConfirmation({
         Already confirmed?{" "}
         <Link
           href="/login"
-          className="font-medium text-foreground underline-offset-4 transition-colors hover:text-[#a67c2c] hover:underline dark:hover:text-[#BD9952]"
+          className="font-medium text-foreground underline-offset-4 transition-colors hover:text-zinc-400 hover:underline"
         >
           Sign in
         </Link>
@@ -291,7 +291,7 @@ function SignupForm() {
         </div>
         <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
           Wrong place?{" "}
-          <Link href="/login" className="font-medium text-foreground underline-offset-4 hover:text-[#BD9952] hover:underline">
+          <Link href="/login" className="font-medium text-foreground underline-offset-4 hover:text-zinc-400 hover:underline">
             Sign in with another email
           </Link>
         </p>
@@ -411,7 +411,7 @@ function SignupForm() {
       {emailConfirmationSent ? null : (
         <p className="text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-foreground underline-offset-4 transition-colors hover:text-[#BD9952] hover:underline">
+          <Link href="/login" className="font-medium text-foreground underline-offset-4 transition-colors hover:text-zinc-400 hover:underline">
             Sign in
           </Link>
         </p>

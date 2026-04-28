@@ -71,7 +71,7 @@ function expiryStatusBadge(status: ComplianceRecordRow["status"] | undefined) {
   }
   if (status === "missing") {
     return (
-      <Badge className="h-6 shrink-0 border border-[#BD9952]/45 bg-[#BD9952]/10 px-2 font-headline text-[0.62rem] uppercase leading-none tracking-[0.12em] text-[#8a7348] dark:text-[#BD9952]">
+      <Badge className="h-6 shrink-0 border border-amber-500/20 bg-amber-500/10 px-2 font-headline text-[0.62rem] uppercase leading-none tracking-[0.12em] text-amber-600 dark:bg-amber-500/10 dark:text-amber-500">
         Missing date
       </Badge>
     );
@@ -94,14 +94,14 @@ function expiryStatusBadge(status: ComplianceRecordRow["status"] | undefined) {
 function documentStatusPill(hasDoc: boolean) {
   if (!hasDoc) {
     return (
-      <Badge className="h-6 shrink-0 border border-[#BD9952]/40 bg-[#BD9952]/[0.08] px-2 font-headline text-[0.62rem] uppercase leading-none tracking-[0.14em] text-[#8a7348] dark:text-[#BD9952]">
+      <Badge className="h-6 shrink-0 border border-amber-500/20 bg-amber-500/10 px-2 font-headline text-[0.62rem] uppercase leading-none tracking-[0.14em] text-amber-600 dark:bg-amber-500/10 dark:text-amber-500">
         Missing
       </Badge>
     );
   }
   return (
-    <span className="inline-flex h-6 items-center gap-1 rounded-full border border-[#BD9952]/35 bg-background/60 px-2.5 font-headline text-[0.62rem] uppercase tracking-[0.12em] text-foreground">
-      <Eye className="size-3 shrink-0 text-[#BD9952]" aria-hidden />
+    <span className="inline-flex h-6 items-center gap-1 rounded-full border border-zinc-200 bg-background/60 px-2.5 font-headline text-[0.62rem] uppercase tracking-[0.12em] text-zinc-900 dark:border-zinc-800 dark:text-zinc-100">
+      <Eye className="size-3 shrink-0 text-zinc-500" aria-hidden />
       View
     </span>
   );
@@ -214,7 +214,7 @@ export function ComplianceDashboard({
   if (properties.length === 0) {
     return (
       <div
-        className="compliance-card-enter relative overflow-hidden rounded-2xl border border-dashed border-[#BD9952]/35 bg-gradient-to-b from-muted/40 to-muted/10 px-8 py-20 text-center shadow-[inset_0_1px_0_0_rgba(189,153,82,0.12)]"
+        className="compliance-card-enter relative overflow-hidden rounded-2xl border border-dashed border-zinc-200 bg-gradient-to-b from-muted/40 to-muted/10 px-8 py-20 text-center shadow-sm dark:border-zinc-800"
         style={{ animationDelay: "80ms" }}
       >
         <div
@@ -225,7 +225,7 @@ export function ComplianceDashboard({
           }}
         />
         <div className="relative mx-auto flex max-w-md flex-col items-center gap-4">
-          <div className="flex size-14 items-center justify-center rounded-full border border-[#BD9952]/40 bg-[#BD9952]/10 text-[#BD9952]">
+          <div className="flex size-14 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100">
             <FileWarning className="size-7" strokeWidth={1.25} aria-hidden />
           </div>
           <div className="space-y-2">
@@ -266,9 +266,8 @@ export function ComplianceDashboard({
             <div
               className={cn(
                 "h-[2px] w-full bg-gradient-to-r",
-                attention
                   ? "from-red-500/50 via-red-400/30 to-transparent"
-                  : "from-[#BD9952]/80 via-[#BD9952]/25 to-transparent",
+                  : "from-zinc-200 via-zinc-200/40 to-transparent dark:from-zinc-800 dark:via-zinc-800/40",
               )}
               aria-hidden
             />
@@ -293,13 +292,13 @@ export function ComplianceDashboard({
                 }
                 onClick={() => toggleCard(p.id)}
                 className={cn(
-                  "flex w-full touch-manipulation items-start justify-between gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-[#BD9952]/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  "flex w-full touch-manipulation items-start justify-between gap-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-zinc-500/35 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   expanded ? "border-b border-border/50 pb-5" : "pb-1",
                   attention && "pr-24 sm:pr-28",
                 )}
               >
                 <header className="min-w-0 flex-1">
-                  <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]">
+                  <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-zinc-500">
                     Registered property
                   </p>
                   <h2 className="mt-2 font-headline text-base font-light leading-snug tracking-tight text-foreground sm:text-xl">
@@ -339,21 +338,19 @@ export function ComplianceDashboard({
                   const missingDoc = !hasDoc;
 
                   return (
-                    <li
-                      key={row.type}
-                      className={cn(
-                        "@container/cert relative overflow-hidden rounded-xl border transition-[border-color,box-shadow,background] duration-300",
-                        missingDoc
-                          ? "border-[#BD9952]/25 bg-gradient-to-br from-[#BD9952]/[0.07] via-card/30 to-card/60 shadow-[inset_0_0_0_1px_rgba(189,153,82,0.08)] hover:border-[#BD9952]/40 hover:shadow-[inset_0_0_0_1px_rgba(189,153,82,0.18),0_12px_40px_-24px_rgba(189,153,82,0.35)]"
-                          : "border-border/60 bg-muted/15 hover:border-border",
-                      )}
+                        className={cn(
+                          "@container/cert relative overflow-hidden rounded-xl border transition-[border-color,box-shadow,background] duration-300",
+                          missingDoc
+                            ? "border-amber-500/25 bg-gradient-to-br from-amber-500/[0.04] via-card/30 to-card/60 shadow-sm hover:border-amber-500/40"
+                            : "border-border/60 bg-muted/15 hover:border-border",
+                        )}
                     >
-                      {missingDoc ? (
-                        <div
-                          className="compliance-missing-glow pointer-events-none absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-[#BD9952] via-[#BD9952]/70 to-[#BD9952]/30"
-                          aria-hidden
-                        />
-                      ) : null}
+                        {missingDoc ? (
+                          <div
+                            className="compliance-missing-glow pointer-events-none absolute inset-y-0 left-0 w-[3px] bg-gradient-to-b from-amber-500 via-amber-500/70 to-amber-500/30"
+                            aria-hidden
+                          />
+                        ) : null}
 
                       {/* Flex + container queries: narrow widths always stack copy above controls (no grid overlap). */}
                       <div className="relative isolate flex flex-col gap-3 p-3 pl-4 sm:gap-4 sm:p-4 sm:pl-5 @[28rem]/cert:flex-row @[28rem]/cert:items-start @[28rem]/cert:gap-5 @[32rem]/cert:gap-6">
@@ -376,7 +373,7 @@ export function ComplianceDashboard({
                               "space-y-3 rounded-xl border p-3.5",
                               "border-border/70 bg-background/70 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)]",
                               "dark:bg-muted/20 dark:shadow-[inset_0_1px_0_0_rgba(255,255,255,0.03)]",
-                              missingDoc && "border-[#BD9952]/30 bg-[#BD9952]/[0.04]",
+                              missingDoc && "border-amber-500/30 bg-amber-500/[0.04]",
                             )}
                           >
                             <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
@@ -403,13 +400,13 @@ export function ComplianceDashboard({
                                 size="sm"
                                 variant="outline"
                                 disabled={isOpening || isUploading}
-                                className="h-9 w-full justify-center rounded-full border-[#BD9952]/45 bg-background/80 px-4 font-headline text-xs font-medium text-foreground transition hover:border-[#BD9952]/70 hover:bg-[#BD9952]/12"
+                                className="h-9 w-full justify-center rounded-full border-zinc-200 bg-background/80 px-4 font-headline text-xs font-medium text-foreground transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
                                 onClick={() => void onViewDocument(p.id, row.type)}
                               >
                                 {isOpening ? (
                                   <Loader2 className="mr-2 size-3.5 shrink-0 animate-spin" aria-hidden />
-                                ) : (
-                                  <Eye className="mr-2 size-3.5 shrink-0 text-[#BD9952]" aria-hidden />
+                               ) : (
+                                  <Eye className="mr-2 size-3.5 shrink-0 text-zinc-500" aria-hidden />
                                 )}
                                 View
                               </Button>
@@ -419,13 +416,13 @@ export function ComplianceDashboard({
                                 size="sm"
                                 variant="outline"
                                 disabled={isUploading || pending}
-                                className="h-9 w-full justify-center rounded-full border-[#BD9952]/45 bg-background/80 px-4 font-headline text-xs font-medium transition hover:border-[#BD9952]/70 hover:bg-[#BD9952]/12"
+                                className="h-9 w-full justify-center rounded-full border-zinc-200 bg-background/80 px-4 font-headline text-xs font-medium transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
                                 onClick={() => fileInputRefs.current[rk]?.click()}
                               >
                                 {isUploading ? (
                                   <Loader2 className="mr-2 size-3.5 shrink-0 animate-spin" aria-hidden />
                                 ) : (
-                                  <Upload className="mr-2 size-3.5 shrink-0 text-[#BD9952]" aria-hidden />
+                                  <Upload className="mr-2 size-3.5 shrink-0 text-zinc-500" aria-hidden />
                                 )}
                                 Upload PDF
                               </Button>
@@ -442,12 +439,12 @@ export function ComplianceDashboard({
                                 className={cn(
                                   "flex h-10 w-full min-w-0 items-center gap-2 rounded-full border border-border/80 bg-background/90 px-3",
                                   "shadow-inner shadow-black/[0.06] outline-none transition",
-                                  "focus-within:border-[#BD9952]/55 focus-within:ring-2 focus-within:ring-[#BD9952]/22",
+                                  "focus-within:border-zinc-500/55 focus-within:ring-2 focus-within:ring-zinc-500/22",
                                   "dark:bg-muted/30",
                                   (pending || isUploading) && "pointer-events-none opacity-50",
                                 )}
                               >
-                                <Calendar className="size-4 shrink-0 text-[#BD9952]/90" aria-hidden />
+                                <Calendar className="size-4 shrink-0 text-zinc-500" aria-hidden />
                                 <input
                                   type="date"
                                   aria-labelledby={`expiry-label-${rk}`}

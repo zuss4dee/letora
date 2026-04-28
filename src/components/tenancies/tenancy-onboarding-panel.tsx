@@ -56,7 +56,7 @@ function onboardingStatusBadge(status: string) {
     return (
       <Badge
         className={cn(
-          "border-0 bg-[#BD9952]/12 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[#c9a660] ring-1 ring-[#BD9952]/35",
+          "border-0 bg-amber-500/10 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-amber-600 ring-1 ring-amber-500/20 dark:bg-amber-500/10 dark:text-amber-500",
         )}
       >
         {label}
@@ -125,7 +125,7 @@ function taskStatusBadge(task: OnboardingTaskRow) {
   return (
     <Badge
       className={cn(
-        "border-0 bg-[#2a1f0e]/85 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#BD9952] ring-1 ring-[#BD9952]/25",
+        "border-0 bg-amber-500/10 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-amber-600 ring-1 ring-amber-500/20 dark:bg-amber-500/10 dark:text-amber-500",
       )}
     >
       Pending
@@ -143,7 +143,7 @@ function emailTaskLabel(task: OnboardingTaskRow) {
     );
   }
   if (task.email_log_id && task.email_log_status === "draft") {
-    return <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-[#BD9952]">Draft ready</span>;
+    return <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-amber-600 dark:text-amber-500">Draft ready</span>;
   }
   if (task.email_log_id && task.email_log_status === "failed") {
     return <span className="font-[family-name:var(--font-inter)] text-[0.65rem] text-[#e8a8a4]">Send failed</span>;
@@ -219,7 +219,7 @@ export function TenancyOnboardingPanel({
     <Card className={TENANCY_CARD}>
       <CardHeader className={`${TENANCY_CARD_HEADER} flex flex-row flex-wrap items-start justify-between gap-3`}>
         <div className="space-y-2">
-          <p className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.14em] text-[#BD9952]">
+          <p className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
             Workflow
           </p>
           <CardTitle className={TENANCY_CARD_TITLE}>Tenant onboarding</CardTitle>
@@ -289,7 +289,7 @@ export function TenancyOnboardingPanel({
                             void revertToPending(task.id);
                           }
                         }}
-                        className="border-zinc-400/60 data-checked:border-[#BD9952] data-checked:bg-[#BD9952] data-checked:text-[#2c1e00] dark:border-zinc-600"
+                        className="border-zinc-400/60 data-checked:border-emerald-500 data-checked:bg-emerald-500 data-checked:text-white dark:border-zinc-600"
                       />
                     </TableCell>
                     <TableCell className="font-[family-name:var(--font-inter)] text-[12px] font-medium text-zinc-900 dark:text-zinc-100">

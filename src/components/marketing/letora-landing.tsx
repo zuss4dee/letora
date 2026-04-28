@@ -31,7 +31,7 @@ function JewelryButton({
     <Link
       href={href}
       className={cn(
-        "inline-flex items-center justify-center rounded-md bg-gradient-to-br from-[#FFEABB] to-[#FFC800] font-semibold text-[#3e2e00] shadow-[0_0_40px_-10px_rgba(255,234,187,0.35)] transition-all hover:shadow-[0_0_56px_-8px_rgba(255,234,187,0.55)] active:scale-[0.98]",
+        "inline-flex items-center justify-center rounded-md bg-white font-semibold text-black shadow-[0_0_40px_-10px_rgba(255,255,255,0.2)] transition-all hover:bg-zinc-100 hover:shadow-[0_0_56px_-8px_rgba(255,255,255,0.3)] active:scale-[0.98]",
         size === "lg" ? "px-10 py-5 text-lg" : "px-6 py-2.5 text-sm",
         className,
       )}
@@ -43,7 +43,7 @@ function JewelryButton({
 
 export function LetoraLanding() {
   return (
-    <div className="dark min-h-screen overflow-x-hidden bg-[#131313] text-foreground selection:bg-[#FFEABB]/35 selection:text-[#1a1200]">
+    <div className="dark min-h-screen overflow-x-hidden bg-[#0B0B0B] text-foreground selection:bg-white/10 selection:text-white">
       <a
         href="#main"
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-[#FFEABB] focus:px-4 focus:py-2 focus:text-[#3e2e00]"
@@ -62,7 +62,7 @@ export function LetoraLanding() {
           </div>
           <div className="relative z-10 max-w-5xl space-y-10 md:space-y-12">
             <h1 className="space-y-3 md:space-y-5">
-              <span className="block bg-gradient-to-br from-[#FFEABB] via-[#FFEABB] to-[#FFC800] bg-clip-text font-headline text-6xl font-extrabold leading-[0.92] tracking-[-0.04em] text-transparent md:text-8xl lg:text-9xl">
+              <span className="block bg-gradient-to-br from-white via-white to-zinc-500 bg-clip-text font-headline text-6xl font-extrabold leading-[0.92] tracking-[-0.04em] text-transparent md:text-8xl lg:text-9xl">
                 Letora
               </span>
               <span className="block font-headline text-3xl font-light leading-tight tracking-[-0.03em] text-foreground md:text-5xl lg:text-6xl">
@@ -97,7 +97,7 @@ export function LetoraLanding() {
         >
           <div className="mx-auto grid max-w-screen-2xl grid-cols-1 items-center gap-16 lg:grid-cols-2 lg:gap-20">
             <div className="z-10 space-y-8">
-              <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-[#FFEABB]">
+              <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-emerald-500">
                 Adaptive AI
               </span>
               <h2 className="font-headline text-5xl font-bold leading-[0.9] tracking-[-0.04em] text-foreground md:text-7xl">
@@ -113,7 +113,7 @@ export function LetoraLanding() {
                 <span className="h-px w-12 bg-[#4F4632]/40" aria-hidden />
                 <Link
                   href="/signup"
-                  className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-sm font-semibold uppercase tracking-widest text-[#FFEABB] transition-transform hover:translate-x-1"
+                  className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-sm font-semibold uppercase tracking-widest text-emerald-500 transition-transform hover:translate-x-1"
                 >
                   Explore leads <ArrowRight className="size-4" aria-hidden />
                 </Link>
@@ -140,7 +140,7 @@ export function LetoraLanding() {
         >
           <div className="mx-auto flex max-w-screen-2xl flex-col items-center gap-16 lg:flex-row-reverse lg:gap-16">
             <div className="space-y-8 text-right lg:w-1/2">
-              <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-[#FFEABB]">
+              <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-emerald-500">
                 Efficiency
               </span>
               <h2 className="font-headline text-5xl font-bold leading-[0.9] tracking-[-0.04em] text-foreground md:text-7xl">
@@ -214,7 +214,7 @@ export function LetoraLanding() {
         >
           <div className="mx-auto max-w-4xl space-y-16 text-center">
             <div className="space-y-6">
-              <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-[#FFEABB]">
+              <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-emerald-500">
                 Core engine
               </span>
               <h2 className="font-headline text-5xl font-bold leading-none tracking-[-0.04em] text-foreground md:text-7xl lg:text-8xl">
@@ -240,9 +240,9 @@ export function LetoraLanding() {
                     sizes="(max-width: 896px) 100vw, 896px"
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="flex items-center gap-3 rounded-full border border-white/10 bg-[#353535]/50 px-6 py-3 backdrop-blur-md">
-                      <span className="size-2 animate-pulse rounded-full bg-[#FFEABB]" />
-                      <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.25em] text-[#FFEABB]">
+                    <div className="flex items-center gap-3 rounded-full border border-white/10 bg-[#1A1A1A]/50 px-6 py-3 backdrop-blur-md">
+                      <span className="size-2 animate-pulse rounded-full bg-emerald-500" />
+                      <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.25em] text-emerald-500">
                         Live sync
                       </span>
                     </div>

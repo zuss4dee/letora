@@ -46,7 +46,7 @@ export function LetoraProductFeaturesSection() {
     >
       <div className="mx-auto max-w-screen-2xl">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-[#FFEABB]">
+          <p className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-emerald-500">
             Product
           </p>
           <h2
@@ -56,7 +56,7 @@ export function LetoraProductFeaturesSection() {
             Inside the platform
           </h2>
           <p className="mx-auto mt-5 max-w-xl font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-foreground md:text-lg">
-            Real screens from the Letora workspace: editorial dark UI, gold accents, and data you can act on.
+            Real screens from the Letora workspace: editorial dark UI, neutral accents, and data you can act on.
           </p>
         </div>
 
@@ -75,7 +75,7 @@ export function LetoraProductFeaturesSection() {
                     copyOnLeft ? "lg:pr-4" : "lg:pl-4",
                   )}
                 >
-                  <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
+                  <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-zinc-500">
                     {item.kicker}
                   </p>
                   <h3 className="font-headline text-3xl font-light tracking-[-0.03em] text-foreground md:text-4xl">
@@ -86,7 +86,7 @@ export function LetoraProductFeaturesSection() {
                   </p>
                   <Link
                     href="/signup"
-                    className="inline-flex items-center gap-2 pt-2 font-[family-name:var(--font-inter)] text-sm font-semibold uppercase tracking-widest text-[#FFEABB] transition-transform hover:translate-x-1"
+                    className="inline-flex items-center gap-2 pt-2 font-[family-name:var(--font-inter)] text-sm font-semibold uppercase tracking-widest text-emerald-500 transition-transform hover:translate-x-1"
                   >
                     Start with Letora <ArrowRight className="size-4 shrink-0" aria-hidden />
                   </Link>

@@ -22,7 +22,7 @@ export function AuthEditorialAside({ variant }: { variant: keyof typeof copy }) 
         aria-hidden
       />
       <div className="relative z-[1] space-y-6">
-        <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/90">
+        <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-zinc-500 dark:text-zinc-400">
           {c.kicker}
         </p>
         <h2 className="font-headline max-w-[20ch] text-2xl font-extralight leading-snug tracking-[-0.03em] text-foreground md:text-[1.65rem]">

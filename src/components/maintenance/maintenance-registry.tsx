@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 type TabId = "all" | "in_progress" | "resolved";
 
-type DotTone = "red" | "gold" | "teal" | "grey" | "muted";
+type DotTone = "red" | "yellow" | "teal" | "grey" | "muted";
 
 function formatRelativeTime(iso: string | null): string {
   if (!iso) return "—";
@@ -61,11 +61,11 @@ function rowPresentation(row: MaintenanceRequestRow): {
   }
   if (st === "in_progress") {
     return {
-      dot: "gold",
+      dot: "yellow",
       statusLabel: "In Progress",
       actionLabel: "View",
       muted: false,
-      badgeClass: "bg-[#BD9952]/10 text-[#BD9952]",
+      badgeClass: "bg-amber-500/10 text-amber-500",
     };
   }
   const pri = (row.priority ?? "medium").toLowerCase();
@@ -99,11 +99,11 @@ function rowPresentation(row: MaintenanceRequestRow): {
   }
   if (row.contractorName?.trim()) {
     return {
-      dot: "gold",
+      dot: "yellow",
       statusLabel: "In Progress",
       actionLabel: "View",
       muted: false,
-      badgeClass: "bg-[#BD9952]/10 text-[#BD9952]",
+      badgeClass: "bg-amber-500/10 text-amber-500",
     };
   }
   return {
@@ -118,7 +118,7 @@ function rowPresentation(row: MaintenanceRequestRow): {
 function StatusDot({ tone }: { tone: DotTone }) {
   const cls: Record<DotTone, string> = {
     red: "bg-[#ee7d77] shadow-[0_0_8px_rgba(238,125,119,0.35)]",
-    gold: "bg-[#BD9952] shadow-[0_0_8px_rgba(189,153,82,0.35)]",
+    yellow: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.35)]",
     teal: "bg-[#afefdd] shadow-[0_0_8px_rgba(175,239,221,0.35)]",
     grey: "bg-[#767575]",
     muted: "bg-[#767575]/35",
@@ -206,7 +206,7 @@ export function MaintenanceRegistry({
               <button
                 type="button"
                 disabled={tenancies.length === 0}
-                className="inline-flex items-center gap-3 bg-[#BD9952] px-8 py-2.5 font-[family-name:var(--font-inter)] text-[0.625rem] font-bold uppercase tracking-[0.15em] text-[#2c1e00] transition-colors hover:bg-[#A38245] disabled:opacity-40"
+                className="inline-flex items-center gap-3 bg-white px-8 py-2.5 font-[family-name:var(--font-inter)] text-[0.625rem] font-bold uppercase tracking-[0.15em] text-black transition-colors hover:bg-zinc-200 disabled:opacity-40"
               >
                 <Plus className="size-4" strokeWidth={2} aria-hidden />
                 Raise Request
@@ -236,7 +236,7 @@ export function MaintenanceRegistry({
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Network
             </p>
-            <p className="font-headline mt-1 text-2xl font-extralight tabular-nums text-[#BD9952]">
+            <p className="font-headline mt-1 text-2xl font-extralight tabular-nums text-foreground">
               99.9%
             </p>
           </div>
@@ -272,7 +272,7 @@ export function MaintenanceRegistry({
                   "transition-colors",
                   tab === t.id
                     ? "text-foreground"
-                    : "text-muted-foreground hover:text-[#BD9952]",
+                    : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {t.label}
@@ -293,7 +293,7 @@ export function MaintenanceRegistry({
               <button
                 type="button"
                 onClick={() => setShowHistory(true)}
-                className="mt-4 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-[#BD9952] hover:underline"
+                className="mt-4 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-foreground hover:underline"
               >
                 Show historical records ({resolvedRows.length})
               </button>
@@ -325,7 +325,7 @@ export function MaintenanceRegistry({
                   <div className="flex min-w-0 flex-1 items-start gap-6">
                     <StatusDot tone={pres.dot} />
                     <div className="min-w-0">
-                      <h3 className="font-headline text-[0.9375rem] font-light text-foreground transition-colors group-hover:text-[#BD9952]">
+                      <h3 className="font-headline text-[0.9375rem] font-light text-foreground transition-colors group-hover:text-zinc-400">
                         {title}
                       </h3>
                       <p className="mt-0.5 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -354,7 +354,7 @@ export function MaintenanceRegistry({
                     </div>
                     <Link
                       href={`/dashboard/maintenance/${row.id}`}
-                      className="inline-flex shrink-0 items-center justify-center border border-[#484848]/25 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-foreground transition-all hover:border-[#BD9952] hover:text-[#BD9952]"
+                      className="inline-flex shrink-0 items-center justify-center border border-[#484848]/25 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-foreground transition-all hover:border-zinc-400 hover:text-zinc-400"
                     >
                       {pres.actionLabel}
                     </Link>
@@ -393,7 +393,7 @@ export function MaintenanceRegistry({
         <div className="mt-24 flex flex-col gap-8 border border-border bg-card/60 p-8 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex min-w-0 items-start gap-4">
             <div
-              className="mt-1 size-1.5 shrink-0 animate-pulse rounded-full bg-[#BD9952] shadow-[0_0_10px_#BD9952]"
+              className="mt-1 size-1.5 shrink-0 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
               aria-hidden
             />
             <div className="max-w-2xl">
@@ -402,7 +402,7 @@ export function MaintenanceRegistry({
               </p>
               <p className="mt-2 font-headline text-sm font-light leading-relaxed text-foreground">
                 Analyzing historical logs. Predicted trend: HVAC and plumbing workloads near{" "}
-                <span className="font-medium text-[#BD9952]">{insightProperty}</span> may rise with seasonal load.
+                <span className="font-medium text-foreground">{insightProperty}</span> may rise with seasonal load.
                 Consider scheduling a preventative walkthrough.
               </p>
             </div>

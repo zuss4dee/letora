@@ -106,7 +106,7 @@ function scoreBadge(score: number) {
     );
   }
   return (
-    <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
+    <Badge className="border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
       {score}
     </Badge>
   );
@@ -115,7 +115,7 @@ function scoreBadge(score: number) {
 function recommendationBadge(value: "qualify" | "reject") {
   if (value === "qualify") {
     return (
-      <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
+      <Badge className="border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400">
         Qualify
       </Badge>
     );
@@ -333,7 +333,7 @@ export function AgentsClient() {
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+                <Mail className="h-4 w-4 text-emerald-500" />
                 <CardTitle className="text-base">Rent Chaser</CardTitle>
               </div>
               <CardDescription>
@@ -345,7 +345,7 @@ export function AgentsClient() {
                 type="button"
                 onClick={onRunRentChaser}
                 disabled={isRentRunning}
-                className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+                className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
               >
                 {isRentRunning ? (
                   <>
@@ -380,7 +380,7 @@ export function AgentsClient() {
                 type="button"
                 onClick={onRunLeadQualifier}
                 disabled={isLeadRunning}
-                className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+                className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
               >
                 {isLeadRunning ? (
                   <>
@@ -415,7 +415,7 @@ export function AgentsClient() {
                 type="button"
                 onClick={openContractPicker}
                 disabled={isContractRunning}
-                className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+                className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
               >
                 {isContractRunning ? (
                   <>
@@ -573,7 +573,7 @@ export function AgentsClient() {
               type="button"
               disabled={applyingLeads || leadResults.length === 0}
               onClick={() => void onApplyAllLeads()}
-              className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+              className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
             >
               {applyingLeads ? (
                 <>
@@ -632,7 +632,7 @@ export function AgentsClient() {
               type="button"
               disabled={!selectedContractId}
               onClick={() => void onGenerateContract()}
-              className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+              className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
             >
               Generate
             </Button>
@@ -684,7 +684,7 @@ export function AgentsClient() {
                   type="button"
                   disabled={savedContract}
                   onClick={() => void onSaveContractToDb()}
-                  className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+                  className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
                 >
                   {savedContract ? "Saved ✓" : "Save to contract"}
                 </Button>

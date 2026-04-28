@@ -19,7 +19,7 @@ function SubmitButton({ label, pendingLabel }: { label: string; pendingLabel: st
     <Button
       type="submit"
       disabled={pending}
-      className="w-full bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700"
+      className="w-full bg-white text-black hover:bg-zinc-200 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
     >
       {pending ? pendingLabel : label}
     </Button>
@@ -61,7 +61,7 @@ export function AssignContractorForm({
         <CardDescription className="font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground">
           Saves who is handling this job on your workspace only. It does <span className="font-medium text-foreground/90">not</span>{" "}
           email the contractor. Outbound contractor messages use{" "}
-          <Link href="/dashboard/approvals" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
+          <Link href="/dashboard/approvals" className="font-medium text-foreground underline-offset-4 hover:text-zinc-400 hover:underline">
             Approvals
           </Link>{" "}
           (e.g. dispatch from the assistant with a contractor email).

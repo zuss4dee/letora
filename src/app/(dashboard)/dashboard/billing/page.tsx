@@ -26,13 +26,13 @@ export default async function BillingPage({
   return (
     <div className="@container/main relative flex flex-1 flex-col">
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[min(42vh,420px)] bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(61,26,10,0.35),transparent_65%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[min(42vh,420px)] bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(255,255,255,0.04),transparent_65%)]"
         aria-hidden
       />
       <div className="relative flex flex-col gap-10 py-8 md:py-12">
         <header className="space-y-4 px-4 lg:px-6">
           <div className="max-w-2xl space-y-3">
-            <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
+            <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-zinc-500">
               Workspace
             </p>
             <h1 className="font-headline text-2xl font-extralight tracking-[-0.04em] text-foreground sm:text-3xl md:text-[2.15rem] md:leading-tight">
@@ -42,7 +42,7 @@ export default async function BillingPage({
 
           {checkoutState === "success" ? (
             <div
-              className="max-w-xl rounded-lg border border-[#4F4632]/30 bg-[#1a1a1a]/90 px-4 py-3 font-[family-name:var(--font-inter)] text-sm text-foreground"
+              className="max-w-xl rounded-lg border border-zinc-800 bg-[#1a1a1a]/90 px-4 py-3 font-[family-name:var(--font-inter)] text-sm text-foreground"
               role="status"
             >
               Checkout completed. Your subscription and trial are handled in Stripe; it may take a minute for this page
@@ -51,11 +51,11 @@ export default async function BillingPage({
           ) : null}
           {checkoutState === "cancelled" ? (
             <div
-              className="max-w-xl rounded-lg border border-[#4F4632]/30 bg-[#1a1a1a]/90 px-4 py-3 font-[family-name:var(--font-inter)] text-sm text-muted-foreground"
+              className="max-w-xl rounded-lg border border-zinc-800 bg-[#1a1a1a]/90 px-4 py-3 font-[family-name:var(--font-inter)] text-sm text-muted-foreground"
               role="status"
             >
               Checkout was cancelled — no charge. You can try again from the{" "}
-              <Link href="/pricing" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
+              <Link href="/pricing" className="font-medium text-foreground hover:text-zinc-400 underline-offset-4 hover:underline">
                 pricing page
               </Link>
               .
@@ -76,7 +76,7 @@ export default async function BillingPage({
               ) : (
                 <p className="max-w-xl font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground">
                   Your plan is selected when you join Letora. If checkout didn&apos;t finish, continue from the{" "}
-                  <Link href="/pricing" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
+                  <Link href="/pricing" className="font-medium text-foreground hover:text-zinc-400 underline-offset-4 hover:underline">
                     pricing page
                   </Link>
                   .

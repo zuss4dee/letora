@@ -102,8 +102,8 @@
   --popover-foreground: #e2e8f0;
   --primary: #e4e2e1;
   --primary-foreground: #2a2828;
-  --secondary: #bd9952;
-  --secondary-foreground: #2c1e00;
+  --secondary: #282828;
+  --secondary-foreground: #fafafa;
   --muted: #131313;
   /* Secondary / helper — readable but clearly below body */
   --muted-foreground: #94a3b8;
@@ -112,20 +112,20 @@
   --destructive: #bb5551;
   --border: rgb(72 72 72 / 0.15);
   --input: rgb(72 72 72 / 0.15);
-  --ring: #bd9952;
-  --chart-1: #bd9952;
-  --chart-2: #c4c4c4;
+  --ring: #ffffff;
+  --chart-1: #ffffff;
+  --chart-2: #a1a1aa;
   --chart-3: #474646;
   --chart-4: #1f2020;
   --chart-5: #131313;
   --sidebar: #0e0e0e;
   --sidebar-foreground: #e2e8f0;
-  --sidebar-primary: #bd9952;
-  --sidebar-primary-foreground: #2c1e00;
+  --sidebar-primary: #ffffff;
+  --sidebar-primary-foreground: #0B0B0B;
   --sidebar-accent: #2c2c2c;
   --sidebar-accent-foreground: #e2e8f0;
   --sidebar-border: rgb(72 72 72 / 0.15);
-  --sidebar-ring: #bd9952;
+  --sidebar-ring: #ffffff;
   --radius: 0.125rem;
   /* Placeholders stay clearly grey (not near white like body copy) */
   --placeholder-foreground: #8f8f8f;

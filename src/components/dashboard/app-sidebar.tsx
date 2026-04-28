@@ -107,7 +107,7 @@ const navRowBase =
 const navRowIdle =
   "text-[#6a655d] hover:bg-black/[0.04] hover:text-[#23211f] active:bg-black/[0.06] dark:text-[#a19f9a] dark:hover:bg-white/[0.055] dark:hover:text-[#e7e5e2] dark:active:bg-white/[0.07]";
 const navRowActive =
-  "bg-[#e7e2da] text-[#1a1917] shadow-[inset_2px_0_0_0_#01696f] dark:bg-[#2a2724] dark:text-[#f2f1ef]";
+  "bg-zinc-100 text-zinc-900 shadow-[inset_2px_0_0_0_#000000] dark:bg-zinc-800/80 dark:text-zinc-100 dark:shadow-[inset_2px_0_0_0_#ffffff]";
 
 type AttentionItem = { url: string; title: string; ariaLabel: string };
 
@@ -149,15 +149,15 @@ function NavSection({
                   className={cn(
                     "size-4 shrink-0 stroke-[1.5] transition-colors duration-150",
                     active
-                      ? "text-[#01696f] dark:text-[#97e6ec]"
-                      : "text-[#8a8176] group-hover:text-[#5a5146] dark:text-[#7f7c77] dark:group-hover:text-[#c2bfba]",
+                      ? "text-zinc-900 dark:text-zinc-100"
+                      : "text-zinc-500 group-hover:text-zinc-700 dark:text-zinc-500 dark:group-hover:text-zinc-300",
                   )}
                   aria-hidden
                 />
                 <span className="min-w-0 flex-1 truncate">{item.title}</span>
                 {item.badgeCount != null && item.badgeCount > 0 ? (
                   <span
-                    className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full border border-[#bd9952]/35 bg-[#f3ebdf] px-1 font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold tabular-nums text-[#8d602b] dark:bg-[#31281c] dark:text-[#e2b485]"
+                    className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 px-1 font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold tabular-nums text-red-600 dark:bg-red-500/10 dark:text-red-500"
                     aria-label={`${item.badgeCount} items pending approval`}
                     title={item.badgeTitle}
                   >
@@ -349,7 +349,7 @@ export function AppSidebar({
       variant={variant ?? "sidebar"}
       side={side}
       className={cn(
-        "border-transparent [&_[data-sidebar=sidebar]]:border-transparent [&_[data-sidebar=sidebar]]:bg-[#efebe5] dark:[&_[data-sidebar=sidebar]]:bg-[#141312]",
+        "border-transparent [&_[data-sidebar=sidebar]]:border-transparent [&_[data-sidebar=sidebar]]:bg-zinc-50 dark:[&_[data-sidebar=sidebar]]:bg-[#0B0B0B]",
         className,
       )}
     >
@@ -370,7 +370,7 @@ export function AppSidebar({
           </p>
         </Link>
 
-        <div className="mx-5 mt-4 rounded-md bg-[#e8e3da] px-3 py-2.5 dark:bg-[#1b1a19]">
+        <div className="mx-5 mt-4 rounded-md bg-zinc-100 px-3 py-2.5 dark:bg-zinc-900/50">
           <p className="font-[family-name:var(--font-inter)] text-[0.56rem] font-semibold uppercase tracking-[0.14em] text-[#7f7569] dark:text-[#7d7a75]">
             Subscription
           </p>
@@ -400,7 +400,7 @@ export function AppSidebar({
           <Link
             href="/dashboard/properties"
             onClick={closeMobileNav}
-            className="flex touch-manipulation items-center justify-center gap-2 rounded-md border border-[#01696f]/35 bg-[#01696f]/12 py-2 font-[family-name:var(--font-inter)] text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[#01555a] transition-colors hover:border-[#01696f]/55 hover:bg-[#01696f]/16 hover:text-[#01484c] dark:border-[#01696f]/35 dark:bg-[#01696f]/14 dark:text-[#97e6ec] dark:hover:bg-[#01696f]/2 dark:hover:text-[#b5f0f4]"
+            className="flex touch-manipulation items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white py-2 font-[family-name:var(--font-inter)] text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
           >
             <PlusCircle className="size-4 shrink-0 stroke-[1.5]" aria-hidden />
             Add a property
@@ -538,7 +538,7 @@ export function AppSidebar({
                 onBeforeOpen={closeMobileNav}
                 className={cn(navRowBase, navRowIdle, "mb-0.5")}
               />
-              <div className="mx-2 mt-2 rounded-md bg-[#e8e3da] p-2.5 dark:bg-[#1b1a19]">
+              <div className="mx-2 mt-2 rounded-md bg-zinc-100 p-2.5 dark:bg-zinc-900/50">
                 <div className="flex items-center gap-3">
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-[#ddd7cc] font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-wide text-[#3b3329] ring-1 ring-black/[0.05] dark:bg-[#2a2826] dark:text-[#cdccca] dark:ring-white/[0.06]">
                     {(userEmail?.[0] ?? "?").toUpperCase()}

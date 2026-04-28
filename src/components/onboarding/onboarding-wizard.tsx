@@ -37,7 +37,7 @@ import { isValidEmailOrEmpty } from "@/lib/validations/email";
 import { cn } from "@/lib/utils";
 
 const nextGlow =
-  "bg-[#BD9952] text-[#141008] shadow-[0_0_22px_-2px_rgba(189,153,82,0.55),0_0_44px_-8px_rgba(189,153,82,0.28)] transition-[box-shadow,transform] hover:shadow-[0_0_32px_-2px_rgba(189,153,82,0.65),0_0_56px_-6px_rgba(189,153,82,0.35)] hover:brightness-[1.03] active:scale-[0.99] disabled:opacity-50 disabled:shadow-none";
+  "bg-white text-black shadow-[0_0_22px_-2px_rgba(255,255,255,0.25)] transition-[box-shadow,transform] hover:shadow-[0_0_32px_-2px_rgba(255,255,255,0.35)] hover:brightness-[0.9] active:scale-[0.99] disabled:opacity-50 disabled:shadow-none";
 
 /** Empty is allowed; non-empty must be a valid email (server Zod is authoritative). */
 function isOptionalEmailFieldOk(value: string): boolean {
@@ -317,7 +317,7 @@ export function OnboardingWizard({
   const stepsRemainingAfter = LANDLORD_ONBOARDING_WIZARD_STEP_COUNT - (step + 1);
 
   const onboardingInputClass =
-    "h-12 border-zinc-800 bg-zinc-950/40 px-4 font-headline text-base font-light text-white placeholder:text-zinc-600 focus-visible:border-[#BD9952]/45 focus-visible:ring-2 focus-visible:ring-[#BD9952]/15";
+    "h-12 border-zinc-800 bg-zinc-950/40 px-4 font-headline text-base font-light text-white placeholder:text-zinc-600 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/20";
 
   const canSubmitProperty =
     propertyStreet.trim().length >= 1 &&
@@ -336,7 +336,7 @@ export function OnboardingWizard({
       <div className="pointer-events-none fixed inset-x-0 top-0 z-[100] h-[2px]">
         <div className="absolute inset-0 bg-[#0a0a0a]" aria-hidden />
         <div
-          className="absolute inset-x-0 top-1/2 h-[6px] -translate-y-1/2 bg-gradient-to-r from-transparent via-[#BD9952]/22 to-transparent opacity-80 blur-md"
+          className="absolute inset-x-0 top-1/2 h-[6px] -translate-y-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-80 blur-md"
           aria-hidden
         />
         <div className="relative h-[2px] w-full overflow-hidden">
@@ -347,10 +347,10 @@ export function OnboardingWizard({
             aria-valuenow={progressValue}
             aria-valuetext={`Step ${step + 1} of ${LANDLORD_ONBOARDING_WIZARD_STEP_COUNT}`}
             aria-label="Setup progress"
-            className="absolute inset-y-0 left-0 h-full rounded-none bg-gradient-to-r from-[#6e5a2a] via-[#BD9952] to-[#f5edd8]"
+            className="absolute inset-y-0 left-0 h-full rounded-none bg-gradient-to-r from-zinc-700 via-zinc-400 to-white"
             style={{
               boxShadow:
-                "0 0 10px 1px rgba(189, 153, 82, 0.5), 0 0 24px 2px rgba(189, 153, 82, 0.18)",
+                "0 0 10px 1px rgba(255, 255, 255, 0.3), 0 0 24px 2px rgba(255, 255, 255, 0.1)",
             }}
             initial={false}
             animate={{ width: `${progress}%` }}
@@ -363,7 +363,7 @@ export function OnboardingWizard({
         className="pointer-events-none absolute inset-0 opacity-[0.28]"
         style={{
           backgroundImage:
-            "radial-gradient(ellipse 85% 55% at 50% -15%, rgba(189,153,82,0.11), transparent 58%)",
+            "radial-gradient(ellipse 85% 55% at 50% -15%, rgba(255,255,255,0.06), transparent 58%)",
         }}
         aria-hidden
       />
@@ -377,7 +377,7 @@ export function OnboardingWizard({
             <div className="h-px flex-1 bg-gradient-to-r from-zinc-800/90 to-transparent" aria-hidden />
           </div>
           <div className="flex flex-col gap-1">
-            <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-[#BD9952]/90">
+            <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-zinc-400">
               Step {step + 1} of {LANDLORD_ONBOARDING_WIZARD_STEP_COUNT} · {LANDLORD_ONBOARDING_WIZARD_STEPS[step]}
             </p>
             <p className="font-headline text-xs font-light text-zinc-500">
@@ -402,7 +402,7 @@ export function OnboardingWizard({
                 className="space-y-12"
               >
                 <div className="space-y-5">
-                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-[#BD9952]/90">
+                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-zinc-400">
                     Identity
                   </p>
                   <h1 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
@@ -422,7 +422,7 @@ export function OnboardingWizard({
                     value={portfolioName}
                     onChange={(e) => setPortfolioName(e.target.value)}
                     placeholder="e.g. Meridian Street Holdings"
-                    className="h-16 border-zinc-800 bg-zinc-950/40 px-6 font-headline text-xl font-light tracking-tight text-white placeholder:text-zinc-600 focus-visible:border-[#BD9952]/45 focus-visible:ring-2 focus-visible:ring-[#BD9952]/15"
+                    className="h-16 border-zinc-800 bg-zinc-950/40 px-6 font-headline text-xl font-light tracking-tight text-white placeholder:text-zinc-600 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/20"
                   />
                 </div>
 
@@ -458,7 +458,7 @@ export function OnboardingWizard({
                 className="space-y-12"
               >
                 <div className="space-y-5">
-                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-[#BD9952]/90">
+                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-zinc-400">
                     Priorities
                   </p>
                   <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
@@ -468,7 +468,7 @@ export function OnboardingWizard({
                     Choose at least one and up to {MAX_ONBOARDING_PRIORITIES} areas — we tune defaults and assistant
                     behaviour around your selections. Tap again to remove.
                   </p>
-                  <p className="font-headline text-sm font-medium text-[#BD9952]/90" aria-live="polite">
+                  <p className="font-headline text-sm font-medium text-zinc-400" aria-live="polite">
                     {selectedPriorities.length}/{MAX_ONBOARDING_PRIORITIES} selected
                   </p>
                 </div>
@@ -485,7 +485,7 @@ export function OnboardingWizard({
                         className={cn(
                           "group flex min-h-[7.5rem] flex-col justify-between rounded-2xl border px-6 py-6 text-left transition-colors sm:min-h-[8.25rem]",
                           selected
-                            ? "border-[#BD9952]/50 bg-[#BD9952]/[0.06]"
+                            ? "border-white/50 bg-white/[0.06]"
                             : "border-zinc-800/90 bg-transparent hover:border-zinc-700",
                         )}
                       >
@@ -497,7 +497,7 @@ export function OnboardingWizard({
                             className={cn(
                               "mt-1 flex size-6 shrink-0 items-center justify-center rounded-full border",
                               selected
-                                ? "border-[#BD9952] bg-[#BD9952]/15 text-[#BD9952]"
+                                ? "border-white bg-white/15 text-white"
                                 : "border-zinc-700 text-transparent",
                             )}
                           >
@@ -551,7 +551,7 @@ export function OnboardingWizard({
                 className="space-y-12"
               >
                 <div className="space-y-5">
-                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-[#BD9952]/90">
+                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-zinc-400">
                     Essentials
                   </p>
                   <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
@@ -566,7 +566,7 @@ export function OnboardingWizard({
                   <div className="space-y-2">
                     <Label htmlFor="ob-landlord" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
                       Full landlord / legal name{" "}
-                      <span className="normal-case tracking-normal text-[#BD9952]/90">(required)</span>
+                      <span className="normal-case tracking-normal text-zinc-400">(required)</span>
                     </Label>
                     <Input
                       id="ob-landlord"
@@ -592,7 +592,7 @@ export function OnboardingWizard({
                           setReferencingAgencyEmail("");
                         }
                       }}
-                      className="mt-0.5 border-zinc-600 data-checked:border-[#BD9952] data-checked:bg-[#BD9952] data-checked:text-[#141008]"
+                      className="mt-0.5 border-zinc-600 data-checked:border-white data-checked:bg-white data-checked:text-black"
                     />
                     <label htmlFor="ob-no-agency" className="cursor-pointer font-headline text-sm font-light leading-snug text-zinc-300">
                       I don&apos;t have an agency or separate referencing contact
@@ -688,7 +688,7 @@ export function OnboardingWizard({
                 className="space-y-12"
               >
                 <div className="space-y-5">
-                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-[#BD9952]/90">
+                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-zinc-400">
                     First property
                   </p>
                   <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
@@ -712,7 +712,7 @@ export function OnboardingWizard({
                           type="checkbox"
                           checked={addressManualOnly}
                           onChange={(e) => setAddressManualOnly(e.target.checked)}
-                          className="size-3.5 rounded border-zinc-600 bg-zinc-950 accent-[#BD9952]"
+                          className="size-3.5 rounded border-zinc-600 bg-zinc-950 accent-white"
                         />
                         <Label
                           htmlFor="onboarding-address-manual"
@@ -757,7 +757,7 @@ export function OnboardingWizard({
                             }
                             placeholder="Start typing — pick a suggestion to fill street, city, and postcode"
                             className={cn(
-                              "h-12 w-full rounded-md border border-zinc-800 bg-zinc-950/40 px-4 font-headline text-base font-light text-white placeholder:text-zinc-600 focus-visible:border-[#BD9952]/45 focus-visible:ring-2 focus-visible:ring-[#BD9952]/15 focus-visible:outline-none disabled:opacity-50",
+                              "h-12 w-full rounded-md border border-zinc-800 bg-zinc-950/40 px-4 font-headline text-base font-light text-white placeholder:text-zinc-600 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:outline-none disabled:opacity-50",
                             )}
                           />
                           <p className="font-headline text-xs font-light text-zinc-600">

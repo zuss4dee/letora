@@ -167,13 +167,13 @@ export function AgentSettingsForm({
         >
           <TabsTrigger
             value="general"
-            className="rounded-none px-0 pb-3 text-muted-foreground after:bottom-0 after:h-[2px] after:bg-[#BD9952] data-[state=active]:text-foreground"
+            className="rounded-none px-0 pb-3 text-muted-foreground after:bottom-0 after:h-[2px] after:bg-foreground data-[state=active]:text-foreground"
           >
             Business &amp; operations
           </TabsTrigger>
           <TabsTrigger
             value="email"
-            className="rounded-none px-0 pb-3 text-muted-foreground after:bottom-0 after:h-[2px] after:bg-[#BD9952] data-[state=active]:text-foreground"
+            className="rounded-none px-0 pb-3 text-muted-foreground after:bottom-0 after:h-[2px] after:bg-foreground data-[state=active]:text-foreground"
           >
             Email &amp; Automation
           </TabsTrigger>
@@ -560,7 +560,7 @@ export function AgentSettingsForm({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-md bg-[#BD9952] px-8 text-[#2c1e00] shadow-none hover:bg-[#c9a660]"
+          className="rounded-md bg-zinc-900 px-8 text-white shadow-none hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
         >
           {isSubmitting ? "Saving…" : "Save settings"}
         </Button>

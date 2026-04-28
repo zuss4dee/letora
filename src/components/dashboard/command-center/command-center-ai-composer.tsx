@@ -2,9 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
-import { Loader2, Send, Zap } from "lucide-react";
-
-import { Textarea } from "@/components/ui/textarea";
+import { ArrowUpRight, Loader2 } from "lucide-react";
 
 export function CommandCenterAiComposer() {
   const router = useRouter();
@@ -24,46 +22,48 @@ export function CommandCenterAiComposer() {
   }, [busy, router, text]);
 
   return (
-    <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-5 pt-2 md:left-[var(--sidebar-width)]">
-      <div className="pointer-events-auto w-full max-w-5xl px-4 sm:px-5">
+    <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-6 md:left-[var(--sidebar-width)]">
+      <div className="pointer-events-auto w-full max-w-4xl px-6">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             void submit();
           }}
-          className="flex min-h-[8.5rem] flex-col rounded border border-[#333333] bg-[#1A1A1A] p-2 transition-colors focus-within:border-white sm:min-h-[9rem]"
-          data-mercury-tour="assistant-input"
+          className="mx-auto w-full"
         >
-          <div className="mb-2 flex items-center gap-3 border border-[#333333] bg-black px-3 py-1.5">
-            <Zap className="size-4 shrink-0 fill-white text-white" aria-hidden />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">LETORA AI</span>
-          </div>
-          <div className="flex min-h-0 flex-1 flex-col gap-2 px-2 pb-1 sm:flex-row sm:items-end">
-            <Textarea
+          <div className="flex items-center border border-[#282828] bg-[#1A1A1A] p-1.5 shadow-2xl">
+            <input
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   void submit();
                 }
               }}
-              placeholder="Ask Letora about a tenant, rent issue, maintenance request, or approval…"
-              rows={4}
-              className="min-h-[6.25rem] flex-1 resize-none border-0 bg-transparent py-2 text-sm leading-relaxed text-zinc-100 shadow-none outline-none ring-0 placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:ring-offset-0 sm:min-h-[6.75rem]"
-              aria-label="Letora AI input"
+              placeholder="Ask Letora..."
+              className="flex-1 bg-transparent px-4 py-3 text-[13px] text-zinc-200 placeholder-[#444748] outline-none"
+              disabled={busy}
             />
-            <div className="flex shrink-0 items-center justify-end gap-2 pb-1 sm:flex-col sm:items-end sm:pb-0 sm:pt-0">
-              <span className="hidden font-mono text-[10px] text-zinc-600 sm:inline">CMD + ENTER to send</span>
-              <button
-                type="submit"
-                disabled={busy || !text.trim()}
-                className="p-1.5 text-zinc-400 transition-colors hover:bg-[#242424] hover:text-white disabled:opacity-40"
-                aria-label="Send message"
-              >
-                {busy ? <Loader2 className="size-5 animate-spin" /> : <Send className="size-5" />}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={busy || !text.trim()}
+              className="flex items-center gap-2 bg-white px-6 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#0B0B0B] transition-all hover:bg-zinc-200 disabled:opacity-50 active:scale-95"
+            >
+              {busy ? (
+                <Loader2 className="size-3.5 animate-spin" />
+              ) : (
+                <>
+                  Send Message
+                  <ArrowUpRight className="size-3.5" />
+                </>
+              )}
+            </button>
+          </div>
+          <div className="mt-3 flex justify-center">
+            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#555555] drop-shadow-md">
+              Agent LX-Core v4.2 Active
+            </span>
           </div>
         </form>
       </div>

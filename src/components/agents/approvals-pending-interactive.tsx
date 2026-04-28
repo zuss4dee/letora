@@ -226,7 +226,7 @@ export function ApprovalsPendingInteractive({
               <Button
                 type="button"
                 disabled={busyId === selectedApproval.id}
-                className="h-9 w-full border border-white/20 bg-zinc-100 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-black hover:bg-zinc-200"
+                className="h-9 w-full border-none bg-emerald-500 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white hover:bg-emerald-600"
                 onClick={() => void runApprove(selectedApproval.id)}
               >
                 {busyId === selectedApproval.id ? "…" : "Approve action"}
@@ -234,9 +234,8 @@ export function ApprovalsPendingInteractive({
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   type="button"
-                  variant="outline"
                   disabled={busyId === selectedApproval.id}
-                  className="h-8 border-white/[0.16] bg-transparent font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.1em] text-zinc-300 hover:bg-white/[0.04] hover:text-zinc-100"
+                  className="h-8 w-full border-none bg-red-600 font-[family-name:var(--font-inter)] text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-white hover:bg-red-700"
                   onClick={() => void runDeny(selectedApproval.id)}
                 >
                   {busyId === selectedApproval.id ? "…" : "Deny"}

@@ -72,7 +72,7 @@ async function RentTrackerAsyncSection({
     <div className="flex min-h-0 flex-1 flex-col">
       {propertyId ? (
         <div className="shrink-0 border-b border-[#282828] bg-[#141414] px-5 py-2">
-          <PropertyPortfolioBackLink propertyId={propertyId} className="text-[#868686] hover:text-[#BD9952]" />
+          <PropertyPortfolioBackLink propertyId={propertyId} className="text-[#868686] hover:text-zinc-400" />
         </div>
       ) : null}
       <RentTrackerContent

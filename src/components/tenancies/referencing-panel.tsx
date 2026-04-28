@@ -114,7 +114,7 @@ export function ReferencingPanel({
   return (
     <Card className={TENANCY_CARD}>
       <CardHeader className={`${TENANCY_CARD_HEADER} space-y-2`}>
-        <p className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.14em] text-[#BD9952]">
+        <p className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
           Referencing
         </p>
         <CardTitle className={TENANCY_CARD_TITLE}>Referencing agency</CardTitle>
@@ -130,14 +130,14 @@ export function ReferencingPanel({
         {!canSendHandoff ? (
           <div className="rounded-[2px] border border-amber-200/70 bg-amber-50/90 p-4 dark:border-amber-900/45 dark:bg-amber-950/30">
             <p className="font-[family-name:var(--font-inter)] text-[12px] font-light leading-relaxed text-zinc-800 dark:text-zinc-200">
-              Add a <strong className="font-medium text-[#BD9952]">default agency email</strong> under{" "}
+              Add a <strong className="font-medium text-zinc-900 dark:text-zinc-100">default agency email</strong> under{" "}
               <span className="whitespace-nowrap">Settings → Email &amp; Automation</span> (Default referencing
               agency), or enter an <strong className="font-medium text-zinc-900 dark:text-zinc-100">override for this tenancy</strong>{" "}
               below, before you can send a handoff.
             </p>
             <Link
               href="/dashboard/settings"
-              className="mt-3 inline-block font-[family-name:var(--font-inter)] text-[12px] font-semibold text-teal-700 underline-offset-4 transition-colors hover:underline dark:text-teal-400/95"
+              className="mt-3 inline-block font-[family-name:var(--font-inter)] text-[12px] font-semibold text-zinc-900 underline underline-offset-4 transition-colors hover:text-zinc-500 dark:text-zinc-100 dark:hover:text-zinc-400"
             >
               Open Settings
             </Link>
@@ -155,7 +155,7 @@ export function ReferencingPanel({
               placeholder="Uses Settings default if empty"
               value={override}
               onChange={(e) => setOverride(e.target.value)}
-              className="rounded-[2px] border-zinc-300/90 bg-white text-zinc-900 placeholder:text-zinc-400 focus-visible:border-teal-600/50 focus-visible:ring-1 focus-visible:ring-teal-600/25 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-100 dark:placeholder:text-zinc-500"
+              className="rounded-[2px] border-zinc-300/90 bg-white text-zinc-900 placeholder:text-zinc-400 focus-visible:border-zinc-500/50 focus-visible:ring-1 focus-visible:ring-zinc-500/25 dark:border-zinc-700 dark:bg-zinc-900/50 dark:text-zinc-100 dark:placeholder:text-zinc-500"
             />
             <Button
               type="button"

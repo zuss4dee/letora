@@ -156,7 +156,7 @@ async function PropertyDetailContent({ params }: { params: Promise<{ id: string 
   return (
     <div className="relative flex min-h-0 flex-1 flex-col">
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[min(38vh,360px)] bg-[radial-gradient(ellipse_70%_60%_at_50%_-8%,rgba(189,153,82,0.08),transparent_62%)] dark:bg-[radial-gradient(ellipse_70%_60%_at_50%_-8%,rgba(61,26,10,0.28),transparent_62%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[min(38vh,360px)] bg-[radial-gradient(ellipse_70%_60%_at_50%_-8%,rgba(255,255,255,0.04),transparent_62%)] dark:bg-[radial-gradient(ellipse_70%_60%_at_50%_-8%,rgba(255,255,255,0.04),transparent_62%)]"
         aria-hidden
       />
       <div className="relative flex min-h-0 flex-1 flex-col">
@@ -164,12 +164,12 @@ async function PropertyDetailContent({ params }: { params: Promise<{ id: string 
           <div className="max-w-3xl space-y-3">
             <Link
               href={`/dashboard/properties?propertyId=${encodeURIComponent(property.id)}`}
-              className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-500 transition-colors hover:text-[#BD9952] dark:text-zinc-500 dark:hover:text-[#BD9952]"
+              className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.1em] text-zinc-500 transition-colors hover:text-zinc-300 dark:text-zinc-500 dark:hover:text-zinc-300"
             >
               <ArrowLeft className="size-3.5 shrink-0" aria-hidden />
               Managed properties
             </Link>
-            <p className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.14em] text-[#BD9952]">
+            <p className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500">
               Property
             </p>
             <h1 className="font-headline text-[22px] font-semibold tracking-[-0.03em] text-zinc-900 dark:text-white sm:text-[24px]">
@@ -198,13 +198,13 @@ async function PropertyDetailContent({ params }: { params: Promise<{ id: string 
             <div className="px-4 py-5 md:px-6 md:py-6">
               <div className="flex flex-wrap items-center gap-6">
                 <div className="flex items-center gap-1.5 font-[family-name:var(--font-inter)] text-[13px] text-zinc-600 dark:text-zinc-400">
-                  <BedDouble className="size-4 shrink-0 text-[#BD9952]" aria-hidden />
+                  <BedDouble className="size-4 shrink-0 text-zinc-500" aria-hidden />
                   <span className="font-medium text-zinc-900 dark:text-zinc-100">
                     {property.bedrooms ?? "—"} bed
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 font-[family-name:var(--font-inter)] text-[13px] text-zinc-600 dark:text-zinc-400">
-                  <Bath className="size-4 shrink-0 text-[#BD9952]" aria-hidden />
+                  <Bath className="size-4 shrink-0 text-zinc-500" aria-hidden />
                   <span className="font-medium text-zinc-900 dark:text-zinc-100">
                     {property.bathrooms ?? "—"} bath
                   </span>
@@ -282,7 +282,7 @@ async function PropertyDetailContent({ params }: { params: Promise<{ id: string 
                         <td className="px-4 py-0 text-right">
                           <Link
                             href={`/dashboard/tenancies/${t.id}`}
-                            className="inline-flex font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.06em] text-teal-700 underline-offset-4 hover:underline dark:text-teal-400/95"
+                            className="inline-flex font-[family-name:var(--font-inter)] text-[11px] font-semibold uppercase tracking-[0.06em] text-foreground underline-offset-4 hover:text-zinc-400 hover:underline"
                           >
                             View
                           </Link>

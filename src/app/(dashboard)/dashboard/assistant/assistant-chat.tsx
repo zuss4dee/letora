@@ -347,11 +347,11 @@ function StatusChipsRow({ chips }: { chips: StatusChip[] }) {
   if (chips.length === 0) return null;
   const toneClass: Record<StatusChipTone, string> = {
     created: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
-    reused: "border-sky-500/30 bg-sky-500/10 text-sky-200",
-    drafted: "border-indigo-500/30 bg-indigo-500/10 text-indigo-200",
+    reused: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
+    drafted: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
     pending: "border-amber-500/30 bg-amber-500/10 text-amber-200",
-    blocked: "border-rose-500/30 bg-rose-500/10 text-rose-200",
-    sent: "border-teal-500/30 bg-teal-500/10 text-teal-200",
+    blocked: "border-red-500/30 bg-red-500/10 text-red-200",
+    sent: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
   };
 
   return (
@@ -716,22 +716,25 @@ export function AssistantChat({
     setPendingAction(getPendingCeoActionFromMessages(next));
   }, [activeConversationId, initialMessages]);
 
-  const scrollToLatest = useCallback((behavior: ScrollBehavior = "smooth") => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTo({
-        top: scrollRef.current.scrollHeight,
-        behavior,
-      });
+  const scrollToLatest = useCallback((behavior: ScrollBehavior = "auto") => {
+    if (endRef.current) {
+      endRef.current.scrollIntoView({ behavior, block: "end" });
     }
   }, []);
 
+  // Auto-scroll on new messages or stream updates
   useEffect(() => {
-    scrollToLatest();
+    // If we are actively streaming, snap instantly to avoid animation conflicts
+    if (assistantStream.kind === "streaming") {
+      scrollToLatest("auto");
+    } else {
+      scrollToLatest("smooth");
+    }
   }, [messages, loading, assistantStream, scrollToLatest]);
 
   // Initial scroll on load
   useEffect(() => {
-    scrollToLatest("instant");
+    scrollToLatest("auto");
   }, [activeConversationId, scrollToLatest]);
 
   function createNewChat() {
@@ -953,7 +956,7 @@ export function AssistantChat({
   );
 
   return (
-    <div className="flex min-h-0 flex-1 overflow-hidden">
+    <div className="absolute inset-0 flex overflow-hidden">
       {/* ── Center: Workspace ── */}
       <main className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-[#0B0B0B]">
         <div 
@@ -1059,7 +1062,7 @@ export function AssistantChat({
       </main>
 
       {/* ── Right: History Sidebar ── */}
-      <aside className="flex w-72 shrink-0 flex-col border-l border-[#1f1f1f] bg-[#0E0E0E]">
+      <aside className="relative flex w-72 shrink-0 flex-col border-l border-[#1f1f1f] bg-[#0E0E0E] min-h-0 h-full">
         <div className="flex items-center justify-between border-b border-[#1f1f1f] px-4 py-3.5">
           <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#555555]">
             Active Sessions

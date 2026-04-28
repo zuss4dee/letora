@@ -42,30 +42,30 @@ export function CurrentPlanSummary({
     <div
       className={
         className ??
-        "rounded-xl border border-[#4F4632]/35 bg-card/80 px-4 py-4 font-[family-name:var(--font-inter)] shadow-sm"
+        "rounded-xl border border-zinc-800 bg-card/80 px-4 py-4 font-[family-name:var(--font-inter)] shadow-sm"
       }
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-[#BD9952]/95">Current plan</p>
+          <p className="text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-zinc-500">Current plan</p>
           <p className="mt-1 font-headline text-xl font-light text-foreground">{planTitle}</p>
         </div>
         <Link
           href="/pricing"
-          className="shrink-0 text-sm font-medium text-[#BD9952] underline-offset-4 hover:underline"
+          className="shrink-0 text-sm font-medium text-foreground underline-offset-4 hover:text-zinc-400 hover:underline"
         >
           Compare plans
         </Link>
       </div>
 
       {statusLc === "trialing" ? (
-        <div className="mt-4 rounded-lg border border-[#4F4632]/25 bg-muted/30 px-3 py-3">
+        <div className="mt-4 rounded-lg border border-zinc-800/50 bg-muted/30 px-3 py-3">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Free trial</p>
           <p className="mt-1 text-base font-medium text-foreground">
             {trialDisplayDate ? (
               <>
                 Your trial ends on{" "}
-                <span className="tabular-nums text-[#BD9952]">{trialDisplayDate}</span>
+                <span className="tabular-nums text-foreground">{trialDisplayDate}</span>
               </>
             ) : (
               <>Trial dates will appear here shortly after checkout.</>
@@ -110,7 +110,7 @@ export function CurrentPlanSummary({
       {(statusLc === "inactive" || statusLc === "canceled" || statusLc === "cancelled") && hasStripeCustomer ? (
         <p className="mt-4 text-sm text-muted-foreground">
           This subscription is no longer active. You can start again from{" "}
-          <Link href="/pricing" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
+          <Link href="/pricing" className="font-medium text-foreground underline-offset-4 hover:text-zinc-400 hover:underline">
             pricing
           </Link>
           .
@@ -130,7 +130,7 @@ export function CurrentPlanSummary({
         <ul className="mt-3 space-y-1.5 text-sm text-muted-foreground">
           {featureBullets.map((f) => (
             <li key={f} className="flex gap-2">
-              <span className="text-[#BD9952]" aria-hidden>
+              <span className="text-zinc-500" aria-hidden>
                 ·
               </span>
               <span>{f}</span>
@@ -143,7 +143,7 @@ export function CurrentPlanSummary({
         <p className="mt-4 text-sm text-muted-foreground">
           You&apos;re on the included <span className="text-foreground">Starter</span> workspace limits. To start a
           paid plan or trial, continue from the{" "}
-          <Link href="/pricing" className="font-medium text-[#BD9952] underline-offset-4 hover:underline">
+          <Link href="/pricing" className="font-medium text-foreground underline-offset-4 hover:text-zinc-400 hover:underline">
             pricing page
           </Link>
           .

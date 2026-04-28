@@ -68,7 +68,7 @@ export function LetoraPricingSection() {
     >
       <div className="mx-auto max-w-screen-2xl">
         <div className="mx-auto max-w-3xl text-center">
-          <p className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-[#FFEABB]">
+          <p className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.2em] text-emerald-500">
             Pricing
           </p>
           <h2
@@ -84,7 +84,7 @@ export function LetoraPricingSection() {
           <p className="mt-6 font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
             <Link
               href="/signup"
-              className="inline-flex items-center gap-1 font-medium text-[#FFEABB] underline-offset-4 hover:underline"
+              className="inline-flex items-center gap-1 font-medium text-emerald-500 underline-offset-4 hover:underline"
             >
               Create an account to subscribe
               <ArrowUpRight className="size-3.5" aria-hidden />
@@ -102,14 +102,14 @@ export function LetoraPricingSection() {
               className={cn(
                 "flex h-full min-w-0 flex-col rounded-2xl border p-6 shadow-[0_24px_64px_rgba(0,0,0,0.35)] md:p-7",
                 plan.highlighted
-                  ? "border-[#FFEABB]/35 bg-[linear-gradient(180deg,rgba(27,27,27,0.98)_0%,rgba(19,19,19,0.99)_100%)] ring-1 ring-[#FFEABB]/15"
-                  : "border-[#4F4632]/20 bg-[#161616]/90",
+                  ? "border-emerald-500/30 bg-[linear-gradient(180deg,rgba(27,27,27,0.98)_0%,rgba(19,19,19,0.99)_100%)] ring-1 ring-emerald-500/15"
+                  : "border-zinc-800 bg-[#161616]/90",
               )}
             >
               <div className="space-y-2">
                 <div className="flex min-h-[1.5rem] items-center">
                   {plan.badge ? (
-                    <span className="inline-flex w-fit rounded-full border border-[#FFEABB]/25 bg-[#FFEABB]/10 px-2.5 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-[0.14em] text-[#FFEABB]">
+                    <span className="inline-flex w-fit rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-500">
                       {plan.badge}
                     </span>
                   ) : null}
@@ -126,7 +126,7 @@ export function LetoraPricingSection() {
                     key={f}
                     className="flex gap-3 font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-foreground"
                   >
-                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#FFEABB]/12 text-[#FFEABB]">
+                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
                       <Check className="size-3" strokeWidth={2.5} aria-hidden />
                     </span>
                     <span>{f}</span>

@@ -91,7 +91,7 @@ export default async function ContractDetailPage({
   return (
     <div className="@container/main relative flex flex-1 flex-col">
       <div
-        className="pointer-events-none absolute inset-x-0 top-0 h-[min(42vh,420px)] bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(189,153,82,0.12),transparent_65%)] dark:bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(61,26,10,0.35),transparent_65%)]"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[min(42vh,420px)] bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(255,255,255,0.04),transparent_65%)] dark:bg-[radial-gradient(ellipse_75%_65%_at_50%_-10%,rgba(255,255,255,0.04),transparent_65%)]"
         aria-hidden
       />
       <div className="relative flex flex-col gap-8 py-8 md:py-10">
@@ -99,12 +99,12 @@ export default async function ContractDetailPage({
           <div className="max-w-3xl space-y-3">
             <Link
               href="/dashboard/contracts"
-              className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-sm font-medium text-muted-foreground transition-colors hover:text-[#BD9952]"
+              className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-sm font-medium text-muted-foreground transition-colors hover:text-zinc-300"
             >
               <ArrowLeft className="size-4 shrink-0" aria-hidden />
               Contracts
             </Link>
-            <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-[#BD9952]/95">
+            <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.22em] text-zinc-500">
               Tenancy agreement
             </p>
             <div className="flex flex-wrap items-center gap-3">

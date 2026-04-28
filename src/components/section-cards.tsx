@@ -30,7 +30,7 @@ export function SectionCards({ stats }: { stats: SectionCardsStats }) {
             <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
               {stats.totalProperties}
             </CardTitle>
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
               <Building2 className="size-4" />
             </div>
           </div>
@@ -82,7 +82,7 @@ export function SectionCards({ stats }: { stats: SectionCardsStats }) {
             <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
               {stats.activeLeads}
             </CardTitle>
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">
+            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
               <UserPlus className="size-4" />
             </div>
           </div>

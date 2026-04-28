@@ -36,16 +36,16 @@ export function ComplianceOverviewSection({
           <span className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
             Valid
           </span>
-          <span className="font-headline text-3xl font-extralight tabular-nums text-[#BD9952]/95">{summary.valid}</span>
+          <span className="font-headline text-3xl font-extralight tabular-nums text-emerald-500">{summary.valid}</span>
           <p className="font-headline text-[0.65rem] font-light text-muted-foreground">In good standing</p>
         </div>
       </div>
 
       {complianceRows.length > 0 ? (
-        <Card className="border-[#BD9952]/35 bg-gradient-to-br from-[#BD9952]/[0.06] via-card/90 to-card shadow-[0_12px_40px_-28px_rgba(189,153,82,0.35)] dark:border-[#BD9952]/30">
-          <CardHeader className="border-b border-[#BD9952]/20 pb-4">
+        <Card className="border-destructive/30 bg-gradient-to-br from-destructive/[0.04] via-card/90 to-card shadow-sm dark:border-destructive/25">
+          <CardHeader className="border-b border-destructive/10 pb-4">
             <div className="flex items-center gap-2">
-              <ShieldAlert className="size-5 shrink-0 text-[#BD9952]" aria-hidden />
+              <ShieldAlert className="size-5 shrink-0 text-destructive" aria-hidden />
               <CardTitle className="font-headline text-base text-foreground">Compliance — action required</CardTitle>
             </div>
             <p className="font-headline text-sm font-light text-muted-foreground">
@@ -59,10 +59,10 @@ export function ComplianceOverviewSection({
               return (
                 <div
                   key={a.id}
-                  className="rounded-xl border border-[#BD9952]/20 bg-card/80 px-3 py-2.5 dark:bg-card/50"
+                  className="rounded-xl border border-destructive/10 bg-card/80 px-3 py-2.5 dark:bg-card/50"
                 >
                   <p className="font-headline text-sm font-medium text-foreground">
-                    {p.propertyAddress} — <span className="text-[#BD9952]">{p.certificateType}</span> expired
+                    {p.propertyAddress} — <span className="text-destructive">{p.certificateType}</span> expired
                   </p>
                   <p className="mt-1 font-headline text-xs text-muted-foreground">
                     {a.created_at ? new Date(a.created_at).toLocaleString("en-GB") : "—"}

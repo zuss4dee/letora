@@ -43,11 +43,11 @@ function sourcePresentation(source: string | null): { label: string; dot: string
     return { label: source ?? "Source", dot: "bg-blue-400/70" };
   if (s.includes("zoopla")) return { label: source ?? "Source", dot: "bg-violet-400/70" };
   if (s.includes("onthemarket")) return { label: source ?? "Source", dot: "bg-cyan-400/60" };
-  if (s.includes("referral")) return { label: source ?? "Source", dot: "bg-[#BD9952]/80" };
+  if (s.includes("referral")) return { label: source ?? "Source", dot: "bg-zinc-500/80" };
   if (s.includes("walk")) return { label: source ?? "Source", dot: "bg-emerald-400/60" };
   if (s.includes("social")) return { label: source ?? "Source", dot: "bg-fuchsia-400/60" };
   if (s === "other" || !source?.trim())
-    return { label: source?.trim() || "Direct", dot: "bg-[#BD9952]/60" };
+    return { label: source?.trim() || "Direct", dot: "bg-zinc-500/60" };
   return { label: source ?? "Direct", dot: "bg-[#767575]/80" };
 }
 
@@ -67,7 +67,7 @@ function pipelinePill(status: string): { label: string; className: string } {
     viewing: {
       label: "VIEWING SCHEDULED",
       className:
-        "border border-[#4f3700]/40 bg-[#4f3700]/25 text-[#f8cf83]",
+        "border border-amber-500/25 bg-amber-500/10 text-amber-500",
     },
     applied: {
       label: "REFERENCING",
@@ -251,7 +251,7 @@ export function LeadsRegistry({
         </div>
         <div className="bg-[#161616] px-4 py-3 sm:px-6">
           <p className="text-[10px] uppercase tracking-widest text-zinc-500">Viewings</p>
-          <p className="mt-1 font-mono text-lg text-[#eab308]">{stats.viewingCount}</p>
+          <p className="mt-1 font-mono text-lg text-amber-500">{stats.viewingCount}</p>
         </div>
       </section>
 

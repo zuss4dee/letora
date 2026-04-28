@@ -82,9 +82,9 @@ export default async function AssistantPage({
       : undefined;
 
   return (
-    <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#0B0B0B]">
+    <div className="absolute inset-0 flex flex-col bg-[#0B0B0B] overflow-hidden">
       {/* ── Page Header ── */}
-      <header className="border-b border-[#1f1f1f] bg-[#0B0B0B] px-6 py-4">
+      <header className="shrink-0 border-b border-[#1f1f1f] bg-[#0B0B0B] px-6 py-4">
         <div className="flex items-center gap-3">
           <div className="flex size-7 items-center justify-center bg-white">
             <Sparkles className="size-3.5 text-[#0B0B0B]" />
@@ -101,7 +101,7 @@ export default async function AssistantPage({
       </header>
 
       {/* ── Chat UI ── */}
-      <div className="flex min-h-0 flex-1">
+      <div className="relative flex-1 min-h-0 w-full">
         <AssistantChat
           key={activeId}
           conversations={conversations}

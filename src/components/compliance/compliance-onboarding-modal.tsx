@@ -74,7 +74,7 @@ export function ComplianceOnboardingModal({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg border-[#BD9952]/20 bg-card font-headline sm:max-w-lg">
+      <DialogContent className="max-w-lg border-zinc-200 bg-card font-headline dark:border-zinc-800 sm:max-w-lg">
         <DialogHeader className="space-y-3 text-left">
           <DialogTitle className="font-headline text-xl font-light tracking-tight text-foreground">
             Great start! Let&apos;s get your legal docs in order.
@@ -118,13 +118,13 @@ export function ComplianceOnboardingModal({
                     size="sm"
                     variant="outline"
                     disabled={busy}
-                    className="rounded-full border-[#BD9952]/40 text-xs hover:bg-[#BD9952]/10"
+                    className="rounded-full border-zinc-300 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
                     onClick={() => fileRefs.current[rk]?.click()}
                   >
                     {busy ? (
                       <Loader2 className="mr-2 size-3.5 animate-spin" aria-hidden />
                     ) : (
-                      <Upload className="mr-2 size-3.5 text-[#BD9952]" aria-hidden />
+                      <Upload className="mr-2 size-3.5 text-zinc-500" aria-hidden />
                     )}
                     Upload PDF
                   </Button>

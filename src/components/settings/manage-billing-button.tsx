@@ -41,7 +41,7 @@ export function ManageBillingButton() {
         disabled={pending}
         data-testid="manage-billing"
         onClick={() => void onClick()}
-        className="rounded-md border-border bg-card font-[family-name:var(--font-inter)] text-xs font-semibold uppercase tracking-[0.12em] text-foreground shadow-none transition-colors hover:border-secondary/45 hover:bg-secondary/10 hover:text-[#BD9952]"
+        className="rounded-md border-border bg-card font-[family-name:var(--font-inter)] text-xs font-semibold uppercase tracking-[0.12em] text-foreground shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-800/50 hover:text-white"
       >
         {pending ? "Opening…" : "Manage billing"}
       </Button>

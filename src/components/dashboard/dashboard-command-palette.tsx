@@ -77,7 +77,7 @@ function CommandPaletteDialog({
               onOpenChange(false);
             }}
           >
-            <Mail className="size-4 text-[#BD9952]" aria-hidden />
+            <Mail className="size-4 text-emerald-500" aria-hidden />
             <span>Run Rent Chaser</span>
             {isRentRunning ? (
               <span className="ml-auto font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">
@@ -92,7 +92,7 @@ function CommandPaletteDialog({
               onOpenChange(false);
             }}
           >
-            <Users className="size-4 text-[#BD9952]" aria-hidden />
+            <Users className="size-4 text-emerald-500" aria-hidden />
             <span>Run Lead Qualifier</span>
             {isLeadRunning ? (
               <span className="ml-auto font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">
@@ -107,7 +107,7 @@ function CommandPaletteDialog({
               onOpenChange(false);
             }}
           >
-            <FileText className="size-4 text-[#BD9952]" aria-hidden />
+            <FileText className="size-4 text-emerald-500" aria-hidden />
             <span>Run Contract Drafter</span>
             {isContractRunning ? (
               <span className="ml-auto font-[family-name:var(--font-inter)] text-[0.65rem] text-muted-foreground">

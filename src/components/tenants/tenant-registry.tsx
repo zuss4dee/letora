@@ -95,8 +95,8 @@ function RentStatusPill({ status }: { status: TenantRentStatus }) {
     );
   }
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-[#4f3700]/10 px-3 py-1 font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-wider text-[#e1ba70]">
-      <span className="size-1 rounded-full bg-[#BD9952]" aria-hidden />
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-wider text-amber-500">
+      <span className="size-1 rounded-full bg-amber-500" aria-hidden />
       Pending
     </span>
   );
@@ -163,12 +163,12 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
                     "relative py-2 font-[family-name:var(--font-inter)] text-sm tracking-wider transition-colors",
                     active
                       ? "font-semibold text-foreground"
-                      : "font-medium text-muted-foreground hover:text-[#BD9952]",
+                      : "font-medium text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {t.label}
                   {active ? (
-                    <span className="absolute bottom-0 left-0 h-px w-full bg-[#BD9952]" aria-hidden />
+                    <span className="absolute bottom-0 left-0 h-px w-full bg-foreground" aria-hidden />
                   ) : null}
                 </button>
               );
@@ -187,7 +187,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
               <p className="mb-1 font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
                 Pending review
               </p>
-              <p className="font-headline text-2xl font-light text-[#BD9952]">
+              <p className="font-headline text-2xl font-light text-foreground">
                 {pendingReview.toLocaleString("en-GB")}
               </p>
             </div>
@@ -303,7 +303,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
                       <td className="px-8 py-6 text-right">
                         <Link
                           href={`/dashboard/tenants/${row.id}`}
-                          className="font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-[#BD9952]"
+                          className="font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-zinc-300"
                         >
                           Quick view
                         </Link>
@@ -349,7 +349,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
         trigger={
           <button
             type="button"
-            className="fixed bottom-10 right-6 z-40 hidden items-center gap-4 rounded-sm bg-gradient-to-br from-[#C9C6C5] to-[#474646] px-5 py-4 font-[family-name:var(--font-inter)] text-sm font-bold uppercase tracking-widest text-[#414040] shadow-2xl transition-all hover:brightness-110 md:bottom-12 md:right-12 md:flex"
+            className="fixed bottom-10 right-6 z-40 hidden items-center gap-4 rounded-sm bg-white px-5 py-4 font-[family-name:var(--font-inter)] text-sm font-bold uppercase tracking-widest text-black shadow-2xl transition-all hover:bg-zinc-200 md:bottom-12 md:right-12 md:flex"
           >
             <UserPlus className="size-5 shrink-0" strokeWidth={1.75} aria-hidden />
             Onboard tenant

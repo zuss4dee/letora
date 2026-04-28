@@ -40,9 +40,8 @@ export function WorkspaceSetupReminder({
   const n = items.length;
 
   return (
-    <div
       className={cn(
-        "rounded-2xl border border-[#BD9952]/35 bg-[#BD9952]/[0.07] p-5 shadow-sm dark:border-[#BD9952]/25 dark:bg-[#BD9952]/[0.06]",
+        "rounded-2xl border border-amber-500/30 bg-amber-500/[0.04] p-5 shadow-sm dark:border-amber-500/25 dark:bg-amber-500/[0.04]",
         className,
       )}
       role="region"
@@ -50,7 +49,7 @@ export function WorkspaceSetupReminder({
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[#a38448] dark:text-[#BD9952]/90">
+          <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-amber-600 dark:text-amber-500">
             Finish your setup
           </p>
           <p className="font-headline text-xs font-medium tabular-nums text-muted-foreground">
@@ -74,14 +73,14 @@ export function WorkspaceSetupReminder({
         </Button>
       </div>
 
-      <ul className="mt-4 space-y-1 border-t border-[#BD9952]/20 pt-4 dark:border-[#BD9952]/15">
+      <ul className="mt-4 space-y-1 border-t border-amber-500/10 pt-4 dark:border-amber-500/10">
         {items.map((t) => (
           <li key={t.id}>
             <Link
               href={t.href}
-              className="flex items-start gap-3 rounded-lg py-2 transition-colors hover:bg-[#BD9952]/[0.08]"
+              className="flex items-start gap-3 rounded-lg py-2 transition-colors hover:bg-amber-500/[0.08]"
             >
-              <Circle className="mt-0.5 size-5 shrink-0 text-[#BD9952]/70" strokeWidth={1.75} aria-hidden />
+              <Circle className="mt-0.5 size-5 shrink-0 text-amber-500" strokeWidth={1.75} aria-hidden />
               <span className="font-headline text-sm font-light leading-snug text-foreground">{t.label}</span>
             </Link>
           </li>

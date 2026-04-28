@@ -64,10 +64,10 @@ function StatusPill({ c }: { c: ContractListRow }) {
   if (fullySigned && s === "active") {
     return (
       <span className="inline-flex flex-wrap items-center gap-1.5">
-        <span className="inline-flex items-center rounded bg-amber-100 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-amber-900 dark:bg-[#e3a78f]/10 dark:text-[#e3a78f]">
+        <span className="inline-flex items-center rounded bg-emerald-500/10 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-emerald-500">
           Signed
         </span>
-        <span className="inline-flex items-center rounded bg-teal-100 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-teal-900 dark:bg-[#01696f]/20 dark:text-[#85d3da]">
+        <span className="inline-flex items-center rounded bg-emerald-500/10 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-emerald-500">
           Active
         </span>
       </span>
@@ -76,14 +76,14 @@ function StatusPill({ c }: { c: ContractListRow }) {
 
   if (s === "active") {
     return (
-      <span className="inline-flex items-center rounded bg-teal-100 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-teal-900 dark:bg-[#01696f]/20 dark:text-[#85d3da]">
+      <span className="inline-flex items-center rounded bg-emerald-500/10 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-emerald-500">
         Active
       </span>
     );
   }
   if (s === "pending_signature") {
     return (
-      <span className="inline-flex items-center rounded bg-orange-100 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-orange-900 dark:bg-[#673c29]/20 dark:text-[#f7b8a0]">
+      <span className="inline-flex items-center rounded bg-amber-500/10 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-amber-500">
         Pending Signature
       </span>
     );
@@ -97,14 +97,14 @@ function StatusPill({ c }: { c: ContractListRow }) {
   }
   if (s === "sent") {
     return (
-      <span className="inline-flex items-center rounded bg-cyan-50 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-cyan-900 dark:bg-[#a1f0f6]/10 dark:text-[#a1f0f6]">
+      <span className="inline-flex items-center rounded bg-zinc-500/10 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-zinc-500">
         Sent
       </span>
     );
   }
   if (s === "signed") {
     return (
-      <span className="inline-flex items-center rounded bg-amber-100 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-amber-900 dark:bg-[#e3a78f]/10 dark:text-[#e3a78f]">
+      <span className="inline-flex items-center rounded bg-emerald-500/10 px-2 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wide text-emerald-500">
         Signed
       </span>
     );
@@ -120,11 +120,11 @@ function RowActions({ c }: { c: ContractListRow }) {
   const s = (c.status ?? "draft").toLowerCase();
   const detail = `/dashboard/contracts/${c.id}`;
   const bold =
-    "font-[family-name:var(--font-inter)] text-xs font-bold text-foreground transition-colors hover:text-teal-700 dark:hover:text-[#85d3da]";
+    "font-[family-name:var(--font-inter)] text-xs font-bold text-foreground transition-colors hover:text-zinc-400";
   const muted =
-    "font-[family-name:var(--font-inter)] text-xs font-bold text-muted-foreground transition-colors hover:text-teal-700 dark:hover:text-[#85d3da]";
+    "font-[family-name:var(--font-inter)] text-xs font-bold text-muted-foreground transition-colors hover:text-zinc-400";
   const primary =
-    "font-[family-name:var(--font-inter)] text-xs font-bold text-teal-700 underline-offset-4 hover:underline dark:text-[#85d3da]";
+    "font-[family-name:var(--font-inter)] text-xs font-bold text-foreground underline-offset-4 hover:text-zinc-400 hover:underline";
 
   switch (s) {
     case "draft":
@@ -284,12 +284,12 @@ export function ContractsRegistry({
               >
                 {t.label}
                 {count != null && count > 0 ? (
-                  <span className="rounded-full bg-orange-100 px-1.5 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold text-orange-900 dark:bg-[#673c29] dark:text-[#e3a78f]">
+                  <span className="rounded-full bg-amber-500/10 px-1.5 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-bold text-amber-500">
                     {count}
                   </span>
                 ) : null}
                 {active ? (
-                  <span className="absolute bottom-0 left-0 h-0.5 w-full bg-teal-600 dark:bg-[#01696f]" aria-hidden />
+                  <span className="absolute bottom-0 left-0 h-0.5 w-full bg-foreground" aria-hidden />
                 ) : null}
               </button>
             );
@@ -304,7 +304,7 @@ export function ContractsRegistry({
                 <button
                   type="button"
                   disabled={properties.length === 0 || tenants.length === 0}
-                  className="flex items-center gap-2 font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-wider text-teal-700 transition-opacity hover:opacity-80 disabled:opacity-40 dark:text-[#85d3da]"
+                  className="flex items-center gap-2 font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-wider text-foreground transition-opacity hover:opacity-80 disabled:opacity-40"
                 >
                   <span className="text-lg leading-none" aria-hidden>
                     +
@@ -329,7 +329,7 @@ export function ContractsRegistry({
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-center gap-3">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted font-[family-name:var(--font-inter)] text-xs font-bold text-teal-700 dark:bg-[#2b2a28] dark:text-[#85d3da]">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted font-[family-name:var(--font-inter)] text-xs font-bold text-foreground">
                       {initials(c.tenantName)}
                     </div>
                     <div className="min-w-0">
@@ -456,7 +456,7 @@ export function ContractsRegistry({
                   className={cn(
                     "flex size-8 items-center justify-center rounded text-xs font-bold transition-colors",
                     i === safePage
-                      ? "bg-teal-700 text-white dark:bg-[#01696f] dark:text-[#97e6ec]"
+                      ? "bg-foreground text-background"
                       : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground dark:border-[#3f4949]/20 dark:hover:bg-[#211f1e]",
                   )}
                 >
@@ -483,7 +483,7 @@ export function ContractsRegistry({
 
       <div className="fixed bottom-10 left-1/2 z-40 hidden -translate-x-1/2 items-center gap-6 rounded-xl border border-border bg-card/95 px-6 py-4 shadow-2xl backdrop-blur-xl dark:border-[#3f4949]/20 dark:bg-[#363433]/80 md:flex md:gap-8">
         <div className="flex items-center gap-3 border-r border-border pr-6 dark:border-[#3f4949]/20">
-          <div className="size-2 rounded-full bg-[#f7b8a0]" aria-hidden />
+          <div className="size-2 rounded-full bg-amber-500" aria-hidden />
           <p className="font-[family-name:var(--font-inter)] text-xs font-medium text-foreground">
             {pendingSigCount} Pending Signature{pendingSigCount === 1 ? "" : "s"}
           </p>
@@ -510,7 +510,7 @@ export function ContractsRegistry({
             type="button"
             disabled={properties.length === 0 || tenants.length === 0}
             onClick={() => setNewContractOpen(true)}
-            className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wider text-teal-700 disabled:opacity-40 dark:text-[#85d3da]"
+            className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-wider text-foreground hover:text-zinc-400 disabled:opacity-40"
           >
             New agreement
           </button>

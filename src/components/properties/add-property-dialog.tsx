@@ -110,7 +110,7 @@ export function AddPropertyDialog({ trigger }: { trigger?: ReactElement }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {trigger ?? (
-          <Button className="rounded-sm bg-gradient-to-br from-[#C9C6C5] to-[#474646] font-[family-name:var(--font-inter)] text-[#414040] hover:brightness-110">
+          <Button className="bg-white text-black hover:bg-zinc-200">
             Add property
           </Button>
         )}
@@ -287,7 +287,7 @@ export function AddPropertyDialog({ trigger }: { trigger?: ReactElement }) {
                 <p>{submitError}</p>
                 {submitError.includes("property limit") ? (
                   <p className="mt-2 font-[family-name:var(--font-inter)] text-xs font-medium">
-                    <Link href="/pricing?limit=properties" className="text-[#BD9952] underline-offset-4 hover:underline">
+                    <Link href="/pricing?limit=properties" className="text-foreground underline-offset-4 hover:text-zinc-400 hover:underline">
                       View plans and upgrade
                     </Link>
                   </p>

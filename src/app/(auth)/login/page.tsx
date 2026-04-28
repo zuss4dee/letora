@@ -74,7 +74,7 @@ function LoginAuthAlert({ error }: { error: { message: string; code?: string } }
           account, you can{" "}
           <Link
             href="/signup"
-            className="font-medium text-[#a67c2c] underline-offset-4 hover:underline dark:text-[#BD9952]"
+            className="font-medium text-foreground underline underline-offset-4 hover:text-zinc-400"
           >
             create a new account
           </Link>
@@ -203,7 +203,7 @@ function LoginForm() {
               </Label>
               <Link
                 href="#"
-                className="text-[0.7rem] font-medium text-muted-foreground transition-colors hover:text-[#a67c2c] dark:hover:text-[#BD9952]"
+                className="text-[0.7rem] font-medium text-muted-foreground transition-colors hover:text-foreground"
               >
                 Forgot password?
               </Link>
@@ -238,7 +238,7 @@ function LoginForm() {
           </div>
           <p className="text-center font-[family-name:var(--font-inter)] text-sm font-normal text-muted-foreground">
             Don&apos;t have an account?{" "}
-            <Link href="/signup" className="font-medium text-foreground underline-offset-4 transition-colors hover:text-[#BD9952] hover:underline">
+            <Link href="/signup" className="font-medium text-foreground underline-offset-4 transition-colors hover:text-zinc-400 hover:underline">
               Sign up
             </Link>
           </p>

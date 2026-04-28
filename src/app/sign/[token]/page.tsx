@@ -65,13 +65,13 @@ export default async function SignContractPage({
     return (
       <div className="relative flex min-h-screen items-center justify-center bg-background px-4 py-12 text-foreground dark:bg-[#0d0c0b]">
         <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(189,153,82,0.15),transparent_60%)] dark:bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(61,26,10,0.4),transparent_60%)]"
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(255,255,255,0.06),transparent_60%)] dark:bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,rgba(255,255,255,0.06),transparent_60%)]"
           aria-hidden
         />
         <div className="relative mx-auto w-full max-w-lg rounded-2xl border border-border bg-card p-8 text-center shadow-lg ring-1 ring-border/60 backdrop-blur-md dark:border-transparent dark:bg-gradient-to-b dark:from-[#1c1b1a]/95 dark:to-[#141312]/98 dark:shadow-[0_24px_48px_rgba(0,0,0,0.45)] dark:ring-[rgb(72_72_72_/0.08)]">
-          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[#BD9952]/12 ring-1 ring-[#BD9952]/25">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/10 ring-1 ring-emerald-500/20">
             <svg
-              className="h-7 w-7 text-[#BD9952]"
+              className="h-7 w-7 text-emerald-500"
               fill="none"
               viewBox="0 0 24 24"
               strokeWidth={2}
@@ -92,12 +92,12 @@ export default async function SignContractPage({
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-background px-4 py-12 text-foreground dark:bg-[#0d0c0b]">
       <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_45%_at_50%_-15%,rgba(189,153,82,0.12),transparent_58%)] dark:bg-[radial-gradient(ellipse_90%_45%_at_50%_-15%,rgba(61,26,10,0.35),transparent_58%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_90%_45%_at_50%_-15%,rgba(255,255,255,0.04),transparent_58%)] dark:bg-[radial-gradient(ellipse_90%_45%_at_50%_-15%,rgba(255,255,255,0.04),transparent_58%)]"
         aria-hidden
       />
       <div className="relative mx-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-border bg-card shadow-xl ring-1 ring-border/60 backdrop-blur-md dark:border-transparent dark:bg-gradient-to-b dark:from-[#1c1b1a]/95 dark:to-[#141312]/98 dark:shadow-[0_28px_90px_-48px_rgba(0,0,0,0.85)] dark:ring-[rgb(72_72_72_/0.08)]">
         <div className="border-b border-border bg-muted/40 px-6 py-6 dark:border-[rgb(72_72_72_/0.08)] dark:bg-[#1a1918]/40 sm:px-8">
-          <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-[#BD9952]/90">
+          <p className="font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-zinc-500">
             Tenancy agreement
           </p>
           <h1 className="mt-2 font-headline text-xl font-light tracking-tight text-foreground">Review &amp; sign</h1>
