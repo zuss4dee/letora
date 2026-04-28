@@ -40,6 +40,7 @@ export function WorkspaceSetupReminder({
   const n = items.length;
 
   return (
+    <div
       className={cn(
         "rounded-2xl border border-amber-500/30 bg-amber-500/[0.04] p-5 shadow-sm dark:border-amber-500/25 dark:bg-amber-500/[0.04]",
         className,
