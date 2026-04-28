@@ -68,7 +68,7 @@ export type { CEOIntentRoute, CEOPropertyIntentId } from "./intent-router";
 export { formatRouterHintForSystem, routeCEOIntent } from "./intent-router";
 
 import { runDeepSeek } from "@/lib/llm/providers/deepseek";
-import { AGENT_MODEL_CONFIG } from "@/lib/llm/config";
+import { AGENT_MODEL_CONFIG, DEEPSEEK_CONFIG } from "@/lib/llm/config";
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 // Default model IDs from config.ts are preferred; we keep these for legacy fallback logic.
@@ -88,9 +88,12 @@ async function executeCeoCompletion(params: {
   max_tokens?: number;
 }): Promise<Message> {
   const provider = AGENT_MODEL_CONFIG.ceo.provider;
+  const model = AGENT_MODEL_CONFIG.ceo.model;
   const { system, messages, tools, tool_choice, max_tokens = 2048 } = params;
 
-  console.log(`[ceo] request: provider=${provider}, tokens=${max_tokens}`);
+  // Mandatory log for production confirmation
+  const isReasoning = model === DEEPSEEK_CONFIG.reasoningModel;
+  console.log(`[ceo] DeepSeek call: model=${model}, is_reasoning=${isReasoning} (agent=ceo)`);
 
   if (provider === "deepseek") {
     const dsMessages: any[] = [];
@@ -102,7 +105,7 @@ async function executeCeoCompletion(params: {
         if (toolUseBlocks.length > 0) {
           dsMessages.push({
             role: "assistant",
-            content: m.content.filter(c => c.type === "text").map((c: any) => c.text).join("\n") || null,
+            content: m.content.filter(c => c.type === "text").map((c: any) => (c as any).text).join("\n") || null,
             tool_calls: toolUseBlocks.map(c => ({
               id: (c as any).id,
               type: "function",

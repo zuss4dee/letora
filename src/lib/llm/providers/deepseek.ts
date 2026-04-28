@@ -24,30 +24,37 @@ export interface DeepSeekRequestOptions {
 export async function runDeepSeek(options: DeepSeekRequestOptions): Promise<LLMResponse & { rawResponse?: any }> {
   const { agentName, messages, system, tools, tool_choice, temperature = 0.2, maxTokens = 1024 } = options;
 
-  // Choose model based on agent name: reasoning model for CEO/Contracts, otherwise standard model
-  const model = (agentName === "ceo" || agentName === "contracts")
+  // Choose model: reasoning model for contracts, strictly non-reasoning for CEO chat
+  let model = (agentName === "contracts")
     ? DEEPSEEK_CONFIG.reasoningModel
     : DEEPSEEK_CONFIG.model;
 
-  // Lightweight server-side logging
-  console.log(`[DeepSeek] Request: agent=${agentName}, model=${model}, provider=deepseek`);
+  // Stability fix: If the configured flash model is acting like a reasoning model (like R1),
+  // we override to the standard 'deepseek-chat' (V3) for the CEO conversational loop.
+  if (agentName === "ceo" && model === "deepseek-v4-flash") {
+    model = "deepseek-chat";
+  }
+
+  // Mandatory log for production confirmation
+  const isReasoning = model === DEEPSEEK_CONFIG.reasoningModel;
+  console.log(`[DeepSeek] Call: model=${model}, is_reasoning=${isReasoning} (agent=${agentName})`);
 
   const openAiMessages: any[] = [];
   if (system) {
     openAiMessages.push({ role: "system", content: system });
   }
   
-  // Combine with existing messages
+  // Combine with existing messages - strip any reasoning_content to stay in chat mode
   messages.forEach(msg => {
-    openAiMessages.push({ ...msg });
+    const { reasoning_content, ...rest } = msg as any;
+    openAiMessages.push(rest);
   });
 
   // Debug logging for tool calls (redacted)
   if (openAiMessages.some(m => m.tool_calls || m.role === "tool")) {
     console.log("[DeepSeek] Outbound tool-related messages:", JSON.stringify(openAiMessages.map(m => ({
       role: m.role,
-      has_content: !!m.content,
-      tool_calls_count: m.tool_calls?.length,
+      has_tool_calls: !!m.tool_calls,
       tool_call_id: m.tool_call_id
     })), null, 2));
   }
@@ -70,7 +77,8 @@ export async function runDeepSeek(options: DeepSeekRequestOptions): Promise<LLMR
     });
 
     const choice = response.choices?.[0];
-    const text = choice?.message?.content ?? "";
+    const message = choice?.message;
+    const text = message?.content ?? "";
 
     return {
       text,
