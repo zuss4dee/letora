@@ -22,6 +22,8 @@ export default async function BillingPage({
 
   const existing = user?.id ? await getUserSettings(user.id) : null;
   const hasStripeCustomer = Boolean(existing?.stripeCustomerId?.trim());
+  const hasPolarCustomer = Boolean(existing?.polarCustomerId?.trim());
+  const billingProvider = hasPolarCustomer ? "polar" : "stripe";
 
   return (
     <div className="@container/main relative flex flex-1 flex-col">
@@ -45,7 +47,7 @@ export default async function BillingPage({
               className="max-w-xl rounded-lg border border-zinc-800 bg-[#1a1a1a]/90 px-4 py-3 font-[family-name:var(--font-inter)] text-sm text-foreground"
               role="status"
             >
-              Checkout completed. Your subscription and trial are handled in Stripe; it may take a minute for this page
+              Checkout completed. Your subscription and trial are handled securely; it may take a minute for this page
               to reflect updates.
             </div>
           ) : null}
@@ -64,14 +66,14 @@ export default async function BillingPage({
 
           {user?.id ? (
             <div className="max-w-4xl space-y-8 pt-2">
-              <CurrentPlanSummary settings={existing} hasStripeCustomer={hasStripeCustomer} />
+              <CurrentPlanSummary settings={existing} hasStripeCustomer={hasStripeCustomer} hasPolarCustomer={hasPolarCustomer} />
 
-              {hasStripeCustomer ? (
+              {hasStripeCustomer || hasPolarCustomer ? (
                 <div className="space-y-3">
                   <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
-                    Update your card, view invoices, or cancel in the Stripe customer portal.
+                    Update your card, view invoices, or cancel in the {billingProvider === "polar" ? "Polar" : "Stripe"} customer portal.
                   </p>
-                  <ManageBillingButton />
+                  <ManageBillingButton provider={billingProvider} />
                 </div>
               ) : (
                 <p className="max-w-xl font-[family-name:var(--font-inter)] text-sm leading-relaxed text-muted-foreground">

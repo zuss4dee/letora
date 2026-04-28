@@ -8,10 +8,12 @@ import { PLANS } from "@/lib/stripe-plans";
 export function CurrentPlanSummary({
   settings,
   hasStripeCustomer,
+  hasPolarCustomer = false,
   className,
 }: {
   settings: UserSettingsRow | null;
   hasStripeCustomer: boolean;
+  hasPolarCustomer?: boolean;
   className?: string;
 }) {
   const fields = {
@@ -25,6 +27,7 @@ export function CurrentPlanSummary({
   const statusLc = fields.subscriptionStatus?.toLowerCase() ?? "";
   const planKey = planDisplayToKey(settings?.subscriptionPlan ?? null);
   const catalog = planKey ? PLANS[planKey] : null;
+  const billingProvider = hasPolarCustomer ? "Polar" : "Stripe";
 
   const planTitle =
     settings?.subscriptionPlan?.trim() ||
@@ -75,7 +78,7 @@ export function CurrentPlanSummary({
             <p className="mt-2 text-sm text-muted-foreground">
               After the trial, the <span className="text-foreground">{catalog.name}</span> plan continues at{" "}
               <span className="tabular-nums text-foreground">£{catalog.price} / month</span> unless you change or cancel
-              in Stripe.
+              in {billingProvider}.
             </p>
           ) : null}
         </div>
@@ -103,11 +106,11 @@ export function CurrentPlanSummary({
 
       {statusLc === "past_due" ? (
         <p className="mt-4 text-sm text-amber-600 dark:text-amber-400">
-          Payment past due — update your card in the Stripe portal (below) so your {planTitle} plan stays active.
+          Payment past due — update your card in the {billingProvider} portal (below) so your {planTitle} plan stays active.
         </p>
       ) : null}
 
-      {(statusLc === "inactive" || statusLc === "canceled" || statusLc === "cancelled") && hasStripeCustomer ? (
+      {(statusLc === "inactive" || statusLc === "canceled" || statusLc === "cancelled") && (hasStripeCustomer || hasPolarCustomer) ? (
         <p className="mt-4 text-sm text-muted-foreground">
           This subscription is no longer active. You can start again from{" "}
           <Link href="/pricing" className="font-medium text-foreground underline-offset-4 hover:text-zinc-400 hover:underline">
@@ -122,7 +125,7 @@ export function CurrentPlanSummary({
       ) : paying && !catalog ? (
         <p className="mt-4 text-sm text-muted-foreground">
           You&apos;re on a paid Letora workspace. Full plan details will show here once your tier name syncs from
-          Stripe (usually within a minute).
+          {billingProvider} (usually within a minute).
         </p>
       ) : null}
 
@@ -139,7 +142,7 @@ export function CurrentPlanSummary({
         </ul>
       ) : null}
 
-      {!paying && !hasStripeCustomer ? (
+      {!paying && !(hasStripeCustomer || hasPolarCustomer) ? (
         <p className="mt-4 text-sm text-muted-foreground">
           You&apos;re on the included <span className="text-foreground">Starter</span> workspace limits. To start a
           paid plan or trial, continue from the{" "}
@@ -150,7 +153,7 @@ export function CurrentPlanSummary({
         </p>
       ) : null}
 
-      {hasStripeCustomer && !statusLc ? (
+      {(hasStripeCustomer || hasPolarCustomer) && !statusLc ? (
         <p className="mt-4 text-sm text-muted-foreground">
           Connecting your subscription to this page… If this doesn&apos;t update within a few minutes, refresh after
           checkout or open Billing again.

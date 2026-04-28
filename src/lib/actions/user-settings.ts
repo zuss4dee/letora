@@ -34,6 +34,9 @@ export type UserSettingsRow = UserSettingsInput & {
   userId?: string;
   /** Present after Stripe Checkout creates or links a customer. */
   stripeCustomerId?: string | null;
+  /** Present after Polar Checkout creates or links a customer. */
+  polarCustomerId?: string | null;
+  polarSubscriptionId?: string | null;
   /** Pipeline: identity → first property → full app. */
   onboardingStatus?: OnboardingStatus;
   onboardingPrimaryGoal?: string | null;
@@ -54,7 +57,7 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
   const { data, error } = await supabase
     .from("user_settings")
     .select(
-      "id,user_id,stripe_customer_id,business_name,landlord_name,contact_phone,contact_email,business_address,rent_chaser_tone,first_chase_days,email_signoff,include_payment_plan,email_from_name,auto_send_rent_chaser,auto_send_maintenance_updates,auto_send_onboarding_emails,auto_send_lead_updates,auto_send_referencing_emails,referencing_agency_name,referencing_agency_email,referencing_agency_notes,rent_chaser_instructions,min_lead_score,preferred_sources,disqualify_no_movein,lead_qualifier_criteria,onboarding_status,onboarding_primary_goal,onboarding_setup_reminder_dismissed_at,has_seen_tour,subscription_plan,subscription_status,subscription_period_end,subscription_trial_end",
+      "id,user_id,stripe_customer_id,polar_customer_id,polar_subscription_id,business_name,landlord_name,contact_phone,contact_email,business_address,rent_chaser_tone,first_chase_days,email_signoff,include_payment_plan,email_from_name,auto_send_rent_chaser,auto_send_maintenance_updates,auto_send_onboarding_emails,auto_send_lead_updates,auto_send_referencing_emails,referencing_agency_name,referencing_agency_email,referencing_agency_notes,rent_chaser_instructions,min_lead_score,preferred_sources,disqualify_no_movein,lead_qualifier_criteria,onboarding_status,onboarding_primary_goal,onboarding_setup_reminder_dismissed_at,has_seen_tour,subscription_plan,subscription_status,subscription_period_end,subscription_trial_end",
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -74,6 +77,8 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
     id: data.id,
     userId: data.user_id,
     stripeCustomerId: data.stripe_customer_id ?? null,
+    polarCustomerId: data.polar_customer_id ?? null,
+    polarSubscriptionId: data.polar_subscription_id ?? null,
     businessName: data.business_name ?? "",
     landlordName: data.landlord_name ?? "",
     contactPhone: data.contact_phone ?? "",

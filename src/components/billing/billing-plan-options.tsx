@@ -34,7 +34,7 @@ export function BillingPlanOptions({
                 £{p.price}
                 <span className="font-[family-name:var(--font-inter)] text-sm font-medium text-muted-foreground">
                   {" "}
-                  / month
+                  / {key === "yearly" ? "year" : "month"}
                 </span>
               </p>
               <p className="font-[family-name:var(--font-inter)] text-xs leading-snug text-muted-foreground">

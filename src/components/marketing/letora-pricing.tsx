@@ -24,13 +24,15 @@ function buildStripeTiers(): MarketingTier[] {
   return PLAN_ORDER.map((key) => {
     const p = STRIPE_PLANS[key];
     const cta = "Start 24h Free Trial";
-    const badge = key === "pro" ? STRIPE_PLANS.pro.badge : undefined;
+    const badge = (p as any).badge;
+    const priceSuffix = key === "yearly" ? "/ year" : "/ month";
+    
     return {
       key,
       name: p.name,
       tagline: p.tagline,
       price: `£${p.price}`,
-      priceSuffix: "/ month",
+      priceSuffix,
       badge,
       features: p.features,
       cta,
@@ -78,8 +80,8 @@ export function LetoraPricingSection() {
             Plans that scale with your portfolio
           </h2>
           <p className="mx-auto mt-5 max-w-xl font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-foreground md:text-lg">
-            Value tracks how many properties you run and how much of the workspace you use. Self-serve plans bill in
-            GBP monthly through Stripe. Prices exclude VAT where applicable.
+            Select the billing cycle that fits your operations. Self-serve plans bill in
+            GBP through our secure partner. Prices exclude VAT where applicable.
           </p>
           <p className="mt-6 font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
             <Link

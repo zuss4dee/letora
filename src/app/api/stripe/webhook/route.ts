@@ -6,6 +6,7 @@ import { PLANS } from "@/lib/stripe-plans";
 import { resolvePlanKeyFromStripeSubscription } from "@/lib/plan-limits";
 import { PENDING_CHECKOUT_PLAN_META_KEY } from "@/lib/stripe/pending-checkout";
 import { stripe } from "@/lib/stripe";
+import { syncSubscriptionToUserSettings } from "@/lib/billing/sync";
 
 const PG_UNIQUE_VIOLATION = "23505";
 
@@ -38,25 +39,18 @@ async function syncPlatformSubscriptionToUserSettings(
   opts?: { stripeCustomerId?: string },
 ) {
   const planKey = resolvePlanKeyFromStripeSubscription(sub);
-  const subscription_plan = planKey ? PLANS[planKey].name : null;
+  const trialEnd = sub.trial_end != null && sub.trial_end > 0 ? new Date(sub.trial_end * 1000) : null;
 
-  const trialEndIso =
-    sub.trial_end != null && sub.trial_end > 0
-      ? new Date(sub.trial_end * 1000).toISOString()
-      : null;
-
-  await supabase
-    .from("user_settings")
-    .update({
-      stripe_subscription_id: sub.id,
-      // trialing is normal for card-required trials; first invoice may be £0 until the trial ends.
-      subscription_status: sub.status,
-      subscription_plan,
-      subscription_period_end: new Date(sub.current_period_end * 1000).toISOString(),
-      subscription_trial_end: sub.status === "trialing" ? trialEndIso : null,
-      ...(opts?.stripeCustomerId ? { stripe_customer_id: opts.stripeCustomerId } : {}),
-    })
-    .eq("user_id", userId);
+  await syncSubscriptionToUserSettings(supabase, {
+    userId,
+    provider: "stripe",
+    subscriptionId: sub.id,
+    customerId: opts?.stripeCustomerId || (typeof sub.customer === "string" ? sub.customer : sub.customer.id),
+    status: sub.status,
+    planKey,
+    periodEnd: new Date(sub.current_period_end * 1000),
+    trialEnd,
+  });
 }
 
 async function handleCheckoutSessionCompleted(

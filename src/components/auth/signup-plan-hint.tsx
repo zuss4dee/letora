@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { PLANS, type PlanKey } from "@/lib/stripe-plans";
 
 function isPlanKey(v: string | null): v is PlanKey {
-  return v === "starter" || v === "pro" || v === "landlord_pro";
+  return v === "starter" || v === "pro" || v === "landlord_pro" || v === "monthly" || v === "yearly";
 }
 
 export function SignupPlanHint() {

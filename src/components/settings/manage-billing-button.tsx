@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 /**
  * Opens Stripe Customer Portal (POST /api/stripe/create-portal). Used on the Billing page (`/dashboard/billing`).
  */
-export function ManageBillingButton() {
+export function ManageBillingButton({ provider = "stripe" }: { provider?: "stripe" | "polar" }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,7 +15,8 @@ export function ManageBillingButton() {
     setError(null);
     setPending(true);
     try {
-      const res = await fetch("/api/stripe/create-portal", { method: "POST" });
+      const endpoint = provider === "polar" ? "/api/polar/create-portal" : "/api/stripe/create-portal";
+      const res = await fetch(endpoint, { method: "POST" });
       const data = (await res.json()) as { url?: string; error?: string };
       if (!res.ok) {
         setError(data.error ?? "Could not open billing portal.");
@@ -43,7 +44,7 @@ export function ManageBillingButton() {
         onClick={() => void onClick()}
         className="rounded-md border-border bg-card font-[family-name:var(--font-inter)] text-xs font-semibold uppercase tracking-[0.12em] text-foreground shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-800/50 hover:text-white"
       >
-        {pending ? "Opening…" : "Manage billing"}
+        {pending ? "Opening…" : `Manage billing on ${provider === "polar" ? "Polar" : "Stripe"}`}
       </Button>
       {error ? (
         <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground" role="status">

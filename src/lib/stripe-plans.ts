@@ -1,17 +1,46 @@
 /**
- * Canonical subscription packaging for Letora (GBP/month).
- * Price IDs must match Stripe Dashboard products (see .env.example) — amounts charged are on the Price in Stripe.
- * Display `price` is for marketing only (£19 / £39 / £79).
- * Display copy should stay aligned with what checkout and webhooks record in metadata.plan.
+ * Canonical subscription packaging for Letora.
+ * Letora now uses a simple two-tier model: Monthly or Yearly.
+ * Legacy plans (Starter, Pro, Portfolio) are kept for Stripe backward compatibility.
  */
 
 export const PLANS = {
+  // New Active Plans
+  monthly: {
+    name: "Monthly",
+    priceId: process.env.NEXT_PUBLIC_STRIPE_MONTHLY_PRICE_ID ?? "",
+    price: 39,
+    properties: -1,
+    tagline: "Full access to Letora agents and features",
+    highlighted: true,
+    features: [
+      "Unlimited properties",
+      "All AI agents (CEO, maintenance, contracts)",
+      "Automated rent chasing and lead qualifying",
+      "Full tenancy and compliance tracking",
+      "Priority support",
+    ],
+  },
+  yearly: {
+    name: "Yearly",
+    priceId: process.env.NEXT_PUBLIC_STRIPE_YEARLY_PRICE_ID ?? "",
+    price: 390,
+    properties: -1,
+    tagline: "Save 20% with annual billing",
+    highlighted: false,
+    badge: "2 months free",
+    features: [
+      "Everything in Monthly",
+      "Dedicated account manager",
+      "Strategic portfolio reviews",
+      "Lock in price for 12 months",
+    ],
+  },
+  // Legacy Plans (kept for Stripe users)
   starter: {
     name: "Starter",
-    /** Stripe Price ID (monthly GBP) */
     priceId: process.env.NEXT_PUBLIC_STRIPE_STARTER_PRICE_ID ?? "",
     price: 19,
-    /** Max properties; -1 means unlimited */
     properties: 3,
     tagline: "Core workspace for a small UK portfolio",
     highlighted: false,
@@ -29,7 +58,7 @@ export const PLANS = {
     price: 39,
     properties: 10,
     tagline: "Full agent layer for landlords who are scaling",
-    highlighted: true,
+    highlighted: false,
     badge: "Most popular",
     features: [
       "Up to 10 properties",
@@ -40,7 +69,6 @@ export const PLANS = {
     ],
   },
   landlord_pro: {
-    /** Shown as "Portfolio" in marketing; key stays stable for Stripe metadata.code */
     name: "Portfolio",
     priceId: process.env.NEXT_PUBLIC_STRIPE_LANDLORD_PRO_PRICE_ID ?? "",
     price: 79,
@@ -59,5 +87,8 @@ export const PLANS = {
 
 export type PlanKey = keyof typeof PLANS;
 
-/** Stable order for pricing UI and upgrade paths */
-export const PLAN_ORDER: readonly PlanKey[] = ["starter", "pro", "landlord_pro"] as const;
+/** Stable order for pricing UI and upgrade paths. Only shows new active plans. */
+export const PLAN_ORDER: readonly PlanKey[] = ["monthly", "yearly"] as const;
+
+/** All plans including legacy ones. */
+export const ALL_PLAN_KEYS: PlanKey[] = Object.keys(PLANS) as PlanKey[];

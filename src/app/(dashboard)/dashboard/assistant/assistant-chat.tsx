@@ -903,7 +903,7 @@ export function AssistantChat({
     }
   }
 
-  function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+  function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key !== "Enter" || e.shiftKey) return;
     e.preventDefault();
     e.currentTarget.blur();

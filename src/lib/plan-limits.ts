@@ -5,6 +5,12 @@ export function planDisplayToKey(display: string | null | undefined): PlanKey | 
   if (display == null || !String(display).trim()) return null;
   const t = display.trim();
   const lower = t.toLowerCase();
+  
+  // New plans
+  if (lower === "monthly" || t === PLANS.monthly.name) return "monthly";
+  if (lower === "yearly" || t === PLANS.yearly.name) return "yearly";
+  
+  // Legacy plans
   if (lower === "starter" || t === PLANS.starter.name) return "starter";
   if (lower === "pro" || t === PLANS.pro.name) return "pro";
   if (lower === "landlord_pro" || lower === "portfolio" || t === PLANS.landlord_pro.name) {
@@ -86,10 +92,20 @@ export function getMaxPropertiesForUser(settings: UserPlanSettings): number {
 
 /** Optional structured flags for future Settings / agent gates (phase 2). */
 export function planFeatures(key: PlanKey) {
+  // Monthly and Yearly have full features
+  if (key === "monthly" || key === "yearly") {
+    return {
+      fullAgentLayer: true,
+      customAgentSettings: true,
+      contractTemplateUploads: true,
+      maxProperties: PLANS[key].properties,
+    };
+  }
+
   return {
     fullAgentLayer: key !== "starter",
     customAgentSettings: key !== "starter",
     contractTemplateUploads: key === "landlord_pro",
-    maxProperties: PLANS[key].properties,
+    maxProperties: (PLANS as any)[key]?.properties ?? 3,
   };
 }
