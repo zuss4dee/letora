@@ -6,7 +6,7 @@ import type { CheckoutReturnTarget } from "@/lib/stripe/checkout-return-target";
 import { PLAN_ORDER, PLANS } from "@/lib/stripe-plans";
 
 /**
- * In-app subscribe + add payment method via Stripe Checkout (same as Pricing page), returning to Billing after pay/cancel.
+ * In-app subscribe — Monthly or Yearly via Polar Checkout.
  */
 export function BillingPlanOptions({
   checkoutReturnTarget = "billing",
@@ -15,7 +15,7 @@ export function BillingPlanOptions({
   checkoutReturnTarget?: CheckoutReturnTarget;
 }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-2">
       {PLAN_ORDER.map((key) => {
         const p = PLANS[key];
         return (

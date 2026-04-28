@@ -46,12 +46,13 @@ export function PricingPlanSubscribeButton({
         return;
       }
 
-      const provider = process.env.NEXT_PUBLIC_BILLING_PROVIDER === "polar" ? "polar" : "stripe";
-      
-      if (provider === "polar") {
+      // Monthly and Yearly are Polar plans. Legacy plans (starter/pro/landlord_pro) use Stripe.
+      const isPolarPlan = planKey === "monthly" || planKey === "yearly";
+
+      if (isPolarPlan) {
         const productId = POLAR_PLANS[planKey].productId?.trim();
         if (!productId) {
-          setError("Polar billing is not configured. Please try again later.");
+          setError("Billing is not configured. Please try again later.");
           setLoading(false);
           return;
         }
@@ -59,12 +60,12 @@ export function PricingPlanSubscribeButton({
         const res = await fetch("/api/polar/create-checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId, plan: planKey, returnTarget: checkoutReturnTarget }),
+          body: JSON.stringify({ productId, plan: planKey }),
         });
 
         const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
         if (!res.ok) {
-          setError(data.error ?? "Could not start Polar checkout.");
+          setError(data.error ?? "Could not start checkout. Please try again.");
           setLoading(false);
           return;
         }
@@ -73,9 +74,10 @@ export function PricingPlanSubscribeButton({
           return;
         }
       } else {
+        // Legacy Stripe path (for existing subscribers only)
         const priceId = PLANS[planKey].priceId?.trim();
         if (!priceId) {
-          setError("Stripe billing is not configured. Please try again later.");
+          setError("Billing is not configured. Please try again later.");
           setLoading(false);
           return;
         }
@@ -88,7 +90,7 @@ export function PricingPlanSubscribeButton({
 
         const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
         if (!res.ok) {
-          setError(data.error ?? "Could not start Stripe checkout.");
+          setError(data.error ?? "Could not start checkout. Please try again.");
           setLoading(false);
           return;
         }
