@@ -339,12 +339,14 @@ export function ComplianceDashboard({
                   const missingDoc = !hasDoc;
 
                   return (
-                        className={cn(
-                          "@container/cert relative overflow-hidden rounded-xl border transition-[border-color,box-shadow,background] duration-300",
-                          missingDoc
-                            ? "border-amber-500/25 bg-gradient-to-br from-amber-500/[0.04] via-card/30 to-card/60 shadow-sm hover:border-amber-500/40"
-                            : "border-border/60 bg-muted/15 hover:border-border",
-                        )}
+                    <li
+                      key={row.type}
+                      className={cn(
+                        "@container/cert relative overflow-hidden rounded-xl border transition-[border-color,box-shadow,background] duration-300",
+                        missingDoc
+                          ? "border-amber-500/25 bg-gradient-to-br from-amber-500/[0.04] via-card/30 to-card/60 shadow-sm hover:border-amber-500/40"
+                          : "border-border/60 bg-muted/15 hover:border-border",
+                      )}
                     >
                         {missingDoc ? (
                           <div
