@@ -39,11 +39,18 @@ export async function runDeepSeek(options: DeepSeekRequestOptions): Promise<LLMR
   
   // Combine with existing messages
   messages.forEach(msg => {
-    openAiMessages.push({
-      role: msg.role,
-      content: msg.content,
-    });
+    openAiMessages.push({ ...msg });
   });
+
+  // Debug logging for tool calls (redacted)
+  if (openAiMessages.some(m => m.tool_calls || m.role === "tool")) {
+    console.log("[DeepSeek] Outbound tool-related messages:", JSON.stringify(openAiMessages.map(m => ({
+      role: m.role,
+      has_content: !!m.content,
+      tool_calls_count: m.tool_calls?.length,
+      tool_call_id: m.tool_call_id
+    })), null, 2));
+  }
 
   try {
     const response = await client.chat.completions.create({

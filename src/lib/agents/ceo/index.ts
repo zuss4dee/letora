@@ -166,7 +166,12 @@ async function executeCeoCompletion(params: {
       model: dsResponse.model,
       stop_reason: choice?.finish_reason === "tool_calls" ? "tool_use" : "end_turn",
       stop_sequence: null,
-      usage: dsResponse.rawResponse?.usage || { input_tokens: 0, output_tokens: 0 }
+      usage: dsResponse.rawResponse?.usage
+        ? {
+            input_tokens: dsResponse.rawResponse.usage.prompt_tokens || 0,
+            output_tokens: dsResponse.rawResponse.usage.completion_tokens || 0,
+          }
+        : { input_tokens: 0, output_tokens: 0 },
     } as Message;
   }
 
