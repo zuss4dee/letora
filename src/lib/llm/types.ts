@@ -1,4 +1,4 @@
-export type LLMProvider = "anthropic" | "google" | "openai"
+export type LLMProvider = "anthropic" | "google" | "openai" | "deepseek"
 
 export type AgentName =
   | "ceo"

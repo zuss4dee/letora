@@ -426,43 +426,6 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter className="border-none bg-transparent px-0 pb-4 pt-2">
-        <div
-          className="mx-5 mb-3 flex flex-wrap items-center justify-center gap-x-1 gap-y-2 sm:gap-x-2"
-          aria-label="Theme and quick actions"
-        >
-          <ThemeToggle className="size-8 shrink-0 text-muted-foreground hover:bg-transparent hover:text-foreground dark:text-zinc-500 dark:hover:text-white" />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8 text-muted-foreground hover:bg-transparent hover:text-foreground dark:text-zinc-500 dark:hover:text-white"
-            aria-label="Notifications"
-          >
-            <Bell className="size-[18px] stroke-[1.25]" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8 text-muted-foreground hover:bg-transparent hover:text-foreground dark:text-zinc-500 dark:hover:text-white"
-            aria-label="Command palette"
-            onClick={openPalette}
-          >
-            <Command className="size-[18px] stroke-[1.25]" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8 text-muted-foreground hover:bg-transparent hover:text-foreground dark:text-zinc-500 dark:hover:text-white"
-            aria-label="Profile"
-            asChild
-          >
-            <Link href="/dashboard/settings" onClick={closeMobileNav}>
-              <UserCircle2 className="size-[18px] stroke-[1.25]" />
-            </Link>
-          </Button>
-        </div>
         <div className="mx-5 mb-2.5 h-px bg-black/[0.09] dark:bg-white/[0.07]" aria-hidden />
         <button
           type="button"
