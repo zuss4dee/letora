@@ -1098,7 +1098,7 @@ export function AssistantChat({
                     {conv.title || "New session"}
                   </div>
                   <div className="mt-1 flex items-center justify-between font-mono text-[9px] uppercase text-[#444748]">
-                    <span>{conv.updatedAt ? new Date(conv.updatedAt).toLocaleDateString() : "Now"}</span>
+                    <span>{conv.updated_at ? new Date(conv.updated_at).toLocaleDateString() : "Now"}</span>
                   </div>
                 </Link>
               );
