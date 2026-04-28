@@ -60,6 +60,26 @@ export async function runDeepSeek(options: DeepSeekRequestOptions): Promise<LLMR
   }
 
   try {
+    // Map Anthropic-style tool_choice to OpenAI-compatible values
+    let mappedToolChoice: any = undefined;
+    if (tool_choice) {
+      if (typeof tool_choice === "string") {
+        mappedToolChoice = tool_choice === "any" ? "required" : tool_choice;
+      } else if (typeof tool_choice === "object") {
+        if (tool_choice.type === "any") mappedToolChoice = "required";
+        else if (tool_choice.type === "auto") mappedToolChoice = "auto";
+        else if (tool_choice.type === "tool") {
+          mappedToolChoice = { type: "function", function: { name: tool_choice.name } };
+        } else {
+          mappedToolChoice = tool_choice;
+        }
+      }
+    }
+
+    if (mappedToolChoice) {
+      console.log(`[DeepSeek] tool_choice mapped to: ${JSON.stringify(mappedToolChoice)}`);
+    }
+
     const response = await client.chat.completions.create({
       model,
       messages: openAiMessages,
@@ -71,7 +91,7 @@ export async function runDeepSeek(options: DeepSeekRequestOptions): Promise<LLMR
           parameters: t.input_schema,
         }
       })),
-      tool_choice: tool_choice === "any" ? "required" : tool_choice,
+      tool_choice: mappedToolChoice,
       temperature,
       max_tokens: maxTokens,
     });
