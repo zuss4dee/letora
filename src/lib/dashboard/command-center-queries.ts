@@ -173,15 +173,32 @@ export async function loadCommandCenterActivity(userId: string): Promise<Activit
   return withTimeout(
     (async () => {
       const supabase = await createClient();
-      const { data, error } = await supabase
+      
+      // Try to fetch with source column, fallback if migration hasn't run yet
+      let query = supabase
         .from("agent_activity")
         .select("id, tool_name, created_at, source")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(12);
 
+      let { data, error } = await query;
+
+      if (error && error.code === "42703") { // undefined_column
+        console.warn("[command-center] 'source' column missing, falling back");
+        const fallbackQuery = supabase
+          .from("agent_activity")
+          .select("id, tool_name, created_at")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(12);
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+        data = fallbackData;
+        error = fallbackError;
+      }
+
       if (error) {
-        console.warn("[command-center] agent_activity", error.message);
+        console.warn("[command-center] agent_activity error", error.message);
         return [];
       }
 

@@ -31,17 +31,30 @@ export async function logActivity(input: LogActivityInput, supabaseClient?: Supa
     targetUserId = user.id;
   }
 
-  const { error } = await supabase.from("agent_activity").insert({
+  const payload = {
     user_id: targetUserId,
-    tool_name: input.eventType, // Using tool_name as eventType for backward compatibility
-    source: input.source || "assistant",
+    tool_name: input.eventType,
     args: input.args || {},
     result: input.result || {},
     success: input.success ?? true,
     created_at: new Date().toISOString(),
+  };
+
+  // Try to insert with source column, fallback if migration hasn't run yet
+  const { error } = await supabase.from("agent_activity").insert({
+    ...payload,
+    source: input.source || "assistant",
   });
 
   if (error) {
-    console.error("[logActivity] Failed to insert activity:", error.message);
+    if (error.code === "42703") { // undefined_column
+      console.warn("[logActivity] 'source' column missing, retrying without it");
+      const { error: retryError } = await supabase.from("agent_activity").insert(payload);
+      if (retryError) {
+        console.error("[logActivity] Retry failed:", retryError.message);
+      }
+    } else {
+      console.error("[logActivity] Failed to insert activity:", error.message);
+    }
   }
 }

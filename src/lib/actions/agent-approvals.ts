@@ -125,11 +125,11 @@ export async function createAgentApproval(
   revalidateApprovalsSurfaces();
   
   // Log activity
-  void logActivity({
+  await logActivity({
     userId: actor.userId,
-    eventType: `PROPOSED: ${input.agent_type.toUpperCase().replace(/_/g, " ")}`,
+    eventType: `PROPOSED: ${input.agentType.toUpperCase().replace(/_/g, " ")}`,
     source: "assistant",
-    args: { approvalId: inserted.id, actionType: input.action_type },
+    args: { approvalId: inserted.id, actionType: input.actionType },
   }, actor.supabase);
 
   return { ok: true, id: inserted.id };
@@ -160,7 +160,7 @@ export async function denyAgentApproval(
   revalidateApprovalsSurfaces();
 
   // Log activity
-  void logActivity({
+  await logActivity({
     userId: actor.userId,
     eventType: `DENIED: ${approvalId.slice(0, 8)}`,
     source: "landlord",
@@ -233,7 +233,7 @@ export async function approveAgentApproval(approvalId: string): Promise<ActionRe
   revalidateApprovalsSurfaces();
 
   // Log activity
-  void logActivity({
+  await logActivity({
     userId: actor.userId,
     eventType: `EXECUTED: ${approval.action_type.toUpperCase().replace(/_/g, " ")}`,
     source: "landlord",

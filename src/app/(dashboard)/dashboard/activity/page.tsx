@@ -22,6 +22,7 @@ type ActivityRow = {
   result: Record<string, unknown> | null;
   success: boolean;
   created_at: string;
+  source?: string | null;
 };
 
 function formatDate(iso: string): string {
@@ -51,15 +52,30 @@ export default async function ActivityPage() {
 
   if (!user) notFound();
 
-  const { data, error } = await supabase
+  let query = supabase
     .from("agent_activity")
-    .select("id, tool_name, args, result, success, created_at")
+    .select("id, tool_name, args, result, success, created_at, source")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(100);
 
+  let { data, error } = await query;
+
+  if (error && error.code === "42703") { // undefined_column
+    console.warn("[activity] 'source' column missing, falling back");
+    const fallbackQuery = supabase
+      .from("agent_activity")
+      .select("id, tool_name, args, result, success, created_at")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+    const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+    data = fallbackData;
+    error = fallbackError;
+  }
+
   if (error) {
-    console.warn("[activity]", error.message);
+    console.warn("[activity] error", error.message);
   }
 
   const rows = (data ?? []) as ActivityRow[];
@@ -87,6 +103,7 @@ export default async function ActivityPage() {
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
                     <TableHead>Tool</TableHead>
+                    <TableHead>Source</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead className="text-right">Details</TableHead>
@@ -107,6 +124,9 @@ export default async function ActivityPage() {
                       <TableRow key={row.id}>
                         <TableCell className="font-medium">
                           {formatToolName(row.tool_name)}
+                        </TableCell>
+                        <TableCell className="text-sm text-zinc-500 capitalize">
+                          {row.source || "assistant"}
                         </TableCell>
                         <TableCell>
                           {row.success ? (
