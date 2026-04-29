@@ -52,33 +52,43 @@ export default async function ActivityPage() {
 
   if (!user) notFound();
 
-  let query = supabase
+  let data: ActivityRow[] | null = null;
+  let error: { code?: string; message: string } | null = null;
+
+  const primaryResult = await supabase
     .from("agent_activity")
     .select("id, tool_name, args, result, success, created_at, source")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(100);
 
-  let { data, error } = await query;
-
-  if (error && error.code === "42703") { // undefined_column
+  if (primaryResult.error && primaryResult.error.code === "42703") {
     console.warn("[activity] 'source' column missing, falling back");
-    const fallbackQuery = supabase
+
+    const fallbackResult = await supabase
       .from("agent_activity")
       .select("id, tool_name, args, result, success, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(100);
-    const { data: fallbackData, error: fallbackError } = await fallbackQuery;
-    data = fallbackData;
-    error = fallbackError;
+
+    data =
+      fallbackResult.data?.map((row) => ({
+        ...row,
+        source: null,
+      })) ?? null;
+
+    error = fallbackResult.error;
+  } else {
+    data = (primaryResult.data as ActivityRow[] | null) ?? null;
+    error = primaryResult.error;
   }
 
   if (error) {
     console.warn("[activity] error", error.message);
   }
 
-  const rows = (data ?? []) as ActivityRow[];
+  const rows = data ?? [];
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">
