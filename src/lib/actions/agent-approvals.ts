@@ -9,6 +9,7 @@ import { runApprovedAgentSideEffect } from "@/lib/approvals/execute-approved-act
 import { normalizeApprovalJsonField } from "@/lib/approvals/evidence";
 import type { AgentApprovalExecutionSlice, AgentApprovalRow, CreateAgentApprovalContract } from "@/lib/approvals/types";
 import { createClient } from "@/lib/supabase/server";
+import { logActivity } from "@/lib/actions/activity-log";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
 
@@ -122,6 +123,15 @@ export async function createAgentApproval(
   if (!inserted.ok) return inserted;
 
   revalidateApprovalsSurfaces();
+  
+  // Log activity
+  void logActivity({
+    userId: actor.userId,
+    eventType: `PROPOSED: ${input.agent_type.toUpperCase().replace(/_/g, " ")}`,
+    source: "assistant",
+    args: { approvalId: inserted.id, actionType: input.action_type },
+  }, actor.supabase);
+
   return { ok: true, id: inserted.id };
 }
 
@@ -148,6 +158,15 @@ export async function denyAgentApproval(
   if (error) return { ok: false, error: error.message };
 
   revalidateApprovalsSurfaces();
+
+  // Log activity
+  void logActivity({
+    userId: actor.userId,
+    eventType: `DENIED: ${approvalId.slice(0, 8)}`,
+    source: "landlord",
+    args: { approvalId, denyReason },
+  }, actor.supabase);
+
   return { ok: true };
 }
 
@@ -212,5 +231,15 @@ export async function approveAgentApproval(approvalId: string): Promise<ActionRe
   }
 
   revalidateApprovalsSurfaces();
+
+  // Log activity
+  void logActivity({
+    userId: actor.userId,
+    eventType: `EXECUTED: ${approval.action_type.toUpperCase().replace(/_/g, " ")}`,
+    source: "landlord",
+    args: { approvalId, actionType: approval.action_type, targetId: approval.target_id },
+    success: true,
+  }, actor.supabase);
+
   return { ok: true };
 }

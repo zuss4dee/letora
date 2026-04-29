@@ -26,6 +26,7 @@ type PaymentRow = {
   id: string;
   property_id: string | null;
   tenant_id: string | null;
+  tenancy_id: string | null;
   due_date: string | null;
   amount: number | string | null;
   status: string | null;

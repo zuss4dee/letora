@@ -181,49 +181,45 @@ function LeadQualifyPanel({ payload }: { payload: LeadQualifyEmbedPayloadV1 }) {
 
 function SuggestedActionChips({
   actions,
-  onMessagePick,
+  onPickSuggestedMessage,
 }: {
   actions: LetoraSuggestedAction[];
-  onMessagePick: (text: string) => void;
+  onPickSuggestedMessage: (text: string) => void;
 }) {
-  const router = useRouter();
   const actionable = actions.filter((a) =>
     a.kind === "link"
       ? isValidDashboardDeepLink(a.href ?? "")
-      : Boolean(a.message && a.message.trim().length > 0),
+      : Boolean((a.message || a.label)?.trim().length > 0),
   );
-  const prioritized = actionable.slice(0, 2);
-  if (prioritized.length === 0) return null;
+  if (actionable.length === 0) return null;
 
   return (
-    <div className="mt-4 space-y-1.5 border-t border-border/50 pt-3" role="group" aria-label="Suggested actions">
-      {prioritized.map((a, idx) => {
-        const visual = inferActionVisual(a.label, a.kind === "link" ? a.href : undefined);
+    <div className="flex flex-wrap gap-2 pt-2" role="group" aria-label="Suggested actions">
+      {actionable.map((a) => {
+        if (a.kind === "link" && a.href) {
+          const visual = inferActionVisual(a.label, a.href);
+          return (
+            <Link
+              key={a.id}
+              href={a.href}
+              className="flex items-center gap-2 border border-[#282828] bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
+            >
+              <ActionTypeIcon kind={visual.kind} />
+              {a.label}
+              <ArrowUpRight className="size-3" />
+            </Link>
+          );
+        }
         return (
-        <Button
-          key={a.id}
-          type="button"
-          size="sm"
-          variant="secondary"
-          className={cn(
-            "h-auto min-h-11 w-full justify-between rounded-lg px-3 py-2 text-left font-headline text-xs font-medium transition-colors",
-            idx === 0
-              ? "border border-secondary/35 bg-secondary/10 text-foreground hover:bg-secondary/15"
-              : "border border-border bg-background/70 text-foreground hover:bg-accent/60",
-          )}
-          onClick={() => {
-            if (a.kind === "link" && a.href) router.push(a.href);
-            else if (a.kind === "message" && a.message) onMessagePick(a.message);
-          }}
-        >
-          <span className="flex min-w-0 items-center gap-2">
-            <ActionTypeIcon kind={visual.kind} />
-            <span className="line-clamp-2">{visual.label}</span>
-          </span>
-          <span className={cn("ml-3", idx === 0 ? "text-secondary" : "text-muted-foreground")} aria-hidden>
-            →
-          </span>
-        </Button>
+          <button
+            key={a.id}
+            type="button"
+            onClick={() => onPickSuggestedMessage(a.message || a.label)}
+            className="flex items-center gap-2 border border-[#282828] bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
+          >
+            <MessageSquare className="size-3" />
+            {a.label}
+          </button>
         );
       })}
     </div>
@@ -420,31 +416,21 @@ function parseActionTags(text: string): { cleanText: string; actions: ActionTag[
 
 function NavigationButtons({ actions }: { actions: ActionTag[] }) {
   const valid = actions.filter((a) => isValidDashboardDeepLink(a.href));
-  const prioritized = valid.slice(0, 2);
-  if (prioritized.length === 0) return null;
+  if (valid.length === 0) return null;
   return (
-    <div className="mt-4 space-y-1.5 border-t border-border/50 pt-3">
-      {prioritized.map((a, idx) => {
+    <div className="flex flex-wrap gap-2 pt-2">
+      {valid.map((a) => {
         const visual = inferActionVisual(a.label, a.href);
         return (
-        <Link
-          key={a.href}
-          href={a.href}
-          className={cn(
-            "inline-flex min-h-11 w-full items-center justify-between gap-2 rounded-lg px-3 py-2 font-headline text-xs font-medium transition-colors",
-            idx === 0
-              ? "border border-secondary/35 bg-secondary/10 text-foreground hover:bg-secondary/15"
-              : "border border-border bg-background/70 text-foreground hover:border-secondary/50 hover:bg-accent/60",
-          )}
-        >
-          <span className="flex min-w-0 items-center gap-2">
+          <Link
+            key={a.href}
+            href={a.href}
+            className="flex items-center gap-2 border border-[#282828] bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
+          >
             <ActionTypeIcon kind={visual.kind} />
-            <span className="line-clamp-2">{visual.label}</span>
-          </span>
-          <span className={cn(idx === 0 ? "text-secondary" : "text-muted-foreground")} aria-hidden>
-            →
-          </span>
-        </Link>
+            {a.label}
+            <ArrowUpRight className="size-3" />
+          </Link>
         );
       })}
     </div>
@@ -516,21 +502,16 @@ function MessageBubble({
         )}>
           {role === "assistant" ? (
             <div className="space-y-4">
-              <p className="leading-relaxed whitespace-pre-wrap">{content}</p>
+              <div className="leading-relaxed whitespace-pre-wrap">
+                {parseActionTags(content).cleanText}
+              </div>
               
-              {suggestedActions && suggestedActions.length > 0 && onPickSuggestedMessage && (
-                <div className="flex flex-wrap gap-2 pt-2">
-                  {suggestedActions.map((a) => (
-                    <button
-                      key={a.id}
-                      onClick={() => onPickSuggestedMessage(a.message || a.label)}
-                      className="border border-[#282828] bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
-                    >
-                      {a.label}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <NavigationButtons actions={parseActionTags(content).actions} />
+
+              <SuggestedActionChips 
+                actions={suggestedActions || []} 
+                onPickSuggestedMessage={onPickSuggestedMessage || (() => {})} 
+              />
             </div>
           ) : (
             <p className="leading-relaxed whitespace-pre-wrap">{content}</p>

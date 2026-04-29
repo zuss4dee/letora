@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import type {
@@ -863,6 +864,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
       resultBlocks.push(wrapToolResultForModel(call.name, raw));
     }
     console.log("[ceo] All pending tools finished.");
+    revalidatePath("/dashboard");
 
     const summarySystemPrompt = appendPortfolioHealthDigest(
       CEO_SYSTEM_PROMPT +
@@ -1147,6 +1149,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
     const allowShortCircuit = code !== "missing_tenant";
     if (allowShortCircuit) {
       console.log("[ceo] Short-circuiting with auto-run draft result.");
+      revalidatePath("/dashboard");
       lastToolBatch = [{ name: "draft_contract", raw: draftRaw }];
       lastDraftContractRaw = draftRaw;
       const draftSummarySystem = `${effectiveSystemPrompt}\n\n**Server already ran draft_contract for this user message. Tool JSON (authoritative — your reply MUST follow this data only):**\n${draftRaw}\n\n**Mandatory:** Summarize the outcome in natural language only. If **saved** is true, confirm the draft was saved and mention the Contracts page in the app. If **code** is **matched_by_fallback**, ask whether the property in **message** is correct. If **code** is **ambiguous_match**, list **candidates** and ask which property. If **code** is **no_property_match**, use **message** in plain language and ask one clarifying question (e.g. which property they meant). Do not repeat the same error on the next turn. If **error** and **code** are present otherwise, explain briefly in plain English. Do not paste internal instructions or raw URLs. Do not call tools.`;

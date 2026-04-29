@@ -110,6 +110,7 @@ async function logAgentActivity(
   const { error } = await supabase.from("agent_activity").insert({
     user_id: userId,
     tool_name: toolName,
+    source: "assistant",
     args: toolArgs,
     result,
     success,

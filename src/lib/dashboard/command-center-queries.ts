@@ -175,7 +175,7 @@ export async function loadCommandCenterActivity(userId: string): Promise<Activit
       const supabase = await createClient();
       const { data, error } = await supabase
         .from("agent_activity")
-        .select("id, tool_name, created_at")
+        .select("id, tool_name, created_at, source")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(12);
@@ -190,11 +190,22 @@ export async function loadCommandCenterActivity(userId: string): Promise<Activit
         const time = Number.isNaN(d.getTime())
           ? "—"
           : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
-        const tool = String(row.tool_name ?? "EVENT").toUpperCase();
+        
+        let tool = String(row.tool_name ?? "EVENT").toUpperCase().replace(/_/g, " ");
+        if (tool === "CHASE RENT") tool = "RENT CHASE";
+        if (tool === "GET MAINTENANCE SUMMARY") tool = "MAINTENANCE";
+        if (tool === "GET PENDING APPROVALS SUMMARY") tool = "APPROVALS CHECK";
+        if (tool === "SEARCH PROPERTIES") tool = "PROPERTY SEARCH";
+        if (tool === "LIST TENANTS") tool = "TENANT LIST";
+        if (tool === "GET RENT STATUS") tool = "RENT TRACKER";
+        
+        const sourceRaw = (row as any).source || "assistant";
+        const source = sourceRaw.charAt(0).toUpperCase() + sourceRaw.slice(1);
+
         return {
           id: row.id as string,
-          event: `${tool}`,
-          source: "Assistant",
+          event: tool,
+          source,
           time,
         };
       });

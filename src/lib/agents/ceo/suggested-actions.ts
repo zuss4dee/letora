@@ -302,13 +302,177 @@ export function suggestedActionsFromPendingApprovalsSummary(raw: string): Letora
   ];
 }
 
+export function suggestedActionsFromMaintenanceSummary(raw: string): LetoraSuggestedAction[] {
+  const o = parseToolJson(raw);
+  if (!o) return [];
+  // Maintenance summary tool returns a summary text or items
+  return [
+    {
+      id: "open-maintenance",
+      label: "Open Maintenance",
+      kind: "link",
+      href: "/dashboard/maintenance",
+    },
+  ];
+}
+
+export function suggestedActionsFromSearchProperties(raw: string): LetoraSuggestedAction[] {
+  const o = parseToolJson(raw);
+  if (!o || !Array.isArray(o.results)) return [];
+  if (o.results.length === 1 && typeof o.results[0].id === "string") {
+    return [
+      {
+        id: `open-property-${o.results[0].id}`,
+        label: "Open Property",
+        kind: "link",
+        href: `/dashboard/properties/${o.results[0].id}`,
+      },
+    ];
+  }
+  return [
+    {
+      id: "open-properties",
+      label: "Open Properties",
+      kind: "link",
+      href: "/dashboard/properties",
+    },
+  ];
+}
+
+export function suggestedActionsFromListTenants(raw: string): LetoraSuggestedAction[] {
+  const o = parseToolJson(raw);
+  if (!o || !Array.isArray(o.tenants)) return [];
+  if (o.tenants.length === 1 && typeof o.tenants[0].id === "string") {
+    return [
+      {
+        id: `open-tenant-${o.tenants[0].id}`,
+        label: "Open Tenant",
+        kind: "link",
+        href: `/dashboard/tenants/${o.tenants[0].id}`,
+      },
+    ];
+  }
+  return [
+    {
+      id: "open-tenants",
+      label: "Open Tenants",
+      kind: "link",
+      href: "/dashboard/tenants",
+    },
+  ];
+}
+
+export function suggestedActionsFromRentStatus(raw: string): LetoraSuggestedAction[] {
+  const o = parseToolJson(raw);
+  if (!o) return [];
+  // If we have one clear tenancy, link to it
+  if (Array.isArray(o.tenancies) && o.tenancies.length === 1 && typeof o.tenancies[0].id === "string") {
+    return [
+      {
+        id: `open-tenancy-rent-${o.tenancies[0].id}`,
+        label: "Open Tenancy",
+        kind: "link",
+        href: `/dashboard/tenancies/${o.tenancies[0].id}`,
+      },
+    ];
+  }
+  return [
+    {
+      id: "open-rent-tracker",
+      label: "Open Rent Tracker",
+      kind: "link",
+      href: "/dashboard/rent-tracker",
+    },
+  ];
+}
+
+export function suggestedActionsFromChaseRent(raw: string): LetoraSuggestedAction[] {
+  const o = parseToolJson(raw);
+  if (!o) return [];
+  return [
+    {
+      id: "open-approvals-rent",
+      label: "Open Approvals",
+      kind: "link",
+      href: "/dashboard/approvals",
+    },
+    {
+      id: "open-emails-rent",
+      label: "Open Emails",
+      kind: "link",
+      href: "/dashboard/emails",
+    },
+  ];
+}
+
+export function suggestedActionsFromComplianceSummary(): LetoraSuggestedAction[] {
+  return [
+    {
+      id: "open-compliance",
+      label: "Open Compliance",
+      kind: "link",
+      href: "/dashboard/compliance",
+    },
+  ];
+}
+
+export function suggestedActionsFromContracts(raw: string): LetoraSuggestedAction[] {
+  const o = parseToolJson(raw);
+  if (!o) return [];
+  return [
+    {
+      id: "open-contracts",
+      label: "Open Contracts",
+      kind: "link",
+      href: "/dashboard/contracts",
+    },
+  ];
+}
+
 export function mergeSuggestedActionsFromTools(
   toolBatch: readonly { name: CEOToolName; raw: string }[],
 ): LetoraSuggestedAction[] {
   const out: LetoraSuggestedAction[] = [];
   for (const t of toolBatch) {
-    if (t.name === "get_pending_approvals_summary") {
+    if (t.name === "chase_rent") {
+      out.push(...suggestedActionsFromChaseRent(t.raw));
+    }
+    if (t.name === "get_maintenance_summary") {
+      out.push(...suggestedActionsFromMaintenanceSummary(t.raw));
+    }
+    if (t.name === "get_pending_approvals_summary" || t.name === "get_dashboard_summary") {
       out.push(...suggestedActionsFromPendingApprovalsSummary(t.raw));
+    }
+    if (t.name === "search_properties") {
+      out.push(...suggestedActionsFromSearchProperties(t.raw));
+    }
+    if (t.name === "list_tenants") {
+      out.push(...suggestedActionsFromListTenants(t.raw));
+    }
+    if (t.name === "get_rent_status") {
+      out.push(...suggestedActionsFromRentStatus(t.raw));
+    }
+    if (t.name === "get_compliance_summary") {
+      out.push(...suggestedActionsFromComplianceSummary());
+    }
+    if (t.name === "dispatch_maintenance_request") {
+      out.push({
+        id: "open-approvals-maintenance",
+        label: "Open Approvals",
+        kind: "link",
+        href: "/dashboard/approvals",
+      });
+    }
+    if (t.name === "qualify_leads" || t.name === "nurture_lead" || t.name === "get_leads_summary") {
+      out.push({
+        id: "open-leads",
+        label: "Open Leads",
+        kind: "link",
+        href: "/dashboard/leads",
+      });
+    }
+    if (t.name === "draft_contract" || t.name === "send_contract" || t.name === "get_contracts") {
+      out.push(...suggestedActionsFromContracts(t.raw));
     }
     if (t.name === "prepare_referencing" || t.name === "send_referencing_handoff") {
       out.push(...suggestedActionsFromReferencingTool(t.name, t.raw));
