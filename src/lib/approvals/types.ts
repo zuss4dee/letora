@@ -60,6 +60,7 @@ export type SendRentChaseEmailApprovalPayload = {
   amountOwed: number;
   daysOverdue: number;
   dueDate: string | null;
+  emailDraftId?: string | null;
 };
 
 /** Evidence stored on send_onboarding_email approvals (dashboard + audit). */

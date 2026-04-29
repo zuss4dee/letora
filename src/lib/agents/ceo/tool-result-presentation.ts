@@ -11,7 +11,7 @@ const TOOL_SUMMARY_HINTS: Record<CEOToolName, string> = {
   get_leads_summary:
     "State whether there are any new leads, then give pending/qualified/disqualified counts and a short list of recent lead names when helpful.",
   get_pending_approvals_summary:
-    "Read-only queue snapshot: **pending_total**, **by_category**, **oldest_waiting_label**, **items** (title + category), **next_action**. Do **not** say **Reply yes** or ask for chat confirmation. Approving or sending remains in **/dashboard/approvals**.",
+    "Read-only queue snapshot: **pending_total**, **by_category**, **oldest_waiting_label**, **next_action**. Do **not** list individual **items** in your reply if there are many. Instead, tell the user how many items are waiting per category and point them to **/dashboard/approvals**. Do **not** say **Reply yes** or ask for chat confirmation. Approving or sending remains in the Approvals dashboard.",
   search_properties:
     "List matching properties with their **id** (UUID), human-readable label, and hint if multiple matches — tell the user to pick the right one before mutating tools. Never treat a unit number as a UUID.",
   create_tenant_and_tenancy:

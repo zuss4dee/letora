@@ -836,6 +836,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
 
     const resultBlocks: string[] = [];
     const rawBatch: { name: CEOToolName; raw: string }[] = [];
+    console.log("[ceo] Executing pending tool calls:", pendingAction.toolCalls.map(c => c.name));
     for (const call of pendingAction.toolCalls) {
       const input =
         call.name === "start_tenant_onboarding"
@@ -855,10 +856,13 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
                 inferPropertyAddressHintFromUserMessagesOnly(contextMessages),
               )
             : call.input;
+      console.log(`[ceo] Running tool: ${call.name}`, { input });
       const raw = await executeCEOTool(call.name, input, userId, supabase);
+      console.log(`[ceo] Tool ${call.name} result length: ${raw.length}`);
       rawBatch.push({ name: call.name, raw });
       resultBlocks.push(wrapToolResultForModel(call.name, raw));
     }
+    console.log("[ceo] All pending tools finished.");
 
     const summarySystemPrompt = appendPortfolioHealthDigest(
       CEO_SYSTEM_PROMPT +
@@ -1142,6 +1146,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
     }
     const allowShortCircuit = code !== "missing_tenant";
     if (allowShortCircuit) {
+      console.log("[ceo] Short-circuiting with auto-run draft result.");
       lastToolBatch = [{ name: "draft_contract", raw: draftRaw }];
       lastDraftContractRaw = draftRaw;
       const draftSummarySystem = `${effectiveSystemPrompt}\n\n**Server already ran draft_contract for this user message. Tool JSON (authoritative — your reply MUST follow this data only):**\n${draftRaw}\n\n**Mandatory:** Summarize the outcome in natural language only. If **saved** is true, confirm the draft was saved and mention the Contracts page in the app. If **code** is **matched_by_fallback**, ask whether the property in **message** is correct. If **code** is **ambiguous_match**, list **candidates** and ask which property. If **code** is **no_property_match**, use **message** in plain language and ask one clarifying question (e.g. which property they meant). Do not repeat the same error on the next turn. If **error** and **code** are present otherwise, explain briefly in plain English. Do not paste internal instructions or raw URLs. Do not call tools.`;
@@ -1324,7 +1329,9 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
                 inferredPropertyHintFromUser,
               )
             : normalized;
+        console.log(`[ceo] Executing tool: ${toolName}`, { args });
         const result = await executeCEOTool(toolName, args, userId, supabase);
+        console.log(`[ceo] Tool ${toolName} result length: ${result.length}`);
         if (toolName === "get_leads_summary") {
           authoritativeLeadsRaw = result;
         }
@@ -1335,6 +1342,7 @@ export async function runCEOChat(options: CEOAgentOptions): Promise<CEOChatResul
         };
       }),
     );
+    console.log("[ceo] Tool execution batch finished.");
     lastToolBatch = executed.map((e) => ({ name: e.toolName, raw: e.result }));
     for (const e of executed) {
       if (e.toolName === "draft_contract") lastDraftContractRaw = e.result;

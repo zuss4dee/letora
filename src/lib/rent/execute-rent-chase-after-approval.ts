@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { sendEmailTool } from "@/lib/tools/send-email";
+import { markEmailDraftSent } from "@/lib/email-drafts/store";
 
 export type ExecuteRentChaseAfterApprovalResult =
   | { ok: true; kind: "sent"; emailLogId: string }
@@ -164,6 +165,12 @@ export async function executeSendRentChaseAfterApproval(
   }
 
   const emailLogId = sendResult.emailLogId;
+
+  // 2. Mark the corresponding email draft as sent if it exists
+  const emailDraftId = typeof approval.payload.emailDraftId === "string" ? approval.payload.emailDraftId : null;
+  if (emailDraftId) {
+    await markEmailDraftSent(supabase, userId, emailDraftId);
+  }
 
   if (approval.agent_run_id) {
     await mergeAgentRunAfterRentChaseSend(supabase, userId, approval.agent_run_id, approval.id, emailLogId, true);

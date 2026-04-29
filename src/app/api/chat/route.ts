@@ -294,6 +294,7 @@ export async function POST(request: Request) {
       portfolioHealthDigest,
     });
   } catch (err) {
+    console.error("[api/chat] Error in POST handler:", err);
     const mapped = mapAssistantError(err);
     return NextResponse.json(
       { error: mapped.message, code: mapped.code },

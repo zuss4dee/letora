@@ -1022,6 +1022,7 @@ export async function executeCEOTool(
   userId: string,
   supabase: SupabaseClient = defaultSupabase,
 ): Promise<string> {
+  console.log(`[executor] executeCEOTool start: ${toolName}`, { rawArgs, userId });
   const args = normalizeCEOToolInput(rawArgs as unknown as Record<string, unknown>) as unknown as ToolCallArgs;
 
   switch (toolName) {
@@ -1332,12 +1333,8 @@ export async function executeCEOTool(
         });
       }
 
-      for (const r of results) {
-        void saveEmailDraft(supabase, userId, {
-          subject: r.emailSubject,
-          body: r.emailBody,
-        });
-      }
+      // Each chase now creates its own email draft record inside runRentChaserAgent
+      // to ensure stable IDs and linking to Approvals.
 
       return JSON.stringify({
         month,

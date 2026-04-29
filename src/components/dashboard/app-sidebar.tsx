@@ -250,10 +250,8 @@ export function AppSidebar({
   const [livePendingApprovalCount, setLivePendingApprovalCount] = React.useState(pendingApprovalsCount);
 
   React.useEffect(() => {
-    setLivePendingApprovalCount((c) =>
-      Math.max(c, pendingApprovalsCount, serverPendingApprovalsCount),
-    );
-  }, [pendingApprovalsCount, serverPendingApprovalsCount]);
+    setLivePendingApprovalCount(serverPendingApprovalsCount);
+  }, [serverPendingApprovalsCount]);
 
   const refreshPendingApprovalCount = React.useCallback(async () => {
     const supabase = createClient();

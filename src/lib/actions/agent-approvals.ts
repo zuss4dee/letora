@@ -48,7 +48,16 @@ export async function getPendingAgentApprovals(): Promise<AgentApprovalRow[]> {
   return (data ?? []) as AgentApprovalRow[];
 }
 
-const APPROVALS_REVALIDATE_PATHS = ["/dashboard/approvals", "/dashboard"] as const;
+const APPROVALS_REVALIDATE_PATHS = [
+  "/dashboard/approvals",
+  "/dashboard",
+  "/dashboard/tenants",
+  "/dashboard/properties",
+  "/dashboard/maintenance",
+  "/dashboard/emails",
+  "/dashboard/contracts",
+  "/dashboard/settings",
+] as const;
 
 function revalidateApprovalsSurfaces() {
   for (const p of APPROVALS_REVALIDATE_PATHS) {

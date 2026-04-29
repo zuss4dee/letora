@@ -75,31 +75,7 @@ export async function insertPendingAgentApproval(
     }
   }
 
-  const chaseTenantId =
-    input.actionType === "send_rent_chase_email" ? rentChaseTenantIdFromPayload(payload) : null;
-
-  if (chaseTenantId) {
-    const { data: tenantRows, error: tenantFindErr } = await supabase
-      .from("agent_approvals")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("status", "pending")
-      .eq("action_type", "send_rent_chase_email")
-      .contains("payload", { tenantId: chaseTenantId })
-      .order("created_at", { ascending: true })
-      .limit(1);
-
-    if (tenantFindErr) {
-      return { ok: false, error: tenantFindErr.message };
-    }
-
-    const tenantRowId = tenantRows?.[0]?.id;
-    if (tenantRowId) {
-      const out = await applyPendingUpdate(tenantRowId);
-      if (!out.ok) return out;
-      return { ok: true, id: out.id };
-    }
-  }
+  // (Removed chaseTenantId dedupe block to allow multiple approvals per tenant — targetId dedupe remains)
 
   const { data, error } = await supabase
     .from("agent_approvals")

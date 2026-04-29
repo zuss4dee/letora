@@ -8,6 +8,7 @@ import { assertStepBudget } from "@/lib/agents/ota-loop";
 import type { CreateAgentApprovalContract, SendRentChaseEmailEvidence } from "@/lib/approvals/types";
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
+import { insertEmailDraft } from "@/lib/email-drafts/store";
 
 export interface AgentResult {
   tenantName: string;
@@ -172,13 +173,13 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
 
   const { data: overdueData, error: overdueError } = await supabase
     .from("rent_payments")
-    .select("id,property_id,tenant_id,amount,due_date,status")
+    .select("id,property_id,tenant_id,tenancy_id,amount,due_date,status")
     .eq("user_id", resolvedUserId)
     .eq("status", "overdue");
 
   const { data: pendingData, error: pendingError } = await supabase
     .from("rent_payments")
-    .select("id,property_id,tenant_id,amount,due_date,status")
+    .select("id,property_id,tenant_id,tenancy_id,amount,due_date,status")
     .eq("user_id", resolvedUserId)
     .eq("status", "pending")
     .lt("due_date", today);
@@ -319,6 +320,7 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
 
     let emailSent = false;
     let approvalId: string | null = null;
+    let emailDraftId: string | null = null;
 
     if (tenantEmail.trim()) {
       const dueDateLabel = row.due_date ?? "—";
@@ -333,6 +335,21 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
         emailSubject: draft.subject,
         bodyPreview: draft.body.length > 280 ? `${draft.body.slice(0, 277)}…` : draft.body,
       };
+
+      // 1. Create the email draft record
+      console.log(`[RentChaser] Creating email draft for tenant ${row.tenant_id} and tenancy ${row.tenancy_id}`);
+      const draftResult = await insertEmailDraft(supabase, resolvedUserId, {
+        subject: draft.subject,
+        body: draft.body,
+        tenantId: row.tenant_id,
+        tenancyId: row.tenancy_id,
+      });
+      if (draftResult.ok) {
+        emailDraftId = draftResult.id;
+        console.log(`[RentChaser] Email draft created: ${emailDraftId}`);
+      } else {
+        console.error(`[RentChaser] Failed to create email draft: ${draftResult.error}`);
+      }
 
       const approval = await createAgentApproval(
         {
@@ -355,6 +372,7 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
             amountOwed,
             daysOverdue,
             dueDate: row.due_date,
+            emailDraftId,
           },
           evidence,
         } satisfies CreateAgentApprovalContract,
