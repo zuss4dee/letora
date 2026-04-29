@@ -174,27 +174,41 @@ export async function loadCommandCenterActivity(userId: string): Promise<Activit
     (async () => {
       const supabase = await createClient();
       
-      // Try to fetch with source column, fallback if migration hasn't run yet
-      let query = supabase
+      type RecentActivityItem = {
+        id: string;
+        tool_name: string;
+        created_at: string;
+        source?: string | null;
+      };
+
+      let data: RecentActivityItem[] | null = null;
+      let error: { code?: string; message: string } | null = null;
+
+      const primaryResult = await supabase
         .from("agent_activity")
         .select("id, tool_name, created_at, source")
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(12);
 
-      let { data, error } = await query;
-
-      if (error && error.code === "42703") { // undefined_column
+      if (primaryResult.error && primaryResult.error.code === "42703") {
         console.warn("[command-center] 'source' column missing, falling back");
-        const fallbackQuery = supabase
+        const fallbackResult = await supabase
           .from("agent_activity")
           .select("id, tool_name, created_at")
           .eq("user_id", userId)
           .order("created_at", { ascending: false })
           .limit(12);
-        const { data: fallbackData, error: fallbackError } = await fallbackQuery;
-        data = fallbackData;
-        error = fallbackError;
+
+        data =
+          fallbackResult.data?.map((row) => ({
+            ...row,
+            source: null,
+          })) ?? null;
+        error = fallbackResult.error;
+      } else {
+        data = (primaryResult.data as RecentActivityItem[] | null) ?? null;
+        error = primaryResult.error;
       }
 
       if (error) {
