@@ -59,17 +59,23 @@ export async function CommandCenterKpis({ userId }: { userId: string }) {
         </div>
       </div>
       <div className="flex flex-col bg-[#161616] p-4">
-        <span className="mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Compliance Gaps</span>
+        <span className="mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Portfolio Size</span>
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-white tabular-nums">{k.complianceGaps}</span>
-          <span className="font-mono text-[10px] uppercase text-zinc-600">Renewals</span>
+          <span className="text-2xl font-bold text-white tabular-nums">{k.totalProperties}</span>
+          <span className="font-mono text-[10px] uppercase text-zinc-600">Units</span>
         </div>
       </div>
       <div className="flex flex-col bg-[#161616] p-4">
-        <span className="mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Active Onboarding</span>
+        <span className="mb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Active Agents</span>
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-white tabular-nums">{k.activeOnboarding}</span>
-          <span className="font-mono text-[10px] uppercase text-zinc-600">Tenants</span>
+          <span className="text-2xl font-bold text-white tabular-nums">{k.activeAgents}</span>
+          {k.activeAgents > 0 ? (
+            <span className="animate-pulse bg-[#afefdd]/10 px-1.5 py-0.5 text-[9px] font-bold uppercase text-[#afefdd]">
+              Running
+            </span>
+          ) : (
+            <span className="font-mono text-[10px] uppercase text-zinc-600">Standby</span>
+          )}
         </div>
       </div>
     </div>

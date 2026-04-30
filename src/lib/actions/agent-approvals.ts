@@ -28,11 +28,11 @@ async function getActor(
   return { supabase: client, userId: user.id };
 }
 
-export async function getPendingAgentApprovals(): Promise<AgentApprovalRow[]> {
+export async function getPendingAgentApprovals(limit?: number): Promise<AgentApprovalRow[]> {
   const actor = await getActor();
   if (!actor) return [];
 
-  const { data, error } = await actor.supabase
+  let query = actor.supabase
     .from("agent_approvals")
     .select(
       "id,user_id,agent_run_id,agent_type,title,summary,action_type,target_type,target_id,payload,evidence,status,decided_by,decided_at,deny_reason,executed_at,created_at",
@@ -40,6 +40,12 @@ export async function getPendingAgentApprovals(): Promise<AgentApprovalRow[]> {
     .eq("user_id", actor.userId)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.warn("[getPendingAgentApprovals]", error.message);
@@ -58,6 +64,7 @@ const APPROVALS_REVALIDATE_PATHS = [
   "/dashboard/emails",
   "/dashboard/contracts",
   "/dashboard/settings",
+  "/dashboard/activity",
 ] as const;
 
 function revalidateApprovalsSurfaces() {
@@ -162,7 +169,7 @@ export async function denyAgentApproval(
   // Log activity
   await logActivity({
     userId: actor.userId,
-    eventType: `DENIED: ${approvalId.slice(0, 8)}`,
+    eventType: `DENIED: ACTION`,
     source: "landlord",
     args: { approvalId, denyReason },
   }, actor.supabase);
@@ -235,11 +242,26 @@ export async function approveAgentApproval(approvalId: string): Promise<ActionRe
   // Log activity
   await logActivity({
     userId: actor.userId,
-    eventType: `EXECUTED: ${approval.action_type.toUpperCase().replace(/_/g, " ")}`,
+    eventType: `APPROVED & EXECUTED: ${approval.action_type.toUpperCase().replace(/_/g, " ")}`,
     source: "landlord",
     args: { approvalId, actionType: approval.action_type, targetId: approval.target_id },
     success: true,
   }, actor.supabase);
 
   return { ok: true };
+}
+
+export async function getPendingApprovalsCount(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("agent_approvals")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("status", "pending");
+
+  if (error) {
+    console.warn("[getPendingApprovalsCount]", error.message);
+    return 0;
+  }
+  return count ?? 0;
 }

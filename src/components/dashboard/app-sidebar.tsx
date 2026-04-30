@@ -33,6 +33,7 @@ import { useOpenCommandPalette } from "@/components/dashboard/dashboard-command-
 import { SidebarAgentActivityButton } from "@/components/dashboard/sidebar-agent-activity-button";
 import { useSidebarDynamicOptional } from "@/components/dashboard/sidebar-dynamic-context";
 import { getSidebarPlanStatusCompact } from "@/lib/billing/subscription-display";
+import { getPendingApprovalsCount } from "@/lib/actions/agent-approvals";
 import { cn } from "@/lib/utils";
 import {
   Sidebar,
@@ -53,26 +54,18 @@ type NavItem = {
   badgeTitle?: string;
 };
 
-const mainItems: NavItem[] = [
+const mainItemsStatic: NavItem[] = [
   { title: "Home", url: "/dashboard", icon: Home },
-  { title: "Properties", url: "/dashboard/properties", icon: Building2 },
+  { title: "Portfolio", url: "/dashboard/properties", icon: Building2 },
   { title: "Tenants", url: "/dashboard/tenants", icon: Users },
 ];
 
-const workflowItemsBase: NavItem[] = [
-  { title: "Tenancies", url: "/dashboard/tenancies", icon: Key },
-  { title: "Compliance", url: "/dashboard/compliance", icon: ClipboardCheck },
-  { title: "Contracts", url: "/dashboard/contracts", icon: FileText },
+const operationsItemsBase: NavItem[] = [
   { title: "Maintenance", url: "/dashboard/maintenance", icon: Wrench },
+  { title: "Rent Tracker", url: "/dashboard/rent-tracker", icon: CircleDollarSign },
 ];
 
-const moreItems: NavItem[] = [
-  { title: "AI Assistant", url: "/dashboard/assistant", icon: Sparkles },
-  { title: "Rent Tracker", url: "/dashboard/rent-tracker", icon: CircleDollarSign },
-  { title: "Leads", url: "/dashboard/leads", icon: UserPlus },
-  { title: "Import", url: "/dashboard/import", icon: Upload },
-  { title: "Emails", url: "/dashboard/emails", icon: Mail },
-];
+// Leads and other low-frequency items removed from main nav
 
 function isActivePath(pathname: string, url: string) {
   if (url === "/dashboard") {
@@ -249,35 +242,23 @@ export function AppSidebar({
 
   const [livePendingApprovalCount, setLivePendingApprovalCount] = React.useState(pendingApprovalsCount);
 
-  React.useEffect(() => {
-    setLivePendingApprovalCount(serverPendingApprovalsCount);
-  }, [serverPendingApprovalsCount]);
-
   const refreshPendingApprovalCount = React.useCallback(async () => {
     const supabase = createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user?.id) return;
-
-    const { count, error } = await supabase
-      .from("agent_approvals")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("status", "pending");
-
-    if (error) {
-      console.warn("[AppSidebar] pending approvals count", error.message);
-      return;
+    const userId = user?.id;
+    if (!userId) return;
+    try {
+      const count = await getPendingApprovalsCount(userId);
+      setLivePendingApprovalCount(count);
+    } catch (err) {
+      console.warn("[refreshPendingApprovalCount] failed", err);
     }
-
-    setLivePendingApprovalCount(count ?? 0);
   }, []);
 
-  React.useEffect(() => {
-    void refreshPendingApprovalCount();
-  }, [pathname, refreshPendingApprovalCount]);
-
+  // Approvals count is primarily managed via SidebarApprovalsMeta stream (SidebarPatch).
+  // We only re-sync on visibility change to keep it fresh without hammering the DB on every route change.
   React.useEffect(() => {
     function onVisibility() {
       if (document.visibilityState === "visible") void refreshPendingApprovalCount();
@@ -327,8 +308,8 @@ export function AppSidebar({
   const planStatusLine = getSidebarPlanStatusCompact(subFields);
   const presence = planPresenceStyles(subscriptionStatusResolved);
 
-  const workflowItems: NavItem[] = [
-    ...workflowItemsBase,
+  const mainNavItems: NavItem[] = [
+    ...mainItemsStatic,
     {
       title: "Approvals",
       url: "/dashboard/approvals",
@@ -336,6 +317,9 @@ export function AppSidebar({
       badgeCount: livePendingApprovalCount > 0 ? livePendingApprovalCount : undefined,
       badgeTitle: pendingApprovalsBadgeTitleResolved ?? undefined,
     },
+    { title: "Activity", url: "/dashboard/activity", icon: History },
+    { title: "Portfolio Import", url: "/dashboard/import", icon: Upload },
+    { title: "Assistant", url: "/dashboard/assistant", icon: Sparkles },
   ];
 
   const footerNavClass = (active: boolean) =>
@@ -401,7 +385,7 @@ export function AppSidebar({
             className="flex touch-manipulation items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white py-2 font-[family-name:var(--font-inter)] text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
           >
             <PlusCircle className="size-4 shrink-0 stroke-[1.5]" aria-hidden />
-            Add a property
+            Add to Portfolio
           </Link>
         </div>
       </SidebarHeader>
@@ -409,17 +393,15 @@ export function AppSidebar({
       <SidebarContent className="px-0 pb-3 pt-1">
         <div className="mx-5 mb-3 h-px bg-black/[0.09] dark:bg-white/[0.07]" aria-hidden />
         <nav className="flex min-h-0 flex-1 flex-col" aria-label="Dashboard">
-          <NavSection label="Main" items={mainItems} pathname={pathname} onNavigate={closeMobileNav} />
+          <NavSection label="Main" items={mainNavItems} pathname={pathname} onNavigate={closeMobileNav} />
           <div className="my-2.5 mx-5 h-px bg-black/[0.08] dark:bg-white/[0.06]" aria-hidden />
           <NavSection
-            label="Workflow"
-            items={workflowItems}
+            label="Operations"
+            items={operationsItemsBase}
             pathname={pathname}
             attentionItems={workflowAttention.length > 0 ? workflowAttention : undefined}
             onNavigate={closeMobileNav}
           />
-          <div className="my-2.5 mx-5 h-px bg-black/[0.08] dark:bg-white/[0.06]" aria-hidden />
-          <NavSection label="More" items={moreItems} pathname={pathname} onNavigate={closeMobileNav} />
         </nav>
       </SidebarContent>
 
@@ -480,20 +462,6 @@ export function AppSidebar({
                   aria-hidden
                 />
                 Help
-              </Link>
-              <Link
-                href="/dashboard/activity"
-                onClick={closeMobileNav}
-                className={footerNavClass(isActivePath(pathname, "/dashboard/activity"))}
-              >
-                <History
-                  className={cn(
-                    "size-[18px] shrink-0 stroke-[1.5]",
-                    isActivePath(pathname, "/dashboard/activity") ? "text-[#97e6ec]" : "text-[#6b6966]",
-                  )}
-                  aria-hidden
-                />
-                History
               </Link>
               <SidebarAgentActivityButton
                 onBeforeOpen={closeMobileNav}

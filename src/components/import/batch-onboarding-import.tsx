@@ -32,7 +32,14 @@ type PreparedRowSummary = {
   actionableRows: number;
 };
 
-type RunTotals = { total: number; succeeded: number; failed: number; skipped: number };
+type RunTotals = {
+  total: number;
+  succeeded: number;
+  failed: number;
+  skipped: number;
+  agentsTriggered: number;
+  approvalsCreated: number;
+};
 
 type Tone = "error" | "skip" | "new" | "matched" | "ok";
 
@@ -196,7 +203,7 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
           Import Console
         </p>
         <h1 className="mt-1 text-xl font-bold uppercase tracking-tight text-white">
-          Batch Onboarding
+          Portfolio Import
         </h1>
         <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
           Import Portfolio · Run agents at scale
@@ -501,27 +508,38 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
             {/* ── Run Result ── */}
             {runTotals ? (
               <section className="border border-[#afefdd]/20 bg-[#152420]">
-                <div className="flex flex-col gap-4 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="font-mono text-[9px] uppercase tracking-widest text-[#afefdd]">
-                      Batch complete
-                    </p>
-                    <p className="mt-1 font-mono text-sm text-white">
-                      {runTotals.succeeded} onboarded · {runTotals.skipped} skipped ·{" "}
-                      {runTotals.failed} failed
-                    </p>
-                    {runBatchId ? (
-                      <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
-                        Ref {runBatchId.slice(0, 8)}
+                <div className="flex flex-col gap-6 px-4 py-5 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="font-mono text-[9px] uppercase tracking-widest text-[#afefdd]">
+                        Import complete
                       </p>
-                    ) : null}
+                      <p className="mt-1 font-mono text-sm text-white">
+                        {runTotals.succeeded} onboarded · {runTotals.skipped} skipped ·{" "}
+                        {runTotals.failed} failed
+                      </p>
+                      {runBatchId ? (
+                        <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
+                          Ref {runBatchId.slice(0, 8)}
+                        </p>
+                      ) : null}
+                    </div>
+
+                    <div className="flex flex-wrap gap-6 border-t border-[#afefdd]/10 pt-4">
+                      <Stat label="Agents Triggered" value={runTotals.agentsTriggered} accent={runTotals.agentsTriggered > 0} />
+                      <Stat label="Approvals Created" value={runTotals.approvalsCreated} accent={runTotals.approvalsCreated > 0} />
+                      {runTotals.failed > 0 && (
+                        <Stat label="Review Required" value={runTotals.failed} danger />
+                      )}
+                    </div>
                   </div>
+
                   <div className="flex flex-wrap items-center gap-2">
                     <Link
-                      href="/dashboard/tenants"
+                      href="/dashboard/activity"
                       className="border border-[#333333] bg-[#0B0B0B] px-4 py-2 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
                     >
-                      View Tenants
+                      View Activity
                     </Link>
                     <Link
                       href="/dashboard/tenancies"
@@ -595,6 +613,9 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                           {h.rowsFailed > 0 ? ` · ${h.rowsFailed} failed` : ""}
                         </p>
                         <p className="font-mono text-[9px] text-[#555555]">
+                          {h.agentsTriggered} agents · {h.approvalsCreated} approvals
+                        </p>
+                        <p className="font-mono text-[9px] text-[#444748]">
                           {h.createdAt ? new Date(h.createdAt).toLocaleString() : ""} · {h.kind}
                         </p>
                       </div>

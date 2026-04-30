@@ -6,6 +6,7 @@ import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 import { tenantSchema, tenantUpdateSchema } from "@/lib/validations/tenant";
 import { userFacingError } from "@/lib/user-facing-errors";
+import { isPaymentOverdue } from "@/lib/rent-utils";
 
 export type TenantRentStatus = "paid" | "overdue" | "pending";
 
@@ -126,11 +127,21 @@ function pickPrimaryTenancy(
 }
 
 function aggregateRentStatus(payments: unknown): TenantRentStatus {
-  const list = Array.isArray(payments) ? payments : [];
-  const statuses = list.map((p) => ((p as { status?: string | null }).status ?? "").toLowerCase());
-  if (statuses.some((s) => s === "overdue")) return "overdue";
-  if (statuses.some((s) => s === "pending")) return "pending";
-  if (statuses.some((s) => s === "paid")) return "paid";
+  const list = (Array.isArray(payments) ? payments : []) as Array<{
+    status?: string | null;
+    due_date?: string | null;
+  }>;
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  if (list.some((p) => isPaymentOverdue(p.status ?? null, p.due_date ?? null, todayIso))) {
+    return "overdue";
+  }
+  if (list.some((p) => (p.status ?? "").toLowerCase() === "pending")) {
+    return "pending";
+  }
+  if (list.length > 0 && list.every((p) => (p.status ?? "").toLowerCase() === "paid")) {
+    return "paid";
+  }
   return "pending";
 }
 

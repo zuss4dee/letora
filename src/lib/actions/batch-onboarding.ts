@@ -23,6 +23,8 @@ export type BatchImportHistoryRow = {
   rowsTotal: number;
   rowsSucceeded: number;
   rowsFailed: number;
+  agentsTriggered: number;
+  approvalsCreated: number;
   createdAt: string | null;
   completedAt: string | null;
 };
@@ -100,7 +102,18 @@ export async function previewBatchOnboardingFromFormData(
 export async function startBatchOnboardingAction(
   rowsJson: string,
 ): Promise<
-  | { ok: true; batchId: string; totals: { total: number; succeeded: number; failed: number; skipped: number } }
+  | {
+      ok: true;
+      batchId: string;
+      totals: {
+        total: number;
+        succeeded: number;
+        failed: number;
+        skipped: number;
+        agentsTriggered: number;
+        approvalsCreated: number;
+      };
+    }
   | { ok: false; error: string }
 > {
   const supabase = await createClient();
@@ -154,6 +167,7 @@ export async function startBatchOnboardingAction(
   revalidatePath("/dashboard/tenancies");
   revalidatePath("/dashboard/properties");
   revalidatePath("/dashboard");
+  revalidatePath("/dashboard/activity");
 
   return {
     ok: true,
@@ -165,14 +179,46 @@ export async function startBatchOnboardingAction(
 /** Recent batches for the landlord — used on the import page history panel. */
 export async function getBatchImportsForUser(userId: string): Promise<BatchImportHistoryRow[]> {
   const supabase = await createClient();
+
+  // Resilience: Try with agentic metrics first, fallback if migration hasn't run
   const { data, error } = await supabase
     .from("batch_imports")
-    .select("id, kind, status, rows_total, rows_succeeded, rows_failed, created_at, completed_at")
+    .select(
+      "id, kind, status, rows_total, rows_succeeded, rows_failed, agents_triggered, approvals_created, created_at, completed_at",
+    )
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(20);
 
   if (error) {
+    // 42703 = column does not exist (Postgres)
+    if (error.code === "42703") {
+      const { data: fallbackData, error: fallbackErr } = await supabase
+        .from("batch_imports")
+        .select("id, kind, status, rows_total, rows_succeeded, rows_failed, created_at, completed_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
+      if (fallbackErr) {
+        console.error("[getBatchImportsForUser:fallback]", fallbackErr.message);
+        return [];
+      }
+
+      return (fallbackData ?? []).map((r) => ({
+        id: String(r.id),
+        kind: String(r.kind),
+        status: String(r.status),
+        rowsTotal: Number(r.rows_total ?? 0),
+        rowsSucceeded: Number(r.rows_succeeded ?? 0),
+        rowsFailed: Number(r.rows_failed ?? 0),
+        agentsTriggered: 0,
+        approvalsCreated: 0,
+        createdAt: (r.created_at as string | null) ?? null,
+        completedAt: (r.completed_at as string | null) ?? null,
+      }));
+    }
+
     console.error("[getBatchImportsForUser]", error.message);
     return [];
   }
@@ -184,6 +230,8 @@ export async function getBatchImportsForUser(userId: string): Promise<BatchImpor
     rowsTotal: Number(r.rows_total ?? 0),
     rowsSucceeded: Number(r.rows_succeeded ?? 0),
     rowsFailed: Number(r.rows_failed ?? 0),
+    agentsTriggered: Number((r as any).agents_triggered ?? 0),
+    approvalsCreated: Number((r as any).approvals_created ?? 0),
     createdAt: (r.created_at as string | null) ?? null,
     completedAt: (r.completed_at as string | null) ?? null,
   }));

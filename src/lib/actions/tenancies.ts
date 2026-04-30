@@ -40,6 +40,7 @@ export type RentPaymentRow = {
   dueDate: string | null;
   amountDue: number | null;
   amountPaid: number | null;
+  amount: number | null;
   status: string | null;
 };
 
@@ -235,7 +236,7 @@ export async function getThisMonthPayments(userId: string): Promise<RentPaymentR
   const { data, error } = await supabase
     .from("rent_payments")
     .select(
-      "id,tenancy_id,due_date,amount_due,amount_paid,status,tenancies!inner(properties!inner(address,user_id),tenants(full_name))",
+      "id,tenancy_id,due_date,amount,amount_due,amount_paid,status,tenancies!inner(properties!inner(address,user_id),tenants(full_name))",
     )
     .eq("tenancies.properties.user_id", userId)
     .gte("due_date", startDate)
@@ -274,6 +275,12 @@ export async function getThisMonthPayments(userId: string): Promise<RentPaymentR
         : typeof row.amount_paid === "number"
           ? row.amount_paid
           : Number(row.amount_paid),
+    amount:
+      row.amount == null
+        ? null
+        : typeof row.amount === "number"
+          ? row.amount
+          : Number(row.amount),
     status: row.status ?? null,
   };
   });

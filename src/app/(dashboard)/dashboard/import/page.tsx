@@ -7,9 +7,9 @@ import { getBatchImportsForUser } from "@/lib/actions/batch-onboarding";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Batch onboarding · Letora",
+  title: "Portfolio Import · Letora",
   description:
-    "Import a CSV of properties and tenants and let Letora onboard them in the background.",
+    "Import your property portfolio and let agents handle the onboarding automatically.",
 };
 
 export default async function BatchImportPage() {

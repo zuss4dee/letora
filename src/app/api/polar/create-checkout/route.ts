@@ -18,17 +18,18 @@ export async function POST(req: NextRequest) {
 
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    let body: { productId?: string; plan?: string; returnTarget?: string };
+    let body: { priceId?: string; plan?: string; returnTarget?: string };
     try {
-      body = (await req.json()) as { productId?: string; plan?: string; returnTarget?: string };
+      body = (await req.json()) as { priceId?: string; plan?: string; returnTarget?: string };
     } catch {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
-    const { productId, plan } = body;
+    const { priceId, plan } = body;
 
-    if (!productId?.trim()) {
-      return NextResponse.json({ error: "Missing productId" }, { status: 400 });
+    if (!priceId?.trim()) {
+      console.warn("[polar create-checkout] missing priceId in request body");
+      return NextResponse.json({ error: "Missing priceId" }, { status: 400 });
     }
 
     if (!plan?.trim() || !(plan.trim() in PLANS)) {
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
 
     const accessToken = process.env.POLAR_ACCESS_TOKEN;
     if (!accessToken) {
+      console.error("[polar create-checkout] POLAR_ACCESS_TOKEN is not set");
       return NextResponse.json({ error: "Polar not configured" }, { status: 500 });
     }
 
@@ -49,7 +51,7 @@ export async function POST(req: NextRequest) {
         Authorization: `Bearer ${accessToken}`,
       },
       body: JSON.stringify({
-        product_price_id: productId.trim(),
+        product_price_id: priceId.trim(),
         success_url: successUrl,
         metadata: {
           user_id: user.id,

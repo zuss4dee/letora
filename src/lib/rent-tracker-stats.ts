@@ -1,3 +1,4 @@
+import { isPaymentOverdue, resolvePaymentAmount } from "@/lib/rent-utils";
 import type { RentPaymentListRow } from "@/lib/actions/rent-tracker";
 
 export type RentTrackerSummaryStats = {
@@ -42,25 +43,25 @@ export function computeRentTrackerStats(
   const horizonEnd = addDaysIso(todayIso, 30);
 
   for (const p of payments) {
+    const amount = resolvePaymentAmount(p);
     const due = p.due_date;
     if (due && due >= startIso && due <= endIso) {
-      expectedThisMonth += p.amount;
+      expectedThisMonth += amount;
     }
 
     const paid = p.paid_date;
     const st = (p.status ?? "").toLowerCase();
     if (st === "paid" && paid && paid >= startIso && paid <= endIso) {
-      receivedThisMonth += p.amount;
+      receivedThisMonth += amount;
     }
 
-    const isOverdue = st === "overdue" || (st === "pending" && due && due < todayIso);
-    if (isOverdue) {
+    if (isPaymentOverdue(p.status, p.due_date, todayIso)) {
       overdueCount += 1;
-      arrearsAmount += p.amount;
+      arrearsAmount += amount;
     }
 
     if (due && due > todayIso && due <= horizonEnd) {
-      forecastNext30Days += p.amount;
+      forecastNext30Days += amount;
     }
   }
 

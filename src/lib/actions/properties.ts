@@ -7,6 +7,9 @@ import { getMaxPropertiesForUser } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/server";
 import { propertySchema } from "@/lib/validations/property";
 import { userFacingError } from "@/lib/user-facing-errors";
+import { resolvePaymentAmount, isPaymentOverdue } from "@/lib/rent-utils";
+import { withTimeout } from "@/lib/async/with-timeout";
+import { resolvePropertyId } from "@/lib/portfolio-utils";
 
 export type PropertyRow = {
   id: string;
@@ -154,34 +157,6 @@ function splitIdentity(address: string | null, city: string | null, postcode: st
   };
 }
 
-function paymentRowPropertyId(row: {
-  property_id?: string | null;
-  tenancies?: { property_id?: string | null } | { property_id?: string | null }[] | null;
-}): string | null {
-  if (row.property_id != null && String(row.property_id) !== "") return String(row.property_id);
-  const t = row.tenancies;
-  if (!t) return null;
-  const one = Array.isArray(t) ? t[0] : t;
-  return one?.property_id != null ? String(one.property_id) : null;
-}
-
-function isRentPaymentOverdue(
-  status: string | null | undefined,
-  dueDate: string | null | undefined,
-  todayIso: string,
-): boolean {
-  const st = (status ?? "").toLowerCase();
-  if (st === "overdue") return true;
-  if (st === "pending" && dueDate != null && String(dueDate) < todayIso) return true;
-  return false;
-}
-
-function paymentOutstandingAmount(row: { amount_due?: unknown; amount?: unknown }): number {
-  const raw = row.amount_due ?? row.amount;
-  if (raw == null) return 0;
-  const n = typeof raw === "number" ? raw : Number(raw);
-  return Number.isFinite(n) ? n : 0;
-}
 
 /** Enriched property rows for the Managed Properties registry (stitch layout). */
 export async function getPropertiesPortfolio(userId: string): Promise<PropertyPortfolioRow[]> {
@@ -192,23 +167,28 @@ export async function getPropertiesPortfolio(userId: string): Promise<PropertyPo
   const ids = list.map((p) => p.id);
   const todayIso = new Date().toISOString().slice(0, 10);
 
-  const { data: tenRows } = await supabase
-    .from("tenancies")
-    .select("property_id, status, start_date, created_at")
-    .in("property_id", ids);
-
-  const { data: maintRows } = await supabase
-    .from("maintenance_requests")
-    .select("id, status, created_at, description, tenancies(property_id)");
-
-  const { data: payRows } = await supabase
-    .from("rent_payments")
-    .select("amount, amount_due, status, due_date, property_id, tenancies(property_id)")
-    .eq("user_id", userId);
+  const [tenRows, maintRows, payRows] = await withTimeout(
+    Promise.all([
+      supabase
+        .from("tenancies")
+        .select("property_id, status, start_date, created_at")
+        .in("property_id", ids),
+      supabase
+        .from("maintenance_requests")
+        .select("id, status, created_at, description, tenancies(property_id)"),
+      supabase
+        .from("rent_payments")
+        .select("amount, amount_due, status, due_date, property_id, tenancies(property_id)")
+        .eq("user_id", userId),
+    ]).then((res) => res.map((r) => r.data ?? [])),
+    3000,
+    [[], [], []],
+    "properties:getPropertiesPortfolio",
+  );
 
   const payments = (payRows ?? []) as Array<{
-    amount?: unknown;
-    amount_due?: unknown;
+    amount?: number | null;
+    amount_due?: number | null;
     status?: string | null;
     due_date?: string | null;
     property_id?: string | null;
@@ -254,10 +234,10 @@ export async function getPropertiesPortfolio(userId: string): Promise<PropertyPo
     const openMaintenanceCount = openMaint.length;
 
     const rentOverdueGbp = payments
-      .filter((row) => paymentRowPropertyId(row) === p.id)
+      .filter((row) => resolvePropertyId(row) === p.id)
       .reduce((sum, row) => {
-        if (!isRentPaymentOverdue(row.status, row.due_date, todayIso)) return sum;
-        return sum + paymentOutstandingAmount(row);
+        if (!isPaymentOverdue(row.status ?? null, row.due_date ?? null, todayIso)) return sum;
+        return sum + resolvePaymentAmount(row);
       }, 0);
     const latestOpen = openMaint.sort(
       (a, b) => new Date(b.created_at ?? 0).getTime() - new Date(a.created_at ?? 0).getTime(),

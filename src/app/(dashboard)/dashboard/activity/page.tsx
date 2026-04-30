@@ -12,6 +12,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { getRecentActivity } from "@/lib/actions/activity-log";
 import { createClient } from "@/lib/supabase/server";
 import { ActivityRowDetail } from "./activity-row-detail";
 
@@ -38,9 +39,11 @@ function formatDate(iso: string): string {
 }
 
 function formatToolName(name: string): string {
-  return name
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+  // If it's already upper case with spaces or mixed, try to normalize
+  const normalized = name.replace(/_/g, " ");
+  return normalized
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(" ");
 }
 
@@ -52,43 +55,8 @@ export default async function ActivityPage() {
 
   if (!user) notFound();
 
-  let data: ActivityRow[] | null = null;
-  let error: { code?: string; message: string } | null = null;
-
-  const primaryResult = await supabase
-    .from("agent_activity")
-    .select("id, tool_name, args, result, success, created_at, source")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(100);
-
-  if (primaryResult.error && primaryResult.error.code === "42703") {
-    console.warn("[activity] 'source' column missing, falling back");
-
-    const fallbackResult = await supabase
-      .from("agent_activity")
-      .select("id, tool_name, args, result, success, created_at")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(100);
-
-    data =
-      fallbackResult.data?.map((row) => ({
-        ...row,
-        source: null,
-      })) ?? null;
-
-    error = fallbackResult.error;
-  } else {
-    data = (primaryResult.data as ActivityRow[] | null) ?? null;
-    error = primaryResult.error;
-  }
-
-  if (error) {
-    console.warn("[activity] error", error.message);
-  }
-
-  const rows = data ?? [];
+  const data = await getRecentActivity(user.id, 100);
+  const rows = (data as unknown as ActivityRow[]) ?? [];
 
   return (
     <div className="@container/main flex flex-1 flex-col gap-2">

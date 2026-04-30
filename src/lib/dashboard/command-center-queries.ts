@@ -1,16 +1,18 @@
-import { getPendingAgentApprovals } from "@/lib/actions/agent-approvals";
+import { getRecentActivity, logActivity } from "@/lib/actions/activity-log";
+import { getPendingAgentApprovals, getPendingApprovalsCount } from "@/lib/actions/agent-approvals";
 import { getComplianceRecordsForUser } from "@/lib/actions/compliance";
 import { getDashboardStats } from "@/lib/actions/dashboard";
 import { withTimeout } from "@/lib/async/with-timeout";
 import { createClient } from "@/lib/supabase/server";
+import { getOutstandingRentTotal } from "@/lib/rent-utils";
 
 export type CommandCenterKpis = {
   pendingApprovals: number;
   overdueRentTotal: number;
   maintenanceOpen: number;
   maintenanceHighPriority: number;
-  complianceGaps: number;
-  activeOnboarding: number;
+  totalProperties: number;
+  activeAgents: number;
 };
 
 const KPI_FALLBACK: CommandCenterKpis = {
@@ -18,29 +20,10 @@ const KPI_FALLBACK: CommandCenterKpis = {
   overdueRentTotal: 0,
   maintenanceOpen: 0,
   maintenanceHighPriority: 0,
-  complianceGaps: 0,
-  activeOnboarding: 0,
+  totalProperties: 0,
+  activeAgents: 0,
 };
 
-async function overdueRentTotalGbp(userId: string): Promise<number> {
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("rent_payments")
-    .select("amount_due,status,due_date,tenancies!inner(properties!inner(user_id))")
-    .eq("tenancies.properties.user_id", userId);
-
-  if (error || !data) return 0;
-  const today = new Date().toISOString().slice(0, 10);
-  return data.reduce((sum, row) => {
-    const st = (row.status ?? "").toLowerCase();
-    const overdue =
-      st === "overdue" || (st === "pending" && row.due_date != null && String(row.due_date) < today);
-    if (!overdue) return sum;
-    const raw = row.amount_due;
-    const n = raw == null ? 0 : typeof raw === "number" ? raw : Number(raw);
-    return sum + (Number.isFinite(n) ? n : 0);
-  }, 0);
-}
 
 async function highPriorityMaintenanceCount(userId: string): Promise<number> {
   const supabase = await createClient();
@@ -58,16 +41,16 @@ async function highPriorityMaintenanceCount(userId: string): Promise<number> {
   return count ?? 0;
 }
 
-async function activeOnboardingTenancyCount(userId: string): Promise<number> {
+async function activeAgentCount(userId: string): Promise<number> {
   const supabase = await createClient();
   const { count, error } = await supabase
-    .from("tenancies")
-    .select("id, properties!inner(user_id)", { count: "exact", head: true })
-    .eq("properties.user_id", userId)
-    .neq("onboarding_status", "complete");
+    .from("agent_runs")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .in("status", ["running", "queued"]);
 
   if (error) {
-    console.warn("[command-center] active onboarding count", error.message);
+    console.warn("[command-center] active agent count", error.message);
     return 0;
   }
   return count ?? 0;
@@ -77,32 +60,26 @@ export async function loadCommandCenterKpis(userId: string): Promise<CommandCent
   return withTimeout(
     (async () => {
       const [
-        approvals,
+        approvalsCount,
         stats,
         overdueTotal,
-        records,
-        onboarding,
+        agentCount,
         maintHigh,
       ] = await Promise.all([
-        getPendingAgentApprovals(),
+        getPendingApprovalsCount(userId),
         getDashboardStats(userId),
-        overdueRentTotalGbp(userId),
-        getComplianceRecordsForUser(userId),
-        activeOnboardingTenancyCount(userId),
+        getOutstandingRentTotal(userId),
+        activeAgentCount(userId),
         highPriorityMaintenanceCount(userId),
       ]);
 
-      const complianceGaps = records.filter(
-        (r) => r.status === "expired" || r.status === "expiring" || r.status === "missing",
-      ).length;
-
       return {
-        pendingApprovals: approvals.length,
+        pendingApprovals: approvalsCount,
         overdueRentTotal: overdueTotal,
         maintenanceOpen: stats.openMaintenance,
         maintenanceHighPriority: maintHigh,
-        complianceGaps,
-        activeOnboarding: onboarding,
+        totalProperties: stats.totalProperties,
+        activeAgents: agentCount,
       };
     })(),
     3000,
@@ -122,8 +99,8 @@ export type AttentionRow = {
 export async function loadCommandCenterAttention(userId: string): Promise<AttentionRow[]> {
   return withTimeout(
     (async () => {
-      const approvals = await getPendingAgentApprovals();
-      const rows: AttentionRow[] = approvals.slice(0, 5).map((a) => ({
+      const approvals = await getPendingAgentApprovals(5);
+      const rows: AttentionRow[] = approvals.map((a) => ({
         id: a.id,
         title: a.title?.trim() ? a.title : "Pending approval",
         subline: (a.summary ?? "").slice(0, 120) || a.action_type || "—",
@@ -172,49 +149,7 @@ export type ActivityRow = { id: string; event: string; source: string; time: str
 export async function loadCommandCenterActivity(userId: string): Promise<ActivityRow[]> {
   return withTimeout(
     (async () => {
-      const supabase = await createClient();
-      
-      type RecentActivityItem = {
-        id: string;
-        tool_name: string;
-        created_at: string;
-        source?: string | null;
-      };
-
-      let data: RecentActivityItem[] | null = null;
-      let error: { code?: string; message: string } | null = null;
-
-      const primaryResult = await supabase
-        .from("agent_activity")
-        .select("id, tool_name, created_at, source")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false })
-        .limit(12);
-
-      if (primaryResult.error && primaryResult.error.code === "42703") {
-        console.warn("[command-center] 'source' column missing, falling back");
-        const fallbackResult = await supabase
-          .from("agent_activity")
-          .select("id, tool_name, created_at")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false })
-          .limit(12);
-
-        data =
-          fallbackResult.data?.map((row) => ({
-            ...row,
-            source: null,
-          })) ?? null;
-        error = fallbackResult.error;
-      } else {
-        data = (primaryResult.data as RecentActivityItem[] | null) ?? null;
-        error = primaryResult.error;
-      }
-
-      if (error) {
-        console.warn("[command-center] agent_activity error", error.message);
-        return [];
-      }
+      const data = await getRecentActivity(userId, 12);
 
       return (data ?? []).map((row) => {
         const d = new Date(String(row.created_at));
@@ -223,12 +158,22 @@ export async function loadCommandCenterActivity(userId: string): Promise<Activit
           : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
         
         let tool = String(row.tool_name ?? "EVENT").toUpperCase().replace(/_/g, " ");
-        if (tool === "CHASE RENT") tool = "RENT CHASE";
-        if (tool === "GET MAINTENANCE SUMMARY") tool = "MAINTENANCE";
-        if (tool === "GET PENDING APPROVALS SUMMARY") tool = "APPROVALS CHECK";
-        if (tool === "SEARCH PROPERTIES") tool = "PROPERTY SEARCH";
-        if (tool === "LIST TENANTS") tool = "TENANT LIST";
-        if (tool === "GET RENT STATUS") tool = "RENT TRACKER";
+        
+        // Use message from args if it's a high-signal event we just added
+        const args = (row as any).args || {};
+        if (args.message && tool.startsWith("PORTFOLIO IMPORT")) {
+          tool = args.message;
+        } else {
+          if (tool === "CHASE RENT") tool = "RENT CHASE";
+          if (tool === "GET MAINTENANCE SUMMARY") tool = "MAINTENANCE";
+          if (tool === "GET PENDING APPROVALS SUMMARY") tool = "APPROVALS CHECK";
+          if (tool === "SEARCH PROPERTIES") tool = "PROPERTY SEARCH";
+          if (tool === "LIST TENANTS") tool = "TENANT LIST";
+          if (tool === "GET RENT STATUS") tool = "RENT TRACKER";
+          if (tool.startsWith("APPROVED & EXECUTED")) tool = "APPROVED: " + tool.replace("APPROVED & EXECUTED: ", "");
+          if (tool === "DENIED: ACTION") tool = "DECISION: DENIED";
+          if (tool.startsWith("PROPOSED:")) tool = "REQUEST: " + tool.replace("PROPOSED: ", "");
+        }
         
         const sourceRaw = (row as any).source || "assistant";
         const source = sourceRaw.charAt(0).toUpperCase() + sourceRaw.slice(1);

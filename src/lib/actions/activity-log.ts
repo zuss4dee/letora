@@ -1,5 +1,7 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 
@@ -31,7 +33,7 @@ export async function logActivity(input: LogActivityInput, supabaseClient?: Supa
     targetUserId = user.id;
   }
 
-  const payload = {
+  const payload: any = {
     user_id: targetUserId,
     tool_name: input.eventType,
     args: input.args || {},
@@ -57,4 +59,38 @@ export async function logActivity(input: LogActivityInput, supabaseClient?: Supa
       console.error("[logActivity] Failed to insert activity:", error.message);
     }
   }
+
+  // Always revalidate activity paths to be safe
+  revalidatePath("/dashboard/activity");
+  revalidatePath("/dashboard");
+}
+/**
+ * Fetches recent activity for a user with robust column fallback.
+ */
+export async function getRecentActivity(userId: string, limit = 50) {
+  const supabase = await createClient();
+  
+  const primaryResult = await supabase
+    .from("agent_activity")
+    .select("id, tool_name, args, result, success, created_at, source")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (primaryResult.error && primaryResult.error.code === "42703") {
+    // source column missing fallback
+    const fallbackResult = await supabase
+      .from("agent_activity")
+      .select("id, tool_name, args, result, success, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    return (fallbackResult.data || []).map(row => ({
+      ...row,
+      source: null as string | null
+    }));
+  }
+
+  return primaryResult.data || [];
 }

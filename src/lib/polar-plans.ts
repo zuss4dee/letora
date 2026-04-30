@@ -4,17 +4,19 @@ import { PLANS, type PlanKey } from "./stripe-plans";
  * Mapping of Polar.sh Product IDs to Letora PlanKeys.
  * Letora now uses a two-tier model: Monthly or Yearly.
  */
-export const POLAR_PLANS: Record<PlanKey, { productId: string }> = {
+export const POLAR_PLANS: Record<PlanKey, { productId: string; priceId: string }> = {
   monthly: {
     productId: process.env.NEXT_PUBLIC_POLAR_MONTHLY_ID ?? "659a2e39-6eb6-4cd0-a799-b0babcdbda14",
+    priceId: process.env.NEXT_PUBLIC_POLAR_MONTHLY_PRICE_ID ?? "9361fbd0-0a8d-46c2-9cb6-d666e471189e",
   },
   yearly: {
     productId: process.env.NEXT_PUBLIC_POLAR_YEARLY_ID ?? "5e5ace22-1695-4feb-a01b-d58da628280a",
+    priceId: process.env.NEXT_PUBLIC_POLAR_YEARLY_PRICE_ID ?? "c024d723-1648-4e51-883e-bf8d3d560597",
   },
   // Legacy plans (kept for type safety, not used for Polar checkouts)
-  starter: { productId: "" },
-  pro: { productId: "" },
-  landlord_pro: { productId: "" },
+  starter: { productId: "", priceId: "" },
+  pro: { productId: "", priceId: "" },
+  landlord_pro: { productId: "", priceId: "" },
 };
 
 /**

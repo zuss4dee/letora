@@ -50,8 +50,8 @@ export function PricingPlanSubscribeButton({
       const isPolarPlan = planKey === "monthly" || planKey === "yearly";
 
       if (isPolarPlan) {
-        const productId = POLAR_PLANS[planKey].productId?.trim();
-        if (!productId) {
+        const priceId = POLAR_PLANS[planKey].priceId?.trim();
+        if (!priceId) {
           setError("Billing is not configured. Please try again later.");
           setLoading(false);
           return;
@@ -60,7 +60,7 @@ export function PricingPlanSubscribeButton({
         const res = await fetch("/api/polar/create-checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId, plan: planKey }),
+          body: JSON.stringify({ priceId, plan: planKey }),
         });
 
         const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };

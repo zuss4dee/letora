@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { runTenantOnboardingAgent } from "@/lib/agents/tenant-onboarding";
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import type { BatchOnboardingRow } from "@/lib/onboarding/tenant-import";
+import { logActivity } from "@/lib/actions/activity-log";
 
 /**
  * Outcome classification per row AFTER matching but BEFORE inserting.
@@ -203,6 +204,8 @@ export type BatchRunResult = {
     succeeded: number;
     failed: number;
     skipped: number;
+    agentsTriggered: number;
+    approvalsCreated: number;
   };
   outcomes: BatchRowOutcome[];
 };
@@ -261,6 +264,20 @@ export async function runBatchOnboarding(
 ): Promise<BatchRunResult> {
   const concurrency = Math.max(1, Math.min(options.concurrency ?? 3, 5));
 
+  // Log Import Started
+  await logActivity(
+    {
+      userId,
+      eventType: "PORTFOLIO_IMPORT_STARTED",
+      source: "system",
+      args: {
+        message: `Started importing portfolio (${prepared.summary.actionableRows} actionable rows)`,
+        actionableRows: prepared.summary.actionableRows,
+      },
+    },
+    supabase,
+  );
+
   const { data: batchInsert, error: batchErr } = await supabase
     .from("batch_imports")
     .insert({
@@ -285,6 +302,8 @@ export async function runBatchOnboarding(
     succeeded: 0,
     failed: 0,
     skipped: 0,
+    agentsTriggered: 0,
+    approvalsCreated: 0,
   };
   const errorsLog: Array<{ row_index: number; error: string }> = [];
 
@@ -304,6 +323,24 @@ export async function runBatchOnboarding(
         outcome.error = row.raw.rowErrors.join("; ");
         totals.failed += 1;
         errorsLog.push({ row_index: row.rowIndex, error: outcome.error });
+
+        // Log row-level error (requires manual attention)
+        await logActivity(
+          {
+            userId,
+            eventType: "PORTFOLIO_IMPORT_ROW_ERROR",
+            source: "system",
+            success: false,
+            args: {
+              message: `Row ${row.rowIndex + 1} failed: ${outcome.error}`,
+              rowIndex: row.rowIndex,
+              property: row.raw.propertyAddress,
+              error: outcome.error,
+            },
+          },
+          supabase,
+        );
+
         options.onProgress?.(outcome, { ...totals });
         return outcome;
       }
@@ -333,9 +370,7 @@ export async function runBatchOnboarding(
           status: "active",
           has_gas_supply: true,
         });
-        if (propErr) {
-          throw new Error(`property insert failed: ${propErr.message}`);
-        }
+        if (propErr) throw new Error(`property insert failed: ${propErr.message}`);
         outcome.propertyId = propertyId;
       }
 
@@ -350,9 +385,7 @@ export async function runBatchOnboarding(
           phone: row.raw.tenantPhone,
           right_to_rent_status: "pending",
         });
-        if (tenantErr) {
-          throw new Error(`tenant insert failed: ${tenantErr.message}`);
-        }
+        if (tenantErr) throw new Error(`tenant insert failed: ${tenantErr.message}`);
         outcome.tenantId = tenantId;
       }
 
@@ -368,15 +401,49 @@ export async function runBatchOnboarding(
         deposit_amount: row.raw.depositAmount ?? row.raw.monthlyRent,
         status: "active",
       });
-      if (tenancyErr) {
-        throw new Error(`tenancy insert failed: ${tenancyErr.message}`);
-      }
+      if (tenancyErr) throw new Error(`tenancy insert failed: ${tenancyErr.message}`);
       outcome.tenancyId = tenancyId;
 
+      // Trigger Onboarding Agent
       const agentResult = await runTenantOnboardingAgent(tenancyId, userId, supabase);
       outcome.emailStatus = agentResult.emailStatus;
       outcome.status = agentResult.mode === "resume" ? "resumed" : "created";
       totals.succeeded += 1;
+      totals.agentsTriggered += 1;
+
+      if (agentResult.emailStatus === "draft") {
+        totals.approvalsCreated += 1;
+        // Log approval created
+        await logActivity(
+          {
+            userId,
+            eventType: "PORTFOLIO_IMPORT_APPROVAL_REQUESTED",
+            source: "system",
+            args: {
+              message: `Drafted welcome email for ${row.raw.tenantFullName} (approval required)`,
+              tenancyId,
+              tenantName: row.raw.tenantFullName,
+            },
+          },
+          supabase,
+        );
+      } else {
+        // Log meaningful downstream work
+        await logActivity(
+          {
+            userId,
+            eventType: "PORTFOLIO_IMPORT_AGENT_STARTED",
+            source: "system",
+            args: {
+              message: `Agent started onboarding tasks for ${row.raw.tenantFullName}`,
+              tenancyId,
+              tenantName: row.raw.tenantFullName,
+            },
+          },
+          supabase,
+        );
+      }
+
       options.onProgress?.(outcome, { ...totals });
       return outcome;
     } catch (err) {
@@ -385,23 +452,70 @@ export async function runBatchOnboarding(
       outcome.error = msg;
       totals.failed += 1;
       errorsLog.push({ row_index: row.rowIndex, error: msg });
+
+      await logActivity(
+        {
+          userId,
+          eventType: "PORTFOLIO_IMPORT_ROW_ERROR",
+          source: "system",
+          success: false,
+          args: {
+            message: `Row ${row.rowIndex + 1} failed: ${msg}`,
+            error: msg,
+          },
+        },
+        supabase,
+      );
+
       options.onProgress?.(outcome, { ...totals });
       return outcome;
     }
   });
 
   const finalStatus = totals.failed === 0 ? "completed" : totals.succeeded === 0 ? "failed" : "completed";
-  await supabase
+  const updatePayload: any = {
+    status: finalStatus,
+    rows_succeeded: totals.succeeded,
+    rows_failed: totals.failed,
+    agents_triggered: totals.agentsTriggered,
+    approvals_created: totals.approvalsCreated,
+    errors_json: errorsLog,
+    completed_at: new Date().toISOString(),
+  };
+
+  const { error: updateErr } = await supabase
     .from("batch_imports")
-    .update({
-      status: finalStatus,
-      rows_succeeded: totals.succeeded,
-      rows_failed: totals.failed,
-      errors_json: errorsLog,
-      completed_at: new Date().toISOString(),
-    })
+    .update(updatePayload)
     .eq("id", batchId)
     .eq("user_id", userId);
+
+  // Resilience: Fallback if migration hasn't run
+  if (updateErr?.code === "42703") {
+    const fallbackPayload = { ...updatePayload };
+    delete fallbackPayload.agents_triggered;
+    delete fallbackPayload.approvals_created;
+
+    await supabase
+      .from("batch_imports")
+      .update(fallbackPayload)
+      .eq("id", batchId)
+      .eq("user_id", userId);
+  }
+
+  // Log Import Completed
+  await logActivity(
+    {
+      userId,
+      eventType: "PORTFOLIO_IMPORT_COMPLETED",
+      source: "system",
+      args: {
+        message: `Portfolio import finished: ${totals.succeeded} successful, ${totals.failed} failed`,
+        succeeded: totals.succeeded,
+        failed: totals.failed,
+      },
+    },
+    supabase,
+  );
 
   return {
     batchId,

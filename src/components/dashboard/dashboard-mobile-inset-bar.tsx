@@ -6,7 +6,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
 const crumbMap: { prefix: string; label: string }[] = [
-  { prefix: "/dashboard/properties", label: "Properties" },
+  { prefix: "/dashboard/properties", label: "Portfolio" },
   { prefix: "/dashboard/tenants", label: "Tenants" },
   { prefix: "/dashboard/tenancies", label: "Tenancies" },
   { prefix: "/dashboard/rent-tracker", label: "Rent Tracker" },
@@ -14,10 +14,10 @@ const crumbMap: { prefix: string; label: string }[] = [
   { prefix: "/dashboard/compliance", label: "Compliance" },
   { prefix: "/dashboard/contracts", label: "Contracts" },
   { prefix: "/dashboard/emails", label: "Emails" },
-  { prefix: "/dashboard/leads", label: "Leads" },
-  { prefix: "/dashboard/import", label: "Import" },
+  { prefix: "/dashboard/import", label: "Portfolio Import" },
   { prefix: "/dashboard/agents", label: "Agents" },
-  { prefix: "/dashboard/activity", label: "History" },
+  { prefix: "/dashboard/activity", label: "Activity" },
+  { prefix: "/dashboard/approvals", label: "Approvals" },
   { prefix: "/dashboard/billing", label: "Billing" },
   { prefix: "/dashboard/help", label: "Help" },
   { prefix: "/dashboard/settings", label: "Settings" },
@@ -34,7 +34,7 @@ function breadcrumbFor(pathname: string): { current: string } {
     return { current: "Tenant" };
   }
   if (pathname === "/dashboard/properties" || pathname === "/dashboard/properties/") {
-    return { current: "Managed Properties" };
+    return { current: "Portfolio Overview" };
   }
   if (pathname.startsWith("/dashboard/properties/")) {
     return { current: "Property" };
