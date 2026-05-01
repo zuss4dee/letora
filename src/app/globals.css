@@ -43,6 +43,29 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-placeholder-foreground: var(--placeholder-foreground);
+
+  /* Obsidian Operational — DESIGN.md tokens */
+  --color-obsidian-surface: #131313;
+  --color-obsidian-surface-dim: #131313;
+  --color-obsidian-surface-bright: #3a3939;
+  --color-obsidian-surface-lowest: #0e0e0e;
+  --color-obsidian-surface-low: #1c1b1b;
+  --color-obsidian-surface-container: #201f1f;
+  --color-obsidian-surface-high: #2a2a2a;
+  --color-obsidian-surface-highest: #353534;
+  --color-obsidian-on-surface: #e5e2e1;
+  --color-obsidian-on-surface-variant: #c4c7c8;
+  --color-obsidian-outline: #8e9192;
+  --color-obsidian-outline-variant: #444748;
+
+  --font-size-label-sm: 11px;
+  --font-size-label-md: 12px;
+  --font-size-body-sm: 12px;
+  --font-size-body-md: 13px;
+  --font-size-body-lg: 14px;
+  --font-size-headline-md: 16px;
+  --font-size-headline-lg: 20px;
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

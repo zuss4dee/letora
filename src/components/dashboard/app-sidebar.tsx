@@ -320,6 +320,7 @@ export function AppSidebar({
     { title: "Activity", url: "/dashboard/activity", icon: History },
     { title: "Portfolio Import", url: "/dashboard/import", icon: Upload },
     { title: "Assistant", url: "/dashboard/assistant", icon: Sparkles },
+    { title: "Help & Support", url: "/dashboard/help", icon: HelpCircle },
   ];
 
   const footerNavClass = (active: boolean) =>
@@ -449,24 +450,6 @@ export function AppSidebar({
                 />
                 Billing
               </Link>
-              <Link
-                href="/dashboard/help"
-                onClick={closeMobileNav}
-                className={footerNavClass(isActivePath(pathname, "/dashboard/help"))}
-              >
-                <HelpCircle
-                  className={cn(
-                    "size-[18px] shrink-0 stroke-[1.5]",
-                    isActivePath(pathname, "/dashboard/help") ? "text-[#97e6ec]" : "text-[#6b6966]",
-                  )}
-                  aria-hidden
-                />
-                Help
-              </Link>
-              <SidebarAgentActivityButton
-                onBeforeOpen={closeMobileNav}
-                className={cn(navRowBase, navRowIdle, "mb-0.5")}
-              />
               <div className="mx-2 mt-2 rounded-md bg-zinc-100 p-2.5 dark:bg-zinc-900/50">
                 <div className="flex items-center gap-3">
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-[#ddd7cc] font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-wide text-[#3b3329] ring-1 ring-black/[0.05] dark:bg-[#2a2826] dark:text-[#cdccca] dark:ring-white/[0.06]">
