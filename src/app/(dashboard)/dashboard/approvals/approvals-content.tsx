@@ -21,24 +21,20 @@ const getApprovalsData = cache(async () => {
 
 export function ApprovalsStaticShell() {
   return (
-    <header className="space-y-3 border-b border-white/[0.1] pb-4">
+    <header className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1.5">
-          <p className="font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.18em] text-zinc-500">
-            Operational console / approvals
+        <div className="space-y-1">
+          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+            Operational Console // Approvals
           </p>
-          <h1 className="font-[family-name:var(--font-inter)] text-base font-semibold uppercase tracking-[0.12em] text-zinc-100 md:text-lg">
+          <h1 className="text-2xl font-bold tracking-tight text-white">
             Approvals Queue
           </h1>
+          <p className="max-w-2xl text-[13px] text-zinc-400">
+            Review and execute agent-prepared actions. High-priority decisions are surfaced here for final landlord verification before deployment.
+          </p>
         </div>
-        <p className="font-[family-name:var(--font-inter)] text-[0.62rem] uppercase tracking-[0.14em] text-zinc-500">
-          Shell-first workspace
-        </p>
       </div>
-      <p className="max-w-4xl font-[family-name:var(--font-inter)] text-xs leading-relaxed text-zinc-400 md:text-[0.8125rem]">
-        Review queued agent decisions in a compact operations layout. Use the queue to triage urgent cases and the
-        decision panel to approve, deny, or inspect full audit context without leaving this route.
-      </p>
     </header>
   );
 }

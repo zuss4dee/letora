@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 
 import type { TenancyRow } from "@/lib/actions/tenancies";
+import { resolvePaymentAmount } from "@/lib/rent-utils";
 
 import type {
   TenancyInspectorActivityEntry,
@@ -122,7 +123,7 @@ export async function loadTenancyInspectorActivityByTenancyId(
   const [rentRes, maintRes, refRes, contractRes, agentRes] = await Promise.all([
     supabase
       .from("rent_payments")
-      .select("id, tenancy_id, amount_due, amount_paid, paid_on, due_date, status, notes, created_at")
+      .select("id, tenancy_id, amount, paid_date, due_date, status, notes, created_at")
       .in("tenancy_id", tenancyIds)
       .order("created_at", { ascending: false })
       .limit(120),
@@ -176,8 +177,7 @@ export async function loadTenancyInspectorActivityByTenancyId(
     const r = row as Record<string, unknown>;
     const tenancy_id = r.tenancy_id as string | null | undefined;
     const status = String(r.status ?? "pending").toLowerCase();
-    const amountDue = r.amount_due as number | null | undefined;
-    const amountPaid = r.amount_paid as number | null | undefined;
+    const amountDue = resolvePaymentAmount(r as { amount?: unknown });
     const created = (r.created_at as string | null | undefined) ?? new Date().toISOString();
     const accent: TenancyInspectorActivityEntry["accent"] =
       status === "paid" ? "success" : status === "overdue" ? "attention" : "default";
@@ -185,12 +185,12 @@ export async function loadTenancyInspectorActivityByTenancyId(
     const detailParts: string[] = [];
     const due = r.due_date as string | null | undefined;
     if (due) detailParts.push(`Due ${due}`);
-    const paidOn = r.paid_on as string | null | undefined;
+    const paidOn = r.paid_date as string | null | undefined;
     if (paidOn) detailParts.push(`Paid on ${paidOn}`);
-    const ad = formatMoneyGbp(amountDue ?? null);
-    const ap = formatMoneyGbp(amountPaid ?? null);
-    if (ad !== "—") detailParts.push(ad);
-    if (ap !== "—" && status === "paid") detailParts.push(`Received ${ap}`);
+    const ad = formatMoneyGbp(amountDue);
+    if (ad !== "—") {
+      detailParts.push(status === "paid" ? `Received ${ad}` : `Instalment ${ad}`);
+    }
     const notes = r.notes as string | null | undefined;
     if (notes?.trim()) detailParts.push(notes.trim().slice(0, 80));
     const at =

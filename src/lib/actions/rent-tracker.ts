@@ -43,7 +43,6 @@ export async function getRentPayments(): Promise<RentPaymentListRow[]> {
       `
       id,
       amount,
-      amount_due,
       due_date,
       paid_date,
       status,
@@ -52,12 +51,12 @@ export async function getRentPayments(): Promise<RentPaymentListRow[]> {
       tenancy_id,
       tenancies!inner (
         property_id,
-        properties!inner ( address ),
+        properties!inner ( address, user_id ),
         tenants ( id, full_name )
       )
     `,
     )
-    .eq("user_id", user.id)
+    .eq("tenancies.properties.user_id", user.id)
     .order("due_date", { ascending: false });
 
   if (error) {
@@ -79,7 +78,6 @@ export async function getRentPayments(): Promise<RentPaymentListRow[]> {
     return {
       id: row.id as string,
       amount: toAmount(row.amount),
-      amount_due: row.amount_due == null ? null : toAmount(row.amount_due),
       due_date: (row.due_date as string | null) ?? null,
       paid_date: (row.paid_date as string | null) ?? null,
       status: (row.status as string | null) ?? null,

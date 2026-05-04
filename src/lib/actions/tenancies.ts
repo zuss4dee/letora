@@ -236,7 +236,7 @@ export async function getThisMonthPayments(userId: string): Promise<RentPaymentR
   const { data, error } = await supabase
     .from("rent_payments")
     .select(
-      "id,tenancy_id,due_date,amount,amount_due,amount_paid,status,tenancies!inner(properties!inner(address,user_id),tenants(full_name))",
+      "id,tenancy_id,due_date,amount,status,tenancies!inner(properties!inner(address,user_id),tenants(full_name))",
     )
     .eq("tenancies.properties.user_id", userId)
     .gte("due_date", startDate)
@@ -264,17 +264,12 @@ export async function getThisMonthPayments(userId: string): Promise<RentPaymentR
     tenantFullName: tenant?.full_name ?? null,
     dueDate: row.due_date ?? null,
     amountDue:
-      row.amount_due == null
+      row.amount == null
         ? null
-        : typeof row.amount_due === "number"
-          ? row.amount_due
-          : Number(row.amount_due),
-    amountPaid:
-      row.amount_paid == null
-        ? null
-        : typeof row.amount_paid === "number"
-          ? row.amount_paid
-          : Number(row.amount_paid),
+        : typeof row.amount === "number"
+          ? row.amount
+          : Number(row.amount),
+    amountPaid: null as number | null,
     amount:
       row.amount == null
         ? null
@@ -322,14 +317,12 @@ export async function autoGeneratePendingPayments(userId: string) {
       id: crypto.randomUUID(),
       tenancy_id: t.id,
       due_date: t.start_date ? computeDueDateForMonth(t.start_date, start) : startDate,
-      amount_due:
+      amount:
         t.monthly_rent == null
           ? 0
           : typeof t.monthly_rent === "number"
             ? t.monthly_rent
             : Number(t.monthly_rent),
-      amount_paid: null,
-      paid_on: null,
       status: "pending",
     }));
 
@@ -364,10 +357,8 @@ export async function logPayment(formData: unknown) {
     const { error } = await supabase
       .from("rent_payments")
       .update({
-        amount_paid: values.amountPaid,
-        paid_on: values.paidOn,
         status: "paid",
-        payment_method: values.paymentMethod,
+        paid_date: values.paidOn,
         notes: values.notes ?? null,
       })
       .eq("id", values.rentPaymentId);
@@ -382,11 +373,9 @@ export async function logPayment(formData: unknown) {
       id: crypto.randomUUID(),
       tenancy_id: values.tenancyId,
       due_date: values.paidOn,
-      amount_due: values.amountPaid,
-      amount_paid: values.amountPaid,
-      paid_on: values.paidOn,
+      amount: values.amountPaid,
+      paid_date: values.paidOn,
       status: "paid",
-      payment_method: values.paymentMethod,
       notes: values.notes ?? null,
     });
 

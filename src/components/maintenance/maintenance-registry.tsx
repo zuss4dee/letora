@@ -353,7 +353,7 @@ export function MaintenanceRegistry({
                       </p>
                     </div>
                     <Link
-                      href={`/dashboard/maintenance/${row.id}`}
+                      href={`/dashboard/maintenance?issueId=${encodeURIComponent(row.id)}`}
                       className="inline-flex shrink-0 items-center justify-center border border-[#484848]/25 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-foreground transition-all hover:border-zinc-400 hover:text-zinc-400"
                     >
                       {pres.actionLabel}

@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { buildWelcomeEmailForTenancy } from "@/lib/agents/tenant-onboarding";
@@ -68,6 +69,11 @@ async function findExistingWelcomeSend(
   return null;
 }
 
+function revalidateTenancyOperationalSurfaces(tenancyId: string) {
+  revalidatePath("/dashboard/tenancies");
+  revalidatePath(`/dashboard/tenancies/${tenancyId}`);
+}
+
 /**
  * Idempotent welcome send after dashboard approval. Uses `forceSend` so human approval
  * is not blocked by `auto_send_onboarding_emails`.
@@ -113,6 +119,7 @@ export async function executeSendOnboardingWelcomeAfterApproval(
       .eq("task_name", "Welcome email")
       .eq("status", "pending");
 
+    revalidateTenancyOperationalSurfaces(tenancyId);
     return { ok: true, kind: "already_sent", emailLogId: existingId };
   }
 
@@ -177,5 +184,6 @@ export async function executeSendOnboardingWelcomeAfterApproval(
       .eq("user_id", userId);
   }
 
+  revalidateTenancyOperationalSurfaces(tenancyId);
   return { ok: true, kind: "sent", emailLogId };
 }

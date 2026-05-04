@@ -1,10 +1,10 @@
-import { getRecentActivity, logActivity } from "@/lib/actions/activity-log";
+import { getRecentActivity } from "@/lib/actions/activity-log";
 import { getPendingAgentApprovals, getPendingApprovalsCount } from "@/lib/actions/agent-approvals";
-import { getComplianceRecordsForUser } from "@/lib/actions/compliance";
 import { getDashboardStats } from "@/lib/actions/dashboard";
 import { withTimeout } from "@/lib/async/with-timeout";
+import { isoDateBetweenInclusive, monthBoundsIso } from "@/lib/rent-calendar-bounds";
 import { createClient } from "@/lib/supabase/server";
-import { getOutstandingRentTotal } from "@/lib/rent-utils";
+import { isPaymentOverdue, resolvePaymentAmount } from "@/lib/rent-utils";
 
 export type CommandCenterKpis = {
   pendingApprovals: number;
@@ -13,6 +13,20 @@ export type CommandCenterKpis = {
   maintenanceHighPriority: number;
   totalProperties: number;
   activeAgents: number;
+  // Financials
+  /** Sum of unpaid instalments with due_date in the current calendar month. */
+  rentDueThisMonth: number;
+  /**
+   * Contract roll for the current calendar month: sum of all instalment amounts with `due_date`
+   * in this month (paid or unpaid — so operators can reconcile vs collected vs unpaid-in-month).
+   */
+  rentScheduledThisMonth: number;
+  /** Cash receipts this month: instalments marked paid with paid_date in the current calendar month (legacy: paid + no paid_date → due-month attribution only). */
+  rentCollectedThisMonth: number;
+  /** Total scheduled instalment amounts due next calendar month (all statuses — forecast / contract schedule). */
+  rentExpectedNextMonth: number;
+  /** Cash receipts last calendar month (`paid_date` window). */
+  rentCollectedLastMonth: number;
 };
 
 const KPI_FALLBACK: CommandCenterKpis = {
@@ -22,8 +36,12 @@ const KPI_FALLBACK: CommandCenterKpis = {
   maintenanceHighPriority: 0,
   totalProperties: 0,
   activeAgents: 0,
+  rentDueThisMonth: 0,
+  rentScheduledThisMonth: 0,
+  rentCollectedThisMonth: 0,
+  rentExpectedNextMonth: 0,
+  rentCollectedLastMonth: 0,
 };
-
 
 async function highPriorityMaintenanceCount(userId: string): Promise<number> {
   const supabase = await createClient();
@@ -56,36 +74,341 @@ async function activeAgentCount(userId: string): Promise<number> {
   return count ?? 0;
 }
 
+function isPaidRentStatus(status: string | null): boolean {
+  return (status ?? "").toLowerCase() === "paid";
+}
+
+type RentPaymentFinanceRow = {
+  id: string;
+  amount: unknown;
+  status: string | null;
+  due_date: string | null;
+  paid_date: string | null;
+};
+
+async function loadCommandCenterFinancials(userId: string) {
+  const supabase = await createClient();
+  const anchor = new Date().toISOString().slice(0, 10);
+
+  const current = monthBoundsIso(anchor, 0);
+  const nextMonth = monthBoundsIso(anchor, 1);
+  const lastMonth = monthBoundsIso(anchor, -1);
+
+  const dueFetchStart = monthBoundsIso(anchor, -24).startIso;
+  const dueFetchEnd = monthBoundsIso(anchor, 12).endIso;
+
+  /** Pull rows by paid_date so receipts are counted even when the original due_date is stale. */
+  const paidFetchStart = monthBoundsIso(anchor, -24).startIso;
+  const paidFetchEnd = current.endIso;
+
+  const sel = "id,amount,status,due_date,paid_date,tenancies!inner(properties!inner(user_id))";
+
+  const [dueRes, paidRes] = await Promise.all([
+    supabase
+      .from("rent_payments")
+      .select(sel)
+      .eq("tenancies.properties.user_id", userId)
+      .gte("due_date", dueFetchStart)
+      .lte("due_date", dueFetchEnd),
+    supabase
+      .from("rent_payments")
+      .select(sel)
+      .eq("tenancies.properties.user_id", userId)
+      .not("paid_date", "is", null)
+      .gte("paid_date", paidFetchStart)
+      .lte("paid_date", paidFetchEnd),
+  ]);
+
+  if (dueRes.error) console.warn("[command-center] rent by due_date", dueRes.error.message);
+  if (paidRes.error) console.warn("[command-center] rent by paid_date", paidRes.error.message);
+
+  const merged = new Map<string, RentPaymentFinanceRow>();
+  const ingest = (rows: RentPaymentFinanceRow[] | null) => {
+    for (const r of rows ?? []) merged.set(String(r.id), r);
+  };
+  ingest((dueRes.data ?? []) as RentPaymentFinanceRow[]);
+  ingest((paidRes.data ?? []) as RentPaymentFinanceRow[]);
+
+  const stats = {
+    rentDueThisMonth: 0,
+    rentScheduledThisMonth: 0,
+    rentCollectedThisMonth: 0,
+    rentExpectedNextMonth: 0,
+    rentCollectedLastMonth: 0,
+  };
+
+  const rawTotals = {
+    rows: merged.size,
+    scheduledCurrentMonth: 0,
+    currentMonthOutstanding: 0,
+    currentMonthCollected: 0,
+    nextMonthScheduled: 0,
+    lastMonthCollected: 0,
+    sampleIds: [] as string[],
+  };
+
+  for (const p of merged.values()) {
+    if (rawTotals.sampleIds.length < 5) rawTotals.sampleIds.push(String(p.id));
+    const amt = resolvePaymentAmount(p);
+    const due = (p.due_date ?? "").slice(0, 10);
+    const paidIso = (p.paid_date ?? "").slice(0, 10);
+
+    if (due && isoDateBetweenInclusive(due, current.startIso, current.endIso)) {
+      stats.rentScheduledThisMonth += amt;
+      rawTotals.scheduledCurrentMonth += amt;
+    }
+
+    if (due && isoDateBetweenInclusive(due, current.startIso, current.endIso) && !isPaidRentStatus(p.status)) {
+      stats.rentDueThisMonth += amt;
+      rawTotals.currentMonthOutstanding += amt;
+    }
+
+    if (
+      due &&
+      isoDateBetweenInclusive(due, nextMonth.startIso, nextMonth.endIso)
+    ) {
+      stats.rentExpectedNextMonth += amt;
+      rawTotals.nextMonthScheduled += amt;
+    }
+
+    if (isPaidRentStatus(p.status)) {
+      if (paidIso && isoDateBetweenInclusive(paidIso, current.startIso, current.endIso)) {
+        stats.rentCollectedThisMonth += amt;
+        rawTotals.currentMonthCollected += amt;
+      } else if (!paidIso && due && isoDateBetweenInclusive(due, current.startIso, current.endIso)) {
+        stats.rentCollectedThisMonth += amt;
+        rawTotals.currentMonthCollected += amt;
+      }
+
+      if (paidIso && isoDateBetweenInclusive(paidIso, lastMonth.startIso, lastMonth.endIso)) {
+        stats.rentCollectedLastMonth += amt;
+        rawTotals.lastMonthCollected += amt;
+      } else if (!paidIso && due && isoDateBetweenInclusive(due, lastMonth.startIso, lastMonth.endIso)) {
+        stats.rentCollectedLastMonth += amt;
+        rawTotals.lastMonthCollected += amt;
+      }
+    }
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    console.info("[command-center-financials]", {
+      anchor,
+      windows: { current, nextMonth, lastMonth },
+      stats,
+      rawTotals,
+    });
+  }
+
+  return stats;
+}
+
 export async function loadCommandCenterKpis(userId: string): Promise<CommandCenterKpis> {
   return withTimeout(
     (async () => {
-      const [
-        approvalsCount,
-        stats,
-        overdueTotal,
-        agentCount,
-        maintHigh,
-      ] = await Promise.all([
-        getPendingApprovalsCount(userId),
-        getDashboardStats(userId),
-        getOutstandingRentTotal(userId),
-        activeAgentCount(userId),
-        highPriorityMaintenanceCount(userId),
-      ]);
+      try {
+        const [
+          approvalsCount,
+          stats,
+          agentCount,
+          maintHigh,
+          financials,
+        ] = await Promise.all([
+          getPendingApprovalsCount(userId),
+          getDashboardStats(userId),
+          activeAgentCount(userId),
+          highPriorityMaintenanceCount(userId),
+          loadCommandCenterFinancials(userId),
+        ]);
 
-      return {
-        pendingApprovals: approvalsCount,
-        overdueRentTotal: overdueTotal,
-        maintenanceOpen: stats.openMaintenance,
-        maintenanceHighPriority: maintHigh,
-        totalProperties: stats.totalProperties,
-        activeAgents: agentCount,
-      };
+        return {
+          pendingApprovals: approvalsCount,
+          overdueRentTotal: stats.arrearsOutstanding,
+          maintenanceOpen: stats.openMaintenance,
+          maintenanceHighPriority: maintHigh,
+          totalProperties: stats.totalProperties,
+          activeAgents: agentCount,
+          ...financials,
+        };
+      } catch (e) {
+        console.error("[loadCommandCenterKpis] Failed to load operational KPIs:", e);
+        return KPI_FALLBACK;
+      }
     })(),
-    3000,
+    6000,
     KPI_FALLBACK,
     "command-center:loadCommandCenterKpis",
   );
+}
+
+export type ArrearsQueueRow = {
+  /** Rent payment row id (targets agent approvals, rent tracker focus). */
+  id: string;
+  tenancyId: string;
+  tenantName: string;
+  propertyAddress: string;
+  amountOverdue: number;
+  daysOverdue: number;
+  actionState: "draft_ready" | "approval_needed" | "sent" | "no_draft";
+  approvalId?: string;
+};
+
+export async function loadCommandCenterArrearsQueue(userId: string): Promise<ArrearsQueueRow[]> {
+  const supabase = await createClient();
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  // Embed shape aligns with rent-tracker `getRentPayments` (stable PostgREST path).
+  const { data: payments, error } = await supabase
+    .from("rent_payments")
+    .select(
+      `
+      id,
+      amount,
+      due_date,
+      status,
+      tenancies!inner (
+        id,
+        property_id,
+        properties!inner ( address, user_id ),
+        tenants ( id, full_name )
+      )
+    `,
+    )
+    .eq("tenancies.properties.user_id", userId)
+    .order("due_date", { ascending: true });
+
+  if (error) {
+    console.warn("[loadCommandCenterArrearsQueue] query error:", error.message);
+    return [];
+  }
+
+  const unwrap = <T,>(rel: T | T[] | null | undefined): T | null => {
+    if (rel == null) return null;
+    return Array.isArray(rel) ? (rel[0] ?? null) : rel;
+  };
+
+  const filtered = (payments ?? []).filter((p) =>
+    isPaymentOverdue((p.status as string | null) ?? null, (p.due_date as string | null) ?? null, todayIso),
+  );
+
+  if (filtered.length === 0) return [];
+
+  const { data: approvals } = await supabase
+    .from("agent_approvals")
+    .select("id, status, target_id")
+    .eq("user_id", userId)
+    .eq("action_type", "send_rent_chase_email")
+    .eq("status", "pending");
+
+  return filtered.slice(0, 5).map((p) => {
+    const tenancyRaw = unwrap(
+      p.tenancies as
+        | { id?: string; properties?: unknown; tenants?: unknown }
+        | { id?: string; properties?: unknown; tenants?: unknown }[]
+        | null,
+    );
+    const property = unwrap(tenancyRaw?.properties as { address?: string | null } | { address?: string | null }[] | null);
+    const tenant = unwrap(tenancyRaw?.tenants as { full_name?: string | null } | { full_name?: string | null }[] | null);
+
+    /** `send_rent_chase_email` approvals use `target_id` = rent_payment.id (not tenancy id). */
+    const approval = (approvals ?? []).find((a) => String(a.target_id) === String(p.id));
+
+    const dueIso = typeof p.due_date === "string" ? p.due_date.slice(0, 10) : "";
+    const dueDate = dueIso ? new Date(`${dueIso}T12:00:00Z`) : new Date(NaN);
+    const today = new Date(`${todayIso}T12:00:00Z`);
+    const days = Number.isNaN(dueDate.getTime())
+      ? 0
+      : Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+
+    return {
+      id: String(p.id),
+      tenancyId: String(tenancyRaw?.id ?? ""),
+      tenantName: tenant?.full_name?.trim() || "Tenant",
+      propertyAddress: (property?.address ?? "").split(",")[0]?.trim() || "",
+      amountOverdue: resolvePaymentAmount(p),
+      daysOverdue: days,
+      actionState: approval ? "approval_needed" : "no_draft",
+      approvalId: approval?.id,
+    };
+  });
+}
+
+export type MaintenanceQueueRow = {
+  id: string;
+  summary: string;
+  propertyContext: string;
+  urgency: string;
+  actionState: "draft_ready" | "approval_needed" | "sent" | "not_started";
+  approvalId?: string;
+};
+
+export async function loadCommandCenterMaintenanceQueue(userId: string): Promise<MaintenanceQueueRow[]> {
+  const supabase = await createClient();
+
+  const { data: maint, error } = await supabase
+    .from("maintenance_requests")
+    // Maintenance requests must be scoped via their associated tenancy -> property ownership
+    .select("id, description, priority, status, tenancies!inner(properties!inner(address, user_id))")
+    .eq("tenancies.properties.user_id", userId)
+    .in("status", ["open", "in_progress"])
+    .order("created_at", { ascending: false })
+    .limit(5);
+
+  if (error) {
+    console.error("[loadCommandCenterMaintenanceQueue] query error:", error.message);
+    return [];
+  }
+
+  if (!maint || maint.length === 0) return [];
+
+  const { data: approvals } = await supabase
+    .from("agent_approvals")
+    .select("id, status, target_id")
+    .eq("user_id", userId)
+    .eq("action_type", "approve_maintenance_dispatch")
+    .eq("status", "pending");
+
+  return maint.map((m) => {
+    const t = m.tenancies as unknown as { properties?: { address?: string | null } | null };
+    const approval = (approvals ?? []).find((a) => a.target_id === m.id);
+
+    return {
+      id: m.id,
+      summary: m.description?.slice(0, 60) ?? "Maintenance Request",
+      propertyContext: (t.properties?.address ?? "").split(",")[0],
+      urgency: m.priority ?? "Normal",
+      actionState: approval ? "approval_needed" : "not_started",
+      approvalId: approval?.id,
+    };
+  });
+}
+
+export type AgentWorkStats = {
+  rentChaseDrafts: number;
+  maintenanceDrafts: number;
+  pendingApprovals: number;
+  activeAgents: number;
+};
+
+export async function loadCommandCenterAgentSummary(userId: string): Promise<AgentWorkStats> {
+  const supabase = await createClient();
+
+  const [approvalsRes, agentCount] = await Promise.all([
+    supabase
+      .from("agent_approvals")
+      .select("action_type, status")
+      .eq("user_id", userId)
+      .eq("status", "pending"),
+    activeAgentCount(userId),
+  ]);
+
+  const approvals = approvalsRes.data ?? [];
+
+  return {
+    rentChaseDrafts: approvals.filter((a) => a.action_type === "send_rent_chase_email").length,
+    maintenanceDrafts: approvals.filter((a) => a.action_type === "approve_maintenance_dispatch").length,
+    pendingApprovals: approvals.length,
+    activeAgents: agentCount,
+  };
 }
 
 export type AttentionRow = {
@@ -156,11 +479,11 @@ export async function loadCommandCenterActivity(userId: string): Promise<Activit
         const time = Number.isNaN(d.getTime())
           ? "—"
           : d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
-        
+
         let tool = String(row.tool_name ?? "EVENT").toUpperCase().replace(/_/g, " ");
-        
+
         // Use message from args if it's a high-signal event we just added
-        const args = (row as any).args || {};
+        const args = (row as { args?: { message?: string } }).args || {};
         if (args.message && tool.startsWith("PORTFOLIO IMPORT")) {
           tool = args.message;
         } else {
@@ -174,8 +497,8 @@ export async function loadCommandCenterActivity(userId: string): Promise<Activit
           if (tool === "DENIED: ACTION") tool = "DECISION: DENIED";
           if (tool.startsWith("PROPOSED:")) tool = "REQUEST: " + tool.replace("PROPOSED: ", "");
         }
-        
-        const sourceRaw = (row as any).source || "assistant";
+
+        const sourceRaw = (row as { source?: string }).source || "assistant";
         const source = sourceRaw.charAt(0).toUpperCase() + sourceRaw.slice(1);
 
         return {

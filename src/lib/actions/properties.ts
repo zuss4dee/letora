@@ -118,6 +118,8 @@ export type PropertyPortfolioRow = PropertyRow & {
   openMaintenanceCount: number;
   /** Sum of overdue / past-due pending rent instalments for this property (GBP). */
   rentOverdueGbp: number;
+  /** Current primary tenant name (if occupied). */
+  currentTenantName: string | null;
 };
 
 /** Illustrative yield % until property valuations exist in the data model. */
@@ -171,14 +173,14 @@ export async function getPropertiesPortfolio(userId: string): Promise<PropertyPo
     Promise.all([
       supabase
         .from("tenancies")
-        .select("property_id, status, start_date, created_at")
+        .select("property_id, status, start_date, created_at, tenants(full_name)")
         .in("property_id", ids),
       supabase
         .from("maintenance_requests")
         .select("id, status, created_at, description, tenancies(property_id)"),
       supabase
         .from("rent_payments")
-        .select("amount, amount_due, status, due_date, property_id, tenancies(property_id)")
+        .select("amount, status, due_date, property_id, tenancies(property_id)")
         .eq("user_id", userId),
     ]).then((res) => res.map((r) => r.data ?? [])),
     3000,
@@ -188,7 +190,6 @@ export async function getPropertiesPortfolio(userId: string): Promise<PropertyPo
 
   const payments = (payRows ?? []) as Array<{
     amount?: number | null;
-    amount_due?: number | null;
     status?: string | null;
     due_date?: string | null;
     property_id?: string | null;
@@ -200,6 +201,7 @@ export async function getPropertiesPortfolio(userId: string): Promise<PropertyPo
     status?: string | null;
     start_date?: string | null;
     created_at?: string | null;
+    tenants?: { full_name?: string | null } | { full_name?: string | null }[] | null;
   }>;
 
   const maintenance = (maintRows ?? []) as Array<{
@@ -262,6 +264,12 @@ export async function getPropertiesPortfolio(userId: string): Promise<PropertyPo
         new Date(a.start_date ?? a.created_at ?? 0).getTime(),
     )[0];
 
+    const currentTenantName = primaryTenancy
+      ? (Array.isArray(primaryTenancy.tenants)
+          ? primaryTenancy.tenants[0]?.full_name
+          : primaryTenancy.tenants?.full_name) ?? "Unnamed Tenant"
+      : null;
+
     let lastActionTitle = "Property profile";
     let lastActionAt: string | null = p.createdAt ?? null;
 
@@ -288,6 +296,7 @@ export async function getPropertiesPortfolio(userId: string): Promise<PropertyPo
       lettableUnitCount,
       openMaintenanceCount,
       rentOverdueGbp,
+      currentTenantName,
     };
   });
 }

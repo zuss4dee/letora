@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -17,7 +18,6 @@ import {
 import { ApprovalAuditSheetTrigger } from "@/components/agents/approval-audit-sheet";
 import { MVP_TERMS } from "@/components/dashboard/workspace-terminology";
 import type { AgentApprovalRow } from "@/lib/approvals/types";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -32,6 +32,7 @@ export function ApprovalsPendingInteractive({
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(approvals[0]?.id ?? null);
+  
   const selectedApproval = useMemo(
     () => approvals.find((approval) => approval.id === selectedId) ?? approvals[0] ?? null,
     [approvals, selectedId],
@@ -52,14 +53,14 @@ export function ApprovalsPendingInteractive({
       setBusyId(id);
       try {
         const r = await approveAgentApproval(id);
-        if (r.ok) {
-          toast.success("Approved", {
-            description: "The requested action has been applied.",
-          });
-          router.refresh();
-        } else {
+        if (!r.ok) {
           toast.error("Approval did not complete", { description: r.error });
+          return;
         }
+        toast.success("Approved and executed", {
+          description: `${formatApprovalActionType(r.actionType)} — operational data will refresh.`,
+        });
+        router.refresh();
       } catch (e) {
         toast.error("Something went wrong", {
           description: e instanceof Error ? e.message : "Please try again.",
@@ -76,14 +77,14 @@ export function ApprovalsPendingInteractive({
       setBusyId(id);
       try {
         const r = await denyAgentApproval(id);
-        if (r.ok) {
-          toast.success("Denied", {
-            description: "This request was dismissed without running the action.",
-          });
-          router.refresh();
-        } else {
+        if (!r.ok) {
           toast.error("Could not deny", { description: r.error });
+          return;
         }
+        toast.success("Denied", {
+          description: "This request was dismissed without running the action.",
+        });
+        router.refresh();
       } catch (e) {
         toast.error("Something went wrong", {
           description: e instanceof Error ? e.message : "Please try again.",
@@ -96,159 +97,190 @@ export function ApprovalsPendingInteractive({
   );
 
   return (
-    <section className="grid gap-0 overflow-hidden border border-white/[0.1] bg-[#0f0f0f] lg:grid-cols-[minmax(0,1fr)_360px]">
-      <div className="min-w-0 overflow-hidden border-b border-white/[0.08] lg:border-b-0 lg:border-r lg:border-white/[0.08]">
-        <div className="hidden border-b border-white/[0.08] bg-[#121212] px-3 py-2 lg:grid lg:grid-cols-[1.6fr_0.8fr_0.7fr_0.8fr] lg:gap-3">
-          <p className="font-[family-name:var(--font-inter)] text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-            Case context
-          </p>
-          <p className="font-[family-name:var(--font-inter)] text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-            Agent
-          </p>
-          <p className="font-[family-name:var(--font-inter)] text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-            Urgency
-          </p>
-          <p className="font-[family-name:var(--font-inter)] text-right text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-            Age
-          </p>
+    <div className="flex min-h-[600px] flex-1 border border-[#232323] bg-[#0e0e0e]">
+      {/* Queue List */}
+      <div className="flex min-w-0 flex-1 flex-col border-r border-[#232323]">
+        <div className="sticky top-0 z-10 grid grid-cols-12 border-b border-[#232323] bg-[#111111] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
+          <div className="col-span-5">Case / Context</div>
+          <div className="col-span-3">Action Type</div>
+          <div className="col-span-2">Agent</div>
+          <div className="col-span-2 text-right">Age</div>
         </div>
-        <ul className="divide-y divide-white/[0.06]">
+        <div className="min-h-0 flex-1 overflow-auto">
           {approvals.map((approval) => {
-            const targetLine = formatApprovalTargetLine(approval.target_type, approval.target_id);
-            const stale = emphasizeQueueAge && isApprovalPendingStale(approval.created_at);
-            const selected = approval.id === selectedApproval?.id;
-            const ageLabel = emphasizeQueueAge
-              ? formatApprovalShortRelativeAge(approval.created_at)
-              : formatApprovalRelativeTime(approval.created_at);
+            const isSelected = selectedApproval?.id === approval.id;
+            const isStale = isApprovalPendingStale(approval.created_at);
+            const actionTypeLabel = formatApprovalActionType(approval.action_type);
+            const ageLabel = formatApprovalShortRelativeAge(approval.created_at);
+            
             return (
-              <li key={approval.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(approval.id)}
-                  className={cn(
-                    "w-full p-3 text-left transition-colors lg:grid lg:grid-cols-[1.6fr_0.8fr_0.7fr_0.8fr] lg:items-center lg:gap-3",
-                    selected ? "bg-white/[0.05]" : "bg-transparent hover:bg-white/[0.02]",
-                  )}
-                  aria-current={selected ? "true" : undefined}
-                >
+              <button
+                key={approval.id}
+                onClick={() => setSelectedId(approval.id)}
+                className={cn(
+                  "grid w-full grid-cols-12 items-center px-3 py-3 text-left transition-colors hover:bg-[#1b1b1b]",
+                  isSelected ? "bg-[#1a1a1a]" : "bg-transparent border-b border-[#232323]/50"
+                )}
+              >
+                <div className="col-span-5 flex items-center gap-3 pr-4">
+                  <div className={cn(
+                    "size-1.5 shrink-0 rounded-full",
+                    isStale ? "bg-rose-400" : isSelected ? "bg-white" : "bg-zinc-700"
+                  )} />
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={cn("size-1.5 shrink-0", stale ? "bg-rose-300" : selected ? "bg-zinc-100" : "bg-zinc-600")}
-                        aria-hidden
-                      />
-                      <p className="truncate font-[family-name:var(--font-inter)] text-[0.78rem] font-medium text-zinc-100">
-                        {approval.title}
-                      </p>
-                    </div>
-                    <p className="mt-1 truncate font-[family-name:var(--font-inter)] text-[0.67rem] text-zinc-500">
-                      {approval.summary ?? targetLine ?? "No context summary provided."}
+                    <p className="truncate text-[12px] font-semibold text-white">
+                      {approval.title}
+                    </p>
+                    <p className="truncate text-[10px] text-zinc-500 uppercase tracking-tight">
+                      {formatApprovalTargetLine(approval.target_type, approval.target_id) ?? "System"}
                     </p>
                   </div>
-                  <p className="mt-2 font-[family-name:var(--font-inter)] text-[0.66rem] text-zinc-400 lg:mt-0">
-                    {formatApprovalAgentType(approval.agent_type)}
-                  </p>
-                  <div className="mt-2 lg:mt-0">
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "border px-2 py-0.5 font-[family-name:var(--font-inter)] text-[0.57rem] font-semibold uppercase tracking-[0.08em]",
-                        stale
-                          ? "border-rose-300/40 bg-rose-300/10 text-rose-200"
-                          : "border-white/[0.16] bg-white/[0.04] text-zinc-300",
-                      )}
-                    >
-                      {stale ? "Critical" : "Normal"}
-                    </Badge>
-                  </div>
-                  <p className="mt-2 font-[family-name:var(--font-inter)] text-[0.66rem] tabular-nums text-zinc-500 lg:mt-0 lg:text-right">
-                    {ageLabel}
-                  </p>
-                </button>
-              </li>
+                </div>
+                <div className="col-span-3">
+                  <span className={cn(
+                    "inline-block border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider",
+                    approval.action_type.includes("onboarding") && "border-blue-500/40 bg-blue-500/10 text-blue-400",
+                    approval.action_type.includes("rent_chase") && "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
+                    approval.action_type.includes("move_in") && "border-amber-500/40 bg-amber-500/10 text-amber-400",
+                    approval.action_type.includes("maintenance") && "border-purple-500/40 bg-purple-500/10 text-purple-400",
+                  )}>
+                    {actionTypeLabel}
+                  </span>
+                </div>
+                <div className="col-span-2 text-[11px] text-zinc-400">
+                  {formatApprovalAgentType(approval.agent_type)}
+                </div>
+                <div className="col-span-2 text-right text-[11px] font-medium tabular-nums text-zinc-500">
+                  {ageLabel}
+                </div>
+              </button>
             );
           })}
-        </ul>
+        </div>
       </div>
-      <aside className="flex min-h-[22rem] flex-col bg-[#111111]">
+
+      {/* Decision Inspector */}
+      <aside className="flex w-[420px] shrink-0 flex-col bg-[#111111]">
         {selectedApproval ? (
           <>
-            <div className="border-b border-white/[0.08] px-4 py-4">
-              <p className="font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                Decision panel
-              </p>
-              <h3 className="mt-2 font-[family-name:var(--font-inter)] text-base font-medium leading-tight text-zinc-100">
+            <div className="shrink-0 border-b border-[#232323] p-6">
+              <p className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Decision Inspector</p>
+              <h2 className="text-xl font-bold leading-tight text-white mb-6">
                 {selectedApproval.title}
-              </h3>
+              </h2>
+              
+              {/* Proposed Action Summary Block */}
+              <div className="border border-[#2f2f2f] bg-[#161616] p-4">
+                <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Proposed Action</p>
+                <p className="text-[13px] font-medium text-white leading-relaxed">
+                  {selectedApproval.summary ?? "Execution of the requested operational task."}
+                </p>
+              </div>
             </div>
-            <div className="flex-1 space-y-4 overflow-y-auto px-4 py-4">
+
+            <div className="min-h-0 flex-1 space-y-8 overflow-y-auto p-6">
+              {/* Draft Preview / Payload Details */}
+              {!!(selectedApproval.payload.emailBody || selectedApproval.payload.emailSubject) && (
+                <section>
+                  <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Communication Draft</h3>
+                  <div className="border border-[#232323] bg-[#0B0B0B] p-4 font-mono text-[11px]">
+                    <div className="mb-3 border-b border-[#232323] pb-3">
+                      <span className="text-zinc-600 uppercase mr-2">Subject:</span>
+                      <span className="text-zinc-300">{(selectedApproval.payload.emailSubject as string) ?? "—"}</span>
+                    </div>
+                    <div className="whitespace-pre-wrap leading-relaxed text-zinc-400">
+                      {(selectedApproval.payload.emailBody as string) ?? "No message body drafted."}
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* Maintenance Context */}
+              {selectedApproval.action_type === "approve_maintenance_dispatch" && (
+                <section>
+                  <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Maintenance Context</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Category</p>
+                      <p className="text-[11px] font-medium text-white">{(selectedApproval.payload.category as string) ?? "—"}</p>
+                    </div>
+                    <div>
+                      <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Priority</p>
+                      <p className="text-[11px] font-medium text-white">{(selectedApproval.payload.priority as string) ?? "—"}</p>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* Linked Entities */}
               <section>
-                <p className="font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                  Reasoning
-                </p>
-                <p className="mt-2 font-[family-name:var(--font-inter)] text-[0.75rem] leading-relaxed text-zinc-300">
-                  {selectedApproval.summary ?? "No summary provided. Open audit context for full payload details."}
-                </p>
-              </section>
-              <section className="space-y-2">
-                <p className="font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-zinc-500">
-                  Context
-                </p>
-                <div className="space-y-1.5">
-                  <p className="font-[family-name:var(--font-inter)] text-[0.68rem] text-zinc-400">
-                    Action: {formatApprovalActionType(selectedApproval.action_type)}
-                  </p>
-                  <p className="font-[family-name:var(--font-inter)] text-[0.68rem] text-zinc-400">
-                    Agent: {formatApprovalAgentType(selectedApproval.agent_type)}
-                  </p>
-                  <p className="font-[family-name:var(--font-inter)] text-[0.68rem] text-zinc-400">
-                    Created: {formatApprovalAbsoluteTime(selectedApproval.created_at)}
-                  </p>
-                  {formatApprovalTargetLine(selectedApproval.target_type, selectedApproval.target_id) ? (
-                    <p className="font-[family-name:var(--font-inter)] text-[0.68rem] text-zinc-400">
-                      Target: {formatApprovalTargetLine(selectedApproval.target_type, selectedApproval.target_id)}
-                    </p>
-                  ) : null}
+                <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Associated Context</h3>
+                <div className="space-y-2">
+                  {!!selectedApproval.payload.tenantId && (
+                    <Link
+                      href={`/dashboard/tenants/${selectedApproval.payload.tenantId as string}`}
+                      className="flex items-center justify-between border border-[#232323] px-3 py-2 text-[11px] text-zinc-400 hover:bg-[#1b1b1b] transition-colors"
+                    >
+                      <span>Tenant Record</span>
+                      <span className="text-white font-bold">VIEW</span>
+                    </Link>
+                  )}
+                  {!!selectedApproval.payload.propertyId && (
+                    <Link
+                      href={`/dashboard/properties/${selectedApproval.payload.propertyId as string}`}
+                      className="flex items-center justify-between border border-[#232323] px-3 py-2 text-[11px] text-zinc-400 hover:bg-[#1b1b1b] transition-colors"
+                    >
+                      <span>Property Record</span>
+                      <span className="text-white font-bold">VIEW</span>
+                    </Link>
+                  )}
                 </div>
               </section>
-              {emphasizeQueueAge && isApprovalPendingStale(selectedApproval.created_at) ? (
-                <section className="border border-rose-300/20 bg-rose-300/5 p-2.5">
-                  <p className="font-[family-name:var(--font-inter)] text-[0.62rem] font-semibold uppercase tracking-[0.1em] text-rose-200">
-                    {MVP_TERMS.aging}
-                  </p>
-                  <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.68rem] text-rose-100/90">
-                    This approval has been waiting for over 48 hours and should be triaged first.
-                  </p>
-                </section>
-              ) : null}
+
+              {/* Audit / Reasoning */}
+              <section>
+                <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Agent Rationale</h3>
+                <p className="text-[11px] leading-relaxed text-zinc-400">
+                  {selectedApproval.evidence.rationale as string ?? "This action was surfaced based on predefined operational rules for " + selectedApproval.agent_type + "."}
+                </p>
+              </section>
             </div>
-            <div className="space-y-2 border-t border-white/[0.08] px-4 py-4">
-              <Button
-                type="button"
-                disabled={busyId === selectedApproval.id}
-                className="h-9 w-full border-none bg-emerald-500 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.12em] text-white hover:bg-emerald-600"
-                onClick={() => void runApprove(selectedApproval.id)}
-              >
-                {busyId === selectedApproval.id ? "…" : "Approve action"}
-              </Button>
-              <div className="grid grid-cols-2 gap-2">
+
+            {/* Decision Actions */}
+            <div className="shrink-0 border-t border-[#232323] bg-[#0B0B0B] p-6">
+              <div className="grid grid-cols-1 gap-2">
                 <Button
                   type="button"
                   disabled={busyId === selectedApproval.id}
-                  className="h-8 w-full border-none bg-red-600 font-[family-name:var(--font-inter)] text-[0.6rem] font-semibold uppercase tracking-[0.1em] text-white hover:bg-red-700"
-                  onClick={() => void runDeny(selectedApproval.id)}
+                  className="bg-emerald-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-white hover:bg-emerald-700 transition-colors"
+                  onClick={() => void runApprove(selectedApproval.id)}
                 >
-                  {busyId === selectedApproval.id ? "…" : "Deny"}
+                  {busyId === selectedApproval.id ? "Processing..." : "Approve & Execute Action"}
                 </Button>
-                <ApprovalAuditSheetTrigger
-                  approval={selectedApproval}
-                  className="h-8 border-white/[0.16] bg-transparent font-[family-name:var(--font-inter)] text-[0.6rem] uppercase tracking-[0.1em] text-zinc-300 hover:bg-white/[0.04] hover:text-zinc-100"
-                />
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    disabled={busyId === selectedApproval.id}
+                    variant="outline"
+                    className="border-[#333333] bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white hover:bg-rose-900/20 hover:text-rose-400 hover:border-rose-900/50 transition-colors"
+                    onClick={() => void runDeny(selectedApproval.id)}
+                  >
+                    Reject
+                  </Button>
+                  <ApprovalAuditSheetTrigger
+                    approval={selectedApproval}
+                    className="border-[#333333] bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400 hover:bg-zinc-900 transition-colors"
+                  />
+                </div>
               </div>
             </div>
           </>
-        ) : null}
+        ) : (
+          <div className="flex flex-1 items-center justify-center p-6 text-center">
+            <p className="text-[11px] text-zinc-500 uppercase tracking-widest">Select a case to inspect</p>
+          </div>
+        )}
       </aside>
-    </section>
+    </div>
   );
 }

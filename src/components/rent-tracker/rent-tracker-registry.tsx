@@ -1,18 +1,19 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Download, Search, X } from "lucide-react";
+import { Download, Search, X } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
+import type { AgentApprovalRow } from "@/lib/approvals/types";
 import {
   deleteRentPayment,
-  markRentOverdue,
   markRentPaid,
   type RentPaymentListRow,
 } from "@/lib/actions/rent-tracker";
 import type { RentTrackerSummaryStats } from "@/lib/rent-tracker-stats";
-import type { TenancyRow } from "@/lib/actions/tenancies";
 import { cn } from "@/lib/utils";
 
 const gbp = new Intl.NumberFormat("en-GB", {
@@ -52,46 +53,46 @@ function getDisplayStatus(
   if (st === "partial") return "partial";
   if (st === "overdue") return "overdue";
   if (st === "pending" && p.due_date && p.due_date < todayIso) return "overdue";
-  
+
   if (p.due_date) {
     const daysUntilDue = -1 * (calculateDaysLate(p.due_date, todayIso) ?? 0);
     if (daysUntilDue >= 0 && daysUntilDue <= 3) return "due_soon";
   }
-  
+
   return "pending";
 }
 
 function StatusPill({ status }: { status: ReturnType<typeof getDisplayStatus> }) {
   if (status === "overdue") {
     return (
-      <span className="bg-[#93000a] text-white px-1.5 py-0.5 text-[9px] font-bold tracking-wider">
+      <span className="bg-[#93000a] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white">
         OVERDUE
       </span>
     );
   }
   if (status === "partial") {
     return (
-      <span className="bg-[#464747] text-[#b5b5b5] px-1.5 py-0.5 text-[9px] font-bold tracking-wider">
+      <span className="bg-[#464747] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#b5b5b5]">
         PARTIAL
       </span>
     );
   }
   if (status === "due_soon") {
     return (
-      <span className="bg-[#161616] border border-[#282828] text-[#888888] px-1.5 py-0.5 text-[9px] font-bold tracking-wider">
+      <span className="border border-[#282828] bg-[#161616] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#888888]">
         DUE SOON
       </span>
     );
   }
   if (status === "paid") {
     return (
-      <span className="bg-[#152420] border border-[#21473c] text-[#9ad7c3] px-1.5 py-0.5 text-[9px] font-bold tracking-wider">
+      <span className="border border-[#21473c] bg-[#152420] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#9ad7c3]">
         PAID
       </span>
     );
   }
   return (
-    <span className="bg-[#161616] border border-[#282828] text-[#888888] px-1.5 py-0.5 text-[9px] font-bold tracking-wider">
+    <span className="border border-[#282828] bg-[#161616] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#888888]">
       PENDING
     </span>
   );
@@ -122,21 +123,58 @@ function downloadReportCsv(rows: RentPaymentListRow[], todayIso: string) {
   URL.revokeObjectURL(url);
 }
 
+function getAgentState(row: RentPaymentListRow, pendingApprovals: AgentApprovalRow[]) {
+  const approval = pendingApprovals.find((a) => a.target_id === row.id);
+  if (approval)
+    return { label: "DRAFT READY", tone: "emerald" as const, approvalId: approval.id, approval };
+  if (row.status === "paid") return { label: "SETTLED", tone: "zinc" as const };
+  return { label: "PENDING", tone: "zinc" as const };
+}
+
 export function RentTrackerRegistry({
   payments,
   stats,
-  tenancies,
   todayIso,
+  pendingApprovals,
+  focusPaymentId,
 }: {
   payments: RentPaymentListRow[];
   stats: RentTrackerSummaryStats;
-  tenancies: TenancyRow[];
   todayIso: string;
+  pendingApprovals: AgentApprovalRow[];
+  focusPaymentId?: string;
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(payments[0]?.id ?? null);
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    const focused = focusPaymentId?.trim();
+
+    if (payments.length === 0) {
+      setSelectedId(null);
+      return;
+    }
+
+    if (focused && payments.some((p) => p.id === focused)) {
+      setQuery("");
+      setSelectedId(focused);
+      return;
+    }
+
+    setSelectedId((current) =>
+      current != null && payments.some((p) => p.id === current) ? current : (payments[0]?.id ?? null),
+    );
+  }, [payments, focusPaymentId]);
+
+  useLayoutEffect(() => {
+    const id = focusPaymentId?.trim();
+    if (!id || selectedId !== id) return;
+    const safe = typeof CSS !== "undefined" && typeof CSS.escape === "function" ? CSS.escape(id) : id;
+    const el = document.querySelector(`[data-payment-row="${safe}"]`);
+    el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [focusPaymentId, selectedId, payments]);
 
   async function run(id: string, fn: () => Promise<void>) {
     setBusyId(id);
@@ -175,300 +213,385 @@ export function RentTrackerRegistry({
       });
   }, [payments, selectedRow]);
 
-  const overdueTotal = stats.arrearsAmount;
-  const dueSoonTotal = stats.forecastNext30Days;
-  const pendingApprovalsCount = 0; // Mocked for now
+  if (payments.length === 0) {
+    return (
+      <div className="flex min-h-[22rem] flex-col border border-[#333333] bg-[#161616]">
+        <header className="flex items-center gap-2 border-b border-[#282828] px-5 py-4 md:px-6">
+          <span className="size-1.5 shrink-0 bg-zinc-500" aria-hidden />
+          <h1 className="text-xs font-bold uppercase tracking-widest text-white">Rent operations</h1>
+        </header>
+        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-16 text-center">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-600">0 rent cases</p>
+          <p className="max-w-sm text-[13px] leading-relaxed text-zinc-400">
+            There are no rent payments to triage yet. Add a tenancy payment schedule or seed demo data to
+            use this workspace.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col lg:flex-row bg-[#0B0B0B] w-full font-[family-name:var(--font-inter)] text-[#e5e2e1] overflow-hidden antialiased">
-      {/* LEFT WORKSPACE: SUMMARY + TABLE */}
-      <section className="flex-1 flex flex-col min-h-0 border-r border-[#282828]">
-        {/* TOP BAR: Search & Report */}
-        <div className="flex items-center justify-between border-b border-[#282828] bg-[#161616] p-2 sm:px-4">
-          <div className="relative w-full max-w-sm">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 text-[#888888] size-3.5" />
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden border border-[#333333] bg-[#161616]">
+      <header className="flex shrink-0 flex-col gap-3 border-b border-[#282828] bg-[#161616] px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
+        <div className="flex items-start gap-3">
+          <span className="mt-1 size-1.5 shrink-0 bg-[#afefdd]" aria-hidden />
+          <div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">Rent tracker</p>
+            <h1 className="text-sm font-bold uppercase tracking-widest text-white">Rent operations</h1>
+            <p className="mt-1 text-[11px] text-zinc-500">
+              Arrears triage and collection workflow
+              {pendingApprovals.length > 0 ? (
+                <span className="ml-2 font-mono text-[10px] uppercase tracking-wider text-emerald-400/90">
+                  · {pendingApprovals.length} chase draft{pendingApprovals.length === 1 ? "" : "s"} ready
+                </span>
+              ) : null}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          <div className="relative min-w-[12rem] flex-1 md:w-64 md:flex-none">
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />
             <input
-              type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="SEARCH TENANTS, PROPERTIES, OR ARREARS..."
-              className="bg-[#0B0B0B] border border-[#333333] text-[10px] w-full pl-8 py-1.5 focus:border-white focus:outline-none placeholder-[#444748] uppercase transition-colors"
+              className="h-8 w-full border border-[#333333] bg-[#0B0B0B] pl-8 pr-3 text-[11px] text-zinc-200 placeholder-zinc-600 transition-colors focus:border-zinc-600 focus:outline-none"
+              placeholder="Search tenants, properties…"
             />
           </div>
           <button
             type="button"
             onClick={() => downloadReportCsv(filtered, todayIso)}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1 text-[10px] uppercase tracking-wider font-bold text-[#888888] hover:text-white border border-transparent hover:border-[#333333] transition-colors bg-[#1A1A1A]"
+            className="flex h-8 items-center gap-1.5 border border-[#333333] bg-[#0B0B0B] px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-400 transition-colors hover:border-zinc-600 hover:text-white"
           >
             <Download className="size-3.5" />
             Report
           </button>
         </div>
+      </header>
 
-        {/* COMPACT SUMMARY ROW */}
-        <div className="flex border-b border-[#282828] bg-[#161616] shrink-0 divide-x divide-[#282828]">
-          <div className="flex-1 p-3 sm:px-4">
-            <div className="text-[10px] text-[#888888] uppercase tracking-tighter mb-1 font-medium">Overdue Total</div>
-            <div className="text-lg font-mono font-semibold text-white tracking-tight">{gbp.format(overdueTotal)}</div>
-            <div className="text-[9px] text-[#ee8a85] flex items-center gap-1 mt-0.5 font-medium">
-              <span className="material-symbols-outlined text-[10px] leading-none">trending_up</span>
-              +4.2% VS LW
-            </div>
-          </div>
-          <div className="flex-1 p-3 sm:px-4">
-            <div className="text-[10px] text-[#888888] uppercase tracking-tighter mb-1 font-medium">Due Soon</div>
-            <div className="text-lg font-mono font-semibold text-white tracking-tight">{gbp.format(dueSoonTotal)}</div>
-            <div className="text-[9px] text-[#888888] mt-0.5 font-medium uppercase tracking-wider">Next 30 Days</div>
-          </div>
-          <div className="flex-1 p-3 sm:px-4 hidden sm:block">
-            <div className="text-[10px] text-[#888888] uppercase tracking-tighter mb-1 font-medium">Pending Approvals</div>
-            <div className="text-lg font-mono font-semibold text-white tracking-tight">{pendingApprovalsCount}</div>
-            <div className="text-[9px] text-[#e2e2e2] mt-0.5 font-medium uppercase tracking-wider">
-              {pendingApprovalsCount > 0 ? "ACTION REQUIRED" : "ALL CLEAR"}
-            </div>
-          </div>
-        </div>
-
-        {/* TABLE OPERATIONS */}
-        <div className="flex-1 overflow-auto bg-[#1A1A1A]">
-          <table className="w-full text-left border-collapse min-w-[700px]">
-            <thead className="sticky top-0 bg-[#161616] z-10 border-b border-[#282828]">
-              <tr className="text-[10px] text-[#888888] uppercase tracking-wider font-medium">
-                <th className="px-4 py-2.5 font-medium">Tenant</th>
-                <th className="px-4 py-2.5 font-medium">Property</th>
-                <th className="px-4 py-2.5 font-medium text-right">Amount Due</th>
-                <th className="px-4 py-2.5 font-medium">Due Date</th>
-                <th className="px-4 py-2.5 font-medium">Status</th>
-                <th className="px-4 py-2.5 font-medium text-center">Days</th>
-                <th className="px-4 py-2.5 font-medium"></th>
-              </tr>
-            </thead>
-            <tbody className="text-[12px] text-[#c4c7c8]">
-              {filtered.map((p) => {
-                const isSelected = selectedId === p.id;
-                const status = getDisplayStatus(p, todayIso);
-                const daysLate = calculateDaysLate(p.due_date, todayIso);
-
-                return (
-                  <tr
-                    key={p.id}
-                    onClick={() => setSelectedId(p.id)}
-                    className={cn(
-                      "border-b border-[#282828] cursor-pointer transition-colors",
-                      isSelected ? "bg-[#242424]" : "hover:bg-[#202020]",
-                    )}
-                  >
-                    <td className="px-4 py-2.5 font-medium text-white">{p.tenantName || "—"}</td>
-                    <td className="px-4 py-2.5 text-[#888888] max-w-[200px] truncate" title={p.propertyAddress || ""}>
-                      {p.propertyAddress || "—"}
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-mono text-[11px]">{gbp.format(p.amount)}</td>
-                    <td className="px-4 py-2.5 font-mono text-[11px]">{formatDisplayDate(p.due_date)}</td>
-                    <td className="px-4 py-2.5">
-                      <StatusPill status={status} />
-                    </td>
-                    <td className="px-4 py-2.5 text-center font-mono text-[11px]">
-                      {status === "overdue" && daysLate ? (
-                        <span className="text-[#ee8a85] font-semibold">{daysLate}</span>
-                      ) : (
-                        <span className="text-[#888888]">-</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <ChevronRight
-                        className={cn("inline-block size-4", isSelected ? "text-white" : "text-[#333333]")}
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-[11px] text-[#888888]">
-                    No payments match your search.
-                  </td>
-                </tr>
+      <div className="grid shrink-0 grid-cols-2 gap-px border-b border-[#282828] bg-[#282828] sm:grid-cols-3 lg:grid-cols-5">
+        {[
+          {
+            label: "Expected (Mo)",
+            value: gbp.format(stats.expectedThisMonth),
+            body: "Active rent roll",
+          },
+          {
+            label: "Collected (Mo)",
+            value: gbp.format(stats.receivedThisMonth),
+            tone: "emerald" as const,
+            body: "Cash by paid date",
+          },
+          {
+            label: "Outstanding (Mo)",
+            value: gbp.format(stats.outstandingThisMonth),
+            tone: stats.outstandingThisMonth > 0 ? ("amber" as const) : undefined,
+            body: "Unpaid · due this month",
+          },
+          {
+            label: "Arrears",
+            value: gbp.format(stats.arrearsAmount),
+            tone: "rose" as const,
+            body: "Past-due balance",
+          },
+          {
+            label: "Next unpaid (30d)",
+            value: gbp.format(stats.nextUnpaidPipeline30d),
+            body: "Due in horizon",
+          },
+        ].map((stat) => (
+          <div key={stat.label} className="flex flex-col bg-[#0B0B0B] p-4">
+            <span className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500">{stat.label}</span>
+            <span
+              className={cn(
+                "text-lg font-bold tabular-nums tracking-tight",
+                stat.tone === "rose" && stats.arrearsAmount > 0
+                  ? "text-[#ffb4ab]"
+                  : stat.tone === "emerald"
+                    ? "text-[#afefdd]"
+                    : stat.tone === "amber"
+                      ? "text-amber-400"
+                    : "text-white",
               )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+            >
+              {stat.value}
+            </span>
+            {stat.body ? (
+              <span className="mt-1 text-[8px] font-mono uppercase tracking-wider text-zinc-600">{stat.body}</span>
+            ) : null}
+          </div>
+        ))}
+      </div>
 
-      {/* RIGHT DETAIL PANEL */}
-      {selectedRow && (
-        <section className="w-full lg:w-[360px] flex flex-col bg-[#161616] shrink-0 overflow-y-auto">
-          {/* PANEL HEADER */}
-            <div className="p-4 border-b border-[#282828] shrink-0">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <div className="text-[10px] text-[#888888] uppercase tracking-widest font-semibold mb-1">
-                    Selected Tenant
+      <div className="flex min-h-0 flex-1 overflow-hidden bg-[#0B0B0B]">
+        <section
+          className={cn(
+            "flex min-h-0 min-w-0 flex-1 flex-col border-[#282828] bg-[#161616]",
+            selectedRow ? "border-r" : "",
+          )}
+        >
+          <div className="sticky top-0 z-10 grid grid-cols-12 gap-2 border-b border-[#282828] bg-[#161616] px-5 py-2.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500 md:gap-4 md:px-6">
+            <div className="col-span-5">Tenant · property</div>
+            <div className="col-span-2 text-right">Rent due</div>
+            <div className="col-span-3 text-center">Status</div>
+            <div className="col-span-2 text-right">Agent</div>
+          </div>
+
+          <div className="min-h-0 flex-1 divide-y divide-[#282828] overflow-y-auto">
+            {filtered.map((p) => {
+              const isSelected = selectedId === p.id;
+              const status = getDisplayStatus(p, todayIso);
+              const daysLate = calculateDaysLate(p.due_date, todayIso);
+              const agentState = getAgentState(p, pendingApprovals);
+
+              return (
+                <div
+                  key={p.id}
+                  role="button"
+                  tabIndex={0}
+                  data-payment-row={p.id}
+                  onClick={() => setSelectedId(p.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedId(p.id);
+                    }
+                  }}
+                  className={cn(
+                    "grid cursor-pointer grid-cols-12 items-center gap-2 px-5 py-4 transition-colors hover:bg-[#1c1c1c] md:gap-4 md:px-6",
+                    isSelected ? "bg-[#141414] shadow-[inset_3px_0_0_0_#afefdd]" : "bg-transparent",
+                  )}
+                >
+                  <div className="col-span-5 min-w-0">
+                    <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                      <span className="text-[12px] font-semibold text-zinc-100">{p.tenantName}</span>
+                      <span className="truncate text-[10px] text-zinc-500">· {p.propertyAddress}</span>
+                    </div>
+                    {status === "overdue" && daysLate ? (
+                      <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[#ffb4ab]">
+                        {daysLate} days overdue
+                      </div>
+                    ) : null}
                   </div>
-                  <h2 className="text-lg font-bold text-white tracking-tight leading-none">
-                    {selectedRow.tenantName || "Unknown Tenant"}
-                  </h2>
-                  <div className="text-[11px] text-[#888888] font-mono mt-1">
-                    TEN-ID: {selectedRow.tenancyId?.slice(0, 8).toUpperCase() || "N/A"}
+                  <div className="col-span-2 text-right">
+                    <div className="font-mono text-[11px] font-bold tabular-nums text-zinc-100">
+                      {gbp.format(p.amount)}
+                    </div>
+                    <div className="text-[9px] uppercase tracking-tighter text-zinc-500">
+                      Due {formatDisplayDate(p.due_date)}
+                    </div>
+                  </div>
+                  <div className="col-span-3 flex justify-center">
+                    <StatusPill status={status} />
+                  </div>
+                  <div className="col-span-2 text-right">
+                    <span
+                      className={cn(
+                        "inline-block border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider",
+                        agentState.tone === "emerald"
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                          : "border-[#333333] text-zinc-500",
+                      )}
+                    >
+                      {agentState.label}
+                    </span>
                   </div>
                 </div>
+              );
+            })}
+
+            {filtered.length === 0 ? (
+              <div className="px-6 py-16 text-center">
+                <p className="font-mono text-[10px] uppercase tracking-[0.16em] text-zinc-600">
+                  No rent cases match this search
+                </p>
                 <button
-                  onClick={() => setSelectedId(null)}
-                  className="text-[#888888] hover:text-white transition-colors"
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className="mt-4 text-[11px] font-semibold text-[#afefdd] underline-offset-4 hover:underline"
                 >
-                  <X className="size-4" />
+                  Clear search
                 </button>
               </div>
+            ) : null}
+          </div>
+        </section>
 
-              <div className="bg-[#0B0B0B] border border-[#282828] p-3 mb-4">
-                <div className="text-[10px] text-[#888888] uppercase tracking-tighter mb-1 font-medium">
-                  Current Amount Due
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-mono font-bold text-white tracking-tight">
-                    {gbp.format(selectedRow.amount)}
-                  </span>
-                  {getDisplayStatus(selectedRow, todayIso) === "overdue" && (
-                    <span className="text-[#ee8a85] text-[11px] font-medium font-mono tracking-wider">
-                      {calculateDaysLate(selectedRow.due_date, todayIso)} DAYS LATE
-                    </span>
-                  )}
-                </div>
+        {selectedRow ? (
+          <aside className="flex h-full w-full max-w-[22rem] shrink-0 flex-col overflow-hidden border-l border-[#282828] bg-[#161616] md:w-80">
+            <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[#282828] px-5 py-5 md:px-6">
+              <div>
+                <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Case detail</p>
+                <h2 className="text-base font-bold uppercase tracking-tight text-white">Rent case</h2>
               </div>
+              <button
+                type="button"
+                className="rounded border border-transparent p-1 text-zinc-500 transition-colors hover:border-[#333333] hover:text-white"
+                aria-label="Close detail"
+                onClick={() => setSelectedId(null)}
+              >
+                <X className="size-4" />
+              </button>
+            </header>
 
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px]">
-                  <span className="text-[#888888]">Chase Status:</span>
-                  <span className="text-white font-medium">—</span>
+            <div className="min-h-0 flex-1 space-y-8 overflow-y-auto px-5 py-6 md:px-6">
+              <section>
+                <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Context</h3>
+                <div className="space-y-4">
+                  <div>
+                    <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Tenant</p>
+                    <p className="text-[12px] font-semibold text-white">{selectedRow.tenantName}</p>
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Property</p>
+                    <p className="text-[11px] text-zinc-300">{selectedRow.propertyAddress}</p>
+                  </div>
                 </div>
-                <div className="flex justify-between text-[11px]">
-                  <span className="text-[#888888]">Last Action:</span>
-                  <span className="text-white font-medium">—</span>
+              </section>
+
+              <section>
+                <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  Payment
+                </h3>
+                <div className="border border-[#333333] bg-[#0B0B0B] p-4">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <div>
+                      <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Due</p>
+                      <p className="font-mono text-xl font-bold text-white">{gbp.format(selectedRow.amount)}</p>
+                    </div>
+                    {getDisplayStatus(selectedRow, todayIso) === "overdue" ? (
+                      <div className="text-right">
+                        <p className="mb-1 text-[9px] uppercase tracking-wider text-rose-500/60">Days late</p>
+                        <p className="font-mono text-lg font-bold text-[#ffb4ab]">
+                          {calculateDaysLate(selectedRow.due_date, todayIso)}
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            </div>
+              </section>
 
-            {/* RELATED APPROVALS */}
-            <div className="p-4 border-b border-[#282828] shrink-0">
-              <div className="text-[10px] text-[#888888] uppercase tracking-widest font-bold mb-3 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[14px]">fact_check</span>
-                Related Approvals
-              </div>
-              <div className="text-[11px] text-[#888888] italic px-2">No pending approvals.</div>
-            </div>
+              {getAgentState(selectedRow, pendingApprovals).label === "DRAFT READY" ? (
+                <section>
+                  <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                    Rent chase draft
+                  </h3>
+                  <div className="border border-emerald-900/30 bg-emerald-900/10 p-4 font-mono text-[11px]">
+                    <div className="mb-3 border-b border-emerald-900/20 pb-3">
+                      <span className="mr-2 text-[9px] uppercase text-emerald-500/60">Subject:</span>
+                      <span className="text-emerald-100">
+                        {(getAgentState(selectedRow, pendingApprovals).approval?.payload?.emailSubject as
+                          | string
+                          | undefined) ?? "—"}
+                      </span>
+                    </div>
+                    <div className="whitespace-pre-wrap leading-relaxed text-emerald-100/70">
+                      {(getAgentState(selectedRow, pendingApprovals).approval?.payload?.emailBody as
+                        | string
+                        | undefined) ?? "No message body drafted."}
+                    </div>
+                  </div>
+                </section>
+              ) : null}
 
-            {/* PAYMENT HISTORY */}
-            <div className="p-4 border-b border-[#282828] flex-1 min-h-0 overflow-y-auto">
-              <div className="text-[10px] text-[#888888] uppercase tracking-widest font-bold mb-3">
-                Payment History
-              </div>
-              <div className="space-y-3">
-                {historyRows.length === 0 ? (
-                  <div className="text-[11px] text-[#888888] italic px-2">No payment history available.</div>
-                ) : (
-                  historyRows.map((hr) => {
-                    const dStatus = getDisplayStatus(hr, todayIso);
+              <section>
+                <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">History</h3>
+                <div className="space-y-3">
+                  {historyRows.slice(0, 5).map((hr) => {
                     const isPaid = hr.status === "paid";
-                    const wasLate = hr.paid_date && hr.due_date && hr.paid_date > hr.due_date;
-
                     return (
                       <div
                         key={hr.id}
-                        className="flex justify-between items-center border-l border-[#282828] pl-3 py-1"
+                        className="flex items-center justify-between border-l border-[#282828] py-1 pl-4"
                       >
                         <div>
-                          <div className="text-[11px] font-semibold text-white font-mono">
-                            {gbp.format(hr.amount)}
-                          </div>
-                          <div className="text-[9px] text-[#888888] font-mono uppercase tracking-wider">
-                            {hr.due_date
-                              ? new Date(hr.due_date).toLocaleDateString("en-GB", {
-                                  month: "short",
-                                  year: "numeric",
-                                })
-                              : "N/A"}
-                          </div>
+                          <p className="text-[11px] font-bold text-white">{formatDisplayDate(hr.due_date)}</p>
+                          <p className="font-mono text-[10px] text-zinc-500">{gbp.format(hr.amount)}</p>
                         </div>
-                        {isPaid ? (
-                          <span
-                            className={cn(
-                              "text-[9px] font-bold tracking-wider",
-                              wasLate ? "text-yellow-500" : "text-green-500",
-                            )}
-                          >
-                            PAID {wasLate ? "(LATE)" : "(ON TIME)"}
-                          </span>
-                        ) : (
-                          <span className="text-[9px] text-[#888888] font-bold uppercase tracking-wider">
-                            {dStatus}
-                          </span>
-                        )}
+                        <span
+                          className={cn(
+                            "border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-widest",
+                            isPaid
+                              ? "border-emerald-500/30 bg-emerald-500/5 text-emerald-400"
+                              : "border-rose-500/30 bg-rose-500/5 text-rose-400",
+                          )}
+                        >
+                          {isPaid ? "Paid" : "Owed"}
+                        </span>
                       </div>
                     );
-                  })
-                )}
-              </div>
+                  })}
+                </div>
+              </section>
             </div>
 
-            {/* QUICK ACTIONS */}
-            <div className="p-4 bg-[#1A1A1A] grid grid-cols-2 gap-2 shrink-0">
-              <button
-                onClick={() => {
-                  if (selectedRow.tenantId) {
-                    router.push(`/dashboard/tenants/${selectedRow.tenantId}`);
-                  } else {
-                    toast.error("Tenant profile not found for this record.");
-                  }
-                }}
-                className="border border-[#333333] bg-[#0B0B0B] text-white py-1.5 font-bold text-[9px] tracking-wider uppercase hover:bg-[#242424] transition-colors"
-              >
-                Open Tenant
-              </button>
-              <button
-                onClick={() => {
-                  if (selectedRow.tenancyId) {
-                    router.push(`/dashboard/tenancies/${selectedRow.tenancyId}`);
-                  } else {
-                    toast.error("Tenancy record not found for this record.");
-                  }
-                }}
-                className="border border-[#333333] bg-[#0B0B0B] text-white py-1.5 font-bold text-[9px] tracking-wider uppercase hover:bg-[#242424] transition-colors"
-              >
-                Open Tenancy
-              </button>
-              <button
-                onClick={() => toast.info("Please use the Assistant Chat to draft a rent chase email.")}
-                className="border border-[#333333] bg-[#0B0B0B] text-white py-1.5 font-bold text-[9px] tracking-wider uppercase hover:bg-[#242424] transition-colors"
-              >
-                Draft Chase
-              </button>
-              <button
-                onClick={() => router.push("/dashboard/approvals")}
-                className="border border-[#333333] bg-[#0B0B0B] text-white py-1.5 font-bold text-[9px] tracking-wider uppercase hover:bg-[#242424] transition-colors"
-              >
-                Approvals
-              </button>
-              <div className="col-span-2">
-                {selectedRow.status !== "paid" ? (
-                  <button
-                    disabled={busyId === selectedRow.id}
-                    onClick={() => void run(selectedRow.id, () => markRentPaid(selectedRow.id, todayIso))}
-                    className="w-full border border-[#333333] bg-[#152420] text-[#9ad7c3] py-2 font-bold text-[10px] tracking-wider uppercase hover:bg-[#1a3028] transition-colors disabled:opacity-50"
+            <footer className="shrink-0 space-y-2 border-t border-[#282828] bg-[#0B0B0B] p-5 md:p-6">
+              {getAgentState(selectedRow, pendingApprovals).label === "DRAFT READY" ? (
+                <Button
+                  asChild
+                  className="w-full bg-emerald-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-white hover:bg-emerald-700"
+                >
+                  <Link
+                    href={`/dashboard/approvals?id=${getAgentState(selectedRow, pendingApprovals).approvalId}`}
                   >
-                    Mark Paid
-                  </button>
-                ) : (
-                  <button
-                    disabled={busyId === selectedRow.id}
-                    onClick={() => void run(selectedRow.id, () => deleteRentPayment(selectedRow.id))}
-                    className="w-full border border-[#333333] bg-[#271716] text-[#ee8a85] py-2 font-bold text-[10px] tracking-wider uppercase hover:bg-[#382120] transition-colors disabled:opacity-50"
+                    Review &amp; approve chase
+                  </Link>
+                </Button>
+              ) : selectedRow.status !== "paid" ? (
+                <Button
+                  disabled={busyId === selectedRow.id}
+                  onClick={() => void run(selectedRow.id, () => markRentPaid(selectedRow.id, todayIso))}
+                  className="w-full bg-white py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-black hover:bg-zinc-200 disabled:opacity-50"
+                >
+                  Mark as paid
+                </Button>
+              ) : (
+                <Button
+                  disabled={busyId === selectedRow.id}
+                  onClick={() => void run(selectedRow.id, () => deleteRentPayment(selectedRow.id))}
+                  className="w-full border border-rose-900/40 bg-rose-900/20 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-rose-400 hover:bg-rose-900/30 disabled:opacity-50"
+                >
+                  Delete record
+                </Button>
+              )}
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  asChild
+                  variant="outline"
+                  className="border-[#333333] bg-transparent py-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-[#161616]"
+                >
+                  <Link
+                    href={
+                      selectedRow.tenancyId
+                        ? `/dashboard/tenancies/${selectedRow.tenancyId}`
+                        : "#"
+                    }
                   >
-                    Delete Record
-                  </button>
-                )}
+                    Tenancy
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  className="border-[#333333] bg-transparent py-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-[#161616]"
+                >
+                  <Link
+                    href={
+                      selectedRow.tenantId
+                        ? `/dashboard/tenants/${selectedRow.tenantId}`
+                        : "#"
+                    }
+                  >
+                    Tenant
+                  </Link>
+                </Button>
               </div>
-            </div>
-        </section>
-      )}
+            </footer>
+          </aside>
+        ) : null}
+      </div>
     </div>
   );
 }

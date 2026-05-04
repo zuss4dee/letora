@@ -6,7 +6,7 @@ import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 import { tenantSchema, tenantUpdateSchema } from "@/lib/validations/tenant";
 import { userFacingError } from "@/lib/user-facing-errors";
-import { isPaymentOverdue } from "@/lib/rent-utils";
+import { isPaymentOverdue, resolvePaymentAmount } from "@/lib/rent-utils";
 
 export type TenantRentStatus = "paid" | "overdue" | "pending";
 
@@ -242,8 +242,10 @@ export type TenantDetailRow = {
     id: string;
     status: string | null;
     startDate: string | null;
+    endDate: string | null;
     propertyId: string | null;
     propertyAddress: string | null;
+    monthlyRent: number | null;
   }>;
 };
 
@@ -261,7 +263,7 @@ export async function getTenantById(userId: string, tenantId: string): Promise<T
 
   const { data: tenancyRows, error: tenancyErr } = await supabase
     .from("tenancies")
-    .select("id,status,start_date,property_id,properties(address)")
+    .select("id,status,start_date,end_date,monthly_rent,property_id,properties(address)")
     .eq("tenant_id", tenantId);
 
   if (tenancyErr) {
@@ -278,6 +280,8 @@ export async function getTenantById(userId: string, tenantId: string): Promise<T
       id?: string;
       status?: string | null;
       start_date?: string | null;
+      end_date?: string | null;
+      monthly_rent?: number | null;
       property_id?: string | null;
       properties?: { address?: string | null } | null;
     };
@@ -285,6 +289,8 @@ export async function getTenantById(userId: string, tenantId: string): Promise<T
       id: String(row.id ?? ""),
       status: row.status ?? null,
       startDate: row.start_date ?? null,
+      endDate: row.end_date ?? null,
+      monthlyRent: row.monthly_rent ?? null,
       propertyId: row.property_id ?? null,
       propertyAddress:
         normalizePropertyAddressLabel(row.properties?.address ?? "") || null,
@@ -302,6 +308,96 @@ export async function getTenantById(userId: string, tenantId: string): Promise<T
     rightToRentStatus: data.right_to_rent_status ?? null,
     createdAt: data.created_at ?? null,
     tenancies,
+  };
+}
+
+export type TenantProfileOperationalData = {
+  tenant: TenantDetailRow;
+  activeTenancy: TenantDetailRow["tenancies"][0] | null;
+  rent: {
+    monthlyRentGbp: number;
+    arrearsGbp: number;
+    status: TenantRentStatus;
+  };
+  maintenance: {
+    openCount: number;
+  };
+  approvals: {
+    pendingCount: number;
+  };
+  activity: any[];
+};
+
+export async function getTenantProfileOperationalData(
+  userId: string,
+  tenantId: string
+): Promise<TenantProfileOperationalData | null> {
+  const supabase = await createClient();
+
+  const tenant = await getTenantById(userId, tenantId);
+  if (!tenant) return null;
+
+  const activeTenancy = tenant.tenancies.find((t) => (t.status ?? "").toLowerCase() === "active") ?? tenant.tenancies[0] ?? null;
+
+  // Rent Arrears
+  const todayIso = new Date().toISOString().slice(0, 10);
+
+  // Rent arrears — use `amount` (+ `due_date`, `status`) per rent_tracker schema
+  const { data: rentPayments } = await supabase
+    .from("rent_payments")
+    .select("amount, status, due_date")
+    .eq("tenant_id", tenantId);
+
+  const arrearsGbp = (rentPayments ?? []).reduce((acc, p) => {
+    if (!isPaymentOverdue(p.status, p.due_date, todayIso)) return acc;
+    return acc + resolvePaymentAmount(p);
+  }, 0);
+
+  const rentStatus: TenantRentStatus = arrearsGbp > 0 ? "overdue" : "paid";
+
+  // Maintenance
+  const { count: openMaintenanceCount } = await supabase
+    .from("maintenance_requests")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "open")
+    .in("tenancy_id", tenant.tenancies.map(t => t.id));
+
+  // Approvals
+  const { count: pendingApprovalsCount } = await supabase
+    .from("agent_approvals")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "pending")
+    .in("target_id", [...tenant.tenancies.map(t => t.id), tenantId]);
+
+  // Activity Log
+  const { data: activity } = await supabase
+    .from("agent_activity")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+    
+  // Filter activity manually since it's JSON args (simple heuristic)
+  const tenantActivity = (activity ?? []).filter(a => {
+    const argsStr = JSON.stringify(a.args);
+    return argsStr.includes(tenantId) || tenant.tenancies.some(t => argsStr.includes(t.id));
+  });
+
+  return {
+    tenant,
+    activeTenancy,
+    rent: {
+      monthlyRentGbp: activeTenancy?.monthlyRent ?? 0,
+      arrearsGbp,
+      status: rentStatus,
+    },
+    maintenance: {
+      openCount: openMaintenanceCount ?? 0,
+    },
+    approvals: {
+      pendingCount: pendingApprovalsCount ?? 0,
+    },
+    activity: tenantActivity,
   };
 }
 

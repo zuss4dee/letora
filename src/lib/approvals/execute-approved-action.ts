@@ -6,78 +6,76 @@ import { executeMaintenanceDispatchAfterApproval } from "@/lib/maintenance/execu
 import { executeSendMoveInEmailAfterApproval } from "@/lib/onboarding/execute-move-in-after-approval";
 import { executeSendRentChaseAfterApproval } from "@/lib/rent/execute-rent-chase-after-approval";
 
-/**
- * Result of running side effects after an approval is marked `approved`.
- * - `markExecuted: true` → caller should set status `executed` (welcome email, etc.).
- * - `markExecuted: false` → leave row `approved` (no automated side effect for this action type).
- */
-export type ApprovedSideEffectResult =
-  | { ok: true; markExecuted: true }
-  | { ok: true; markExecuted: false }
-  | { ok: false; error: string };
+/** Result of running side effects after an approval row is marked `approved` (before → `executed`). */
+export type ApprovedSideEffectResult = { ok: true } | { ok: false; error: string };
 
 /**
- * Narrow dispatcher: one explicit branch per action_type. Add new cases here when
- * introducing approval-gated sends or dispatches — no plugin registry.
+ * Narrow dispatcher: one explicit branch per `AgentApprovalActionType`. Add new cases when
+ * introducing approval-gated sends or dispatches — no plugin registry. Unknown runtime values fail closed
+ * so a row cannot sit `approved` with no handler.
  */
 export async function runApprovedAgentSideEffect(
   supabase: SupabaseClient,
   userId: string,
   approval: AgentApprovalExecutionSlice,
 ): Promise<ApprovedSideEffectResult> {
-  if (approval.action_type === "send_onboarding_email") {
-    const exec = await executeSendOnboardingWelcomeAfterApproval(supabase, userId, {
-      id: approval.id,
-      agent_run_id: approval.agent_run_id,
-      payload: approval.payload,
-      target_id: approval.target_id,
-    });
-    if (!exec.ok) {
-      return { ok: false, error: exec.error };
+  switch (approval.action_type) {
+    case "send_onboarding_email": {
+      const exec = await executeSendOnboardingWelcomeAfterApproval(supabase, userId, {
+        id: approval.id,
+        agent_run_id: approval.agent_run_id,
+        payload: approval.payload,
+        target_id: approval.target_id,
+      });
+      if (!exec.ok) {
+        return { ok: false, error: exec.error };
+      }
+      return { ok: true };
     }
-    return { ok: true, markExecuted: true };
-  }
-
-  if (approval.action_type === "send_rent_chase_email") {
-    const exec = await executeSendRentChaseAfterApproval(supabase, userId, {
-      id: approval.id,
-      agent_run_id: approval.agent_run_id,
-      payload: approval.payload,
-      target_id: approval.target_id,
-    });
-    if (!exec.ok) {
-      return { ok: false, error: exec.error };
+    case "send_rent_chase_email": {
+      const exec = await executeSendRentChaseAfterApproval(supabase, userId, {
+        id: approval.id,
+        agent_run_id: approval.agent_run_id,
+        payload: approval.payload,
+        target_id: approval.target_id,
+      });
+      if (!exec.ok) {
+        return { ok: false, error: exec.error };
+      }
+      return { ok: true };
     }
-    return { ok: true, markExecuted: true };
-  }
-
-  if (approval.action_type === "approve_maintenance_dispatch") {
-    const exec = await executeMaintenanceDispatchAfterApproval(supabase, userId, {
-      id: approval.id,
-      agent_run_id: approval.agent_run_id,
-      payload: approval.payload,
-      target_id: approval.target_id,
-    });
-    if (!exec.ok) {
-      return { ok: false, error: exec.error };
+    case "approve_maintenance_dispatch": {
+      const exec = await executeMaintenanceDispatchAfterApproval(supabase, userId, {
+        id: approval.id,
+        agent_run_id: approval.agent_run_id,
+        payload: approval.payload,
+        target_id: approval.target_id,
+      });
+      if (!exec.ok) {
+        return { ok: false, error: exec.error };
+      }
+      return { ok: true };
     }
-    return { ok: true, markExecuted: true };
-  }
-
-  if (approval.action_type === "send_move_in_email") {
-    const exec = await executeSendMoveInEmailAfterApproval(supabase, userId, {
-      id: approval.id,
-      agent_run_id: approval.agent_run_id,
-      payload: approval.payload,
-      target_id: approval.target_id,
-    });
-    if (!exec.ok) {
-      return { ok: false, error: exec.error };
+    case "send_move_in_email": {
+      const exec = await executeSendMoveInEmailAfterApproval(supabase, userId, {
+        id: approval.id,
+        agent_run_id: approval.agent_run_id,
+        payload: approval.payload,
+        target_id: approval.target_id,
+      });
+      if (!exec.ok) {
+        return { ok: false, error: exec.error };
+      }
+      return { ok: true };
     }
-    return { ok: true, markExecuted: true };
+    default: {
+      const unknown: never = approval.action_type;
+      return {
+        ok: false,
+        error: `Unsupported approval action_type "${String(unknown)}". Register a branch in execute-approved-action.`,
+      };
+    }
   }
-
-  return { ok: true, markExecuted: false };
 }
 
 /** Alias for callers that think in terms of “execute this approved action”. */

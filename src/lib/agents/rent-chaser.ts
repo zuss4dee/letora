@@ -174,14 +174,14 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
 
   const { data: overdueData, error: overdueError } = await supabase
     .from("rent_payments")
-    .select("id,property_id,tenant_id,tenancy_id,amount,due_date,status")
-    .eq("user_id", resolvedUserId)
+    .select("id,property_id,tenant_id,tenancy_id,amount,due_date,status, tenancies!inner(properties!inner(user_id))")
+    .eq("tenancies.properties.user_id", resolvedUserId)
     .eq("status", "overdue");
 
   const { data: pendingData, error: pendingError } = await supabase
     .from("rent_payments")
-    .select("id,property_id,tenant_id,tenancy_id,amount,due_date,status")
-    .eq("user_id", resolvedUserId)
+    .select("id,property_id,tenant_id,tenancy_id,amount,due_date,status, tenancies!inner(properties!inner(user_id))")
+    .eq("tenancies.properties.user_id", resolvedUserId)
     .eq("status", "pending")
     .lt("due_date", today);
 

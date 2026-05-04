@@ -2,14 +2,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { CreateAgentApprovalContract } from "@/lib/approvals/types";
 
-function rentChaseTenantIdFromPayload(payload: Record<string, unknown> | undefined): string | null {
-  if (!payload) return null;
-  const raw = payload.tenantId;
-  if (typeof raw !== "string") return null;
-  const t = raw.trim();
-  return t !== "" ? t : null;
-}
-
 /**
  * Insert a pending agent_approvals row. Does not revalidate caches — callers in app code
  * should do that (e.g. server actions).
@@ -17,9 +9,8 @@ function rentChaseTenantIdFromPayload(payload: Record<string, unknown> | undefin
  * When `targetId` is set, reuses a single pending row per (user, action_type, target_id):
  * updates title/summary/payload/evidence/agent_run_id/target_id instead of inserting a duplicate.
  *
- * For `send_rent_chase_email`, also reuses a pending row per tenant (`payload.tenantId`) so
- * chasing a different overdue instalment for the same tenant does not add a second approval.
- * Rows with no `targetId` and no tenant id on payload behave as plain inserts (unchanged).
+ * Rent chases include `targetId: rent_payment_id`, so duplicate chases for the same instalment collapse;
+ * distinct instalments for the same tenant remain separate approvals.
  */
 export async function insertPendingAgentApproval(
   supabase: SupabaseClient,
@@ -27,7 +18,6 @@ export async function insertPendingAgentApproval(
   input: CreateAgentApprovalContract,
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   const targetId = input.targetId?.trim() ?? "";
-  const payload = (input.payload ?? {}) as Record<string, unknown>;
 
   const applyPendingUpdate = async (rowId: string) => {
     const { error: upErr } = await supabase
@@ -74,8 +64,6 @@ export async function insertPendingAgentApproval(
       return { ok: true, id: out.id };
     }
   }
-
-  // (Removed chaseTenantId dedupe block to allow multiple approvals per tenant — targetId dedupe remains)
 
   const { data, error } = await supabase
     .from("agent_approvals")

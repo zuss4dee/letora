@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronRight,
   Download,
   Loader2,
   MessageSquare,
@@ -507,45 +508,53 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
 
             {/* ── Run Result ── */}
             {runTotals ? (
-              <section className="border border-[#afefdd]/20 bg-[#152420]">
-                <div className="flex flex-col gap-6 px-4 py-5 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="font-mono text-[9px] uppercase tracking-widest text-[#afefdd]">
-                        Import complete
-                      </p>
-                      <p className="mt-1 font-mono text-sm text-white">
-                        {runTotals.succeeded} onboarded · {runTotals.skipped} skipped ·{" "}
-                        {runTotals.failed} failed
-                      </p>
-                      {runBatchId ? (
-                        <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
-                          Ref {runBatchId.slice(0, 8)}
+              <section className="animate-in fade-in zoom-in-95 duration-500 border border-[#afefdd]/30 bg-[#152420]">
+                <div className="flex flex-col gap-8 px-6 py-8 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-6">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-10 items-center justify-center bg-[#afefdd]/10">
+                        <Sparkles className="size-5 text-[#afefdd]" />
+                      </div>
+                      <div>
+                        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#afefdd]">
+                          Import Success
                         </p>
-                      ) : null}
+                        <h2 className="text-xl font-bold text-white">Portfolio Data Ingested</h2>
+                      </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-6 border-t border-[#afefdd]/10 pt-4">
-                      <Stat label="Agents Triggered" value={runTotals.agentsTriggered} accent={runTotals.agentsTriggered > 0} />
-                      <Stat label="Approvals Created" value={runTotals.approvalsCreated} accent={runTotals.approvalsCreated > 0} />
+                    <div className="space-y-2">
+                      <p className="font-mono text-sm text-white">
+                        {runTotals.succeeded} units successfully onboarded · {runTotals.skipped} skipped
+                      </p>
+                      <p className="text-[13px] text-[#afefdd]/70">
+                        Your agentic workforce has been dispatched to audit these records. 
+                        They are currently processing leases and identifying compliance requirements.
+                      </p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-8 border-t border-[#afefdd]/10 pt-6">
+                      <Stat label="Agents Dispatch" value={runTotals.agentsTriggered} accent={runTotals.agentsTriggered > 0} />
+                      <Stat label="Pending Queue" value={runTotals.approvalsCreated} accent={runTotals.approvalsCreated > 0} />
                       {runTotals.failed > 0 && (
-                        <Stat label="Review Required" value={runTotals.failed} danger />
+                        <Stat label="Manual Fixes" value={runTotals.failed} danger />
                       )}
                     </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-col gap-3 min-w-[200px]">
                     <Link
-                      href="/dashboard/activity"
-                      className="border border-[#333333] bg-[#0B0B0B] px-4 py-2 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+                      href="/dashboard"
+                      className="flex items-center justify-center gap-2 bg-white px-6 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-black transition-all hover:bg-[#afefdd]"
                     >
-                      View Activity
+                      Go to Command Center
+                      <ChevronRight className="size-3" />
                     </Link>
                     <Link
-                      href="/dashboard/tenancies"
-                      className="bg-white px-4 py-2 font-mono text-[9px] font-bold uppercase tracking-widest text-[#161616] transition-opacity hover:opacity-90"
+                      href="/dashboard/activity"
+                      className="flex items-center justify-center gap-2 border border-[#333333] bg-[#0B0B0B] px-6 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:text-white"
                     >
-                      View Tenancies
+                      Monitor Agents
                     </Link>
                   </div>
                 </div>

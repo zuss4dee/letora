@@ -9,7 +9,8 @@
  * Safety:
  * - Deletes **all pending** agent_approvals for the target user before reseed (clears rent-chaser
  *   rows that are not demo-title-prefixed, so reruns do not accumulate).
- * - Only touches portfolio rows tagged with DEMO_PROPERTY_PREFIX / DEMO_EMAIL_SUFFIX / DEMO_RENT_NOTE.
+ * - Only touches portfolio rows tagged with DEMO_PROPERTY_PREFIX / DEMO_EMAIL_SUFFIX / DEMO_RENT_NOTE,
+ *   demo leads (`DEMO_LEAD_NOTE`), and demo agent runs (`DEMO_AGENT_RUN_TYPE`).
  * - Resolves user by exact email match; aborts if not found.
  */
 
@@ -57,6 +58,15 @@ const DEMO_TITLE_PREFIX = "Letora demo — ";
 
 const DEMO_RENT_NOTE = "Letora demo seed";
 
+/** Tag demo leads for idempotent wipe (see wipeDemoPortfolio). */
+const DEMO_LEAD_NOTE = "Letora demo seed — lead";
+
+/**
+ * Synthetic queued agent run for Command Center "active agents" KPI.
+ * Removed on each seed run before insert.
+ */
+const DEMO_AGENT_RUN_TYPE = "demo_queued_run";
+
 type UUID = string;
 
 function requireEnv(name: string): string {
@@ -99,6 +109,22 @@ async function wipeDemoPortfolio(supabase: SeedSupabase, userId: UUID): Promise<
     .eq("status", "pending");
   if (apErr) {
     console.error("Failed to delete pending agent_approvals:", apErr.message);
+    process.exit(1);
+  }
+
+  const { error: runWipeErr } = await supabase
+    .from("agent_runs")
+    .delete()
+    .eq("user_id", userId)
+    .eq("agent_type", DEMO_AGENT_RUN_TYPE);
+  if (runWipeErr) {
+    console.error("Failed to delete demo agent_runs:", runWipeErr.message);
+    process.exit(1);
+  }
+
+  const { error: leadWipeErr } = await supabase.from("leads").delete().eq("user_id", userId).eq("notes", DEMO_LEAD_NOTE);
+  if (leadWipeErr) {
+    console.error("Failed to delete demo leads:", leadWipeErr.message);
     process.exit(1);
   }
 
@@ -500,7 +526,7 @@ async function main(): Promise<void> {
       task_type: "check",
       status: "pending",
       email_log_id: null,
-      due_date: "2026-04-10",
+      due_date: "2026-05-08",
       completed_at: null as string | null,
     },
     {
@@ -510,7 +536,7 @@ async function main(): Promise<void> {
       task_type: "check",
       status: "pending",
       email_log_id: null,
-      due_date: "2026-04-12",
+      due_date: "2026-05-12",
       completed_at: null,
     },
     {
@@ -553,7 +579,7 @@ async function main(): Promise<void> {
       task_type: "check",
       status: "pending",
       email_log_id: null,
-      due_date: "2026-04-05",
+      due_date: "2026-05-06",
       completed_at: null,
     },
     {
@@ -563,7 +589,7 @@ async function main(): Promise<void> {
       task_type: "check",
       status: "pending",
       email_log_id: null,
-      due_date: "2026-04-06",
+      due_date: "2026-05-07",
       completed_at: null,
     },
   ];
@@ -595,10 +621,27 @@ async function main(): Promise<void> {
   const rentElenaFeb = randomUUID();
   const rentElenaMar = randomUUID();
   const rentElenaApr = randomUUID();
+  const rentElenaMay = randomUUID();
+  const rentElenaJun = randomUUID();
   const rentSofiaMar = randomUUID();
   const rentSofiaApr = randomUUID();
+  const rentSofiaMay = randomUUID();
+  const rentSofiaJun = randomUUID();
+  const rentJamesApr = randomUUID();
+  const rentJamesMay = randomUUID();
+  const rentJamesJun = randomUUID();
+  const rentAmaraApr = randomUUID();
+  const rentAmaraMay = randomUUID();
+  const rentAmaraJun = randomUUID();
+  const rentNoahApr = randomUUID();
+  const rentNoahMay = randomUUID();
+  const rentNoahJun = randomUUID();
+  const rentPriyaMay = randomUUID();
+  const rentPriyaJun = randomUUID();
+  const rentOliverJun = randomUUID();
 
   const rentRows = [
+    /* Elena — good payer; April paid in time for “collected last month” in May */
     {
       id: rentElenaFeb,
       user_id: userId,
@@ -631,10 +674,35 @@ async function main(): Promise<void> {
       tenant_id: tenantByKey.elena.id,
       amount: 895,
       due_date: "2026-04-01",
+      paid_date: "2026-04-29",
+      status: "paid",
+      notes: DEMO_RENT_NOTE,
+    },
+    {
+      id: rentElenaMay,
+      user_id: userId,
+      tenancy_id: tn.elena.id,
+      property_id: propLeeds.id,
+      tenant_id: tenantByKey.elena.id,
+      amount: 895,
+      due_date: "2026-05-01",
+      paid_date: "2026-05-02",
+      status: "paid",
+      notes: DEMO_RENT_NOTE,
+    },
+    {
+      id: rentElenaJun,
+      user_id: userId,
+      tenancy_id: tn.elena.id,
+      property_id: propLeeds.id,
+      tenant_id: tenantByKey.elena.id,
+      amount: 895,
+      due_date: "2026-06-01",
       paid_date: null,
       status: "pending",
       notes: DEMO_RENT_NOTE,
     },
+    /* Sofia — arrears (Mar–May) */
     {
       id: rentSofiaMar,
       user_id: userId,
@@ -657,6 +725,179 @@ async function main(): Promise<void> {
       due_date: "2026-04-01",
       paid_date: null,
       status: "overdue",
+      notes: DEMO_RENT_NOTE,
+    },
+    {
+      id: rentSofiaMay,
+      user_id: userId,
+      tenancy_id: tn.sofia.id,
+      property_id: propLeeds.id,
+      tenant_id: tenantByKey.sofia.id,
+      amount: 920,
+      due_date: "2026-05-01",
+      paid_date: null,
+      status: "overdue",
+      notes: DEMO_RENT_NOTE,
+    },
+    {
+      id: rentSofiaJun,
+      user_id: userId,
+      tenancy_id: tn.sofia.id,
+      property_id: propLeeds.id,
+      tenant_id: tenantByKey.sofia.id,
+      amount: 920,
+      due_date: "2026-06-01",
+      paid_date: null,
+      status: "pending",
+      notes: DEMO_RENT_NOTE,
+    },
+    /* James — paid on time */
+    {
+      id: rentJamesApr,
+      user_id: userId,
+      tenancy_id: tn.james.id,
+      property_id: propBristol.id,
+      tenant_id: tenantByKey.james.id,
+      amount: 1850,
+      due_date: "2026-04-01",
+      paid_date: "2026-04-04",
+      status: "paid",
+      notes: DEMO_RENT_NOTE,
+    },
+    {
+      id: rentJamesMay,
+      user_id: userId,
+      tenancy_id: tn.james.id,
+      property_id: propBristol.id,
+      tenant_id: tenantByKey.james.id,
+      amount: 1850,
+      due_date: "2026-05-01",
+      paid_date: "2026-05-01",
+      status: "paid",
+      notes: DEMO_RENT_NOTE,
+    },
+    {
+      id: rentJamesJun,
+      user_id: userId,
+      tenancy_id: tn.james.id,
+      property_id: propBristol.id,
+      tenant_id: tenantByKey.james.id,
+      amount: 1850,
+      due_date: "2026-06-01",
+      paid_date: null,
+      status: "pending",
+      notes: DEMO_RENT_NOTE,
+    },
+    /* Amara — May currently late (pending past due → overdue in app logic) */
+    {
+      id: rentAmaraApr,
+      user_id: userId,
+      tenancy_id: tn.amara.id,
+      property_id: propBristol.id,
+      tenant_id: tenantByKey.amara.id,
+      amount: 1825,
+      due_date: "2026-04-01",
+      paid_date: "2026-04-06",
+      status: "paid",
+      notes: DEMO_RENT_NOTE,
+    },
+    {
+      id: rentAmaraMay,
+      user_id: userId,
+      tenancy_id: tn.amara.id,
+      property_id: propBristol.id,
+      tenant_id: tenantByKey.amara.id,
+      amount: 1825,
+      due_date: "2026-05-01",
+      paid_date: null,
+      status: "pending",
+      notes: DEMO_RENT_NOTE,
+    },
+    {
+      id: rentAmaraJun,
+      user_id: userId,
+      tenancy_id: tn.amara.id,
+      property_id: propBristol.id,
+      tenant_id: tenantByKey.amara.id,
+      amount: 1825,
+      due_date: "2026-06-01",
+      paid_date: null,
+      status: "pending",
+      notes: DEMO_RENT_NOTE,
+    },
+    /* Noah */
+    {
+      id: rentNoahApr,
+      user_id: userId,
+      tenancy_id: tn.noah.id,
+      property_id: propBristol.id,
+      tenant_id: tenantByKey.noah.id,
+      amount: 1795,
+      due_date: "2026-04-01",
+      paid_date: "2026-04-02",
+      status: "paid",
+      notes: DEMO_RENT_NOTE,
+    },
+    {
+      id: rentNoahMay,
+      user_id: userId,
+      tenancy_id: tn.noah.id,
+      property_id: propBristol.id,
+      tenant_id: tenantByKey.noah.id,
+      amount: 1795,
+      due_date: "2026-05-01",
+      paid_date: "2026-05-03",
+      status: "paid",
+      notes: DEMO_RENT_NOTE,
+    },
+    {
+      id: rentNoahJun,
+      user_id: userId,
+      tenancy_id: tn.noah.id,
+      property_id: propBristol.id,
+      tenant_id: tenantByKey.noah.id,
+      amount: 1795,
+      due_date: "2026-06-01",
+      paid_date: null,
+      status: "pending",
+      notes: DEMO_RENT_NOTE,
+    },
+    /* Priya — first monthly cycle from May (tenancy from mid-April) */
+    {
+      id: rentPriyaMay,
+      user_id: userId,
+      tenancy_id: tn.priya.id,
+      property_id: propMcr.id,
+      tenant_id: tenantByKey.priya.id,
+      amount: 1180,
+      due_date: "2026-05-01",
+      paid_date: "2026-05-02",
+      status: "paid",
+      notes: DEMO_RENT_NOTE,
+    },
+    {
+      id: rentPriyaJun,
+      user_id: userId,
+      tenancy_id: tn.priya.id,
+      property_id: propMcr.id,
+      tenant_id: tenantByKey.priya.id,
+      amount: 1180,
+      due_date: "2026-06-01",
+      paid_date: null,
+      status: "pending",
+      notes: DEMO_RENT_NOTE,
+    },
+    /* Oliver — first rent June (May is setup / move-in month) */
+    {
+      id: rentOliverJun,
+      user_id: userId,
+      tenancy_id: tn.oliver.id,
+      property_id: propMcr.id,
+      tenant_id: tenantByKey.oliver.id,
+      amount: 1200,
+      due_date: "2026-06-01",
+      paid_date: null,
+      status: "pending",
       notes: DEMO_RENT_NOTE,
     },
   ];
@@ -690,7 +931,7 @@ async function main(): Promise<void> {
       description: "Radiators stay cold on the top floor; boiler shows normal pressure.",
       category: "heating",
       priority: "standard",
-      status: "open",
+      status: "in_progress",
       ai_triage_category: "routine",
       ai_triage_summary: "Likely balancing or valve issue; schedule heating engineer.",
     },
@@ -730,9 +971,9 @@ async function main(): Promise<void> {
       user_id: userId,
       agent_run_id: null,
       agent_type: "rent_chaser",
-      title: `${DEMO_TITLE_PREFIX}Rent chase — Sofia Martins (March & April)`,
+      title: `${DEMO_TITLE_PREFIX}Rent chase — Sofia Martins (Mar–May)`,
       summary:
-        "Draft polite rent reminder for overdue March and April instalments. Approve to send the chase email only (no payment collection).",
+        "Draft polite rent reminder for overdue March, April, and May instalments. Approve to send the chase email only (no payment collection).",
       action_type: "send_rent_chase_email" as const,
       target_type: "rent_payment",
       target_id: rentSofiaMar,
@@ -745,9 +986,9 @@ async function main(): Promise<void> {
         tenantName: "Sofia Martins",
         emailSubject: "Rent reminder — Market Lane Lofts",
         emailBody:
-          "Hi Sofia,\n\nWe note March rent remains outstanding and April is now due. Please let us know when payment can be made or if you need to discuss a plan.\n\nKind regards",
-        amountOwed: 1840,
-        daysOverdue: 45,
+          "Hi Sofia,\n\nWe note March, April, and May rent remains outstanding. Please let us know when payment can be made or if you need to discuss a plan.\n\nKind regards",
+        amountOwed: 2760,
+        daysOverdue: 63,
         dueDate: "2026-03-01",
       },
       evidence: {
@@ -755,11 +996,11 @@ async function main(): Promise<void> {
         tenantId: tenantByKey.sofia.id,
         propertyId: propLeeds.id,
         propertyAddress: propLeeds.address.replace(DEMO_PROPERTY_PREFIX, "").trim(),
-        amountOwed: 1840,
-        daysOverdue: 45,
+        amountOwed: 2760,
+        daysOverdue: 63,
         dueDate: "2026-03-01",
         emailSubject: "Rent reminder — Market Lane Lofts",
-        bodyPreview: "We note March rent remains outstanding…",
+        bodyPreview: "We note March, April, and May rent remains outstanding…",
         run_correlation_id: "demo-seed",
       },
       status: "pending" as const,
@@ -800,6 +1041,55 @@ async function main(): Promise<void> {
   const { error: apInsErr } = await supabase.from("agent_approvals").insert(approvals);
   if (apInsErr) {
     console.error("agent_approvals insert:", apInsErr.message);
+    process.exit(1);
+  }
+
+  const { error: arErr } = await supabase.from("agent_runs").insert({
+    user_id: userId,
+    agent_type: DEMO_AGENT_RUN_TYPE,
+    status: "queued",
+    payload: {
+      letora_demo_seed: true,
+      label: "Demo: digest / portfolio scan queued",
+    },
+  });
+  if (arErr) {
+    console.error("agent_runs insert:", arErr.message);
+    process.exit(1);
+  }
+
+  const { error: ldErr } = await supabase.from("leads").insert([
+    {
+      user_id: userId,
+      property_id: propMcr.id,
+      name: "Alex Thompson",
+      full_name: "Alex Thompson",
+      email: "alex.thompson@lead.letora.demo",
+      phone: "+44 7700 900101",
+      source: "Rightmove",
+      budget: 1300,
+      move_in_date: "2026-06-15",
+      qualified_status: "pending",
+      status: "new",
+      notes: DEMO_LEAD_NOTE,
+    },
+    {
+      user_id: userId,
+      property_id: propBristol.id,
+      name: "Jordan Lee",
+      full_name: "Jordan Lee",
+      email: "jordan.lee@lead.letora.demo",
+      phone: "+44 7700 900102",
+      source: "Zoopla",
+      budget: 1950,
+      move_in_date: "2026-07-01",
+      qualified_status: "pending",
+      status: "contacted",
+      notes: DEMO_LEAD_NOTE,
+    },
+  ]);
+  if (ldErr) {
+    console.error("leads insert:", ldErr.message);
     process.exit(1);
   }
 
@@ -875,6 +1165,17 @@ async function main(): Promise<void> {
 
   console.log(`Demo rent_payments (tagged notes): ${demoRentCount}`);
   console.log(`Demo maintenance_requests (under demo tenancies): ${demoMaintCount}`);
+  const demoLeadCount = await (async () => {
+    const { count, error } = await supabase
+      .from("leads")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("notes", DEMO_LEAD_NOTE);
+    if (error) return `? (${error.message})`;
+    return String(count ?? 0);
+  })();
+
+  console.log(`Demo leads (tagged notes): ${demoLeadCount}`);
   const pendingAll = await (async () => {
     const { count, error } = await supabase
       .from("agent_approvals")
@@ -885,7 +1186,8 @@ async function main(): Promise<void> {
     return String(count ?? 0);
   })();
 
-  console.log(`Pending agent_approvals (expected 3 after seed): ${pendingAll}`);
+  console.log(`Pending agent_approvals (expected 3): ${pendingAll}`);
+  console.log(`Demo agent_runs (${DEMO_AGENT_RUN_TYPE} queued): 1`);
 }
 
 void main();

@@ -289,9 +289,8 @@ async function handleRentPaymentSuccess(
     .from("rent_payments")
     .update({
       status: "paid",
-      paid_on: new Date().toISOString().slice(0, 10),
-      amount_paid: paymentIntent.amount_received / 100,
-      payment_method: "stripe",
+      paid_date: new Date().toISOString().slice(0, 10),
+      amount: paymentIntent.amount_received / 100,
       stripe_payment_intent_id: paymentIntent.id,
       stripe_charge_id: (paymentIntent.latest_charge as string) ?? null,
       stripe_receipt_url: receiptUrl ?? null,

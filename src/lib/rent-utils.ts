@@ -14,12 +14,14 @@ export function isPaymentOverdue(
 }
 
 /**
- * Resolves the amount for a rent payment row, checking both 'amount' and 'amount_due' columns.
- * Standardizes the fragmented schema.
+ * GBP amount for one instalment. Canonical column is `public.rent_payments.amount` (rent_tracker).
+ * Optionally falls back to legacy `amount_due` only when present on an in-memory row (never SELECT it if absent in DB).
  */
-export function resolvePaymentAmount(row: { amount?: number | null; amount_due?: number | null }): number {
-  const amt = row.amount ?? row.amount_due ?? 0;
-  return typeof amt === "number" ? amt : Number(amt || 0);
+export function resolvePaymentAmount(row: { amount?: unknown; amount_due?: unknown }): number {
+  const raw = row.amount ?? row.amount_due;
+  if (raw == null) return 0;
+  const n = typeof raw === "number" ? raw : Number(raw);
+  return Number.isFinite(n) ? n : 0;
 }
 
 /**
@@ -31,14 +33,18 @@ export async function getOutstandingRentTotal(userId: string): Promise<number> {
   const todayIso = new Date().toISOString().slice(0, 10);
 
   // We fetch all non-paid payments. 
-  // We check both status='overdue' and status='pending' with past due_date.
+  // We scope through tenancies -> properties to ensure consistent ownership check.
+  /** Match `getDashboardStats` ownership filter; do NOT use `.neq("status","paid")` here — in SQL it drops `NULL`/edge statuses and diverges from `isPaymentOverdue` logic applied everywhere else. */
   const { data, error } = await supabase
     .from("rent_payments")
-    .select("amount, amount_due, status, due_date")
-    .eq("user_id", userId)
-    .neq("status", "paid");
+    .select("amount, status, due_date, tenancies!inner(properties!inner(user_id))")
+    .eq("tenancies.properties.user_id", userId);
 
-  if (error || !data) return 0;
+  if (error) {
+    console.warn("[getOutstandingRentTotal]", error.message);
+    return 0;
+  }
+  if (!data) return 0;
 
   return data.reduce((sum, row) => {
     if (isPaymentOverdue(row.status, row.due_date, todayIso)) {

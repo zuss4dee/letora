@@ -1,48 +1,57 @@
 import { Suspense } from "react";
 
-import {
-  CommandCenterActionBar,
-  CommandCenterKpiGridSkeleton,
-  CommandCenterKpis,
-} from "@/components/dashboard/command-center/command-center-kpis";
-import {
-  CommandCenterAttention,
-  CommandCenterAttentionSkeleton,
-} from "@/components/dashboard/command-center/command-center-attention";
-import {
-  CommandCenterActivity,
-  CommandCenterActivitySkeleton,
-} from "@/components/dashboard/command-center/command-center-activity";
-import {
-  CommandCenterOnboardingTasks,
-  CommandCenterOnboardingTasksSkeleton,
-} from "@/components/dashboard/command-center/command-center-onboarding-tasks";
+import { CommandCenterActionBar, CommandCenterKpis } from "@/components/dashboard/command-center/command-center-kpis";
+import { CommandCenterActivity } from "@/components/dashboard/command-center/command-center-activity";
+import { CommandCenterActivitySkeleton } from "@/components/dashboard/command-center/command-center-activity";
 import { CommandCenterAiComposer } from "@/components/dashboard/command-center/command-center-ai-composer";
+import { CommandCenterOnboardingHero } from "@/components/dashboard/command-center/command-center-onboarding-hero";
+import {
+  CommandCenterArrearsQueue,
+  CommandCenterMaintenanceQueue,
+  CommandCenterQueueSkeleton,
+} from "@/components/dashboard/command-center/command-center-queues";
+import {
+  CommandCenterAgentSummary,
+  CommandCenterAgentSummarySkeleton,
+} from "@/components/dashboard/command-center/command-center-agent-summary";
+import { loadCommandCenterKpis } from "@/lib/dashboard/command-center-queries";
 
 /**
- * Command Center landing — visual parity with stitch reference.
- * Slow reads are isolated per section (Suspense + timeouts in loaders).
+ * Command Center landing — refactored for everyday operations.
  */
-export function CommandCenterLandingView({ userId }: { userId: string }) {
+export async function CommandCenterLandingView({ userId }: { userId: string }) {
+  const kpis = await loadCommandCenterKpis(userId);
+  const isNewUser = kpis.totalProperties === 0;
+
   return (
     <>
       <main className="flex min-h-0 flex-1 flex-col px-4 pb-36 pt-4 font-['Inter',system-ui,sans-serif] text-[#e5e2e1] md:px-6 md:pb-40 md:pt-6">
         <CommandCenterActionBar />
 
-        <Suspense fallback={<CommandCenterKpiGridSkeleton />}>
-          <CommandCenterKpis userId={userId} />
-        </Suspense>
+        {isNewUser ? (
+          <CommandCenterOnboardingHero />
+        ) : (
+          <CommandCenterKpis userId={userId} preloadKpis={kpis} />
+        )}
 
-        <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-          <section className="space-y-8 lg:col-span-7">
-            <Suspense fallback={<CommandCenterAttentionSkeleton />}>
-              <CommandCenterAttention userId={userId} />
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
+          {/* Main Action Queues (7 Columns) */}
+          <section className="space-y-12 lg:col-span-7">
+            <Suspense fallback={<CommandCenterQueueSkeleton />}>
+              <CommandCenterArrearsQueue userId={userId} />
             </Suspense>
-            <Suspense fallback={<CommandCenterOnboardingTasksSkeleton />}>
-              <CommandCenterOnboardingTasks userId={userId} />
+            
+            <Suspense fallback={<CommandCenterQueueSkeleton />}>
+              <CommandCenterMaintenanceQueue userId={userId} />
             </Suspense>
           </section>
-          <section className="lg:col-span-5">
+
+          {/* Sidebar (5 Columns) */}
+          <section className="space-y-10 lg:col-span-5">
+            <Suspense fallback={<CommandCenterAgentSummarySkeleton />}>
+              <CommandCenterAgentSummary userId={userId} />
+            </Suspense>
+
             <Suspense fallback={<CommandCenterActivitySkeleton />}>
               <CommandCenterActivity userId={userId} />
             </Suspense>

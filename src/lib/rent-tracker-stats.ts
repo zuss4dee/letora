@@ -1,79 +1,124 @@
 import { isPaymentOverdue, resolvePaymentAmount } from "@/lib/rent-utils";
+import { addCalendarDaysIso, isoDateBetweenInclusive, monthBoundsIso } from "@/lib/rent-calendar-bounds";
 import type { RentPaymentListRow } from "@/lib/actions/rent-tracker";
 
-export type RentTrackerSummaryStats = {
-  expectedThisMonth: number;
-  receivedThisMonth: number;
-  overdueCount: number;
-  /** Sum of amounts for payments counted in overdueCount */
-  arrearsAmount: number;
-  /** Sum of amounts with due dates in the next 30 days (pipeline); falls back when empty */
-  forecastNext30Days: number;
+export type RentTenancyRentRollRow = {
+  monthlyRent: number | null;
+  status: string | null;
 };
 
-function monthStartEndLocal(d = new Date()) {
-  const y = d.getFullYear();
-  const m = d.getMonth();
-  const pad = (n: number) => String(n).padStart(2, "0");
-  const startIso = `${y}-${pad(m + 1)}-01`;
-  const lastDay = new Date(y, m + 1, 0).getDate();
-  const endIso = `${y}-${pad(m + 1)}-${pad(lastDay)}`;
-  return { startIso, endIso };
+export type RentTrackerSummaryStats = {
+  /**
+   * Contractual expectation: sum of `monthly_rent` for **active** tenancies in scope.
+   * Fallback (when roll is zero): sum of instalment amounts with `due_date` in the current month.
+   */
+  expectedThisMonth: number;
+  /** Cash recognised this calendar month (`paid_date` in month when present; legacy: paid + no date → attributed by due month). */
+  receivedThisMonth: number;
+  /** Still unpaid instalments with `due_date` in the current calendar month (not arrears-only). */
+  outstandingThisMonth: number;
+  overdueCount: number;
+  /** Sum of amounts for overdue rows (past-due, unpaid per `isPaymentOverdue`). */
+  arrearsAmount: number;
+  /**
+   * Unpaid instalments with due_date in (today, today+30d] — actionable upcoming pipeline only.
+   * No synthetic multiplier fallback.
+   */
+  nextUnpaidPipeline30d: number;
+};
+
+function isPaidRentStatus(status: string | null): boolean {
+  return (status ?? "").toLowerCase() === "paid";
 }
 
-function addDaysIso(iso: string, days: number): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  const dt = new Date(Date.UTC(y!, m! - 1, d!));
-  dt.setUTCDate(dt.getUTCDate() + days);
-  return dt.toISOString().slice(0, 10);
+function sumActiveMonthlyRentRoll(tenancies: RentTenancyRentRollRow[]): number {
+  let sum = 0;
+  for (const t of tenancies) {
+    if ((t.status ?? "").toLowerCase() !== "active") continue;
+    const r = t.monthlyRent;
+    if (r == null || !Number.isFinite(r)) continue;
+    sum += r;
+  }
+  return sum;
+}
+
+/** Dev-only diagnostics for KPI wiring verification. */
+function logRentTrackerStats(snapshot: RentTrackerSummaryStats & { todayIso: string; mode: string }) {
+  if (process.env.NODE_ENV !== "development") return;
+  console.info("[rent-tracker-stats]", snapshot);
 }
 
 export function computeRentTrackerStats(
   payments: RentPaymentListRow[],
   todayIso: string,
+  tenanciesInScope: RentTenancyRentRollRow[],
 ): RentTrackerSummaryStats {
-  const { startIso, endIso } = monthStartEndLocal();
+  const anchor = todayIso.slice(0, 10);
+  const { startIso: curStart, endIso: curEnd } = monthBoundsIso(anchor, 0);
 
-  let expectedThisMonth = 0;
+  const rentRollExpected = sumActiveMonthlyRentRoll(tenanciesInScope);
+  let scheduledDueThisMonth = 0;
+
   let receivedThisMonth = 0;
+  let outstandingThisMonth = 0;
   let overdueCount = 0;
   let arrearsAmount = 0;
-  let forecastNext30Days = 0;
+  let nextUnpaidPipeline30d = 0;
 
-  const horizonEnd = addDaysIso(todayIso, 30);
+  const horizonEndExclusive = addCalendarDaysIso(anchor, 30);
 
   for (const p of payments) {
     const amount = resolvePaymentAmount(p);
     const due = p.due_date;
-    if (due && due >= startIso && due <= endIso) {
-      expectedThisMonth += amount;
+
+    const dueThisMonth = due != null && isoDateBetweenInclusive(due, curStart, curEnd);
+    if (dueThisMonth) {
+      scheduledDueThisMonth += amount;
+      if (!isPaidRentStatus(p.status)) outstandingThisMonth += amount;
     }
 
-    const paid = p.paid_date;
-    const st = (p.status ?? "").toLowerCase();
-    if (st === "paid" && paid && paid >= startIso && paid <= endIso) {
-      receivedThisMonth += amount;
+    if (isPaidRentStatus(p.status)) {
+      const paidIso = (p.paid_date ?? "").slice(0, 10);
+      if (paidIso && isoDateBetweenInclusive(paidIso, curStart, curEnd)) {
+        receivedThisMonth += amount;
+      } else if (!paidIso && dueThisMonth) {
+        /** Legacy/backfill: counted as receipt in instalment due month only. */
+        receivedThisMonth += amount;
+      }
     }
 
-    if (isPaymentOverdue(p.status, p.due_date, todayIso)) {
+    if (isPaymentOverdue(p.status, p.due_date, anchor)) {
       overdueCount += 1;
       arrearsAmount += amount;
     }
 
-    if (due && due > todayIso && due <= horizonEnd) {
-      forecastNext30Days += amount;
+    if (
+      due != null &&
+      due.length >= 10 &&
+      due.slice(0, 10) > anchor &&
+      due.slice(0, 10) <= horizonEndExclusive &&
+      !isPaidRentStatus(p.status)
+    ) {
+      nextUnpaidPipeline30d += amount;
     }
   }
 
-  if (forecastNext30Days === 0 && expectedThisMonth > 0) {
-    forecastNext30Days = Math.round(expectedThisMonth * 1.02);
-  }
+  const expectedThisMonth = rentRollExpected > 0 ? rentRollExpected : scheduledDueThisMonth;
 
-  return {
+  const result: RentTrackerSummaryStats = {
     expectedThisMonth,
     receivedThisMonth,
+    outstandingThisMonth,
     overdueCount,
     arrearsAmount,
-    forecastNext30Days,
+    nextUnpaidPipeline30d,
   };
+
+  logRentTrackerStats({
+    todayIso: anchor,
+    mode: rentRollExpected > 0 ? "expected=active_rent_roll" : "expected=scheduled_instalments_fallback",
+    ...result,
+  });
+
+  return result;
 }

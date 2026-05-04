@@ -5,7 +5,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { ReviewDraftModal } from "@/components/email/review-draft-modal";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -17,29 +16,40 @@ import {
 } from "@/components/ui/table";
 import type { MaintenanceEmailLogRow } from "@/lib/actions/maintenance";
 import { reviewEmailDraft, sendEmailDraft } from "@/lib/actions/email-drafts";
+import { cn } from "@/lib/utils";
 
 function emailStatusBadge(status: string | null) {
   const s = (status ?? "").toLowerCase();
   if (s === "sent") {
     return (
-      <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
+      <span className="inline-flex border border-emerald-700/50 bg-emerald-950/40 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-300">
         Sent
-      </Badge>
+      </span>
     );
   }
   if (s === "failed") {
     return (
-      <Badge className="border border-red-200 bg-red-50 text-red-800 dark:border-red-900/40 dark:bg-red-500/10 dark:text-red-300">
+      <span className="inline-flex border border-red-800/50 bg-red-950/40 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-red-300">
         Failed
-      </Badge>
+      </span>
     );
   }
   return (
-    <Badge className="border border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/40 dark:bg-amber-500/10 dark:text-amber-300">
+    <span
+      className={cn(
+        "inline-flex border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
+        s === "skipped"
+          ? "border-zinc-600 bg-[#141414] text-zinc-400"
+          : "border-amber-800/40 bg-amber-950/30 text-amber-300",
+      )}
+    >
       {s === "skipped" ? "Skipped" : "Draft"}
-    </Badge>
+    </span>
   );
 }
+
+const headClass =
+  "h-10 border-b border-[#282828] bg-[#0B0B0B] text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500";
 
 export function MaintenanceRelatedEmailsTable({
   emailLogs,
@@ -80,79 +90,85 @@ export function MaintenanceRelatedEmailsTable({
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead>To</TableHead>
-            <TableHead>Subject</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Sent</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {emailLogs.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={5}
-                className="py-8 text-center text-sm text-muted-foreground"
-              >
-                No emails logged yet. They appear after the maintenance agent runs.
-              </TableCell>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-0 hover:bg-transparent">
+              <TableHead className={headClass}>To</TableHead>
+              <TableHead className={headClass}>Subject</TableHead>
+              <TableHead className={headClass}>Status</TableHead>
+              <TableHead className={headClass}>Sent</TableHead>
+              <TableHead className={cn(headClass, "text-right")}>Actions</TableHead>
             </TableRow>
-          ) : (
-            emailLogs.map((log) => {
-              const isDraft = (log.status ?? "").toLowerCase() === "draft";
-              return (
-                <TableRow key={log.id}>
-                  <TableCell className="font-medium">
-                    {log.to_email ?? "—"}
-                    {log.to_name ? (
-                      <span className="block text-xs text-muted-foreground">{log.to_name}</span>
-                    ) : null}
-                  </TableCell>
-                  <TableCell className="max-w-[280px] truncate">
-                    {log.subject ?? "—"}
-                  </TableCell>
-                  <TableCell>{emailStatusBadge(log.status)}</TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {log.sent_at
-                      ? new Date(log.sent_at).toLocaleString("en-GB")
-                      : log.created_at
-                        ? new Date(log.created_at).toLocaleString("en-GB")
-                        : "—"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {isDraft ? (
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => void handleReviewClick(log.id)}
-                        >
-                          Review
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          disabled={sendingId === log.id}
-                          className="bg-zinc-950 text-white hover:bg-zinc-900 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-800"
-                          onClick={() => void handleSendNow(log.id)}
-                        >
-                          {sendingId === log.id ? "Sending…" : "Send now"}
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className="text-sm text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              );
-            })
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {emailLogs.length === 0 ? (
+              <TableRow className="border-0 hover:bg-transparent">
+                <TableCell
+                  colSpan={5}
+                  className="border-b-0 py-10 text-center text-[12px] text-zinc-500"
+                >
+                  No emails logged yet. They appear after the maintenance agent runs.
+                </TableCell>
+              </TableRow>
+            ) : (
+              emailLogs.map((log) => {
+                const isDraft = (log.status ?? "").toLowerCase() === "draft";
+                return (
+                  <TableRow
+                    key={log.id}
+                    className="border-b border-[#282828] hover:bg-[#141414]/80"
+                  >
+                    <TableCell className="align-top text-[12px] font-medium text-zinc-200">
+                      {log.to_email ?? "—"}
+                      {log.to_name ? (
+                        <span className="mt-0.5 block text-[11px] text-zinc-500">{log.to_name}</span>
+                      ) : null}
+                    </TableCell>
+                    <TableCell className="max-w-[280px] truncate align-top text-[12px] text-zinc-300">
+                      {log.subject ?? "—"}
+                    </TableCell>
+                    <TableCell className="align-top">{emailStatusBadge(log.status)}</TableCell>
+                    <TableCell className="align-top text-[12px] text-zinc-500">
+                      {log.sent_at
+                        ? new Date(log.sent_at).toLocaleString("en-GB")
+                        : log.created_at
+                          ? new Date(log.created_at).toLocaleString("en-GB")
+                          : "—"}
+                    </TableCell>
+                    <TableCell className="align-top text-right">
+                      {isDraft ? (
+                        <div className="flex flex-wrap justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => void handleReviewClick(log.id)}
+                            className="rounded-none border-[#333333] bg-transparent text-[10px] font-bold uppercase tracking-wider text-zinc-300 hover:bg-[#1a1a1a]"
+                          >
+                            Review
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={sendingId === log.id}
+                            className="rounded-none border border-white/20 bg-white px-3 text-[10px] font-bold uppercase tracking-wider text-black hover:bg-zinc-200 disabled:opacity-50"
+                            onClick={() => void handleSendNow(log.id)}
+                          >
+                            {sendingId === log.id ? "Sending…" : "Send now"}
+                          </Button>
+                        </div>
+                      ) : (
+                        <span className="text-[12px] text-zinc-600">—</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+      </div>
 
       <ReviewDraftModal
         open={reviewOpen}

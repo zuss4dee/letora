@@ -7,11 +7,20 @@ import { markAgentApprovalExecuted, revertAgentApprovalToPending } from "@/lib/a
 import { insertPendingAgentApproval } from "@/lib/approvals/create-agent-approval";
 import { runApprovedAgentSideEffect } from "@/lib/approvals/execute-approved-action";
 import { normalizeApprovalJsonField } from "@/lib/approvals/evidence";
-import type { AgentApprovalExecutionSlice, AgentApprovalRow, CreateAgentApprovalContract } from "@/lib/approvals/types";
+import type {
+  AgentApprovalActionType,
+  AgentApprovalExecutionSlice,
+  AgentApprovalRow,
+  CreateAgentApprovalContract,
+} from "@/lib/approvals/types";
 import { createClient } from "@/lib/supabase/server";
 import { logActivity } from "@/lib/actions/activity-log";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
+
+export type ApproveAgentApprovalResult =
+  | { ok: true; actionType: AgentApprovalActionType }
+  | { ok: false; error: string };
 
 async function getActor(
   supabase?: SupabaseClient,
@@ -58,13 +67,18 @@ export async function getPendingAgentApprovals(limit?: number): Promise<AgentApp
 const APPROVALS_REVALIDATE_PATHS = [
   "/dashboard/approvals",
   "/dashboard",
+  "/dashboard/home",
+  "/dashboard/assistant",
   "/dashboard/tenants",
   "/dashboard/properties",
+  "/dashboard/tenancies",
   "/dashboard/maintenance",
+  "/dashboard/rent-tracker",
+  "/dashboard/rent",
   "/dashboard/emails",
   "/dashboard/contracts",
   "/dashboard/settings",
-  "/dashboard/activity",
+  "/dashboard/leads",
 ] as const;
 
 function revalidateApprovalsSurfaces() {
@@ -113,6 +127,50 @@ export async function getPendingApprovalsForTenancy(tenancyId: string): Promise<
 
   if (error) {
     console.warn("[getPendingApprovalsForTenancy]", error.message);
+    return [];
+  }
+
+  return (data ?? []) as AgentApprovalRow[];
+}
+
+export async function getPendingApprovalsForMaintenance(): Promise<AgentApprovalRow[]> {
+  const actor = await getActor();
+  if (!actor) return [];
+
+  const { data, error } = await actor.supabase
+    .from("agent_approvals")
+    .select(
+      "id,user_id,agent_run_id,agent_type,title,summary,action_type,target_type,target_id,payload,evidence,status,decided_by,decided_at,deny_reason,executed_at,created_at",
+    )
+    .eq("user_id", actor.userId)
+    .eq("status", "pending")
+    .eq("action_type", "approve_maintenance_dispatch")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.warn("[getPendingApprovalsForMaintenance]", error.message);
+    return [];
+  }
+
+  return (data ?? []) as AgentApprovalRow[];
+}
+
+export async function getPendingApprovalsForRentChase(): Promise<AgentApprovalRow[]> {
+  const actor = await getActor();
+  if (!actor) return [];
+
+  const { data, error } = await actor.supabase
+    .from("agent_approvals")
+    .select(
+      "id,user_id,agent_run_id,agent_type,title,summary,action_type,target_type,target_id,payload,evidence,status,decided_by,decided_at,deny_reason,executed_at,created_at",
+    )
+    .eq("user_id", actor.userId)
+    .eq("status", "pending")
+    .eq("action_type", "send_rent_chase_email")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.warn("[getPendingApprovalsForRentChase]", error.message);
     return [];
   }
 
@@ -177,7 +235,7 @@ export async function denyAgentApproval(
   return { ok: true };
 }
 
-export async function approveAgentApproval(approvalId: string): Promise<ActionResult> {
+export async function approveAgentApproval(approvalId: string): Promise<ApproveAgentApprovalResult> {
   const actor = await getActor();
   if (!actor) return { ok: false, error: "Not authenticated" };
 
@@ -229,12 +287,10 @@ export async function approveAgentApproval(approvalId: string): Promise<ActionRe
     return { ok: false, error: sideEffect.error };
   }
 
-  if (sideEffect.markExecuted) {
-    const executedAt = new Date().toISOString();
-    const marked = await markAgentApprovalExecuted(actor.supabase, actor.userId, approvalId, executedAt);
-    if (!marked.ok) {
-      return { ok: false, error: marked.error };
-    }
+  const executedAt = new Date().toISOString();
+  const marked = await markAgentApprovalExecuted(actor.supabase, actor.userId, approvalId, executedAt);
+  if (!marked.ok) {
+    return { ok: false, error: marked.error };
   }
 
   revalidateApprovalsSurfaces();
@@ -248,7 +304,7 @@ export async function approveAgentApproval(approvalId: string): Promise<ActionRe
     success: true,
   }, actor.supabase);
 
-  return { ok: true };
+  return { ok: true, actionType: approval.action_type };
 }
 
 export async function getPendingApprovalsCount(userId: string): Promise<number> {

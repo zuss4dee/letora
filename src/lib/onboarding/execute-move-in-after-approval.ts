@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { sendMoveInInstructionsEmail } from "@/lib/onboarding/send-move-in-email";
@@ -94,6 +95,11 @@ async function mergeAgentRunAfterMoveInSend(
     .eq("user_id", userId);
 }
 
+function revalidateTenancyOperationalSurfaces(tenancyId: string) {
+  revalidatePath("/dashboard/tenancies");
+  revalidatePath(`/dashboard/tenancies/${tenancyId}`);
+}
+
 /**
  * Idempotent move-in send after dashboard approval. Uses `forceSend` inside `sendMoveInInstructionsEmail`.
  */
@@ -136,6 +142,7 @@ export async function executeSendMoveInEmailAfterApproval(
     if (approval.agent_run_id) {
       await mergeAgentRunAfterMoveInSend(supabase, userId, approval.agent_run_id, approval.id, existingId, true);
     }
+    revalidateTenancyOperationalSurfaces(tenancyId);
     return { ok: true, kind: "already_sent", emailLogId: existingId };
   }
 
@@ -154,5 +161,6 @@ export async function executeSendMoveInEmailAfterApproval(
     await mergeAgentRunAfterMoveInSend(supabase, userId, approval.agent_run_id, approval.id, emailLogId, true);
   }
 
+  revalidateTenancyOperationalSurfaces(tenancyId);
   return { ok: true, kind: "sent", emailLogId };
 }

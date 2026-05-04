@@ -16,15 +16,17 @@ export function CommandCenterOnboardingTasksSkeleton() {
 
 export async function CommandCenterOnboardingTasks({ userId }: { userId: string }) {
   const bars = await loadCommandCenterOnboardingBars(userId);
-  const meaningful = bars.filter((b) => b.pct > 0 && !b.label.startsWith("No active"));
-  const placeholders = [
-    { id: "p1", label: "Sarah Jenkins (Flat 2)", pct: 80 },
-    { id: "p2", label: "Mark Thomas (Flat 9)", pct: 35 },
+  const meaningful = bars.filter((b) => b.pct > 0 && !b.label.startsWith("No active") && !b.label.startsWith("—"));
+  
+  const setupTasks = [
+    { id: "s1", label: "System Readiness Check", pct: 100 },
+    { id: "s2", label: "Agent Dispatch Queue", pct: 0 },
   ];
+  
   const first = meaningful.slice(0, 2);
   const rows =
     first.length === 0
-      ? placeholders
+      ? setupTasks
       : first.length === 1
         ? [first[0]!, { id: "pad", label: "—", pct: 0 }]
         : [first[0]!, first[1]!];

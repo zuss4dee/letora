@@ -16,10 +16,11 @@ export async function getPortfolioCounts(
   supabase: SupabaseClient,
   userId: string
 ): Promise<PortfolioCounts> {
+  // We use Promise.all for speed. 
   const [
-    { count: totalProperties },
-    { count: activeTenancies },
-    { count: totalTenants }
+    propRes,
+    tenancyRes,
+    tenantRes
   ] = await Promise.all([
     supabase
       .from("properties")
@@ -27,24 +28,28 @@ export async function getPortfolioCounts(
       .eq("user_id", userId),
     supabase
       .from("tenancies")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "active")
-      .eq("user_id", userId), // Assuming tenancies has user_id or linked via properties
+      .select("id, properties!inner(user_id)", { count: "exact", head: true })
+      .eq("properties.user_id", userId)
+      .eq("status", "active"),
     supabase
       .from("tenants")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
+      .select("id, tenancies!inner(properties!inner(user_id))", { count: "exact", head: true })
+      .eq("tenancies.properties.user_id", userId)
   ]);
 
-  // For Letora, "Lettable Units" is usually total properties 
-  // unless we have multi-unit properties in the future.
-  const lettableUnits = totalProperties ?? 0;
+  if (propRes.error) console.error("[getPortfolioCounts] properties error:", propRes.error.message);
+  if (tenancyRes.error) console.error("[getPortfolioCounts] tenancies error:", tenancyRes.error.message);
+  if (tenantRes.error) console.error("[getPortfolioCounts] tenants error:", tenantRes.error.message);
+
+  const totalProperties = propRes.count ?? 0;
+  const activeTenancies = tenancyRes.count ?? 0;
+  const totalTenants = tenantRes.count ?? 0;
 
   return {
-    totalProperties: totalProperties ?? 0,
-    activeTenancies: activeTenancies ?? 0,
-    totalTenants: totalTenants ?? 0,
-    lettableUnits,
+    totalProperties,
+    activeTenancies,
+    totalTenants,
+    lettableUnits: totalProperties,
   };
 }
 

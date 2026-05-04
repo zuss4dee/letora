@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { sendEmailTool } from "@/lib/tools/send-email";
@@ -77,6 +78,10 @@ async function mergeAgentRunAfterRentChaseSend(
     .eq("user_id", userId);
 }
 
+function revalidateRentChaseOperationalSurfaces() {
+  revalidatePath("/dashboard/rent-tracker");
+}
+
 /**
  * Idempotent rent chase send after dashboard approval. Uses `forceSend` so human approval
  * is not blocked by `auto_send_rent_chaser`.
@@ -144,6 +149,7 @@ export async function executeSendRentChaseAfterApproval(
         true,
       );
     }
+    revalidateRentChaseOperationalSurfaces();
     return { ok: true, kind: "already_sent", emailLogId: existingId };
   }
 
@@ -176,5 +182,6 @@ export async function executeSendRentChaseAfterApproval(
     await mergeAgentRunAfterRentChaseSend(supabase, userId, approval.agent_run_id, approval.id, emailLogId, true);
   }
 
+  revalidateRentChaseOperationalSurfaces();
   return { ok: true, kind: "sent", emailLogId };
 }

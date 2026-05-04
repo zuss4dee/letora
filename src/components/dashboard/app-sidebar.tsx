@@ -58,6 +58,7 @@ const mainItemsStatic: NavItem[] = [
   { title: "Home", url: "/dashboard", icon: Home },
   { title: "Portfolio", url: "/dashboard/properties", icon: Building2 },
   { title: "Tenants", url: "/dashboard/tenants", icon: Users },
+  { title: "Tenancies", url: "/dashboard/tenancies", icon: Key },
 ];
 
 const operationsItemsBase: NavItem[] = [

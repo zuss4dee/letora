@@ -83,7 +83,7 @@ export function SafetyAlertsCard({
               </p>
               {mid ? (
                 <Link
-                  href={`/dashboard/maintenance/${mid}`}
+                  href={`/dashboard/maintenance?issueId=${encodeURIComponent(mid)}`}
                   className={
                     className
                       ? "mt-2 inline-block text-sm font-medium text-[#BD9952] underline-offset-4 hover:underline"

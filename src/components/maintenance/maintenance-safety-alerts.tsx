@@ -61,7 +61,7 @@ export function MaintenanceSafetyAlerts({
                 </p>
                 {mid ? (
                   <Link
-                    href={`/dashboard/maintenance/${mid}`}
+                    href={`/dashboard/maintenance?issueId=${encodeURIComponent(mid)}`}
                     className="mt-2 inline-block font-headline text-sm font-medium text-red-800 underline-offset-4 hover:underline dark:text-red-300"
                   >
                     View request

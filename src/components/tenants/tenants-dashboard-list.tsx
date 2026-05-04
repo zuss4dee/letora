@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, ClipboardList, Filter, Hourglass, Plus } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardList, Filter, Hourglass, Key, Plus } from "lucide-react";
 
 import { AddTenantDialog } from "@/components/tenants/add-tenant-dialog";
 import { Button } from "@/components/ui/button";
@@ -193,9 +193,9 @@ export function TenantsDashboardList({ tenants }: { tenants: TenantRow[] }) {
             className="h-7 rounded-[2px] border-zinc-300 bg-white px-3 text-[11px] font-medium text-zinc-600 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-800"
             asChild
           >
-            <Link href="/dashboard/tenancies" aria-label="Open tenancy onboarding and tenancies workspace">
-              <ClipboardList className="mr-1.5 h-3.5 w-3.5" aria-hidden />
-              Tenant onboarding
+            <Link href="/dashboard/tenancies" aria-label="Open tenancies workspace">
+              <Key className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+              View Tenancies
             </Link>
           </Button>
           <AddTenantDialog

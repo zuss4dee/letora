@@ -54,9 +54,9 @@ export async function getLeads(): Promise<LeadListRow[]> {
   const { data: rows, error } = await supabase
     .from("leads")
     .select(
-      "id,name,full_name,email,phone,source,budget,move_in_date,qualified_status,status,notes,created_at,property_id",
+      "id,name,full_name,email,phone,source,budget,move_in_date,qualified_status,status,notes,created_at,property_id,properties!inner(user_id)",
     )
-    .eq("user_id", user.id)
+    .eq("properties.user_id", user.id)
     .order("created_at", { ascending: false });
 
   if (error || !rows?.length) {

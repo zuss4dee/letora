@@ -29,8 +29,8 @@ export async function getOverdueRentPaymentCount(userId: string): Promise<number
   const today = new Date().toISOString().slice(0, 10);
   const { data, error } = await supabase
     .from("rent_payments")
-    .select("id,status,due_date")
-    .eq("user_id", userId);
+    .select("id,status,due_date,tenancies!inner(properties!inner(user_id))")
+    .eq("tenancies.properties.user_id", userId);
 
   if (error || !data) return 0;
 
@@ -43,7 +43,10 @@ export type DashboardStats = {
   totalProperties: number;
   activeTenants: number;
   lettableUnits: number;
+  /** Rounded arrears GBP (historical KPI field name). Prefer `arrearsOutstanding`. */
   overduePayments: number;
+  /** Exact sum of overdue-ish instalments in GBP (`isPaymentOverdue` × `resolvePaymentAmount`). */
+  arrearsOutstanding: number;
   openMaintenance: number;
   activeLeads: number;
 };
@@ -68,8 +71,8 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
   const [{ data: paymentRows }, portfolio, openMaintRes, activeLeadsRes] = await Promise.all([
     supabase
       .from("rent_payments")
-      .select("status,due_date,amount_due,amount")
-      .eq("user_id", userId),
+      .select("status,due_date,amount,tenancies!inner(properties!inner(user_id))")
+      .eq("tenancies.properties.user_id", userId),
     getPortfolioCounts(supabase, userId),
     supabase
       .from("maintenance_requests")
@@ -78,8 +81,8 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
       .eq("tenancies.properties.user_id", userId),
     supabase
       .from("leads")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
+      .select("id, properties!inner(user_id)", { count: "exact", head: true })
+      .eq("properties.user_id", userId)
       .ilike("qualified_status", "pending"),
   ]);
 
@@ -94,6 +97,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
 
   return {
     overduePayments: Math.round(arrearsTotal),
+    arrearsOutstanding: arrearsTotal,
     activeTenants: portfolio.totalTenants,
     totalProperties: portfolio.totalProperties,
     lettableUnits: portfolio.lettableUnits,
@@ -113,7 +117,7 @@ export async function getThisMonthsRentPayments(
   const { data, error } = await supabase
     .from("rent_payments")
     .select(
-      "due_date,amount,amount_due,status,tenancies!inner(properties!inner(address,user_id),tenants(full_name))",
+      "due_date,amount,status,tenancies!inner(properties!inner(address,user_id),tenants(full_name))",
     )
     .eq("tenancies.properties.user_id", userId)
     .gte("due_date", startDate)

@@ -44,7 +44,7 @@ function ActionFilterChips({
   totalAll: number;
 }) {
   return (
-    <div className="flex flex-wrap gap-1.5">
+    <div className="flex flex-wrap gap-1">
       {FILTERS.map((f) => {
         const active = value === f.value;
         const n =
@@ -58,14 +58,14 @@ function ActionFilterChips({
             onClick={() => onChange(f.value)}
             aria-pressed={active}
             className={cn(
-              "border px-2.5 py-1 font-[family-name:var(--font-inter)] text-[0.62rem] font-medium uppercase tracking-[0.11em] transition-colors",
+              "border px-2 py-1 text-[9px] font-bold uppercase tracking-wider transition-colors",
               active
-                ? "border-white/25 bg-white/10 text-zinc-100"
-                : "border-white/[0.08] bg-[#151515] text-zinc-500 hover:text-zinc-200",
+                ? "border-white/20 bg-white/10 text-white"
+                : "border-[#232323] bg-transparent text-zinc-500 hover:text-zinc-300",
             )}
           >
             {f.label}
-            <span className="ml-1.5 tabular-nums text-[0.9em] opacity-80">({n})</span>
+            <span className="ml-1.5 tabular-nums opacity-60">({n})</span>
           </button>
         );
       })}
@@ -112,24 +112,24 @@ export function ApprovalsPageWorkspace({
       >
         <TabsList
           variant="line"
-          className="h-auto w-full justify-start gap-0 rounded-none border-b border-white/[0.1] bg-transparent p-0 sm:w-auto sm:gap-7"
+          className="h-auto w-full justify-start gap-0 rounded-none border-b border-[#232323] bg-transparent p-0 sm:w-auto sm:gap-8"
         >
           <TabsTrigger
             value="queue"
-            className="rounded-none px-0 pb-3 font-[family-name:var(--font-inter)] text-[0.66rem] uppercase tracking-[0.16em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-white data-[state=active]:text-zinc-100"
+            className="rounded-none px-0 pb-4 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-white data-[state=active]:text-white"
           >
             Queue
             {pending.length > 0 ? (
-              <span className="ml-2 tabular-nums text-muted-foreground/80">({pending.length})</span>
+              <span className="ml-2 tabular-nums opacity-50">({pending.length})</span>
             ) : null}
           </TabsTrigger>
           <TabsTrigger
             value="decisions"
-            className="rounded-none px-0 pb-3 font-[family-name:var(--font-inter)] text-[0.66rem] uppercase tracking-[0.16em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-white data-[state=active]:text-zinc-100"
+            className="rounded-none px-0 pb-4 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-white data-[state=active]:text-white"
           >
-            Recent decisions
+            History
             {resolved.length > 0 ? (
-              <span className="ml-2 tabular-nums text-muted-foreground/80">({resolved.length})</span>
+              <span className="ml-2 tabular-nums opacity-50">({resolved.length})</span>
             ) : null}
           </TabsTrigger>
         </TabsList>
@@ -150,13 +150,10 @@ export function ApprovalsPageWorkspace({
             </section>
           ) : (
             <>
-              <div className="flex flex-col gap-3 border border-white/[0.1] bg-[#121212] px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 border border-[#232323] bg-[#111111] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
-                  <p className="font-[family-name:var(--font-inter)] text-[0.62rem] uppercase tracking-[0.14em] text-zinc-500">
-                    Queue controls
-                  </p>
-                  <p className="font-[family-name:var(--font-inter)] text-[0.72rem] text-zinc-300">
-                    Sorted oldest first. Select a row to inspect rationale and run decision actions.
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                    Queue Filter
                   </p>
                 </div>
                 <ActionFilterChips
@@ -166,19 +163,6 @@ export function ApprovalsPageWorkspace({
                   countsByAction={pendingByActionType}
                   totalAll={pending.length}
                 />
-              </div>
-              <div className="flex flex-wrap items-center gap-3 px-0.5">
-                <p className="font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.16em] text-zinc-600">
-                  Status key
-                </p>
-                <span className="inline-flex items-center gap-1.5 font-[family-name:var(--font-inter)] text-[0.65rem] text-zinc-400">
-                  <span className="size-2 bg-zinc-100" aria-hidden />
-                  Selected
-                </span>
-                <span className="inline-flex items-center gap-1.5 font-[family-name:var(--font-inter)] text-[0.65rem] text-zinc-400">
-                  <span className="size-2 bg-rose-300" aria-hidden />
-                  Aging ({">"}48h)
-                </span>
               </div>
               {filteredPending.length === 0 ? (
                 <section className="border border-dashed border-white/[0.12] bg-[#111111] p-5">
@@ -206,9 +190,9 @@ export function ApprovalsPageWorkspace({
             </section>
           ) : (
             <>
-              <div className="flex flex-col gap-2 border border-white/[0.1] bg-[#121212] px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="font-[family-name:var(--font-inter)] text-[0.7rem] text-zinc-400">
-                  Use the same action filters on the decision log.
+              <div className="flex flex-col gap-2 border border-[#232323] bg-[#111111] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                  Decision History
                 </p>
                 <ActionFilterChips
                   idPrefix="d"
