@@ -311,13 +311,59 @@ export async function getTenantById(userId: string, tenantId: string): Promise<T
   };
 }
 
+export type TenantProfileActivityRow = {
+  id: string;
+  tool_name: string;
+  args: unknown;
+  result: unknown;
+  success: boolean;
+  created_at: string;
+  source: string | null;
+};
+
+export type TenantProfileLastPayment = {
+  amountGbp: number;
+  /** ISO date string (YYYY-MM-DD) when known */
+  dateIso: string | null;
+};
+
+function pickLastPaidPayment(
+  rows: Array<{
+    amount?: unknown;
+    status?: string | null;
+    paid_date?: string | null;
+    created_at?: string | null;
+  }>,
+): TenantProfileLastPayment | null {
+  const paid = rows.filter((p) => (p.status ?? "").toLowerCase() === "paid");
+  if (paid.length === 0) return null;
+
+  const sorted = [...paid].sort((a, b) => {
+    const ta = new Date(a.paid_date ?? a.created_at ?? 0).getTime();
+    const tb = new Date(b.paid_date ?? b.created_at ?? 0).getTime();
+    return tb - ta;
+  });
+
+  const top = sorted[0];
+  const amountGbp = resolvePaymentAmount(top);
+  const dateIso = top.paid_date
+    ? String(top.paid_date).slice(0, 10)
+    : top.created_at
+      ? String(top.created_at).slice(0, 10)
+      : null;
+
+  return { amountGbp, dateIso };
+}
+
 export type TenantProfileOperationalData = {
   tenant: TenantDetailRow;
   activeTenancy: TenantDetailRow["tenancies"][0] | null;
   rent: {
-    monthlyRentGbp: number;
+    /** Contract rent for active/primary tenancy; null when not set in DB */
+    monthlyRentGbp: number | null;
     arrearsGbp: number;
     status: TenantRentStatus;
+    lastPaid: TenantProfileLastPayment | null;
   };
   maintenance: {
     openCount: number;
@@ -325,7 +371,7 @@ export type TenantProfileOperationalData = {
   approvals: {
     pendingCount: number;
   };
-  activity: any[];
+  activity: TenantProfileActivityRow[];
 };
 
 export async function getTenantProfileOperationalData(
@@ -337,65 +383,163 @@ export async function getTenantProfileOperationalData(
   const tenant = await getTenantById(userId, tenantId);
   if (!tenant) return null;
 
-  const activeTenancy = tenant.tenancies.find((t) => (t.status ?? "").toLowerCase() === "active") ?? tenant.tenancies[0] ?? null;
+  const activeTenancy =
+    tenant.tenancies.find((t) => (t.status ?? "").toLowerCase() === "active") ?? tenant.tenancies[0] ?? null;
 
-  // Rent Arrears
   const todayIso = new Date().toISOString().slice(0, 10);
+  const tenancyIds = tenant.tenancies.map((t) => t.id);
+  const targetIdList = [tenantId, ...tenancyIds];
 
-  // Rent arrears — use `amount` (+ `due_date`, `status`) per rent_tracker schema
-  const { data: rentPayments } = await supabase
-    .from("rent_payments")
-    .select("amount, status, due_date")
-    .eq("tenant_id", tenantId);
+  const emptyMaint = Promise.resolve({ data: [] as { id: string }[], error: null });
+  const zeroCount = Promise.resolve({ count: 0, error: null as null });
 
-  const arrearsGbp = (rentPayments ?? []).reduce((acc, p) => {
+  const [
+    rentPaymentsResult,
+    openMaintResult,
+    maintRowsResult,
+    activityResult,
+    apprTargetsResult,
+    apprRentChaseResult,
+  ] = await Promise.all([
+    supabase
+      .from("rent_payments")
+      .select("amount, status, due_date, paid_date, created_at")
+      .eq("tenant_id", tenantId),
+    tenancyIds.length > 0
+      ? supabase
+          .from("maintenance_requests")
+          .select("id", { count: "exact", head: true })
+          .eq("status", "open")
+          .in("tenancy_id", tenancyIds)
+      : zeroCount,
+    tenancyIds.length > 0
+      ? supabase.from("maintenance_requests").select("id").in("tenancy_id", tenancyIds)
+      : emptyMaint,
+    supabase
+      .from("agent_activity")
+      .select("id,tool_name,args,result,success,created_at,source")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(50),
+    targetIdList.length > 0
+      ? supabase
+          .from("agent_approvals")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .eq("status", "pending")
+          .in("target_id", targetIdList)
+      : zeroCount,
+    supabase
+      .from("agent_approvals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .eq("action_type", "send_rent_chase_email")
+      .eq("payload->>tenantId", tenantId),
+  ]);
+
+  const rentPayments = rentPaymentsResult.data ?? [];
+  if (rentPaymentsResult.error) {
+    console.warn("[getTenantProfileOperationalData] rent_payments", rentPaymentsResult.error.message);
+  }
+
+  const arrearsGbp = rentPayments.reduce((acc, p) => {
     if (!isPaymentOverdue(p.status, p.due_date, todayIso)) return acc;
     return acc + resolvePaymentAmount(p);
   }, 0);
 
-  const rentStatus: TenantRentStatus = arrearsGbp > 0 ? "overdue" : "paid";
+  const rentStatus = aggregateRentStatus(rentPayments);
+  const lastPaid = pickLastPaidPayment(rentPayments);
 
-  // Maintenance
-  const { count: openMaintenanceCount } = await supabase
-    .from("maintenance_requests")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "open")
-    .in("tenancy_id", tenant.tenancies.map(t => t.id));
+  const openMaintenanceCount =
+    tenancyIds.length > 0 ? (openMaintResult as { count: number | null }).count ?? 0 : 0;
+  if (tenancyIds.length > 0 && "error" in openMaintResult && openMaintResult.error) {
+    console.warn(
+      "[getTenantProfileOperationalData] maintenance open count",
+      openMaintResult.error.message,
+    );
+  }
 
-  // Approvals
-  const { count: pendingApprovalsCount } = await supabase
-    .from("agent_approvals")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "pending")
-    .in("target_id", [...tenant.tenancies.map(t => t.id), tenantId]);
+  const maintenanceIds = (maintRowsResult.data ?? []).map((m) => String(m.id)).filter(Boolean);
 
-  // Activity Log
-  const { data: activity } = await supabase
-    .from("agent_activity")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(10);
-    
-  // Filter activity manually since it's JSON args (simple heuristic)
-  const tenantActivity = (activity ?? []).filter(a => {
-    const argsStr = JSON.stringify(a.args);
-    return argsStr.includes(tenantId) || tenant.tenancies.some(t => argsStr.includes(t.id));
-  });
+  let pendingApprovalsCount = 0;
+
+  if ("error" in apprTargetsResult && apprTargetsResult.error) {
+    console.warn(
+      "[getTenantProfileOperationalData] pending approvals count (targets)",
+      apprTargetsResult.error.message,
+    );
+  } else {
+    pendingApprovalsCount += (apprTargetsResult as { count: number | null }).count ?? 0;
+  }
+
+  if (apprRentChaseResult.error) {
+    console.warn(
+      "[getTenantProfileOperationalData] pending approvals count (rent chase)",
+      apprRentChaseResult.error.message,
+    );
+  } else {
+    pendingApprovalsCount += apprRentChaseResult.count ?? 0;
+  }
+
+  if (maintenanceIds.length > 0) {
+    const { count: c3, error: e3 } = await supabase
+      .from("agent_approvals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .eq("action_type", "approve_maintenance_dispatch")
+      .in("target_id", maintenanceIds);
+    if (e3) {
+      console.warn("[getTenantProfileOperationalData] pending approvals count (maintenance)", e3.message);
+    } else {
+      pendingApprovalsCount += c3 ?? 0;
+    }
+  }
+
+  if (activityResult.error) {
+    console.warn("[getTenantProfileOperationalData] agent_activity", activityResult.error.message);
+  }
+
+  const tenantActivity: TenantProfileActivityRow[] = (activityResult.data ?? [])
+    .map((row) => {
+      const r = row as Record<string, unknown>;
+      const id = r.id != null ? String(r.id) : "";
+      const tool_name = typeof r.tool_name === "string" ? r.tool_name : "";
+      const created_at = typeof r.created_at === "string" ? r.created_at : "";
+      const success = typeof r.success === "boolean" ? r.success : true;
+      const source = r.source == null ? null : String(r.source);
+      if (!id || !tool_name || !created_at) return null;
+      return {
+        id,
+        tool_name,
+        args: r.args,
+        result: r.result,
+        success,
+        created_at,
+        source,
+      } satisfies TenantProfileActivityRow;
+    })
+    .filter((row): row is TenantProfileActivityRow => row != null)
+    .filter((a) => {
+      const argsStr = JSON.stringify(a.args);
+      return argsStr.includes(tenantId) || tenant.tenancies.some((t) => argsStr.includes(t.id));
+    });
 
   return {
     tenant,
     activeTenancy,
     rent: {
-      monthlyRentGbp: activeTenancy?.monthlyRent ?? 0,
+      monthlyRentGbp: activeTenancy?.monthlyRent ?? null,
       arrearsGbp,
       status: rentStatus,
+      lastPaid,
     },
     maintenance: {
-      openCount: openMaintenanceCount ?? 0,
+      openCount: openMaintenanceCount,
     },
     approvals: {
-      pendingCount: pendingApprovalsCount ?? 0,
+      pendingCount: pendingApprovalsCount,
     },
     activity: tenantActivity,
   };

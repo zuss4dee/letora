@@ -10,7 +10,14 @@ import {
   ApprovalsWorkspaceSkeleton,
 } from "./approvals-content";
 
-export default function ApprovalsPage() {
+export default async function ApprovalsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ id?: string }>;
+}) {
+  const sp = await searchParams;
+  const focusApprovalId = typeof sp.id === "string" && sp.id.trim().length > 0 ? sp.id.trim() : undefined;
+
   return (
     <div className="@container/main flex flex-1 flex-col gap-5 bg-[#0B0B0B] p-4 md:gap-6 md:p-6">
       <ApprovalsStaticShell />
@@ -18,7 +25,7 @@ export default function ApprovalsPage() {
         <ApprovalsQueueHealthSection />
       </Suspense>
       <Suspense fallback={<ApprovalsWorkspaceSkeleton />}>
-        <ApprovalsWorkspaceSection />
+        <ApprovalsWorkspaceSection focusApprovalId={focusApprovalId} />
       </Suspense>
     </div>
   );

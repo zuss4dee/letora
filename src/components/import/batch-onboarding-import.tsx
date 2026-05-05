@@ -21,6 +21,7 @@ import {
   type BatchImportHistoryRow,
 } from "@/lib/actions/batch-onboarding";
 import type { PreparedRow } from "@/lib/onboarding/batch-onboard";
+import { PORTFOLIO_IMPORT_SCHEMA_GUIDE } from "@/lib/onboarding/portfolio-import-schema";
 import { cn } from "@/lib/utils";
 
 type PreparedRowSummary = {
@@ -30,6 +31,8 @@ type PreparedRowSummary = {
   matchedProperties: number;
   existingTenants: number;
   skippedActiveTenancies: number;
+  duplicateCsvSkips: number;
+  warningRows: number;
   actionableRows: number;
 };
 
@@ -46,11 +49,20 @@ type Tone = "error" | "skip" | "new" | "matched" | "ok";
 
 function rowStatusLabel(row: PreparedRow): { label: string; tone: Tone } {
   if (row.tags.includes("validation_error")) return { label: "Fix row", tone: "error" };
+  if (row.tags.includes("duplicate_csv_row_skip")) return { label: "Duplicate row", tone: "skip" };
   if (row.tags.includes("existing_active_tenancy_skip"))
     return { label: "Already onboarded", tone: "skip" };
   if (row.tags.includes("new_property")) return { label: "New property", tone: "new" };
   if (row.tags.includes("matched_property")) return { label: "Matched", tone: "matched" };
   return { label: "Ready", tone: "ok" };
+}
+
+function previewNotesCells(row: PreparedRow): { errors: string; warnings: string; note: string } {
+  return {
+    errors: row.raw.rowErrors.length > 0 ? row.raw.rowErrors.join("; ") : "—",
+    warnings: row.raw.rowWarnings.length > 0 ? row.raw.rowWarnings.join("; ") : "—",
+    note: row.skipReason ?? "—",
+  };
 }
 
 function StatusPill({ label, tone }: { label: string; tone: Tone }) {
@@ -127,6 +139,15 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
   const [isPreviewing, startPreview] = useTransition();
   const [isRunning, startRun] = useTransition();
   const [isDragging, setIsDragging] = useState(false);
+  const [confirmCommit, setConfirmCommit] = useState(false);
+
+  const importGuideBullets = useMemo(
+    () =>
+      PORTFOLIO_IMPORT_SCHEMA_GUIDE.split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0),
+    [],
+  );
 
   function handleDrop(e: React.DragEvent<HTMLLabelElement>) {
     e.preventDefault();
@@ -139,13 +160,14 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
   }
 
   const canRun = useMemo(() => {
-    if (!rows || rows.length === 0) return false;
+    if (!confirmCommit || !rows || rows.length === 0) return false;
     return rows.some(
       (r) =>
         !r.tags.includes("validation_error") &&
-        !r.tags.includes("existing_active_tenancy_skip"),
+        !r.tags.includes("existing_active_tenancy_skip") &&
+        !r.tags.includes("duplicate_csv_row_skip"),
     );
-  }, [rows]);
+  }, [rows, confirmCommit]);
 
   function resetPreview() {
     setRows(null);
@@ -153,6 +175,7 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
     setError(null);
     setRunTotals(null);
     setRunBatchId(null);
+    setConfirmCommit(false);
   }
 
   function onPreview() {
@@ -174,10 +197,12 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
         setError(res.error);
         setRows(null);
         setSummary(null);
+        setConfirmCommit(false);
         return;
       }
       setRows(res.rows);
       setSummary(res.summary);
+      setConfirmCommit(false);
     });
   }
 
@@ -228,14 +253,24 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                     Provide your portfolio
                   </h2>
                 </div>
-                <a
-                  href="/templates/tenant-batch-template.csv"
-                  download
-                  className="inline-flex items-center gap-1.5 border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
-                >
-                  <Download className="size-3" />
-                  Template
-                </a>
+                <div className="flex flex-wrap gap-3">
+                  <a
+                    href="/templates/portfolio-import-sample.csv"
+                    download
+                    className="inline-flex items-center gap-1.5 border border-[#afefdd]/30 bg-[#152420] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#afefdd] transition-colors hover:border-[#afefdd]/50"
+                  >
+                    <Download className="size-3" />
+                    Sample CSV
+                  </a>
+                  <a
+                    href="/templates/tenant-batch-template.csv"
+                    download
+                    className="inline-flex items-center gap-1.5 border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+                  >
+                    <Download className="size-3" />
+                    Minimal template
+                  </a>
+                </div>
               </div>
 
               {/* Upload + Paste grid */}
@@ -300,7 +335,7 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                   </div>
                   <textarea
                     id="batch-csv"
-                    placeholder={`property_address,city,tenant_name,tenant_email,monthly_rent,start_date\n12 Oak St,London,Alex Stone,alex@mail.com,1850,2026-05-01`}
+                    placeholder={`row_kind,property_address,city,postcode,tenant_name,tenant_email,monthly_rent,start_date\noccupied,"12 Oak St",London,E2 7AA,Alex Stone,alex@mail.com,1850,2026-05-01\nvacant,"99 Empty Rd",Leeds,LS1 1AA,,,0,`}
                     value={csvText}
                     onChange={(e) => {
                       setCsvText(e.target.value);
@@ -379,10 +414,15 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                   </div>
                   <div className="flex flex-wrap items-center gap-6">
                     <Stat label="Total" value={summary.total} />
-                    <Stat label="New" value={summary.newProperties} accent />
+                    <Stat label="Ready" value={summary.actionableRows} accent />
+                    <Stat label="Dup rows" value={summary.duplicateCsvSkips} muted />
+                    {summary.warningRows > 0 ? (
+                      <Stat label="Rows w/ warnings" value={summary.warningRows} muted />
+                    ) : null}
+                    <Stat label="New" value={summary.newProperties} />
                     <Stat label="Matched" value={summary.matchedProperties} />
                     {summary.skippedActiveTenancies > 0 ? (
-                      <Stat label="Skip" value={summary.skippedActiveTenancies} muted />
+                      <Stat label="Already active" value={summary.skippedActiveTenancies} muted />
                     ) : null}
                     {summary.validationErrors > 0 ? (
                       <Stat label="Errors" value={summary.validationErrors} danger />
@@ -394,6 +434,7 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                 <ul className="divide-y divide-[#282828] sm:hidden">
                   {rows.map((row) => {
                     const status = rowStatusLabel(row);
+                    const cells = previewNotesCells(row);
                     return (
                       <li key={`m-${row.rowIndex}`} className="px-4 py-3">
                         <div className="flex items-start justify-between gap-3">
@@ -402,7 +443,9 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                               {row.raw.propertyAddress || "—"}
                             </p>
                             <p className="truncate font-mono text-[10px] text-[#888888]">
-                              {row.raw.tenantFullName || "—"} · {row.raw.tenantEmail || "—"}
+                              {row.raw.rowKind === "vacant"
+                                ? "(vacant)"
+                                : `${row.raw.tenantFullName || "—"} · ${row.raw.tenantEmail || "—"}`}
                             </p>
                           </div>
                           <StatusPill label={status.label} tone={status.tone} />
@@ -411,10 +454,18 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                           <span>{row.raw.monthlyRent > 0 ? `£${row.raw.monthlyRent.toLocaleString()}/mo` : "—"}</span>
                           <span>{row.raw.startDate || "—"}</span>
                         </div>
-                        {row.raw.rowErrors.length > 0 || row.skipReason ? (
-                          <p className="mt-1 font-mono text-[10px] text-[#ee7d77]">
-                            {row.raw.rowErrors.length > 0 ? row.raw.rowErrors.join(", ") : row.skipReason}
+                        {cells.errors !== "—" ? (
+                          <p className="mt-2 font-mono text-[10px] text-[#ee7d77]">
+                            Errors: {cells.errors}
                           </p>
+                        ) : null}
+                        {cells.warnings !== "—" ? (
+                          <p className="mt-1 font-mono text-[10px] text-[#f8cf83]">
+                            Warnings: {cells.warnings}
+                          </p>
+                        ) : null}
+                        {cells.note !== "—" ? (
+                          <p className="mt-1 font-mono text-[10px] text-[#888888]">Note: {cells.note}</p>
                         ) : null}
                       </li>
                     );
@@ -423,19 +474,22 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
 
                 {/* Desktop table */}
                 <div className="hidden overflow-x-auto sm:block">
-                  <table className="w-full min-w-[760px] border-collapse text-left">
+                  <table className="w-full min-w-[1020px] border-collapse text-left">
                     <thead>
                       <tr className="border-b border-[#282828] bg-[#161616] text-[9px] uppercase tracking-widest text-[#555555]">
-                        {["#", "Status", "Property", "Tenant", "Rent", "Start", "Notes"].map((h) => (
-                          <th key={h} className="px-4 py-2.5 font-medium">
-                            {h}
-                          </th>
-                        ))}
+                        {["#", "Status", "Kind", "Property", "Tenant", "Rent", "Start", "Errors", "Warnings", "Import note"].map(
+                          (h) => (
+                            <th key={h} className="px-4 py-2.5 font-medium">
+                              {h}
+                            </th>
+                          ),
+                        )}
                       </tr>
                     </thead>
                     <tbody>
                       {rows.map((row) => {
                         const status = rowStatusLabel(row);
+                        const cells = previewNotesCells(row);
                         return (
                           <tr
                             key={row.rowIndex}
@@ -446,6 +500,9 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                             </td>
                             <td className="px-4 py-3">
                               <StatusPill label={status.label} tone={status.tone} />
+                            </td>
+                            <td className="px-4 py-3 font-mono text-[10px] uppercase tracking-wide text-[#888888]">
+                              {row.raw.rowKind}
                             </td>
                             <td className="px-4 py-3">
                               <p className="text-[11px] font-medium text-white">
@@ -469,10 +526,14 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                             <td className="px-4 py-3 font-mono text-[10px] tabular-nums text-[#888888]">
                               {row.raw.startDate || "—"}
                             </td>
-                            <td className="px-4 py-3 font-mono text-[10px] text-[#888888]">
-                              {row.raw.rowErrors.length > 0
-                                ? row.raw.rowErrors.join(", ")
-                                : (row.skipReason ?? "Ready")}
+                            <td className="max-w-[200px] px-4 py-3 font-mono text-[10px] text-[#ee7d77]">
+                              {cells.errors}
+                            </td>
+                            <td className="max-w-[200px] px-4 py-3 font-mono text-[10px] text-[#f8cf83]">
+                              {cells.warnings}
+                            </td>
+                            <td className="max-w-[220px] px-4 py-3 font-mono text-[10px] text-[#888888]">
+                              {cells.note}
                             </td>
                           </tr>
                         );
@@ -483,10 +544,24 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
 
                 {/* Run footer */}
                 <div className="flex flex-col gap-3 border-t border-[#282828] bg-[#1A1A1A] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="font-mono text-[9px] uppercase tracking-widest text-[#555555]">
-                    {summary.actionableRows} row{summary.actionableRows === 1 ? "" : "s"} ready ·
-                    errors and duplicates skipped
-                  </p>
+                  <div className="flex flex-col gap-2">
+                    <label className="flex cursor-pointer items-start gap-2 text-left">
+                      <input
+                        type="checkbox"
+                        checked={confirmCommit}
+                        onChange={(e) => setConfirmCommit(e.target.checked)}
+                        className="mt-0.5 size-3.5 shrink-0 rounded border border-[#555555] bg-[#0B0B0B] accent-white"
+                      />
+                      <span className="font-mono text-[9px] uppercase tracking-widest leading-relaxed text-[#aaaaaa]">
+                        I have checked this preview — create or match properties and tenancies exactly as shown. Rows with
+                        errors will not import; duplicates and already-active pairs are skipped.
+                      </span>
+                    </label>
+                    <p className="font-mono text-[9px] uppercase tracking-widest text-[#555555]">
+                      {summary.actionableRows} row{summary.actionableRows === 1 ? "" : "s"} will run · Portfolio, Tenants,
+                      Tenancies, and Rent Tracker update after completion
+                    </p>
+                  </div>
                   <button
                     type="button"
                     onClick={onRun}
@@ -499,7 +574,7 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                         Onboarding
                       </>
                     ) : (
-                      <>Onboard {summary.actionableRows} row{summary.actionableRows === 1 ? "" : "s"}</>
+                      <>Confirm & import {summary.actionableRows}</>
                     )}
                   </button>
                 </div>
@@ -551,10 +626,10 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                       <ChevronRight className="size-3" />
                     </Link>
                     <Link
-                      href="/dashboard/activity"
-                      className="flex items-center justify-center gap-2 border border-[#333333] bg-[#0B0B0B] px-6 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:text-white"
+                      href="/dashboard/rent-tracker"
+                      className="flex items-center justify-center gap-2 border border-[#282828] bg-[#0B0B0B] px-6 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:text-white"
                     >
-                      Monitor Agents
+                      Rent tracker
                     </Link>
                   </div>
                 </div>
@@ -577,7 +652,7 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                     previews and onboards after you confirm.
                   </p>
                   <Link
-                    href="/dashboard/assistant"
+                    href="/dashboard"
                     className="mt-3 inline-block border-b border-[#444748] pb-0.5 font-mono text-[9px] uppercase tracking-widest text-[#888888] transition-all hover:border-white hover:text-white"
                   >
                     Open Assistant
@@ -645,18 +720,14 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                 Import Guide
               </p>
             </div>
-            <ul className="space-y-2">
-              {[
-                "Understanding CSV field mapping",
-                "Handling multi-unit properties",
-                "Bulk tenant invite configuration",
-              ].map((item) => (
+            <ul className="max-h-[min(40vh,320px)] space-y-2 overflow-y-auto pr-1">
+              {importGuideBullets.map((item) => (
                 <li
                   key={item}
-                  className="flex cursor-pointer items-center gap-2 text-[10px] text-[#555555] transition-colors hover:text-white"
+                  className="flex gap-2 text-[9px] leading-snug text-[#666666]"
                 >
-                  <span className="size-1 rounded-full bg-[#333333]" aria-hidden />
-                  {item}
+                  <span className="mt-1.5 size-1 shrink-0 rounded-full bg-[#444444]" aria-hidden />
+                  <span>{item.startsWith("•") ? item.slice(1).trim() : item}</span>
                 </li>
               ))}
             </ul>

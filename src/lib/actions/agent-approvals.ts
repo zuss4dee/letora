@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { markAgentApprovalExecuted, revertAgentApprovalToPending } from "@/lib/approvals/approval-lifecycle";
+import { markAgentApprovalExecutedWithRetry, revertAgentApprovalToPending } from "@/lib/approvals/approval-lifecycle";
 import { insertPendingAgentApproval } from "@/lib/approvals/create-agent-approval";
+import { parseAgentApprovalActionType } from "@/lib/approvals/action-type-key";
 import { runApprovedAgentSideEffect } from "@/lib/approvals/execute-approved-action";
 import { normalizeApprovalJsonField } from "@/lib/approvals/evidence";
 import type {
@@ -67,14 +68,11 @@ export async function getPendingAgentApprovals(limit?: number): Promise<AgentApp
 const APPROVALS_REVALIDATE_PATHS = [
   "/dashboard/approvals",
   "/dashboard",
-  "/dashboard/home",
-  "/dashboard/assistant",
   "/dashboard/tenants",
   "/dashboard/properties",
   "/dashboard/tenancies",
   "/dashboard/maintenance",
   "/dashboard/rent-tracker",
-  "/dashboard/rent",
   "/dashboard/emails",
   "/dashboard/contracts",
   "/dashboard/settings",
@@ -98,7 +96,7 @@ export async function getRecentResolvedAgentApprovals(limit = 12): Promise<Agent
       "id,user_id,agent_run_id,agent_type,title,summary,action_type,target_type,target_id,payload,evidence,status,decided_by,decided_at,deny_reason,executed_at,created_at",
     )
     .eq("user_id", actor.userId)
-    .in("status", ["executed", "denied", "approved"])
+    .in("status", ["executed", "denied", "approved", "expired"])
     .order("decided_at", { ascending: false, nullsFirst: false })
     .limit(limit);
 
@@ -207,8 +205,22 @@ export async function denyAgentApproval(
   const actor = await getActor();
   if (!actor) return { ok: false, error: "Not authenticated" };
 
+  const { data: row, error: fetchErr } = await actor.supabase
+    .from("agent_approvals")
+    .select("id,status,action_type")
+    .eq("id", approvalId)
+    .eq("user_id", actor.userId)
+    .maybeSingle();
+
+  if (fetchErr || !row) {
+    return { ok: false, error: fetchErr?.message ?? "Approval not found" };
+  }
+  if (row.status !== "pending") {
+    return { ok: false, error: "Approval is no longer pending" };
+  }
+
   const now = new Date().toISOString();
-  const { error } = await actor.supabase
+  const { data: updated, error } = await actor.supabase
     .from("agent_approvals")
     .update({
       status: "denied",
@@ -218,19 +230,30 @@ export async function denyAgentApproval(
     })
     .eq("id", approvalId)
     .eq("user_id", actor.userId)
-    .eq("status", "pending");
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
 
   if (error) return { ok: false, error: error.message };
+  if (!updated) {
+    return { ok: false, error: "Could not deny this approval (it may have already been decided)." };
+  }
 
   revalidateApprovalsSurfaces();
 
-  // Log activity
-  await logActivity({
-    userId: actor.userId,
-    eventType: `DENIED: ACTION`,
-    source: "landlord",
-    args: { approvalId, denyReason },
-  }, actor.supabase);
+  const parsed = parseAgentApprovalActionType(row.action_type);
+  const eventSuffix = parsed ? parsed.toUpperCase().replace(/_/g, " ") : "ACTION (UNKNOWN TYPE)";
+
+  await logActivity(
+    {
+      userId: actor.userId,
+      eventType: `DENIED: ${eventSuffix}`,
+      source: "landlord",
+      args: { approvalId, actionType: row.action_type, denyReason: denyReason?.trim() || null },
+      success: true,
+    },
+    actor.supabase,
+  );
 
   return { ok: true };
 }
@@ -253,8 +276,17 @@ export async function approveAgentApproval(approvalId: string): Promise<ApproveA
     return { ok: false, error: "Approval is no longer pending" };
   }
 
+  const parsedActionType = parseAgentApprovalActionType(approval.action_type);
+  if (!parsedActionType) {
+    return {
+      ok: false,
+      error:
+        "This approval type is not recognised. Deny the item to clear it from your queue, or contact support if this keeps happening.",
+    };
+  }
+
   const now = new Date().toISOString();
-  const { error: approveError } = await actor.supabase
+  const { data: approvedRow, error: approveError } = await actor.supabase
     .from("agent_approvals")
     .update({
       status: "approved",
@@ -263,15 +295,20 @@ export async function approveAgentApproval(approvalId: string): Promise<ApproveA
     })
     .eq("id", approvalId)
     .eq("user_id", actor.userId)
-    .eq("status", "pending");
+    .eq("status", "pending")
+    .select("id")
+    .maybeSingle();
 
   if (approveError) {
     return { ok: false, error: approveError.message };
   }
+  if (!approvedRow) {
+    return { ok: false, error: "Could not approve (it may have been decided already)." };
+  }
 
   const executionSlice: AgentApprovalExecutionSlice = {
     id: approval.id,
-    action_type: approval.action_type,
+    action_type: parsedActionType,
     agent_run_id: approval.agent_run_id,
     target_id: approval.target_id,
     payload: normalizeApprovalJsonField(approval.payload),
@@ -279,32 +316,63 @@ export async function approveAgentApproval(approvalId: string): Promise<ApproveA
 
   const sideEffect = await runApprovedAgentSideEffect(actor.supabase, actor.userId, executionSlice);
 
-  if (!sideEffect.ok) {
+  if (sideEffect.ok === false) {
+    const sideErr = sideEffect.error;
     const reverted = await revertAgentApprovalToPending(actor.supabase, actor.userId, approvalId);
-    if (!reverted.ok) {
-      return { ok: false, error: `${sideEffect.error} (also failed to restore pending: ${reverted.error})` };
+    if (reverted.ok === false) {
+      return { ok: false, error: `${sideErr} (also failed to restore pending: ${reverted.error})` };
     }
-    return { ok: false, error: sideEffect.error };
+    return { ok: false, error: sideErr };
   }
 
   const executedAt = new Date().toISOString();
-  const marked = await markAgentApprovalExecuted(actor.supabase, actor.userId, approvalId, executedAt);
-  if (!marked.ok) {
+  const marked = await markAgentApprovalExecutedWithRetry(
+    actor.supabase,
+    actor.userId,
+    approvalId,
+    executedAt,
+  );
+  if (marked.ok === false) {
     return { ok: false, error: marked.error };
   }
 
   revalidateApprovalsSurfaces();
 
   // Log activity
-  await logActivity({
-    userId: actor.userId,
-    eventType: `APPROVED & EXECUTED: ${approval.action_type.toUpperCase().replace(/_/g, " ")}`,
-    source: "landlord",
-    args: { approvalId, actionType: approval.action_type, targetId: approval.target_id },
-    success: true,
-  }, actor.supabase);
+  await logActivity(
+    {
+      userId: actor.userId,
+      eventType: `APPROVED & EXECUTED: ${parsedActionType.toUpperCase().replace(/_/g, " ")}`,
+      source: "landlord",
+      args: { approvalId, actionType: parsedActionType, targetId: approval.target_id },
+      success: true,
+    },
+    actor.supabase,
+  );
 
-  return { ok: true, actionType: approval.action_type };
+  return { ok: true, actionType: parsedActionType };
+}
+
+/**
+ * Lightweight pending-queue read for sidebar stats (counts + staleness only).
+ */
+export async function getPendingApprovalsQueueMetrics(
+  userId: string,
+): Promise<Pick<AgentApprovalRow, "action_type" | "created_at">[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("agent_approvals")
+    .select("action_type,created_at")
+    .eq("user_id", userId)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.warn("[getPendingApprovalsQueueMetrics]", error.message);
+    return [];
+  }
+
+  return (data ?? []) as Pick<AgentApprovalRow, "action_type" | "created_at">[];
 }
 
 export async function getPendingApprovalsCount(userId: string): Promise<number> {

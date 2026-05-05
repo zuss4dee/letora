@@ -1,9 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  decidePortfolioCsvParse,
   normalizeBatchOnboardingRow,
   parseBatchOnboardingCsv,
 } from "./tenant-import";
+
+describe("decidePortfolioCsvParse", () => {
+  it("fails fast on pasted CSV with missing required headers", () => {
+    const csv = ["name,email", "Alex,alex@example.com"].join("\n");
+    const d = decidePortfolioCsvParse(csv, true);
+    expect(d.kind).toBe("structured_fail");
+    if (d.kind === "structured_fail") {
+      expect(d.error).toMatch(/Missing required column/i);
+    }
+  });
+});
 
 describe("parseBatchOnboardingCsv", () => {
   it("parses canonical headers into BatchOnboardingRow[]", () => {
@@ -49,10 +61,14 @@ describe("parseBatchOnboardingCsv", () => {
     ].join("\n");
     const rows = parseBatchOnboardingCsv(csv);
     expect(rows).toHaveLength(4);
-    expect(rows[0].rowErrors).toContain("Property address is required");
-    expect(rows[1].rowErrors).toContain("Tenant email is required");
+    expect(rows[0].rowErrors).toContain("Property street/address line is required (at least a few characters).");
+    expect(rows[1].rowErrors).toContain('Tenant email is required (or fix the spelling after the "@" symbol).');
     expect(rows[2].rowErrors.some((e) => e.includes("Monthly rent"))).toBe(true);
-    expect(rows[3].rowErrors.some((e) => e.toLowerCase().includes("start date"))).toBe(true);
+    expect(
+      rows[3].rowErrors.some(
+        (e) => e.includes("not recognised") && e.toLowerCase().includes("start date"),
+      ),
+    ).toBe(true);
   });
 
   it("parses UK-style pound currency in rent", () => {

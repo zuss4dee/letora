@@ -1,6 +1,9 @@
 import { approvalActionTypeKey } from "@/lib/approvals/action-type-key";
 import type { AgentApprovalRow } from "@/lib/approvals/types";
 
+/** Minimal pending row inputs for stale / mix stats (narrow select). */
+export type ApprovalQueueMetricRow = Pick<AgentApprovalRow, "action_type" | "created_at">;
+
 /**
  * Pending items older than this are considered “aging” for queue health (not alarmist).
  * Also used by {@link processStaleApprovalReminders} for email reminder eligibility.
@@ -18,7 +21,7 @@ export type ApprovalQueueStats = {
 };
 
 export function computeApprovalQueueStats(
-  pending: AgentApprovalRow[],
+  pending: readonly ApprovalQueueMetricRow[],
   staleAfterMs: number = APPROVAL_PENDING_STALE_MS,
 ): ApprovalQueueStats {
   const byActionType: Record<string, number> = {};

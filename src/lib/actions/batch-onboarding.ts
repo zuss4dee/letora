@@ -8,9 +8,9 @@ import {
   type PreparedRow,
 } from "@/lib/onboarding/batch-onboard";
 import {
+  decidePortfolioCsvParse,
   extractBatchOnboardingRowsWithLlmFromText,
   extractTextFromTenantImportFile,
-  parseBatchOnboardingCsv,
   type BatchOnboardingRow,
 } from "@/lib/onboarding/tenant-import";
 import { createClient } from "@/lib/supabase/server";
@@ -39,9 +39,48 @@ export type PreparePayload = {
     matchedProperties: number;
     existingTenants: number;
     skippedActiveTenancies: number;
+    duplicateCsvSkips: number;
+    warningRows: number;
     actionableRows: number;
   };
 };
+
+function isStructuredPortfolioFilename(name: string): boolean {
+  const lower = name.toLowerCase();
+  return (
+    lower.endsWith(".csv") || lower.endsWith(".tsv") || lower.endsWith(".txt")
+  );
+}
+
+/**
+ * Parse pasted or extracted text: strict CSV/TSV for structured uploads; LLM fallback for PDF/DOCX-style text.
+ */
+async function loadBatchOnboardingRowsFromText(
+  text: string,
+  structuredInput: boolean,
+): Promise<{ ok: true; rows: BatchOnboardingRow[] } | { ok: false; error: string }> {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return { ok: false, error: structuredInput ? "File or paste is empty." : "No text to read from this file." };
+  }
+
+  const decision = decidePortfolioCsvParse(trimmed, structuredInput);
+
+  if (decision.kind === "structured_fail") {
+    return { ok: false, error: decision.error };
+  }
+
+  if (decision.kind === "ready") {
+    return { ok: true, rows: decision.rows };
+  }
+
+  const llm = await extractBatchOnboardingRowsWithLlmFromText(text);
+  if (!llm.ok) {
+    const hint = structuredInput ? "" : " If this is meant to be CSV, export as .csv with a header row.";
+    return { ok: false, error: `${llm.error}${hint}` };
+  }
+  return { ok: true, rows: llm.rows };
+}
 
 /**
  * Parse a CSV text or an uploaded file into BatchOnboardingRow[] and classify each row.
@@ -56,16 +95,11 @@ export async function previewBatchOnboardingFromFormData(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Not authenticated" };
 
-  let rows: BatchOnboardingRow[] = [];
+  let load: { ok: true; rows: BatchOnboardingRow[] } | { ok: false; error: string };
   const csvText = formData.get("csvText");
 
   if (typeof csvText === "string" && csvText.trim().length > 0) {
-    rows = parseBatchOnboardingCsv(csvText);
-    if (rows.length === 0) {
-      const llm = await extractBatchOnboardingRowsWithLlmFromText(csvText);
-      if (!llm.ok) return { ok: false, error: llm.error };
-      rows = llm.rows;
-    }
+    load = await loadBatchOnboardingRowsFromText(csvText, true);
   } else {
     const file = formData.get("file");
     if (!file || !(file instanceof File)) {
@@ -75,22 +109,20 @@ export async function previewBatchOnboardingFromFormData(
     const extracted = await extractTextFromTenantImportFile(buf, file.name, file.type || "");
     if (!extracted.ok) return { ok: false, error: extracted.error };
 
-    const lower = file.name.toLowerCase();
-    if (lower.endsWith(".csv") || lower.endsWith(".txt")) {
-      rows = parseBatchOnboardingCsv(extracted.text);
-    }
-    if (rows.length === 0) {
-      const llm = await extractBatchOnboardingRowsWithLlmFromText(extracted.text);
-      if (!llm.ok) return { ok: false, error: llm.error };
-      rows = llm.rows;
-    }
+    const structured = isStructuredPortfolioFilename(file.name);
+    load = await loadBatchOnboardingRowsFromText(extracted.text, structured);
   }
 
-  if (rows.length === 0) {
-    return { ok: false, error: "We couldn't find any rows. Expected columns: property_address, tenant_name, tenant_email, monthly_rent, start_date." };
+  if (!load.ok) return load;
+  if (load.rows.length === 0) {
+    return {
+      ok: false,
+      error:
+        "No import rows were produced. Add at least one row with property_address (and tenant columns for occupied/onboarding rows), or use row_kind with vacant for property-only lines.",
+    };
   }
 
-  const prepared = await prepareBatchOnboarding(rows, user.id, supabase);
+  const prepared = await prepareBatchOnboarding(load.rows, user.id, supabase);
   return { ok: true, rows: prepared.rows, summary: prepared.summary };
 }
 
@@ -166,6 +198,7 @@ export async function startBatchOnboardingAction(
   revalidatePath("/dashboard/tenants");
   revalidatePath("/dashboard/tenancies");
   revalidatePath("/dashboard/properties");
+  revalidatePath("/dashboard/rent-tracker");
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/activity");
 

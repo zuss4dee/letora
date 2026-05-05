@@ -8,6 +8,7 @@ import { PropertyPortfolioBackLink } from "@/components/dashboard/property-portf
 import { DashboardPollRefresh } from "@/hooks/use-dashboard-poll-refresh";
 import type { MaintenanceDetail, MaintenanceRequestRow } from "@/lib/actions/maintenance";
 import { getMaintenanceRequestDetail, getMaintenanceRequests } from "@/lib/actions/maintenance";
+import { getTenancies } from "@/lib/actions/tenancies";
 import { getPendingApprovalsForMaintenance } from "@/lib/actions/agent-approvals";
 import { createClient } from "@/lib/supabase/server";
 
@@ -34,40 +35,80 @@ function detailToListRow(d: MaintenanceDetail): MaintenanceRequestRow {
 async function MaintenanceWorkspaceSection({
   propertyId,
   focusIssueId,
+  tenantId,
 }: {
   propertyId?: string;
   focusIssueId?: string;
+  tenantId?: string;
 }) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
   const userId = user?.id ?? null;
-  const [requests, pendingApprovals] = await Promise.all([
+  const [requests, pendingApprovals, tenancies] = await Promise.all([
     userId ? getMaintenanceRequests(userId) : { open: [], resolved: [] },
     getPendingApprovalsForMaintenance(),
+    userId ? getTenancies(userId) : [],
   ]);
+
+  const tenantIdTrim = tenantId?.trim();
+  const requestedTenantMissing =
+    Boolean(tenantIdTrim) && !tenancies.some((t) => t.tenantId === tenantIdTrim);
 
   const matchesProperty = (row: MaintenanceRequestRow) =>
     propertyId == null || row.propertyId === propertyId;
 
-  const openFiltered = requests.open.filter(matchesProperty);
-  const resolvedFiltered = requests.resolved.filter(matchesProperty);
+  /** When tenant id is unknown to the landlord roster, ignore tenant filter (same as rent tracker). */
+  const matchesTenant = (row: MaintenanceRequestRow) =>
+    tenantIdTrim == null || requestedTenantMissing || row.tenantId === tenantIdTrim;
+
+  const passesFilters = (row: MaintenanceRequestRow) => matchesProperty(row) && matchesTenant(row);
+
+  let openFiltered = requests.open.filter(passesFilters);
+  let resolvedFiltered = requests.resolved.filter(passesFilters);
+
+  let usedTenantScopeFallback = false;
+  const totalAfterFilter = openFiltered.length + resolvedFiltered.length;
+  const totalRequests = requests.open.length + requests.resolved.length;
+
+  if (
+    totalAfterFilter === 0 &&
+    totalRequests > 0 &&
+    tenantIdTrim &&
+    !requestedTenantMissing
+  ) {
+    usedTenantScopeFallback = true;
+    openFiltered = requests.open.filter(matchesProperty);
+    resolvedFiltered = requests.resolved.filter(matchesProperty);
+  }
 
   const openSorted = [...openFiltered].sort((a, b) => (b.createdAt ?? "").localeCompare(a.createdAt ?? ""));
   const combined = [...openSorted, ...resolvedFiltered];
 
   const focus = focusIssueId?.trim();
   let focalRow: MaintenanceRequestRow | null = null;
+  let tenantIssueContextConflict = false;
+
   if (userId && focus) {
     const existing = combined.find((r) => r.id === focus);
     if (existing) {
       focalRow = existing;
+      if (tenantIdTrim && !requestedTenantMissing && existing.tenantId && existing.tenantId !== tenantIdTrim) {
+        tenantIssueContextConflict = true;
+      }
     } else {
       const detail = await getMaintenanceRequestDetail(userId, focus);
       if (detail) {
-        if (propertyId == null || detail.propertyId === propertyId) {
+        let include = true;
+        if (propertyId != null && detail.propertyId !== propertyId) {
+          include = false;
+        }
+        if (include) {
           focalRow = detailToListRow(detail);
+          if (tenantIdTrim && !requestedTenantMissing && detail.tenantId && detail.tenantId !== tenantIdTrim) {
+            tenantIssueContextConflict = true;
+          }
         }
       }
     }
@@ -88,6 +129,9 @@ async function MaintenanceWorkspaceSection({
       pendingApprovals={pendingApprovals}
       deeplinkIssueId={resolvedDeeplinkId}
       issueDeeplinkMissing={issueDeeplinkMissing}
+      tenantScopeMissing={requestedTenantMissing}
+      tenantIssueContextConflict={tenantIssueContextConflict}
+      tenantScopeRosterFallback={usedTenantScopeFallback}
     />
   );
 }
@@ -113,7 +157,7 @@ function MaintenanceWorkspaceFallback() {
 export default async function MaintenancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ propertyId?: string; issueId?: string }>;
+  searchParams: Promise<{ propertyId?: string; issueId?: string; tenantId?: string }>;
 }) {
   const sp = await searchParams;
   const raw = sp.propertyId;
@@ -122,11 +166,14 @@ export default async function MaintenancePage({
   const rawIssue = sp.issueId;
   const focusIssueId =
     typeof rawIssue === "string" && rawIssue.trim().length > 0 ? rawIssue.trim() : undefined;
+  const rawTenant = sp.tenantId;
+  const tenantId =
+    typeof rawTenant === "string" && rawTenant.trim().length > 0 ? rawTenant.trim() : undefined;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <DashboardPollRefresh />
-      {focusIssueId ? (
+      {focusIssueId || tenantId ? (
         <div className="shrink-0 border-b border-[#282828] bg-[#141414] px-4 py-2.5 font-['Inter',system-ui,sans-serif] md:px-6">
           <Link
             href="/dashboard"
@@ -147,7 +194,11 @@ export default async function MaintenancePage({
         </div>
       ) : null}
       <Suspense fallback={<MaintenanceWorkspaceFallback />}>
-        <MaintenanceWorkspaceSection propertyId={propertyId} focusIssueId={focusIssueId} />
+        <MaintenanceWorkspaceSection
+          propertyId={propertyId}
+          focusIssueId={focusIssueId}
+          tenantId={tenantId}
+        />
       </Suspense>
     </div>
   );

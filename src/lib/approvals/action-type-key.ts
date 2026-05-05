@@ -10,6 +10,15 @@ const KNOWN: readonly AgentApprovalActionType[] = [
 const KNOWN_SET = new Set<string>(KNOWN);
 
 /**
+ * Returns a known `AgentApprovalActionType` or null if the value is missing or not supported
+ * (e.g. legacy or corrupted `agent_approvals.action_type`). Use before executing side effects.
+ */
+export function parseAgentApprovalActionType(raw: string | null | undefined): AgentApprovalActionType | null {
+  const key = approvalActionTypeKey(raw);
+  return KNOWN_SET.has(key) ? (key as AgentApprovalActionType) : null;
+}
+
+/**
  * Stable key for grouping / filtering approvals by `action_type`.
  * Normalizes casing and whitespace so UI filters match rows from `agent_approvals`
  * even if legacy rows differ slightly.

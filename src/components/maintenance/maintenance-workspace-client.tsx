@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import {
+  AlertTriangle,
   Bell,
   Circle,
   Clock3,
@@ -69,7 +70,7 @@ function matchesStatusFilter(row: MaintenanceRequestRow, f: StatusFilter): boole
   if (f === "pending") return s === "pending" || s === "open" || s === "";
   if (f === "in_progress") return s === "in_progress";
   if (f === "scheduled") return s === "scheduled";
-  if (f === "resolved") return s === "resolved";
+  if (f === "resolved") return s === "resolved" || s === "completed";
   return true;
 }
 
@@ -149,7 +150,8 @@ function assetGroupFromRow(row: MaintenanceRequestRow | null): string {
 function getAgentState(row: MaintenanceRequestRow, pendingApprovals: AgentApprovalRow[]) {
   const approval = pendingApprovals.find(a => a.target_id === row.id);
   if (approval) return { label: "DRAFT READY", tone: "emerald" as const, approvalId: approval.id, approval };
-  if (row.status === "resolved") return { label: "RESOLVED", tone: "zinc" as const };
+  const st = normalizeStatus(row.status);
+  if (st === "resolved" || st === "completed") return { label: "RESOLVED", tone: "zinc" as const };
   if (row.contractorName) return { label: "DISPATCHED", tone: "blue" as const };
   return { label: "TRIAGED", tone: "zinc" as const };
 }
@@ -167,6 +169,12 @@ type MaintenanceWorkspaceClientProps = {
   deeplinkIssueId?: string;
   /** URL had `issueId=` but it did not resolve into `rows` (invalid id / no access / empty session data). */
   issueDeeplinkMissing?: boolean;
+  /** `tenantId` in URL is not on any of this landlord's tenancies — tenant filter ignored. */
+  tenantScopeMissing?: boolean;
+  /** Focal `issueId` row belongs to a different tenant than `tenantId` in the URL. */
+  tenantIssueContextConflict?: boolean;
+  /** Tenant filter matched no rows; list was widened (tenant filter dropped, property filter kept). */
+  tenantScopeRosterFallback?: boolean;
 };
 
 export function MaintenanceWorkspaceClient({
@@ -175,6 +183,9 @@ export function MaintenanceWorkspaceClient({
   pendingApprovals,
   deeplinkIssueId,
   issueDeeplinkMissing,
+  tenantScopeMissing,
+  tenantIssueContextConflict,
+  tenantScopeRosterFallback,
 }: MaintenanceWorkspaceClientProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -291,6 +302,54 @@ export function MaintenanceWorkspaceClient({
           </p>
         </div>
       ) : null}
+      {tenantIssueContextConflict ? (
+        <div
+          role="status"
+          className="flex shrink-0 items-start gap-2 border-b border-orange-900/50 bg-orange-950/25 px-6 py-3 text-left"
+        >
+          <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-orange-400/90" aria-hidden />
+          <div className="min-w-0 space-y-1">
+            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-orange-300">
+              Context
+            </span>
+            <p className="text-[11px] leading-relaxed text-orange-50/90">
+              The deep-linked issue belongs to a different tenant than in the URL. The issue stays in
+              focus below; tenant filter does not apply to that row.
+            </p>
+          </div>
+        </div>
+      ) : null}
+      {tenantScopeMissing ? (
+        <div
+          role="status"
+          className="flex shrink-0 items-start gap-2 border-b border-[#382f22] bg-[#1a1612] px-6 py-3 text-left"
+        >
+          <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-500/90" aria-hidden />
+          <div className="min-w-0 space-y-1">
+            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-100/90">
+              Tenant
+            </span>
+            <p className="font-mono text-[10px] leading-relaxed uppercase tracking-[0.04em] text-zinc-500">
+              No tenancy on your account matches this tenant id. Showing every maintenance issue you can
+              access here (respecting property scope when set).
+            </p>
+          </div>
+        </div>
+      ) : null}
+      {tenantScopeRosterFallback ? (
+        <div
+          role="status"
+          className="flex shrink-0 items-start gap-2 border-b border-[#382f22] bg-[#1a1612] px-6 py-3 text-left"
+        >
+          <span className="mt-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-amber-400/90">
+            Scope
+          </span>
+          <p className="font-mono text-[10px] leading-relaxed uppercase tracking-[0.04em] text-zinc-500">
+            Tenant filter matched no issues — widened to every issue for this property (or your portfolio
+            when no property is set).
+          </p>
+        </div>
+      ) : null}
       <div className="flex shrink-0 items-center justify-between border-b border-[#232323] bg-[#0e0e0e] px-6 py-4">
         <div>
           <h1 className="text-[16px] font-bold tracking-tight text-white uppercase">Maintenance Center</h1>
@@ -314,10 +373,22 @@ export function MaintenanceWorkspaceClient({
 
       <div className="grid shrink-0 grid-cols-4 border-b border-[#232323] bg-[#0B0B0B]">
         {[
-          { label: "Open Issues", value: rows.filter(r => r.status !== 'resolved').length },
+          {
+            label: "Open Issues",
+            value: rows.filter((r) => {
+              const s = normalizeStatus(r.status);
+              return s !== "resolved" && s !== "completed";
+            }).length,
+          },
           { label: "Critical", value: rows.filter(r => toPriorityTone(r.priority) === 'critical').length, tone: 'rose' },
           { label: "Draft Ready", value: pendingApprovals.length, tone: 'emerald' },
-          { label: "Resolved (30d)", value: rows.filter(r => r.status === 'resolved').length },
+          {
+            label: "Resolved (30d)",
+            value: rows.filter((r) => {
+              const s = normalizeStatus(r.status);
+              return s === "resolved" || s === "completed";
+            }).length,
+          },
         ].map((stat, i) => (
           <div key={i} className={cn(
             "flex flex-col border-r border-[#232323] p-4 last:border-r-0",

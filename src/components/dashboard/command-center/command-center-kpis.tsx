@@ -35,7 +35,7 @@ export function CommandCenterActionBar() {
           Command Center
         </h1>
         <p className="mt-1 font-mono text-[10px] uppercase tracking-wide text-zinc-500">
-          LTD-GLOBAL-NODE-04 // LIVE STATUS
+          Live portfolio snapshot
         </p>
       </div>
       <div className="flex flex-wrap gap-2">

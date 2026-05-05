@@ -22,7 +22,8 @@ export async function POST(request: Request) {
 
   const tenancyId = body.tenancyId?.trim();
   const rentPaymentId = body.rentPaymentId?.trim();
-  const returnUrl = body.returnUrl?.trim() ?? `${process.env.NEXT_PUBLIC_APP_URL ?? "https://letora.co"}/dashboard/rent`;
+  const returnUrl =
+    body.returnUrl?.trim() ?? `${process.env.NEXT_PUBLIC_APP_URL ?? "https://letora.co"}/dashboard/rent-tracker`;
 
   if (!tenancyId || !rentPaymentId) {
     return NextResponse.json({ error: "tenancyId and rentPaymentId are required" }, { status: 400 });
@@ -73,6 +74,24 @@ export async function POST(request: Request) {
     tenantName: tenant?.full_name ?? "Tenant",
   });
 
+  const joinReturnQs = (base: string, query: string): string => {
+    const sep = base.includes("?") ? "&" : "?";
+    return `${base}${sep}${query}`;
+  };
+
+  const successSuffix = [
+    `payment=success`,
+    `session_id={CHECKOUT_SESSION_ID}`,
+    `paymentId=${encodeURIComponent(rentPaymentId)}`,
+    `tenancyId=${encodeURIComponent(tenancyId)}`,
+  ].join("&");
+
+  const cancelSuffix = [
+    `payment=cancelled`,
+    `paymentId=${encodeURIComponent(rentPaymentId)}`,
+    `tenancyId=${encodeURIComponent(tenancyId)}`,
+  ].join("&");
+
   const session = await stripe.checkout.sessions.create({
     payment_method_types: ["card"],
     mode: "payment",
@@ -91,8 +110,8 @@ export async function POST(request: Request) {
     ],
     metadata,
     customer_email: tenant?.email ?? undefined,
-    success_url: `${returnUrl}?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${returnUrl}?payment=cancelled`,
+    success_url: joinReturnQs(returnUrl, successSuffix),
+    cancel_url: joinReturnQs(returnUrl, cancelSuffix),
     payment_intent_data: {
       metadata,
     },

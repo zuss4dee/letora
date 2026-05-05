@@ -3,12 +3,10 @@ import { Suspense } from "react";
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { DashboardShellProviders } from "@/components/dashboard/dashboard-shell-providers";
-import { OnboardingGateBoundary } from "@/components/dashboard/onboarding-gate-boundary";
-import { SidebarApprovalsMeta } from "@/components/dashboard/sidebar-approvals-meta";
-import { SidebarAttentionBadges } from "@/components/dashboard/sidebar-attention-badges";
+import { DashboardShellSettingsGate } from "@/components/dashboard/dashboard-shell-settings-gate";
 import { SidebarDynamicProvider } from "@/components/dashboard/sidebar-dynamic-context";
 import { DashboardMobileInsetBar } from "@/components/dashboard/dashboard-mobile-inset-bar";
-import { SidebarSubscriptionMeta } from "@/components/dashboard/sidebar-subscription-meta";
+import { SidebarWorkflowMeta } from "@/components/dashboard/sidebar-workflow-meta";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { redirect } from "next/navigation";
@@ -40,20 +38,14 @@ export default async function DashboardShellLayout({ children }: { children: Rea
           <SidebarDynamicProvider>
             <AppSidebar variant="sidebar" userEmail={userEmail} />
             <Suspense fallback={null}>
-              <SidebarAttentionBadges userId={userId} />
+              <SidebarWorkflowMeta userId={userId} />
             </Suspense>
             <Suspense fallback={null}>
-              <SidebarSubscriptionMeta userId={userId} />
-            </Suspense>
-            <Suspense fallback={null}>
-              <SidebarApprovalsMeta />
+              <DashboardShellSettingsGate userId={userId} />
             </Suspense>
           </SidebarDynamicProvider>
           <SidebarInset className="flex h-full w-full min-h-0 flex-col overflow-hidden bg-background">
             <DashboardMobileInsetBar />
-            <Suspense fallback={null}>
-              <OnboardingGateBoundary userId={userId} />
-            </Suspense>
             <div className="flex h-full w-full min-h-0 flex-1 flex-col overflow-hidden relative">
               {children}
             </div>

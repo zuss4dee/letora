@@ -336,7 +336,7 @@ export function MaintenanceOperationalCaseFile({ detail }: { detail: Maintenance
                   </p>
                 </li>
               ) : null}
-              {normalizeStatus(detail.status) === "resolved" && detail.resolvedAt ? (
+              {["resolved", "completed"].includes(normalizeStatus(detail.status)) && detail.resolvedAt ? (
                 <li className="relative">
                   <span className="absolute -left-[25px] top-1 size-2 rounded-full bg-emerald-400" aria-hidden />
                   <p className="text-[11px] font-bold text-emerald-400">Resolved</p>

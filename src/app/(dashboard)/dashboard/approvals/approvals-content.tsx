@@ -1,4 +1,5 @@
 import { cache } from "react";
+import Link from "next/link";
 
 import { getPendingAgentApprovals, getRecentResolvedAgentApprovals } from "@/lib/actions/agent-approvals";
 import { ApprovalsPageWorkspace } from "@/components/agents/approvals-page-workspace";
@@ -33,6 +34,14 @@ export function ApprovalsStaticShell() {
           <p className="max-w-2xl text-[13px] text-zinc-400">
             Review and execute agent-prepared actions. High-priority decisions are surfaced here for final landlord verification before deployment.
           </p>
+          <p className="pt-2">
+            <Link
+              href="/dashboard"
+              className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500 underline-offset-4 transition-colors hover:text-zinc-300 hover:underline"
+            >
+              ← Command Center
+            </Link>
+          </p>
         </div>
       </div>
     </header>
@@ -49,7 +58,7 @@ export async function ApprovalsQueueHealthSection() {
   );
 }
 
-export async function ApprovalsWorkspaceSection() {
+export async function ApprovalsWorkspaceSection({ focusApprovalId }: { focusApprovalId?: string }) {
   const { pending, resolved, queueStats } = await getApprovalsData();
 
   return (
@@ -59,6 +68,7 @@ export async function ApprovalsWorkspaceSection() {
         pending={pending}
         resolved={resolved}
         pendingByActionType={queueStats.byActionType}
+        focusApprovalId={focusApprovalId}
       />
     </section>
   );

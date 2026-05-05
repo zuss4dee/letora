@@ -1,6 +1,11 @@
 import { z } from "zod";
 
 import { runLLM } from "@/lib/llm/router";
+import {
+  type PortfolioImportRowKind,
+  isLikelyUkPostcode,
+  normalizeUkPostcodeSpaces,
+} from "@/lib/onboarding/portfolio-import-schema";
 import { isValidEmailAddress } from "@/lib/validations/email";
 
 export type LooseTenantRow = {
@@ -152,8 +157,9 @@ export async function extractTextFromTenantImportFile(
 
   const lower = filename.toLowerCase();
   const isCsv = lower.endsWith(".csv") || mime.includes("csv");
+  const isTsv = lower.endsWith(".tsv") || mime.includes("tab-separated-values");
   const isTxt = lower.endsWith(".txt") || mime === "text/plain";
-  if (isCsv || isTxt) {
+  if (isCsv || isTsv || isTxt) {
     return { ok: true, text: buffer.toString("utf8") };
   }
 
@@ -180,7 +186,7 @@ export async function extractTextFromTenantImportFile(
 
   return {
     ok: false,
-    error: "Unsupported file type. Use CSV, TXT, PDF, or DOCX.",
+    error: "Unsupported file type. Use CSV, TSV, TXT, PDF, or DOCX.",
   };
 }
 
@@ -260,21 +266,37 @@ Rules:
  * Batch onboarding import (combined CSV: property + tenant + tenancy per row)
  * ────────────────────────────────────────────────────────────────────────── */
 
-/** One CSV row = one onboarding: property + tenant + tenancy fields combined. */
+/** One CSV row = one onboarding: property + tenant + tenancy fields combined (or property-only vacant). */
 export type BatchOnboardingRow = {
+  /** occupied | onboarding: full tenancy workflow. vacant: portfolio property only (no tenant/tenancy). */
+  rowKind: PortfolioImportRowKind;
   propertyAddress: string;
+  /** Optional portfolio label merged into saved address ("Name — line1"). */
+  propertyDisplayName: string | null;
   city: string | null;
   postcode: string | null;
+  propertyType: string | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
   tenantFullName: string;
   tenantEmail: string;
   tenantPhone: string | null;
   monthlyRent: number;
+  /** Calendar day-of-month rent is due for seeded instalments; optional. */
+  rentDueDay: number | null;
   startDate: string;
   moveInDate: string | null;
   endDate: string | null;
   depositAmount: number | null;
-  /** Populated by the parser when required fields are missing or malformed. */
+  /** Maps to DB `tenancies.status`: active | ended | pending. */
+  tenancyStatusDb: "active" | "ended" | "pending";
+  /** Seeds first instalment behaviour (arrears = past due + overdue marker). */
+  rentPosition: "clear" | "arrears";
+  notes: string | null;
+  /** Populated by the parser — blocks committing this row until fixed. */
   rowErrors: string[];
+  /** Non-blocking UX messages (missing postcode, onboarding hint, stray columns on vacant, etc.). */
+  rowWarnings: string[];
 };
 
 const BATCH_MAX_ROWS = 100;
@@ -282,17 +304,26 @@ const BATCH_MAX_ROWS = 100;
 const batchLlmPayloadSchema = z.object({
   rows: z.array(
     z.object({
+      rowKind: z.union([z.string(), z.null()]).optional(),
       propertyAddress: z.string(),
+      propertyDisplayName: z.union([z.string(), z.null()]).optional(),
       city: z.union([z.string(), z.null()]).optional(),
       postcode: z.union([z.string(), z.null()]).optional(),
-      tenantFullName: z.string(),
+      propertyType: z.union([z.string(), z.null()]).optional(),
+      bedrooms: z.union([z.number(), z.string(), z.null()]).optional(),
+      bathrooms: z.union([z.number(), z.string(), z.null()]).optional(),
+      tenantFullName: z.union([z.string(), z.null()]).optional(),
       tenantEmail: z.union([z.string(), z.null()]).optional(),
       tenantPhone: z.union([z.string(), z.null()]).optional(),
       monthlyRent: z.union([z.number(), z.string(), z.null()]).optional(),
+      rentDueDay: z.union([z.number(), z.string(), z.null()]).optional(),
       startDate: z.union([z.string(), z.null()]).optional(),
       moveInDate: z.union([z.string(), z.null()]).optional(),
       endDate: z.union([z.string(), z.null()]).optional(),
       depositAmount: z.union([z.number(), z.string(), z.null()]).optional(),
+      tenancyStatus: z.union([z.string(), z.null()]).optional(),
+      rentPosition: z.union([z.string(), z.null()]).optional(),
+      notes: z.union([z.string(), z.null()]).optional(),
     }),
   ),
 });
@@ -320,7 +351,7 @@ function cellToIsoDate(raw: string): string | null {
   return null;
 }
 
-function cellToMoney(raw: string): number | null {
+function cellToMoneyAllowZero(raw: string): number | null {
   const cleaned = raw
     .replace(/[£€$,\s]/g, "")
     .replace(/pcm|p\/m|per\s*month/gi, "")
@@ -329,6 +360,64 @@ function cellToMoney(raw: string): number | null {
   const n = Number(cleaned);
   if (Number.isNaN(n) || !Number.isFinite(n) || n < 0) return null;
   return n;
+}
+
+/** Positive amount only — use for tenancy rent when occupancy requires >0. */
+function cellToMoney(raw: string): number | null {
+  const n = cellToMoneyAllowZero(raw);
+  if (n == null || n <= 0) return null;
+  return n;
+}
+
+function parseRowKindCell(raw: string | null | undefined): PortfolioImportRowKind {
+  const s = (raw ?? "").trim().toLowerCase();
+  if (["vacant", "empty", "void", "unoccupied"].includes(s)) return "vacant";
+  if (["onboarding", "pipeline", "pre_move_in", "pre-move-in"].includes(s)) return "onboarding";
+  return "occupied";
+}
+
+function parseOptionalIntBounded(raw: string | null | undefined, max: number): number | null {
+  const s = (raw ?? "").trim();
+  if (!s) return null;
+  const n = Number.parseInt(s, 10);
+  if (!Number.isFinite(n) || n < 0 || n > max) return null;
+  return n;
+}
+
+function parseRentDueDayCell(raw: string | null | undefined): number | null {
+  const s = (raw ?? "").trim();
+  if (!s) return null;
+  const n = Number.parseInt(s, 10);
+  if (!Number.isFinite(n) || n < 1 || n > 31) return null;
+  return n;
+}
+
+function parseTenancyStatusDb(raw: string | null | undefined): {
+  status: "active" | "ended" | "pending";
+  unknown: boolean;
+} {
+  const s = (raw ?? "").trim().toLowerCase();
+  if (!s) return { status: "active", unknown: false };
+  if (["active", "live", "occupied", "current"].includes(s))
+    return { status: "active", unknown: false };
+  if (["ended", "past", "former", "expired", "terminated"].includes(s))
+    return { status: "ended", unknown: false };
+  if (["pending", "upcoming", "scheduled", "future", "onboarding"].includes(s))
+    return { status: "pending", unknown: false };
+  return { status: "active", unknown: true };
+}
+
+function parseRentPosition(raw: string | null | undefined): "clear" | "arrears" {
+  const s = (raw ?? "").trim().toLowerCase();
+  if (["arrears", "arrears_demo", "behind", "late", "overdue"].includes(s)) return "arrears";
+  return "clear";
+}
+
+function buildStoredPropertyAddress(displayName: string | null, streetLine: string): string {
+  const line = streetLine.trim();
+  const name = (displayName ?? "").trim();
+  if (name.length > 0) return `${name} — ${line}`;
+  return line;
 }
 
 function splitCsvLine(line: string, delim: string): string[] {
@@ -372,123 +461,278 @@ function addDaysIsoLocal(isoDate: string, deltaDays: number): string {
 }
 
 /**
+ * Normalizes one raw cell-map into a BatchOnboardingRow with errors (blocking) vs warnings (informational).
+ * `propertyAddress` is always the street line only — optional `propertyDisplayName` is prefixed on insert by the importer.
+ */
+export function buildStoredAddressForImport(displayName: string | null, streetLine: string): string {
+  return buildStoredPropertyAddress(displayName, streetLine);
+}
+
+/**
  * Normalizes one raw cell-map into a BatchOnboardingRow with per-row errors.
  * Always returns a row (never null) so the UI can show "fix this one" next to errors.
  */
 export function normalizeBatchOnboardingRow(raw: {
+  rowKind?: string | null;
   propertyAddress?: string | null;
+  propertyDisplayName?: string | null;
   city?: string | null;
   postcode?: string | null;
+  propertyType?: string | null;
+  bedrooms?: string | number | null;
+  bathrooms?: string | number | null;
   tenantFullName?: string | null;
   tenantEmail?: string | null;
   tenantPhone?: string | null;
   monthlyRent?: number | string | null;
+  rentDueDay?: string | number | null;
   startDate?: string | null;
   moveInDate?: string | null;
   endDate?: string | null;
   depositAmount?: number | string | null;
+  tenancyStatus?: string | null;
+  rentPosition?: string | null;
+  notes?: string | null;
 }): BatchOnboardingRow {
   const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const rowKind = parseRowKindCell(raw.rowKind);
 
   const propertyAddress = (raw.propertyAddress ?? "").replace(/\s+/g, " ").trim();
-  if (propertyAddress.length < 3) errors.push("Property address is required");
+  if (propertyAddress.length < 3) {
+    errors.push("Property street/address line is required (at least a few characters).");
+  }
 
+  const propertyDisplayName = (raw.propertyDisplayName ?? "").replace(/\s+/g, " ").trim() || null;
   const city = (raw.city ?? "").trim() || null;
-  const postcode = (raw.postcode ?? "").trim().toUpperCase() || null;
+  let postcode: string | null = null;
+  const postcodeInput = (raw.postcode ?? "").trim();
+  if (postcodeInput.length > 0) {
+    const norm = normalizeUkPostcodeSpaces(postcodeInput);
+    if (!isLikelyUkPostcode(norm)) {
+      errors.push(`Postcode "${postcodeInput}" does not look like a valid UK postcode.`);
+    } else {
+      postcode = norm;
+    }
+  } else {
+    warnings.push(
+      "Postcode is missing — matching uses address + city; add a postcode for cleaner deduplication.",
+    );
+  }
 
-  const tenantFullName = (raw.tenantFullName ?? "").replace(/\s+/g, " ").trim();
-  if (tenantFullName.length < 2) errors.push("Tenant full name is required");
+  const propertyType = (raw.propertyType ?? "").replace(/\s+/g, " ").trim() || null;
 
+  const bedroomCell = typeof raw.bedrooms === "number" ? String(raw.bedrooms) : (raw.bedrooms ?? "");
+  const bathroomCell = typeof raw.bathrooms === "number" ? String(raw.bathrooms) : (raw.bathrooms ?? "");
+  let bedrooms = parseOptionalIntBounded(bedroomCell, 30);
+  let bathrooms = parseOptionalIntBounded(bathroomCell, 20);
+  if (bedroomCell.trim() && bedrooms == null) {
+    warnings.push('Could not read "bedrooms" — leave blank or use a whole number (0–30).');
+  }
+  if (bathroomCell.trim() && bathrooms == null) {
+    warnings.push('Could not read "bathrooms" — leave blank or use a whole number (0–20).');
+  }
+
+  let tenantFullName = (raw.tenantFullName ?? "").replace(/\s+/g, " ").trim();
   const emailRaw = (raw.tenantEmail ?? "").trim();
-  const tenantEmail = emailRaw.length > 0 && isValidEmailAddress(emailRaw) ? emailRaw : "";
-  if (!tenantEmail) errors.push("Tenant email is required");
+  let tenantEmail = emailRaw.length > 0 && isValidEmailAddress(emailRaw) ? emailRaw : "";
 
   const phoneRaw = (raw.tenantPhone ?? "").replace(/\s+/g, " ").trim();
   const phoneDigits = phoneRaw.replace(/[^\d+]/g, "");
   const tenantPhone = phoneRaw.length >= 5 && phoneDigits.length >= 5 ? phoneRaw : null;
+
+  const rentDueDayRaw = typeof raw.rentDueDay === "number" ? String(raw.rentDueDay) : (raw.rentDueDay ?? "");
+  let rentDueDay = parseRentDueDayCell(rentDueDayRaw);
+  if (rentDueDayRaw.trim() && rentDueDay == null) {
+    warnings.push('Could not read "rent_due_day" — use a whole number 1–31 or leave blank.');
+  }
 
   let monthlyRent = 0;
   const rentCell =
     typeof raw.monthlyRent === "number"
       ? raw.monthlyRent
       : typeof raw.monthlyRent === "string"
-        ? cellToMoney(raw.monthlyRent)
+        ? raw.monthlyRent
         : null;
-  if (rentCell == null || rentCell <= 0) {
-    errors.push("Monthly rent is required and must be greater than 0");
-  } else {
-    monthlyRent = rentCell;
-  }
 
-  const startRaw = (raw.startDate ?? "").trim();
-  const startDate = startRaw ? cellToIsoDate(startRaw) : null;
-  if (!startDate) errors.push("Start date is required (YYYY-MM-DD or DD/MM/YYYY)");
+  let startDate = "";
+  let moveInDate: string | null = null;
+  let endDate: string | null = null;
 
   const moveInRaw = (raw.moveInDate ?? "").trim();
-  const moveInDate = moveInRaw ? cellToIsoDate(moveInRaw) : null;
-
   const endRaw = (raw.endDate ?? "").trim();
-  let endDate = endRaw ? cellToIsoDate(endRaw) : null;
-  if (!endDate && startDate) {
-    endDate = addDaysIsoLocal(startDate, 365);
-  }
 
   let depositAmount: number | null = null;
   if (raw.depositAmount != null) {
     const d =
       typeof raw.depositAmount === "number"
         ? raw.depositAmount
-        : cellToMoney(String(raw.depositAmount));
+        : cellToMoneyAllowZero(String(raw.depositAmount));
     if (d != null && d >= 0) depositAmount = d;
   }
 
-  return {
+  const { status: tenancyStatusDb, unknown: tenancyStatusUnknown } = parseTenancyStatusDb(
+    raw.tenancyStatus,
+  );
+  if (tenancyStatusUnknown) {
+    warnings.push(
+      `Tenancy status "${(raw.tenancyStatus ?? "").trim()}" was not recognised — defaulting to active.`,
+    );
+  }
+
+  const rentPosition = parseRentPosition(raw.rentPosition);
+  const notes = (raw.notes ?? "").replace(/\s+/g, " ").trim() || null;
+
+  if (rowKind === "vacant") {
+    if (tenantFullName.length >= 2 || emailRaw.length > 0) {
+      warnings.push("Vacant row: tenant fields are ignored because no tenancy is created.");
+    }
+    tenantFullName = "";
+    tenantEmail = "";
+
+    const rentParsed =
+      rentCell === null ? null : typeof rentCell === "number" ? rentCell : cellToMoneyAllowZero(rentCell);
+    if (rentParsed != null && rentParsed >= 0) monthlyRent = rentParsed;
+    else monthlyRent = 0;
+
+    if (rentParsed == null && typeof rentCell === "string" && rentCell.trim().length > 0) {
+      errors.push(`Could not parse target rent "${rentCell}". Use a number (0 allowed for vacant units).`);
+    }
+
+    warnings.push(
+      "Vacant import creates or updates portfolio property metadata only — no tenant, tenancy, or rent schedule.",
+    );
+  } else {
+    /* occupied / onboarding */
+    if (rowKind === "onboarding") {
+      warnings.push(
+        "Marked as onboarding: tenancy is imported in the onboarding pipeline (tenant welcome still runs unless tenancy status is ended).",
+      );
+    }
+
+    if (tenantFullName.length < 2) errors.push("Tenant full name is required for occupied and onboarding rows.");
+    if (!tenantEmail) errors.push('Tenant email is required (or fix the spelling after the "@" symbol).');
+
+    const rentNumeric =
+      rentCell === null
+        ? null
+        : typeof rentCell === "number"
+          ? rentCell > 0
+            ? rentCell
+            : null
+          : cellToMoney(String(rentCell));
+    if (rentNumeric == null) {
+      errors.push("Monthly rent must be greater than £0 for rows with a tenancy.");
+    } else {
+      monthlyRent = rentNumeric;
+    }
+
+    const startRaw = (raw.startDate ?? "").trim();
+    const parsedStart = startRaw ? cellToIsoDate(startRaw) : null;
+    if (!parsedStart) {
+      errors.push(
+        startRaw.length === 0
+          ? "Tenancy start date is required — use YYYY-MM-DD or DD/MM/YYYY."
+          : `Start date "${startRaw}" is not recognised — use YYYY-MM-DD or DD/MM/YYYY.`,
+      );
+    } else {
+      startDate = parsedStart;
+    }
+
+    moveInDate = moveInRaw ? cellToIsoDate(moveInRaw) : null;
+    endDate = endRaw ? cellToIsoDate(endRaw) : null;
+
+    if (moveInRaw && !moveInDate) {
+      warnings.push("Move-in date could not be read — tenancy will default move-in to the start date.");
+    }
+    if (endRaw && !endDate) {
+      errors.push("End date format was not recognised — use YYYY-MM-DD or DD/MM/YYYY.");
+    }
+
+    if (startDate && !endDate && !errors.some((e) => e.toLowerCase().includes("start date"))) {
+      endDate = addDaysIsoLocal(startDate, 365);
+    }
+
+    if (tenancyStatusDb === "ended" && rentPosition === "arrears") {
+      warnings.push(
+        '"Rent position" arrears applies to ended tenancies only for demo labelling — you may archive these payments manually.',
+      );
+    }
+  }
+
+  const row: BatchOnboardingRow = {
+    rowKind,
     propertyAddress,
+    propertyDisplayName,
     city,
     postcode,
+    propertyType,
+    bedrooms,
+    bathrooms,
     tenantFullName,
     tenantEmail,
     tenantPhone,
     monthlyRent,
-    startDate: startDate ?? "",
-    moveInDate: moveInDate ?? null,
+    rentDueDay,
+    startDate,
+    moveInDate,
     endDate,
     depositAmount,
+    tenancyStatusDb,
+    rentPosition,
+    notes,
     rowErrors: errors,
+    rowWarnings: warnings,
   };
+
+  return pruneRowWarningsAgainstErrors(row);
 }
 
+/** When postcode is erroneous, suppress the "missing postcode" warning. */
+function pruneRowWarningsAgainstErrors(row: BatchOnboardingRow): BatchOnboardingRow {
+  const errLower = row.rowErrors.map((e) => e.toLowerCase());
+  if (errLower.some((e) => e.includes("does not look like a valid uk postcode"))) {
+    row.rowWarnings = row.rowWarnings.filter((w) => !w.includes("Postcode is missing"));
+  }
+  return row;
+}
+
+export type ParsedBatchCsvLevel = "ok" | "no_data" | "header_error";
+
+export type ParseBatchOnboardingCsvResult = {
+  parseLevel: ParsedBatchCsvLevel;
+  rows: BatchOnboardingRow[];
+  missingRequiredHeaders?: string[];
+};
+
 /**
- * Parses a combined-CSV / TSV where each row is one onboarding
- * (property + tenant + tenancy fields in one row). Header row is required
- * so the parser can tolerate missing optional columns gracefully.
+ * Parses a combined-CSV / TSV where each row is one portfolio line.
  *
- * Accepted header aliases (case-insensitive, partial match allowed):
- *   propertyAddress: "property", "address", "property_address"
- *   city:            "city", "town"
- *   postcode:        "postcode", "zip"
- *   tenantFullName:  "tenant", "tenant name", "full name", "name"
- *   tenantEmail:     "email"
- *   tenantPhone:     "phone", "mobile", "tel"
- *   monthlyRent:     "rent", "monthly_rent", "monthly rent"
- *   startDate:       "start", "start_date", "start date", "lease start"
- *   moveInDate:      "move_in", "move in", "movein"
- *   endDate:         "end_date", "end date", "lease end"
- *   depositAmount:   "deposit"
+ * Accepted header aliases (case-insensitive, partial match allowed) include:
+ * row_kind · occupancy · import_type
+ * property_name · property_display_name
+ * property_type · bedrooms · bathrooms · rent_due_day · tenancy_status · rent_position · notes
+ * legacy occupant workflow columns unchanged.
  */
-export function parseBatchOnboardingCsv(text: string): BatchOnboardingRow[] {
+export function parseBatchOnboardingCsvWithMeta(text: string): ParseBatchOnboardingCsvResult {
   const lines = text
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
-  if (lines.length < 2) return [];
+  if (lines.length < 2) return { parseLevel: "no_data", rows: [] };
 
   const delim = lines[0]!.includes("\t") && !lines[0]!.includes(",") ? "\t" : ",";
   const headers = splitCsvLine(lines[0]!, delim).map((c) => c.toLowerCase());
 
-  const iAddress = findHeaderIdx(headers, "property_address", "property", "address");
+  const iRowKind = findHeaderIdx(headers, "row_kind", "import_type", "occupancy");
+  const iAddress = findHeaderIdx(headers, "property_address", "property line", "property", "address");
   const iCity = findHeaderIdx(headers, "city", "town");
   const iPostcode = findHeaderIdx(headers, "postcode", "post code", "zip");
+  const iPropName = findHeaderIdx(headers, "property_name", "property display name");
+  const iPropType = findHeaderIdx(headers, "property_type");
+  const iBed = findHeaderIdx(headers, "bedrooms");
+  const iBath = findHeaderIdx(headers, "bathrooms");
   const iName = findHeaderIdx(
     headers,
     "tenant_name",
@@ -501,13 +745,8 @@ export function parseBatchOnboardingCsv(text: string): BatchOnboardingRow[] {
   );
   const iEmail = findHeaderIdx(headers, "tenant_email", "email", "e-mail");
   const iPhone = findHeaderIdx(headers, "tenant_phone", "phone", "mobile", "tel");
-  const iRent = findHeaderIdx(
-    headers,
-    "monthly_rent",
-    "monthly rent",
-    "rent_pcm",
-    "rent",
-  );
+  const iRent = findHeaderIdx(headers, "monthly_rent", "monthly rent", "rent_pcm", "rent");
+  const iDueDay = findHeaderIdx(headers, "rent_due_day", "rent due day");
   const iStart = findHeaderIdx(
     headers,
     "start_date",
@@ -519,31 +758,159 @@ export function parseBatchOnboardingCsv(text: string): BatchOnboardingRow[] {
   const iMoveIn = findHeaderIdx(headers, "move_in_date", "move in date", "move in", "movein");
   const iEnd = findHeaderIdx(headers, "end_date", "end date", "lease end", "tenancy end");
   const iDeposit = findHeaderIdx(headers, "deposit_amount", "deposit");
+  const iTStatus = findHeaderIdx(headers, "tenancy_status");
+  const iRentPos = findHeaderIdx(headers, "rent_position", "rent_health");
+  const iNotes = findHeaderIdx(headers, "notes", "comment", "comments");
 
-  if (iAddress < 0 || iName < 0 || iEmail < 0 || iRent < 0 || iStart < 0) {
-    return [];
+  const hasRowKindColumn = iRowKind >= 0;
+
+  if (iAddress < 0) {
+    return {
+      parseLevel: "header_error",
+      rows: [],
+      missingRequiredHeaders: ["property_address (or alias: property / address)"],
+    };
+  }
+
+  if (!hasRowKindColumn) {
+    const missing: string[] = [];
+    if (iName < 0) missing.push("tenant_name");
+    if (iEmail < 0) missing.push("tenant_email");
+    if (iRent < 0) missing.push("monthly_rent");
+    if (iStart < 0) missing.push("start_date");
+    if (missing.length > 0) {
+      return {
+        parseLevel: "header_error",
+        rows: [],
+        missingRequiredHeaders: missing,
+      };
+    }
   }
 
   const rows: BatchOnboardingRow[] = [];
+
   for (let li = 1; li < lines.length && rows.length < BATCH_MAX_ROWS; li++) {
     const cells = splitCsvLine(lines[li]!, delim);
+    const rowKindCell = iRowKind >= 0 ? (cells[iRowKind] ?? "") : "";
+
+    const propertyAddressCell = cells[iAddress] ?? "";
+    let tenantNameCell = "";
+    let tenantEmailCell = "";
+    let rentCellRaw = "";
+    let startRawStr = "";
+
+    if (!hasRowKindColumn) {
+      tenantNameCell = cells[iName] ?? "";
+      tenantEmailCell = cells[iEmail] ?? "";
+      rentCellRaw = cells[iRent] ?? "";
+      startRawStr = cells[iStart] ?? "";
+    } else {
+      tenantNameCell = iName >= 0 ? (cells[iName] ?? "") : "";
+      tenantEmailCell = iEmail >= 0 ? (cells[iEmail] ?? "") : "";
+      rentCellRaw = iRent >= 0 ? (cells[iRent] ?? "") : "";
+      startRawStr = iStart >= 0 ? (cells[iStart] ?? "") : "";
+    }
+
+    const rk = parseRowKindCell(rowKindCell);
+    if (
+      hasRowKindColumn &&
+      (rk === "occupied" || rk === "onboarding") &&
+      (iName < 0 || iEmail < 0 || iRent < 0 || iStart < 0)
+    ) {
+      const row = normalizeBatchOnboardingRow({
+        rowKind: rowKindCell,
+        propertyAddress: propertyAddressCell,
+      });
+      row.rowErrors.unshift(
+        "Occupied or onboarding rows need tenant_name, tenant_email, monthly_rent, and start_date columns — add them to the header row or paste the latest template.",
+      );
+      rows.push(row);
+      continue;
+    }
+
     const row = normalizeBatchOnboardingRow({
-      propertyAddress: cells[iAddress] ?? "",
+      rowKind: rowKindCell,
+      propertyAddress: propertyAddressCell,
+      propertyDisplayName: iPropName >= 0 ? (cells[iPropName] ?? null) : null,
       city: iCity >= 0 ? (cells[iCity] ?? null) : null,
       postcode: iPostcode >= 0 ? (cells[iPostcode] ?? null) : null,
-      tenantFullName: cells[iName] ?? "",
-      tenantEmail: cells[iEmail] ?? "",
+      propertyType: iPropType >= 0 ? (cells[iPropType] ?? null) : null,
+      bedrooms: iBed >= 0 ? (cells[iBed] ?? null) : null,
+      bathrooms: iBath >= 0 ? (cells[iBath] ?? null) : null,
+      tenantFullName: tenantNameCell,
+      tenantEmail: tenantEmailCell,
       tenantPhone: iPhone >= 0 ? (cells[iPhone] ?? null) : null,
-      monthlyRent: cells[iRent] ?? "",
-      startDate: cells[iStart] ?? "",
+      monthlyRent: rentCellRaw,
+      rentDueDay: iDueDay >= 0 ? (cells[iDueDay] ?? null) : null,
+      startDate: startRawStr,
       moveInDate: iMoveIn >= 0 ? (cells[iMoveIn] ?? null) : null,
       endDate: iEnd >= 0 ? (cells[iEnd] ?? null) : null,
       depositAmount: iDeposit >= 0 ? (cells[iDeposit] ?? null) : null,
+      tenancyStatus: iTStatus >= 0 ? (cells[iTStatus] ?? null) : null,
+      rentPosition: iRentPos >= 0 ? (cells[iRentPos] ?? null) : null,
+      notes: iNotes >= 0 ? (cells[iNotes] ?? null) : null,
     });
+
     rows.push(row);
   }
 
-  return rows;
+  return { parseLevel: "ok", rows };
+}
+
+/** @deprecated Prefer parseBatchOnboardingCsvWithMeta for diagnostic metadata. */
+export function parseBatchOnboardingCsv(text: string): BatchOnboardingRow[] {
+  return parseBatchOnboardingCsvWithMeta(text).rows;
+}
+
+/** How the server should behave after a CSV/TSV parse attempt (structured vs unstructured upload). */
+export type PortfolioCsvParseDecision =
+  | { kind: "ready"; rows: BatchOnboardingRow[] }
+  | { kind: "structured_fail"; error: string }
+  | { kind: "try_llm"; reason: string };
+
+/**
+ * Decide whether CSV text yields rows, fails fast with a plain-language error,
+ * or should fall through to unstructured LLM extraction.
+ */
+export function decidePortfolioCsvParse(
+  trimmedText: string,
+  structuredInput: boolean,
+): PortfolioCsvParseDecision {
+  const meta = parseBatchOnboardingCsvWithMeta(trimmedText);
+  if (meta.parseLevel === "no_data") {
+    const msg =
+      structuredInput && trimmedText.length > 0
+        ? "Add a header row and at least one data row underneath (UTF-8 CSV or TSV)."
+        : trimmedText.trim().length === 0
+          ? "Paste or upload a file with usable text."
+          : "";
+    return structuredInput
+      ? {
+          kind: "structured_fail",
+          error:
+            msg || "CSV could not be read (need a header plus data rows). Check for empty rows or wrong delimiter.",
+        }
+      : { kind: "try_llm", reason: "tabular_parse_no_data" };
+  }
+  if (meta.parseLevel === "header_error") {
+    const missing = meta.missingRequiredHeaders?.length
+      ? `Missing required column(s): ${meta.missingRequiredHeaders.join(", ")}.`
+      : "The header row is missing columns Letora cannot infer.";
+    const hint =
+      " Compare with /templates/portfolio-import-sample.csv or add row_kind (vacant | occupied | onboarding) plus property_address.";
+    const error = structuredInput ? `${missing}${hint}` : missing;
+    return structuredInput ? { kind: "structured_fail", error } : { kind: "try_llm", reason: "tabular_parse_header_error" };
+  }
+  if (meta.rows.length === 0) {
+    return structuredInput
+      ? {
+          kind: "structured_fail",
+          error:
+            "Found a header row but no usable data rows. Remove blank lines between header and rows or confirm the delimiter is comma or tab.",
+        }
+      : { kind: "try_llm", reason: "tabular_parse_zero_rows" };
+  }
+  return { kind: "ready", rows: meta.rows };
 }
 
 /**

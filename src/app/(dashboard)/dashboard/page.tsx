@@ -19,10 +19,13 @@ function deriveTitleFromFirstLine(text: string) {
 }
 
 /**
- * Single dashboard workspace: no separate “overview” or `/assistant` route.
- * - No `?c=` → new-message landing (Letora home).
+ * Command Center hub at `/dashboard`:
+ * - No `?c=` → landing (Letora home).
  * - `?q=` → new conversation + redirect to `?c=&start=`.
- * - `?c=` → full chat (history sidebar + thread).
+ * - `?c=` → full chat (history + thread).
+ *
+ * Legacy `/dashboard/assistant` and `/dashboard/home` funnel here (`next.config.ts`, `assistant/page.tsx`).
+ * `/dashboard/rent` (and `/dashboard/rent/`) → `/dashboard/rent-tracker` via `next.config.ts` and `rent/page.tsx`.
  */
 export default async function DashboardPage({
   searchParams,

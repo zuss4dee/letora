@@ -40,3 +40,30 @@ export async function markAgentApprovalExecuted(
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Side effects may have already run when the first `markAgentApprovalExecuted` fails (network).
+ * Retries reduce stuck `approved` rows without re-running execution (client uses idempotency).
+ */
+export async function markAgentApprovalExecutedWithRetry(
+  supabase: SupabaseClient,
+  userId: string,
+  approvalId: string,
+  executedAtIso: string,
+  attempts = 3,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  let lastErr = "Unknown error";
+  for (let i = 0; i < attempts; i++) {
+    const r = await markAgentApprovalExecuted(supabase, userId, approvalId, executedAtIso);
+    if (r.ok === true) {
+      return r;
+    }
+    lastErr = r.error;
+    await delay(80 * (i + 1));
+  }
+  return { ok: false, error: lastErr };
+}

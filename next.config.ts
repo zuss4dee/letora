@@ -14,7 +14,32 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: "/dashboard/assistant",
+        destination: "/dashboard",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/assistant/",
+        destination: "/dashboard",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/home",
+        destination: "/dashboard",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/home/",
+        destination: "/dashboard",
+        permanent: true,
+      },
+      {
         source: "/dashboard/rent",
+        destination: "/dashboard/rent-tracker",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/rent/",
         destination: "/dashboard/rent-tracker",
         permanent: true,
       },

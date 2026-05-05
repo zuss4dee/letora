@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 interface TenantProfileKpiStripProps {
   stats: {
     status: string | null;
-    monthlyRent: number;
+    monthlyRent: number | null;
     arrears: number;
     openMaintenance: number;
     pendingApprovals: number;
@@ -28,7 +28,7 @@ export function TenantProfileKpiStrip({ stats }: TenantProfileKpiStripProps) {
     },
     {
       label: "Monthly Rent",
-      value: formatCurrency(stats.monthlyRent),
+      value: stats.monthlyRent != null ? formatCurrency(stats.monthlyRent) : "—",
       tone: "zinc",
     },
     {

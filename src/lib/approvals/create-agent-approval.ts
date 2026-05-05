@@ -2,6 +2,36 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { CreateAgentApprovalContract } from "@/lib/approvals/types";
 
+async function supersedeOtherPendingDuplicates(
+  supabase: SupabaseClient,
+  userId: string,
+  actionType: CreateAgentApprovalContract["actionType"],
+  targetId: string,
+  keepId: string,
+): Promise<void> {
+  const tid = targetId.trim();
+  if (!tid) return;
+
+  const now = new Date().toISOString();
+  const { error } = await supabase
+    .from("agent_approvals")
+    .update({
+      status: "denied",
+      decided_by: userId,
+      decided_at: now,
+      deny_reason: "Superseded by a newer draft for the same target.",
+    })
+    .eq("user_id", userId)
+    .eq("action_type", actionType)
+    .eq("target_id", tid)
+    .eq("status", "pending")
+    .neq("id", keepId);
+
+  if (error) {
+    console.warn("[supersedeOtherPendingDuplicates]", error.message);
+  }
+}
+
 /**
  * Insert a pending agent_approvals row. Does not revalidate caches — callers in app code
  * should do that (e.g. server actions).
@@ -61,6 +91,7 @@ export async function insertPendingAgentApproval(
     if (existingId) {
       const out = await applyPendingUpdate(existingId);
       if (!out.ok) return out;
+      await supersedeOtherPendingDuplicates(supabase, userId, input.actionType, targetId, out.id);
       return { ok: true, id: out.id };
     }
   }
@@ -87,5 +118,8 @@ export async function insertPendingAgentApproval(
     return { ok: false, error: error?.message ?? "Could not create approval request" };
   }
 
-  return { ok: true, id: data.id as string };
+  const newId = data.id as string;
+  await supersedeOtherPendingDuplicates(supabase, userId, input.actionType, targetId, newId);
+
+  return { ok: true, id: newId };
 }

@@ -87,6 +87,8 @@ export function formatApprovalDecisionStatus(status: string): string {
       return "Denied";
     case "approved":
       return "Approved";
+    case "expired":
+      return "Expired";
     default:
       return status;
   }

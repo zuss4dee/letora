@@ -38,6 +38,9 @@ import {
   MAX_AUTONOMOUS_FOLLOWUPS,
 } from "./autonomous-continuation";
 
+/** Canonical assistant/chat URL (Command Center hub). */
+const ASSISTANT_CHAT_HREF_BASE = "/dashboard";
+
 type ChatRole = "user" | "assistant";
 
 export interface ChatMessage {
@@ -419,11 +422,11 @@ function NavigationButtons({ actions }: { actions: ActionTag[] }) {
   if (valid.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-2 pt-2">
-      {valid.map((a) => {
+      {valid.map((a, idx) => {
         const visual = inferActionVisual(a.label, a.href);
         return (
           <Link
-            key={a.href}
+            key={`${idx}:${a.href}:${a.label}`}
             href={a.href}
             className="flex items-center gap-2 border border-[#282828] bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
           >
@@ -720,7 +723,7 @@ export function AssistantChat({
 
   function createNewChat() {
     setConversationListOpen(false);
-    router.push("/dashboard/assistant");
+    router.push("/dashboard");
   }
 
   type ProcessedChatResult = {
@@ -804,7 +807,7 @@ export function AssistantChat({
     if (!trimmed || loading) return;
 
     if (overrideText !== undefined) {
-      router.replace(`/dashboard/assistant?c=${activeConversationId}`, { scroll: false });
+      router.replace(`${ASSISTANT_CHAT_HREF_BASE}?c=${activeConversationId}`, { scroll: false });
     }
 
     const userMessage: ChatMessage = { role: "user", content: trimmed };
@@ -932,6 +935,7 @@ export function AssistantChat({
         conversations={conversations}
         activeConversationId={activeConversationId}
         variant="sidebar"
+        hrefBase={ASSISTANT_CHAT_HREF_BASE}
       />
     </div>
   );
@@ -1064,7 +1068,7 @@ export function AssistantChat({
               return (
                 <Link
                   key={conv.id}
-                  href={`/dashboard/assistant?c=${conv.id}`}
+                  href={`${ASSISTANT_CHAT_HREF_BASE}?c=${encodeURIComponent(conv.id)}`}
                   className={cn(
                     "flex w-full flex-col border-l-2 p-3 text-left transition-colors",
                     isActive

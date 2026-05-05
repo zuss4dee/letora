@@ -41,7 +41,7 @@ export function CommandCenterOnboardingHero() {
                 <ChevronRight className="size-4 transition-transform group-hover:translate-x-1" />
               </Link>
               <Link
-                href="/dashboard/assistant"
+                href="/dashboard"
                 className="flex items-center gap-3 border border-[#333333] px-8 py-4 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-[#242424]"
               >
                 <MessageSquare className="size-4" />

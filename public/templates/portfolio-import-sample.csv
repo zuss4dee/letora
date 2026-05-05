@@ -1,0 +1,6 @@
+row_kind,property_name,property_address,city,postcode,property_type,bedrooms,bathrooms,tenant_name,tenant_email,tenant_phone,monthly_rent,rent_due_day,start_date,move_in_date,end_date,deposit_amount,tenancy_status,rent_position,notes
+occupied,Riverside 2B,"12 Thames Walk, Flat 2B",London,E1W 2AA,Flat,2,1,Alex Stone,alex.stone@example.com,+447700900001,1850,1,2026-04-01,2026-04-01,2027-03-31,1850,active,clear,Full reference on file
+vacant,Stockport void,"88 Edge Lane",Stockport,SK3 9TT,House,3,2,,,,0,,,,,,,"Awaiting refurb — no tenancy"
+onboarding,Pre-move flat,"5 Queen's Mews",Leeds,LS2 7EE,Flat,1,1,Jordan Lee,jordan.lee@example.com,,1100,15,2026-06-01,,,1100,pending,clear,Right to Rent pack outstanding
+occupied,Arrears demo,"200 Demo Street",Birmingham,B1 1AA,HMO,4,2,Sam Patel,sam.patel@example.com,+447700900002,"£1,400 pcm",1,2025-11-01,2025-11-01,,1400,active,arrears,Seeded overdue first instalment for tracker demo
+occupied,Light spec,"15 Minimal Row",Cambridge,,Flat,1,1,"Casey Min",casey.min@example.com,,950,,2026-05-10,,,950,active,clear,Optional postcode and rent due day omitted on purpose

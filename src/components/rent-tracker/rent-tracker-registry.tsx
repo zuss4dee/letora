@@ -14,6 +14,7 @@ import {
   type RentPaymentListRow,
 } from "@/lib/actions/rent-tracker";
 import type { RentTrackerSummaryStats } from "@/lib/rent-tracker-stats";
+import { applyRentTrackerDisplayMode, type RentTrackerResolvedDisplayMode } from "@/lib/rent-tracker-url-mode";
 import { cn } from "@/lib/utils";
 
 const gbp = new Intl.NumberFormat("en-GB", {
@@ -137,36 +138,53 @@ export function RentTrackerRegistry({
   todayIso,
   pendingApprovals,
   focusPaymentId,
+  canonicalRentTrackerMode,
+  rentTrackerPreserveHref,
 }: {
   payments: RentPaymentListRow[];
   stats: RentTrackerSummaryStats;
   todayIso: string;
   pendingApprovals: AgentApprovalRow[];
   focusPaymentId?: string;
+  canonicalRentTrackerMode: RentTrackerResolvedDisplayMode;
+  rentTrackerPreserveHref: string;
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(payments[0]?.id ?? null);
   const [query, setQuery] = useState("");
 
+  const { displayPayments } = useMemo(
+    () =>
+      applyRentTrackerDisplayMode(
+        payments,
+        canonicalRentTrackerMode,
+        todayIso,
+        focusPaymentId?.trim(),
+      ),
+    [payments, canonicalRentTrackerMode, todayIso, focusPaymentId],
+  );
+
   useEffect(() => {
     const focused = focusPaymentId?.trim();
 
-    if (payments.length === 0) {
+    if (displayPayments.length === 0) {
       setSelectedId(null);
       return;
     }
 
-    if (focused && payments.some((p) => p.id === focused)) {
+    if (focused && displayPayments.some((p) => p.id === focused)) {
       setQuery("");
       setSelectedId(focused);
       return;
     }
 
     setSelectedId((current) =>
-      current != null && payments.some((p) => p.id === current) ? current : (payments[0]?.id ?? null),
+      current != null && displayPayments.some((p) => p.id === current)
+        ? current
+        : (displayPayments[0]?.id ?? null),
     );
-  }, [payments, focusPaymentId]);
+  }, [displayPayments, focusPaymentId]);
 
   useLayoutEffect(() => {
     const id = focusPaymentId?.trim();
@@ -174,7 +192,7 @@ export function RentTrackerRegistry({
     const safe = typeof CSS !== "undefined" && typeof CSS.escape === "function" ? CSS.escape(id) : id;
     const el = document.querySelector(`[data-payment-row="${safe}"]`);
     el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [focusPaymentId, selectedId, payments]);
+  }, [focusPaymentId, selectedId, displayPayments]);
 
   async function run(id: string, fn: () => Promise<void>) {
     setBusyId(id);
@@ -191,12 +209,12 @@ export function RentTrackerRegistry({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return payments;
-    return payments.filter((p) => {
+    if (!q) return displayPayments;
+    return displayPayments.filter((p) => {
       const hay = [p.tenantName, p.propertyAddress].join(" ").toLowerCase();
       return hay.includes(q);
     });
-  }, [payments, query]);
+  }, [displayPayments, query]);
 
   const selectedRow = useMemo(() => {
     return payments.find((p) => p.id === selectedId) ?? null;
@@ -213,6 +231,29 @@ export function RentTrackerRegistry({
       });
   }, [payments, selectedRow]);
 
+  if (payments.length > 0 && displayPayments.length === 0) {
+    return (
+      <div className="flex min-h-[22rem] flex-col border border-[#333333] bg-[#161616]">
+        <header className="flex items-center gap-2 border-b border-[#282828] px-5 py-4 md:px-6">
+          <span className="size-1.5 shrink-0 bg-zinc-500" aria-hidden />
+          <h1 className="text-xs font-bold uppercase tracking-widest text-white">Rent operations</h1>
+        </header>
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center">
+          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-600">0 matching instalments</p>
+          <p className="max-w-sm text-[13px] leading-relaxed text-zinc-400">
+            Nothing in this roster matches the active Command Center filter for today&apos;s calendar window.
+          </p>
+          <Link
+            href={rentTrackerPreserveHref}
+            className="text-[11px] font-semibold text-[#afefdd] underline-offset-4 hover:underline"
+          >
+            Exit filtered view
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (payments.length === 0) {
     return (
       <div className="flex min-h-[22rem] flex-col border border-[#333333] bg-[#161616]">
@@ -223,8 +264,11 @@ export function RentTrackerRegistry({
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-16 text-center">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-600">0 rent cases</p>
           <p className="max-w-sm text-[13px] leading-relaxed text-zinc-400">
-            There are no rent payments to triage yet. Add a tenancy payment schedule or seed demo data to
-            use this workspace.
+            There are no rent payments to triage yet. Add a tenancy payment schedule or{" "}
+            <Link href="/dashboard" className="text-[#afefdd] underline-offset-4 hover:underline">
+              return to Command Center
+            </Link>{" "}
+            to continue the demo.
           </p>
         </div>
       </div>
@@ -250,6 +294,14 @@ export function RentTrackerRegistry({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2 md:gap-3">
+          {canonicalRentTrackerMode !== "all" ? (
+            <Link
+              href={rentTrackerPreserveHref}
+              className="flex h-8 items-center border border-[#333333] bg-[#0B0B0B] px-3 text-[10px] font-bold uppercase tracking-wider text-[#afefdd] transition-colors hover:border-zinc-600 hover:text-white"
+            >
+              Exit filtered view
+            </Link>
+          ) : null}
           <div className="relative min-w-[12rem] flex-1 md:w-64 md:flex-none">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />
             <input
@@ -323,6 +375,16 @@ export function RentTrackerRegistry({
           </div>
         ))}
       </div>
+
+      {canonicalRentTrackerMode !== "all" ? (
+        <div className="flex shrink-0 items-start gap-2 border-b border-[#282828] bg-[#141414] px-4 py-2 md:px-6">
+          <span className="mt-1 size-1 shrink-0 rounded-[1px] bg-amber-500/75" aria-hidden />
+          <p className="max-w-4xl font-mono text-[9px] uppercase leading-relaxed tracking-[0.12em] text-zinc-500">
+            Summary KPIs reflect every instalment in your scoped roster (portfolio / deep-link). The instalment list
+            below follows the active view filter only.
+          </p>
+        </div>
+      ) : null}
 
       <div className="flex min-h-0 flex-1 overflow-hidden bg-[#0B0B0B]">
         <section

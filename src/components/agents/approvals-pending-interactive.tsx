@@ -24,14 +24,22 @@ import { cn } from "@/lib/utils";
 export function ApprovalsPendingInteractive({
   approvals,
   emphasizeQueueAge = false,
+  focusApprovalId,
 }: {
   approvals: AgentApprovalRow[];
   /** When true, use compact ages, oldest-first context, and muted “Aging” signal (approvals ops view). */
   emphasizeQueueAge?: boolean;
+  /** Optional selection from `/dashboard/approvals?id=` when it matches a pending row. */
+  focusApprovalId?: string;
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(approvals[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(() => {
+    const first = approvals[0]?.id ?? null;
+    const pick = focusApprovalId?.trim();
+    if (pick && approvals.some((a) => a.id === pick)) return pick;
+    return first;
+  });
   
   const selectedApproval = useMemo(
     () => approvals.find((approval) => approval.id === selectedId) ?? approvals[0] ?? null,
@@ -43,10 +51,15 @@ export function ApprovalsPendingInteractive({
       setSelectedId(null);
       return;
     }
+    const pick = focusApprovalId?.trim();
+    if (pick && approvals.some((a) => a.id === pick)) {
+      setSelectedId(pick);
+      return;
+    }
     if (!selectedId || !approvals.some((a) => a.id === selectedId)) {
       setSelectedId(approvals[0]!.id);
     }
-  }, [approvals, selectedId]);
+  }, [approvals, selectedId, focusApprovalId]);
 
   const runApprove = useCallback(
     async (id: string) => {
@@ -82,7 +95,7 @@ export function ApprovalsPendingInteractive({
           return;
         }
         toast.success("Denied", {
-          description: "This request was dismissed without running the action.",
+          description: "Dismissed with no send or data change. Activity log updated.",
         });
         router.refresh();
       } catch (e) {

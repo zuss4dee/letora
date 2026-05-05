@@ -77,11 +77,14 @@ export function ApprovalsPageWorkspace({
   pending,
   resolved,
   pendingByActionType,
+  focusApprovalId,
 }: {
   pending: AgentApprovalRow[];
   resolved: AgentApprovalRow[];
   /** From {@link computeApprovalQueueStats}; same normalization as filter chips. */
   pendingByActionType: Record<string, number>;
+  /** Deep-link from `/dashboard/approvals?id=` when present and valid. */
+  focusApprovalId?: string;
 }) {
   const [tab, setTab] = useState<"queue" | "decisions">("queue");
   const [actionFilter, setActionFilter] = useState<ActionFilter>("all");
@@ -174,7 +177,11 @@ export function ApprovalsPageWorkspace({
                   </p>
                 </section>
               ) : (
-                <ApprovalsPendingInteractive approvals={filteredPending} emphasizeQueueAge />
+                <ApprovalsPendingInteractive
+                  approvals={filteredPending}
+                  emphasizeQueueAge
+                  focusApprovalId={focusApprovalId}
+                />
               )}
             </>
           )}

@@ -26,7 +26,8 @@ export async function getSafetyAlertsLast7Days(userId: string): Promise<SafetyAl
     .eq("user_id", userId)
     .eq("agent_type", "safety_alert")
     .gte("created_at", since.toISOString())
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(40);
 
   if (error || !data) return [];
 

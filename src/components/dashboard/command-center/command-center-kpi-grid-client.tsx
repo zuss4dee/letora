@@ -1,10 +1,20 @@
 "use client";
 
 import { CircleHelp } from "lucide-react";
+import Link from "next/link";
 
 import type { CommandCenterKpis } from "@/lib/dashboard/command-center-queries";
+import type { RentTrackerDisplayMode } from "@/lib/rent-tracker-url-mode";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+
+function rentTrackerHref(mode: RentTrackerDisplayMode) {
+  const p = new URLSearchParams();
+  p.set("mode", mode);
+  return `/dashboard/rent-tracker?${p.toString()}`;
+}
+
+const MAINTENANCE_HREF = "/dashboard/maintenance";
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 2 }).format(
@@ -17,18 +27,21 @@ type MoneyTileProps = {
   tooltip: string;
   value: number;
   valueClassName?: string;
+  href: string;
+  tileAriaLabel: string;
 };
 
-function KpiMoneyTile({ label, tooltip, value, valueClassName }: MoneyTileProps) {
+function KpiMoneyTile({ label, tooltip, value, valueClassName, href, tileAriaLabel }: MoneyTileProps) {
   return (
-    <div className="flex min-h-[88px] flex-col bg-[#161616] p-4">
-      <div className="mb-2 flex items-start gap-1.5">
+    <div className="relative flex min-h-[88px] flex-col bg-[#161616] p-4 transition-colors hover:bg-[#1c1c1c] focus-within:bg-[#1c1c1c]">
+      <Link href={href} className="absolute inset-0 z-0 outline-none ring-inset focus-visible:ring-1 focus-visible:ring-zinc-500" aria-label={tileAriaLabel} />
+      <div className="relative z-10 mb-2 flex items-start gap-1.5 pointer-events-none">
         <span className="flex-1 text-[9px] font-bold uppercase leading-snug tracking-wider text-zinc-500">{label}</span>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="mt-0.5 shrink-0 rounded border border-transparent p-0.5 text-zinc-600 transition-colors hover:border-zinc-700 hover:text-zinc-400"
+              className="pointer-events-auto mt-0.5 shrink-0 rounded border border-transparent p-0.5 text-zinc-600 transition-colors hover:border-zinc-700 hover:text-zinc-400"
               aria-label={`What ${label} means`}
             >
               <CircleHelp className="size-3.5" aria-hidden />
@@ -39,7 +52,7 @@ function KpiMoneyTile({ label, tooltip, value, valueClassName }: MoneyTileProps)
           </TooltipContent>
         </Tooltip>
       </div>
-      <div className="flex flex-1 flex-col">
+      <div className="relative z-10 flex flex-1 flex-col pointer-events-none">
         <span className={cn("text-xl font-bold tabular-nums", valueClassName ?? "text-white")}>{formatMoney(value)}</span>
       </div>
     </div>
@@ -55,14 +68,19 @@ function KpiMaintenanceTile({ kpis }: MaintTileProps) {
   const tooltip =
     "Count of maintenance_requests tied to your properties via tenancy. ‘High’ badges include priority high or urgent.";
   return (
-    <div className="flex min-h-[88px] flex-col bg-[#161616] p-4 md:col-span-2">
-      <div className="mb-2 flex items-start gap-1.5">
+    <div className="relative flex min-h-[88px] flex-col bg-[#161616] p-4 transition-colors hover:bg-[#1c1c1c] focus-within:bg-[#1c1c1c] md:col-span-2">
+      <Link
+        href={MAINTENANCE_HREF}
+        className="absolute inset-0 z-0 outline-none ring-inset focus-visible:ring-1 focus-visible:ring-zinc-500"
+        aria-label={`Open maintenance workspace, ${kpis.maintenanceOpen} open`}
+      />
+      <div className="relative z-10 mb-2 flex items-start gap-1.5 pointer-events-none">
         <span className="flex-1 text-[9px] font-bold uppercase leading-snug tracking-wider text-zinc-500">{label}</span>
         <Tooltip>
           <TooltipTrigger asChild>
             <button
               type="button"
-              className="mt-0.5 shrink-0 rounded border border-transparent p-0.5 text-zinc-600 transition-colors hover:border-zinc-700 hover:text-zinc-400"
+              className="pointer-events-auto mt-0.5 shrink-0 rounded border border-transparent p-0.5 text-zinc-600 transition-colors hover:border-zinc-700 hover:text-zinc-400"
               aria-label={`What ${label} means`}
             >
               <CircleHelp className="size-3.5" aria-hidden />
@@ -73,7 +91,7 @@ function KpiMaintenanceTile({ kpis }: MaintTileProps) {
           </TooltipContent>
         </Tooltip>
       </div>
-      <div className="flex flex-1 flex-col">
+      <div className="relative z-10 flex flex-1 flex-col pointer-events-none">
         <div className="flex flex-wrap items-baseline gap-2">
           <span className="text-xl font-bold text-white tabular-nums">{kpis.maintenanceOpen}</span>
           {kpis.maintenanceHighPriority > 0 ? (
@@ -97,36 +115,48 @@ export function CommandCenterKpiGridClient({ kpis }: { kpis: CommandCenterKpis }
           tooltip="Totals every rent instalment rows whose contract due_date falls in the current calendar month (any status). Use it as the month's rent roll versus cash collected."
           value={kpis.rentScheduledThisMonth}
           valueClassName="text-white"
+          href={rentTrackerHref("scheduled_this_month")}
+          tileAriaLabel="Open rent tracker: scheduled this month"
         />
         <KpiMoneyTile
           label="Collected · this month"
           tooltip='Sum of instalments marked paid whose paid_date is in this month. Paid rows missing paid_date fall back to due_date in this month.'
           value={kpis.rentCollectedThisMonth}
           valueClassName="text-[#afefdd]"
+          href={rentTrackerHref("collected_this_month")}
+          tileAriaLabel="Open rent tracker: collected this month"
         />
         <KpiMoneyTile
           label="Still due · this month"
           tooltip='Unpaid instalments with due_date inside the current calendar month. Older missed months stay in Total arrears, not here — by design.'
           value={kpis.rentDueThisMonth}
           valueClassName="text-white"
+          href={rentTrackerHref("due_this_month")}
+          tileAriaLabel="Open rent tracker: still due this month"
         />
         <KpiMoneyTile
           label="Total arrears"
           tooltip="Every unpaid overdue instalment: status overdue or pending with due_date before today. This is backlog across months, independent of Still due · this month."
           value={kpis.overdueRentTotal}
           valueClassName={kpis.overdueRentTotal > 0 ? "text-[#ffb4ab]" : "text-white"}
+          href={rentTrackerHref("arrears")}
+          tileAriaLabel="Open rent tracker: total arrears"
         />
         <KpiMoneyTile
           label="Scheduled · next month"
           tooltip="Forecast of contractual instalments hitting next calendar month (all statuses), not cash expected."
           value={kpis.rentExpectedNextMonth}
           valueClassName="text-zinc-400"
+          href={rentTrackerHref("scheduled_next_month")}
+          tileAriaLabel="Open rent tracker: scheduled next month"
         />
         <KpiMoneyTile
           label="Collected · last month"
           tooltip="Totals receipts whose paid_date was in the previous calendar month. Missing paid_date on paid rows can attribute to instalments due last month instead."
           value={kpis.rentCollectedLastMonth}
           valueClassName="text-zinc-400"
+          href={rentTrackerHref("collected_last_month")}
+          tileAriaLabel="Open rent tracker: collected last month"
         />
         <KpiMaintenanceTile kpis={kpis} />
       </div>

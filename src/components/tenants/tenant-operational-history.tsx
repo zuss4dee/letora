@@ -18,18 +18,19 @@ function formatRelativeTime(date: string | Date) {
   return then.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-interface ActivityEntry {
+/** Mirrors `TenantProfileActivityRow` from server loader (kept local to avoid client importing `use server` modules). */
+type TenantOperationalActivityEntry = {
   id: string;
   tool_name: string;
-  args: any;
-  result: any;
+  args: unknown;
+  result: unknown;
   success: boolean;
   created_at: string;
   source: string | null;
-}
+};
 
 interface TenantOperationalHistoryProps {
-  activity: ActivityEntry[];
+  activity: TenantOperationalActivityEntry[];
 }
 
 export function TenantOperationalHistory({ activity }: TenantOperationalHistoryProps) {

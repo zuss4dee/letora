@@ -25,7 +25,7 @@ const crumbMap: { prefix: string; label: string }[] = [
 
 function breadcrumbFor(pathname: string): { current: string } {
   if (pathname === "/dashboard" || pathname === "/dashboard/") {
-    return { current: "Home" };
+    return { current: "Command Center" };
   }
   if (pathname === "/dashboard/tenants" || pathname === "/dashboard/tenants/") {
     return { current: "Tenant Registry" };

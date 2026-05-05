@@ -21,7 +21,6 @@ import {
   Mail,
   PlusCircle,
   Settings,
-  Sparkles,
   Upload,
   UserCircle2,
   UserPlus,
@@ -152,7 +151,7 @@ function NavSection({
                 {item.badgeCount != null && item.badgeCount > 0 ? (
                   <span
                     className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 px-1 font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold tabular-nums text-red-600 dark:bg-red-500/10 dark:text-red-500"
-                    aria-label={`${item.badgeCount} items pending approval`}
+                    aria-label={`${item.badgeCount} pending approval${item.badgeCount === 1 ? "" : "s"}`}
                     title={item.badgeTitle}
                   >
                     {item.badgeCount > 99 ? "99+" : item.badgeCount}
@@ -258,7 +257,7 @@ export function AppSidebar({
     }
   }, []);
 
-  // Approvals count is primarily managed via SidebarApprovalsMeta stream (SidebarPatch).
+  // Approvals count is streamed via SidebarWorkflowMeta (`SidebarPatch`).
   // We only re-sync on visibility change to keep it fresh without hammering the DB on every route change.
   React.useEffect(() => {
     function onVisibility() {
@@ -320,7 +319,6 @@ export function AppSidebar({
     },
     { title: "Activity", url: "/dashboard/activity", icon: History },
     { title: "Portfolio Import", url: "/dashboard/import", icon: Upload },
-    { title: "Assistant", url: "/dashboard/assistant", icon: Sparkles },
     { title: "Help & Support", url: "/dashboard/help", icon: HelpCircle },
   ];
 

@@ -34,11 +34,14 @@ export function AssistantConversationList({
   activeConversationId,
   variant = "sidebar",
   className,
+  /** Path prefix for thread links (default: Command Center `/dashboard?c=`). */
+  hrefBase = "/dashboard",
 }: {
   conversations: AssistantConversationListItem[];
   activeConversationId?: string;
   variant?: "sidebar" | "inline";
   className?: string;
+  hrefBase?: string;
 }) {
   return (
     <div
@@ -53,7 +56,7 @@ export function AssistantConversationList({
         return (
           <Link
             key={c.id}
-            href={`/dashboard?c=${c.id}`}
+            href={`${hrefBase}?c=${encodeURIComponent(c.id)}`}
             scroll={false}
             className={cn(
               "block min-w-0 rounded-lg px-3 py-2.5 text-left font-headline text-[0.8125rem] font-normal leading-snug transition-colors duration-200 ease-out",

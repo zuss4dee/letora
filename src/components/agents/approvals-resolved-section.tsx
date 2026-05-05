@@ -24,7 +24,9 @@ export function ApprovalsResolvedSection({
           const targetLine = formatApprovalTargetLine(a.target_type, a.target_id);
           const decided = a.decided_at ?? a.executed_at ?? a.created_at;
           const isDenied = a.status === "denied";
-          const isExecuted = a.status === "executed" || a.status === "approved";
+          const isExecuted = a.status === "executed";
+          const isApprovedInFlight = a.status === "approved";
+          const isExpired = a.status === "expired";
           
           return (
             <li key={a.id} className="grid grid-cols-12 items-center gap-4 px-4 py-3">
@@ -37,10 +39,16 @@ export function ApprovalsResolvedSection({
                 </p>
               </div>
               <div className="col-span-2">
-                <span className={cn(
-                  "inline-block border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider",
-                  isExecuted ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" : "border-[#333333] bg-transparent text-zinc-500"
-                )}>
+                <span
+                  className={cn(
+                    "inline-block border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider",
+                    isExecuted && "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
+                    isApprovedInFlight && "border-amber-500/35 bg-amber-500/10 text-amber-400",
+                    isExpired && "border-zinc-600 bg-zinc-800/50 text-zinc-400",
+                    isDenied && "border-rose-500/30 bg-rose-500/10 text-rose-400",
+                    !isExecuted && !isApprovedInFlight && !isExpired && !isDenied && "border-[#333333] bg-transparent text-zinc-500",
+                  )}
+                >
                   {formatApprovalDecisionStatus(a.status)}
                 </span>
               </div>

@@ -234,19 +234,27 @@ export async function loadCommandCenterKpis(userId: string): Promise<CommandCent
         return KPI_FALLBACK;
       }
     })(),
-    6000,
+    7500,
     KPI_FALLBACK,
     "command-center:loadCommandCenterKpis",
   );
 }
 
 export type ArrearsQueueRow = {
-  /** Rent payment row id (targets agent approvals, rent tracker focus). */
-  id: string;
+  /** Stable identity — one queue row per tenancy in arrears. */
   tenancyId: string;
+  /** Tenant profile id when join resolves (for Rent Tracker `tenantId` deep-link). */
+  tenantId: string | null;
+  /** Oldest overdue instalment — matches typical rent-chase `target_id`; used for Rent Tracker deep-link. */
+  canonicalPaymentId: string;
   tenantName: string;
   propertyAddress: string;
-  amountOverdue: number;
+  /** Sum of all overdue instalments for this tenancy. */
+  totalOverdueAmount: number;
+  overdueInstalmentCount: number;
+  /** Oldest overdue `due_date` (YYYY-MM-DD). */
+  oldestDueDate: string;
+  /** Whole days since `oldestDueDate`. */
   daysOverdue: number;
   actionState: "draft_ready" | "approval_needed" | "sent" | "no_draft";
   approvalId?: string;
@@ -299,37 +307,103 @@ export async function loadCommandCenterArrearsQueue(userId: string): Promise<Arr
     .eq("action_type", "send_rent_chase_email")
     .eq("status", "pending");
 
-  return filtered.slice(0, 5).map((p) => {
+  type GroupAcc = {
+    tenancyId: string;
+    tenantId: string | null;
+    tenantName: string;
+    propertyAddress: string;
+    instalments: { paymentId: string; dueIso: string; amount: number }[];
+  };
+
+  const byTenancy = new Map<string, GroupAcc>();
+
+  for (const p of filtered) {
     const tenancyRaw = unwrap(
       p.tenancies as
         | { id?: string; properties?: unknown; tenants?: unknown }
         | { id?: string; properties?: unknown; tenants?: unknown }[]
         | null,
     );
-    const property = unwrap(tenancyRaw?.properties as { address?: string | null } | { address?: string | null }[] | null);
-    const tenant = unwrap(tenancyRaw?.tenants as { full_name?: string | null } | { full_name?: string | null }[] | null);
+    const tenancyId = String(tenancyRaw?.id ?? "");
+    if (!tenancyId) continue;
 
-    /** `send_rent_chase_email` approvals use `target_id` = rent_payment.id (not tenancy id). */
-    const approval = (approvals ?? []).find((a) => String(a.target_id) === String(p.id));
+    const property = unwrap(tenancyRaw?.properties as { address?: string | null } | { address?: string | null }[] | null);
+    const tenant = unwrap(
+      tenancyRaw?.tenants as
+        | { id?: string; full_name?: string | null }
+        | { id?: string; full_name?: string | null }[]
+        | null,
+    );
 
     const dueIso = typeof p.due_date === "string" ? p.due_date.slice(0, 10) : "";
-    const dueDate = dueIso ? new Date(`${dueIso}T12:00:00Z`) : new Date(NaN);
-    const today = new Date(`${todayIso}T12:00:00Z`);
-    const days = Number.isNaN(dueDate.getTime())
-      ? 0
-      : Math.max(0, Math.floor((today.getTime() - dueDate.getTime()) / (1000 * 60 * 60 * 24)));
+    const paymentId = String(p.id);
+    const tenantRowId = typeof tenant?.id === "string" && tenant.id.trim().length > 0 ? tenant.id.trim() : null;
 
-    return {
-      id: String(p.id),
-      tenancyId: String(tenancyRaw?.id ?? ""),
-      tenantName: tenant?.full_name?.trim() || "Tenant",
-      propertyAddress: (property?.address ?? "").split(",")[0]?.trim() || "",
-      amountOverdue: resolvePaymentAmount(p),
-      daysOverdue: days,
+    let g = byTenancy.get(tenancyId);
+    if (!g) {
+      g = {
+        tenancyId,
+        tenantId: tenantRowId,
+        tenantName: tenant?.full_name?.trim() || "Tenant",
+        propertyAddress: (property?.address ?? "").split(",")[0]?.trim() || "",
+        instalments: [],
+      };
+      byTenancy.set(tenancyId, g);
+    } else if (g.tenantId == null && tenantRowId != null) {
+      g.tenantId = tenantRowId;
+    }
+    g.instalments.push({
+      paymentId,
+      dueIso,
+      amount: resolvePaymentAmount(p),
+    });
+  }
+
+  const daysSinceDue = (dueIso: string): number => {
+    const d = dueIso ? new Date(`${dueIso}T12:00:00Z`) : new Date(NaN);
+    const today = new Date(`${todayIso}T12:00:00Z`);
+    return Number.isNaN(d.getTime())
+      ? 0
+      : Math.max(0, Math.floor((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24)));
+  };
+
+  const rows: ArrearsQueueRow[] = [];
+
+  for (const g of byTenancy.values()) {
+    const sorted = [...g.instalments].sort((a, b) => a.dueIso.localeCompare(b.dueIso));
+    if (sorted.length === 0) continue;
+
+    const oldest = sorted[0]!;
+    const totalAmount = sorted.reduce((s, x) => s + x.amount, 0);
+    const paymentIdSet = new Set(sorted.map((x) => x.paymentId));
+
+    const candidates = (approvals ?? []).filter((a) => paymentIdSet.has(String(a.target_id)));
+
+    /** Prefer approval keyed to oldest overdue instalment (canonical chase / seed convention). */
+    const approval =
+      candidates.find((a) => String(a.target_id) === oldest.paymentId) ?? candidates[0] ?? undefined;
+
+    rows.push({
+      tenancyId: g.tenancyId,
+      tenantId: g.tenantId,
+      canonicalPaymentId: oldest.paymentId,
+      tenantName: g.tenantName,
+      propertyAddress: g.propertyAddress,
+      totalOverdueAmount: totalAmount,
+      overdueInstalmentCount: sorted.length,
+      oldestDueDate: oldest.dueIso,
+      daysOverdue: daysSinceDue(oldest.dueIso),
       actionState: approval ? "approval_needed" : "no_draft",
       approvalId: approval?.id,
-    };
-  });
+    });
+  }
+
+  rows.sort(
+    (a, b) =>
+      a.oldestDueDate.localeCompare(b.oldestDueDate) || b.totalOverdueAmount - a.totalOverdueAmount,
+  );
+
+  return rows.slice(0, 5);
 }
 
 export type MaintenanceQueueRow = {
@@ -509,7 +583,7 @@ export async function loadCommandCenterActivity(userId: string): Promise<Activit
         };
       });
     })(),
-    3000,
+    4500,
     [],
     "command-center:loadCommandCenterActivity",
   );

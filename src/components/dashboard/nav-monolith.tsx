@@ -6,12 +6,13 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Building2, FileText, LayoutDashboard, LineChart, Users } from "lucide-react";
 
+/** Stitch / legacy monolith nav — every label matches an existing App Router page. */
 const items = [
-  { title: "Portfolio", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Command Center", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Portfolio", url: "/dashboard/properties", icon: Building2 },
   { title: "Tenants", url: "/dashboard/tenants", icon: Users },
-  { title: "Properties", url: "/dashboard/properties", icon: Building2 },
   { title: "Contracts", url: "/dashboard/contracts", icon: FileText },
-  { title: "Intelligence", url: "/dashboard", icon: LineChart },
+  { title: "Activity", url: "/dashboard/activity", icon: LineChart },
 ] as const;
 
 export function NavMonolith() {

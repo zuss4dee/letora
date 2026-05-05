@@ -12,6 +12,11 @@ import { getTenancies } from "@/lib/actions/tenancies";
 import { getPendingApprovalsForRentChase } from "@/lib/actions/agent-approvals";
 import type { RentPaymentListRow } from "@/lib/actions/rent-tracker";
 import type { TenancyRow } from "@/lib/actions/tenancies";
+import {
+  applyRentTrackerDisplayMode,
+  parseRentTrackerModeParam,
+  type RentTrackerResolvedDisplayMode,
+} from "@/lib/rent-tracker-url-mode";
 import { DashboardPollRefresh } from "@/hooks/use-dashboard-poll-refresh";
 import { createClient } from "@/lib/supabase/server";
 
@@ -20,18 +25,25 @@ function parseQueueParam(raw: string | string[] | undefined): string | undefined
   return undefined;
 }
 
+/**
+ * Ledger scoping for deep links (property / tenancy / instalment / tenant).
+ * For URL `mode=` filter precedence, see {@link applyRentTrackerDisplayMode} in `@/lib/rent-tracker-url-mode`
+ * (modes apply only after this reducer runs).
+ */
 function scopeRentTrackerData({
   tenancies,
   payments,
   propertyId,
   tenancyId,
   paymentId,
+  tenantId,
 }: {
   tenancies: TenancyRow[];
   payments: RentPaymentListRow[];
   propertyId?: string;
   tenancyId?: string;
   paymentId?: string;
+  tenantId?: string;
 }): {
   scopedTenancies: TenancyRow[];
   scopedPayments: RentPaymentListRow[];
@@ -39,26 +51,134 @@ function scopeRentTrackerData({
   focusPaymentId?: string;
   requestedPaymentMissing: boolean;
   requestedTenancyMissing: boolean;
+  requestedTenantMissing: boolean;
+  paymentTenantContextConflict: boolean;
+  tenancyTenantContextConflict: boolean;
   usedFullListFallback: boolean;
 } {
-  const requestedPaymentMissing =
-    Boolean(paymentId) && !payments.some((p) => p.id === paymentId);
-
   const payFromDeepLink =
     paymentId != null ? payments.find((p) => p.id === paymentId) : undefined;
 
+  const requestedPaymentMissing =
+    Boolean(paymentId) && payFromDeepLink == null;
+
+  const tenancyRowFromParam =
+    tenancyId != null ? tenancies.find((t) => t.id === tenancyId) : undefined;
+
+  const tenancyOfResolvedPayment =
+    payFromDeepLink?.tenancyId != null
+      ? tenancies.find((t) => t.id === payFromDeepLink.tenancyId)
+      : undefined;
+
   const requestedTenancyMissing =
+    Boolean(tenancyId) && tenancyRowFromParam == null && payFromDeepLink == null;
+
+  const requestedTenantMissing =
+    Boolean(tenantId) && !tenancies.some((t) => t.tenantId === tenantId);
+
+  const tenancyTenantContextConflict =
+    Boolean(tenantId) &&
     Boolean(tenancyId) &&
-    !tenancies.some((t) => t.id === tenancyId) &&
+    tenancyRowFromParam != null &&
+    tenancyRowFromParam.tenantId !== tenantId &&
     payFromDeepLink == null;
+
+  const paymentTenantContextConflict =
+    Boolean(tenantId) &&
+    Boolean(paymentId) &&
+    Boolean(payFromDeepLink) &&
+    Boolean(tenancyOfResolvedPayment?.tenantId) &&
+    tenancyOfResolvedPayment!.tenantId !== tenantId &&
+    !requestedPaymentMissing;
+
+  const applyPropertyFilter = (rows: TenancyRow[]): TenancyRow[] => {
+    if (propertyId == null) return rows;
+    return rows.filter((t) => t.propertyId === propertyId);
+  };
+
+  /** Valid payment id wins: scope + focus that instalment even if tenantId disagrees. */
+  if (!requestedPaymentMissing && payFromDeepLink && tenancyOfResolvedPayment) {
+    let scopedTenancies = applyPropertyFilter([tenancyOfResolvedPayment]);
+    if (scopedTenancies.length === 0) scopedTenancies = [tenancyOfResolvedPayment];
+
+    let scopedPayments = payments.filter((p) => p.tenancyId === tenancyOfResolvedPayment.id);
+    if (!scopedPayments.some((p) => p.id === payFromDeepLink.id)) {
+      scopedPayments = [...scopedPayments, payFromDeepLink];
+    }
+
+    let usedFullListFallback = false;
+    if (
+      scopedPayments.length === 0 &&
+      payments.length > 0 &&
+      (paymentId != null || tenancyId != null || tenantId != null)
+    ) {
+      usedFullListFallback = true;
+      if (propertyId != null) {
+        scopedTenancies = applyPropertyFilter([...tenancies]);
+        const pidSet = new Set(scopedTenancies.map((t) => t.id));
+        scopedPayments = payments.filter((p) => p.tenancyId != null && pidSet.has(p.tenancyId));
+        if (scopedPayments.length === 0) {
+          scopedTenancies = [...tenancies];
+          scopedPayments = [...payments];
+        }
+      } else {
+        scopedTenancies = [...tenancies];
+        scopedPayments = [...payments];
+      }
+    }
+
+    return {
+      scopedTenancies,
+      scopedPayments,
+      focusPaymentId: paymentId,
+      requestedPaymentMissing,
+      requestedTenancyMissing,
+      requestedTenantMissing,
+      paymentTenantContextConflict,
+      tenancyTenantContextConflict: false,
+      usedFullListFallback,
+    };
+  }
+
+  /** tenantId + tenancyId point at different people — safest to widen. */
+  if (tenancyTenantContextConflict) {
+    return {
+      scopedTenancies: [...tenancies],
+      scopedPayments: [...payments],
+      focusPaymentId: undefined,
+      requestedPaymentMissing,
+      requestedTenancyMissing,
+      requestedTenantMissing,
+      paymentTenantContextConflict,
+      tenancyTenantContextConflict: true,
+      usedFullListFallback: true,
+    };
+  }
+
+  /** tenantId unknown to this landlord’s rent graph */
+  if (requestedTenantMissing) {
+    return {
+      scopedTenancies: [...tenancies],
+      scopedPayments: [...payments],
+      focusPaymentId: undefined,
+      requestedPaymentMissing,
+      requestedTenancyMissing,
+      requestedTenantMissing: true,
+      paymentTenantContextConflict: false,
+      tenancyTenantContextConflict: false,
+      usedFullListFallback: true,
+    };
+  }
 
   const scopeTenancyId =
     payFromDeepLink?.tenancyId ?? (requestedTenancyMissing ? undefined : tenancyId);
 
-  let scopedTenancies = tenancies;
-  if (propertyId != null) {
-    scopedTenancies = scopedTenancies.filter((t) => t.propertyId === propertyId);
-  }
+  let scopedTenancies = [...tenancies];
+
+  if (tenantId != null) scopedTenancies = scopedTenancies.filter((t) => t.tenantId === tenantId);
+
+  scopedTenancies = applyPropertyFilter(scopedTenancies);
+
   if (scopeTenancyId != null) {
     scopedTenancies = scopedTenancies.filter((t) => t.id === scopeTenancyId);
   }
@@ -69,16 +189,14 @@ function scopeRentTrackerData({
   if (paymentId != null && payFromDeepLink && !scopedPayments.some((p) => p.id === paymentId)) {
     scopedPayments = [...scopedPayments, payFromDeepLink];
     const t = tenancies.find((x) => x.id === payFromDeepLink.tenancyId);
-    if (t && !scopedTenancies.some((s) => s.id === t.id)) {
-      scopedTenancies = [...scopedTenancies, t];
-    }
+    if (t && !scopedTenancies.some((s) => s.id === t.id)) scopedTenancies = [...scopedTenancies, t];
   }
 
   let usedFullListFallback = false;
 
   if (
     scopedPayments.length === 0 &&
-    (paymentId != null || tenancyId != null) &&
+    (paymentId != null || tenancyId != null || tenantId != null) &&
     payments.length > 0
   ) {
     usedFullListFallback = true;
@@ -87,29 +205,52 @@ function scopeRentTrackerData({
       const pidSet = new Set(scopedTenancies.map((t) => t.id));
       scopedPayments = payments.filter((p) => p.tenancyId != null && pidSet.has(p.tenancyId));
       if (scopedPayments.length === 0) {
-        scopedTenancies = tenancies;
-        scopedPayments = payments;
+        scopedTenancies = [...tenancies];
+        scopedPayments = [...payments];
       }
     } else {
-      scopedTenancies = tenancies;
-      scopedPayments = payments;
+      scopedTenancies = [...tenancies];
+      scopedPayments = [...payments];
     }
   }
 
   return {
     scopedTenancies,
     scopedPayments,
-    focusPaymentId: paymentId,
+    focusPaymentId: requestedPaymentMissing ? undefined : paymentId,
     requestedPaymentMissing,
     requestedTenancyMissing,
+    requestedTenantMissing: false,
+    paymentTenantContextConflict: false,
+    tenancyTenantContextConflict: false,
     usedFullListFallback,
   };
+}
+
+function buildRentTrackerPreserveQuery(params: {
+  propertyId?: string;
+  tenancyId?: string;
+  paymentId?: string;
+  tenantId?: string;
+}): string {
+  const qs = new URLSearchParams();
+  if (params.propertyId) qs.set("propertyId", params.propertyId);
+  if (params.tenancyId) qs.set("tenancyId", params.tenancyId);
+  if (params.paymentId) qs.set("paymentId", params.paymentId);
+  if (params.tenantId) qs.set("tenantId", params.tenantId);
+  return qs.toString();
 }
 
 export default async function RentTrackerPage({
   searchParams,
 }: {
-  searchParams: Promise<{ propertyId?: string; tenancyId?: string; paymentId?: string }>;
+  searchParams: Promise<{
+    propertyId?: string;
+    tenancyId?: string;
+    paymentId?: string;
+    tenantId?: string;
+    mode?: string;
+  }>;
 }) {
   const supabase = await createClient();
   const {
@@ -124,6 +265,19 @@ export default async function RentTrackerPage({
   const propertyId = parseQueueParam(sp.propertyId);
   const tenancyId = parseQueueParam(sp.tenancyId);
   const paymentId = parseQueueParam(sp.paymentId);
+  const tenantId = parseQueueParam(sp.tenantId);
+  const { canonical: resolvedRentTrackerMode, unknownToken } = parseRentTrackerModeParam(sp.mode);
+  const unknownRentTrackerModeDropped = unknownToken !== undefined;
+  const preserveQueryWithoutMode = buildRentTrackerPreserveQuery({
+    propertyId,
+    tenancyId,
+    paymentId,
+    tenantId,
+  });
+  const rentTrackerPreserveHref =
+    preserveQueryWithoutMode.length > 0
+      ? `/dashboard/rent-tracker?${preserveQueryWithoutMode}`
+      : "/dashboard/rent-tracker";
 
   const todayIso = new Date().toISOString().slice(0, 10);
 
@@ -138,6 +292,10 @@ export default async function RentTrackerPage({
             propertyId={propertyId}
             tenancyId={tenancyId}
             paymentId={paymentId}
+            tenantId={tenantId}
+            resolvedRentTrackerMode={resolvedRentTrackerMode}
+            unknownRentTrackerModeDropped={unknownRentTrackerModeDropped}
+            rentTrackerPreserveHref={rentTrackerPreserveHref}
           />
         </Suspense>
       </div>
@@ -151,12 +309,20 @@ async function RentTrackerAsyncSection({
   propertyId,
   tenancyId,
   paymentId,
+  tenantId,
+  resolvedRentTrackerMode,
+  unknownRentTrackerModeDropped,
+  rentTrackerPreserveHref,
 }: {
   userId: string;
   todayIso: string;
   propertyId?: string;
   tenancyId?: string;
   paymentId?: string;
+  tenantId?: string;
+  resolvedRentTrackerMode: RentTrackerResolvedDisplayMode;
+  unknownRentTrackerModeDropped: boolean;
+  rentTrackerPreserveHref: string;
 }) {
   const [payments, tenancies, pendingApprovals] = await Promise.all([
     getRentPayments(),
@@ -164,10 +330,14 @@ async function RentTrackerAsyncSection({
     getPendingApprovalsForRentChase(),
   ]);
   const {
+    scopedTenancies,
     scopedPayments,
     focusPaymentId,
     requestedPaymentMissing,
     requestedTenancyMissing,
+    requestedTenantMissing,
+    paymentTenantContextConflict,
+    tenancyTenantContextConflict,
     usedFullListFallback,
   } = scopeRentTrackerData({
     tenancies,
@@ -175,9 +345,18 @@ async function RentTrackerAsyncSection({
     propertyId,
     tenancyId,
     paymentId,
+    tenantId,
   });
   const stats = computeRentTrackerStats(scopedPayments, todayIso, scopedTenancies);
-  const showQueueBacktrail = Boolean(paymentId ?? tenancyId);
+  const showQueueBacktrail = Boolean(paymentId ?? tenancyId ?? tenantId);
+  const { modePausedForFocus: rentTrackerModePausedForFocus } = applyRentTrackerDisplayMode(
+    scopedPayments,
+    resolvedRentTrackerMode,
+    todayIso,
+    focusPaymentId,
+  );
+  /** Queue rows already land on a specific instalment — skip duplicate “arrears” KPI ribbon. */
+  const suppressRentTrackerModeRibbon = Boolean(paymentId) && resolvedRentTrackerMode === "arrears";
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -185,7 +364,14 @@ async function RentTrackerAsyncSection({
         showQueueBacktrail={showQueueBacktrail}
         requestedPaymentMissing={requestedPaymentMissing}
         requestedTenancyMissing={requestedTenancyMissing}
+        requestedTenantMissing={requestedTenantMissing}
+        paymentTenantContextConflict={paymentTenantContextConflict}
+        tenancyTenantContextConflict={tenancyTenantContextConflict}
         usedFullListFallback={usedFullListFallback}
+        resolvedRentTrackerMode={resolvedRentTrackerMode}
+        unknownRentTrackerModeDropped={unknownRentTrackerModeDropped}
+        rentTrackerModePausedForFocus={rentTrackerModePausedForFocus}
+        suppressRentTrackerModeRibbon={suppressRentTrackerModeRibbon}
       />
       {propertyId ? (
         <div className="shrink-0 border-b border-[#282828] bg-[#141414] px-4 py-2 md:px-6">
@@ -200,6 +386,8 @@ async function RentTrackerAsyncSection({
           todayIso={todayIso}
           pendingApprovals={pendingApprovals}
           focusPaymentId={focusPaymentId}
+          canonicalRentTrackerMode={resolvedRentTrackerMode}
+          rentTrackerPreserveHref={rentTrackerPreserveHref}
         />
       </div>
     </div>

@@ -51,6 +51,12 @@ export type MaintenanceEmailLogRow = {
   created_at: string | null;
 };
 
+/** Terminal maintenance rows (agent seed + manual updates may use `completed` vs `resolved`). */
+function isMaintenanceResolvedStatus(status: string | null | undefined): boolean {
+  const s = (status ?? "").toLowerCase();
+  return s === "resolved" || s === "completed";
+}
+
 export type MaintenanceDetail = MaintenanceRequestRow & {
   updatedAt: string | null;
   tenantEmail: string | null;
@@ -112,8 +118,8 @@ export async function getMaintenanceRequests(userId: string): Promise<{
     };
   });
 
-  const open = rows.filter((r) => (r.status ?? "open") !== "resolved");
-  const resolved = rows.filter((r) => (r.status ?? "open") === "resolved");
+  const open = rows.filter((r) => !isMaintenanceResolvedStatus(r.status));
+  const resolved = rows.filter((r) => isMaintenanceResolvedStatus(r.status));
 
   return { open, resolved };
 }

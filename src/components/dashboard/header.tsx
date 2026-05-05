@@ -14,11 +14,11 @@ const titleByPrefix: Array<{ prefix: string; title: string }> = [
   { prefix: "/dashboard/maintenance", title: "Maintenance" },
   { prefix: "/dashboard/contracts", title: "Contracts" },
   { prefix: "/dashboard/leads", title: "Leads" },
-  { prefix: "/dashboard", title: "Dashboard" },
+  { prefix: "/dashboard", title: "Command Center" },
 ];
 
 function getTitle(pathname: string) {
-  if (pathname === "/dashboard" || pathname === "/dashboard/") return "Dashboard";
+  if (pathname === "/dashboard" || pathname === "/dashboard/") return "Command Center";
   const sorted = [...titleByPrefix].sort((a, b) => b.prefix.length - a.prefix.length);
   return sorted.find((t) => pathname.startsWith(t.prefix))?.title ?? "Dashboard";
 }

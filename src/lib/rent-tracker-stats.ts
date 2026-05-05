@@ -1,4 +1,4 @@
-import { isPaymentOverdue, resolvePaymentAmount } from "@/lib/rent-utils";
+import { isPaymentOverdue, resolvePaymentAmount } from "@/lib/rent-payment-helpers";
 import { addCalendarDaysIso, isoDateBetweenInclusive, monthBoundsIso } from "@/lib/rent-calendar-bounds";
 import type { RentPaymentListRow } from "@/lib/actions/rent-tracker";
 

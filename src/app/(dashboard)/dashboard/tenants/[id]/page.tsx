@@ -4,8 +4,6 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
-  Building2,
-  Calendar,
   CircleDollarSign,
   History,
   Key,
@@ -27,6 +25,13 @@ function formatCurrency(amount: number) {
     style: "currency",
     currency: "GBP",
   }).format(amount);
+}
+
+function formatShortUkDate(isoDate: string | null) {
+  if (!isoDate) return null;
+  const d = new Date(`${isoDate}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return isoDate;
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 }
 
 function toTenantFormInput(t: {
@@ -83,6 +88,14 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
   }
 
   const { tenant, activeTenancy, rent, maintenance, approvals, activity } = data;
+
+  const lastPaidOnLabel = rent.lastPaid ? formatShortUkDate(rent.lastPaid.dateIso) : null;
+  const lastPaidSummary =
+    rent.lastPaid == null
+      ? null
+      : `${rent.lastPaid.amountGbp > 0 ? formatCurrency(rent.lastPaid.amountGbp) : "—"}${
+          lastPaidOnLabel ? ` · ${lastPaidOnLabel}` : ""
+        }`;
 
   return (
     <div className="flex flex-1 flex-col bg-[#0B0B0B]">
@@ -172,7 +185,9 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
                     </div>
                     <div>
                       <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-600">Monthly Rent</p>
-                      <p className="text-[12px] font-bold text-white">{formatCurrency(activeTenancy.monthlyRent ?? 0)}</p>
+                      <p className="text-[12px] font-bold text-white">
+                        {activeTenancy.monthlyRent != null ? formatCurrency(activeTenancy.monthlyRent) : "—"}
+                      </p>
                     </div>
                   </div>
                 ) : (
@@ -203,29 +218,50 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
               <div className="grid grid-cols-1 divide-[#232323] md:grid-cols-2 md:divide-x">
                 <div className="p-6">
                   <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Current Balance</p>
-                  <p className={cn(
-                    "text-[32px] font-bold tabular-nums tracking-tighter",
-                    rent.arrearsGbp > 0 ? "text-rose-400" : "text-emerald-400"
-                  )}>
+                  <p
+                    className={cn(
+                      "text-[32px] font-bold tabular-nums tracking-tighter",
+                      rent.status === "overdue" ? "text-rose-400" : "text-emerald-400"
+                    )}
+                  >
                     {formatCurrency(rent.arrearsGbp)}
                   </p>
                   <p className="mt-1 text-[11px] text-zinc-500">
-                    {rent.arrearsGbp > 0 ? "Requires immediate collection action" : "Account is currently in good standing"}
+                    {rent.status === "overdue"
+                      ? "Requires immediate collection action"
+                      : rent.status === "pending"
+                        ? "Check Rent Tracker for due or upcoming instalments."
+                        : "Account is currently in good standing"}
                   </p>
                 </div>
                 <div className="bg-[#0B0B0B] p-6 flex flex-col justify-center">
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-4">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Last Payment</span>
-                      <span className="text-[11px] font-bold text-zinc-300">£1,250.00 (Mocked)</span>
+                      <span className="text-right text-[11px] font-bold text-zinc-300">
+                        {lastPaidSummary != null ? lastPaidSummary : (
+                          <span className="font-medium text-zinc-600">No data</span>
+                        )}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Payment Status</span>
-                      <span className={cn(
-                        "text-[10px] font-bold uppercase px-2 py-0.5 border",
-                        rent.arrearsGbp > 0 ? "border-rose-900/50 text-rose-500 bg-rose-500/5" : "border-emerald-900/50 text-emerald-500 bg-emerald-500/5"
-                      )}>
-                        {rent.arrearsGbp > 0 ? "OVERDUE" : "PAID"}
+                      <span
+                        className={cn(
+                          "text-[10px] font-bold uppercase px-2 py-0.5 border",
+                          rent.status === "overdue" &&
+                            "border-rose-900/50 text-rose-500 bg-rose-500/5",
+                          rent.status === "pending" &&
+                            "border-amber-900/50 text-amber-500 bg-amber-500/5",
+                          rent.status === "paid" &&
+                            "border-emerald-900/50 text-emerald-500 bg-emerald-500/5"
+                        )}
+                      >
+                        {rent.status === "overdue"
+                          ? "OVERDUE"
+                          : rent.status === "pending"
+                            ? "PENDING"
+                            : "PAID"}
                       </span>
                     </div>
                   </div>

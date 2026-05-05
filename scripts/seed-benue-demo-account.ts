@@ -12,6 +12,11 @@
  * - Only touches portfolio rows tagged with DEMO_PROPERTY_PREFIX / DEMO_EMAIL_SUFFIX / DEMO_RENT_NOTE,
  *   demo leads (`DEMO_LEAD_NOTE`), and demo agent runs (`DEMO_AGENT_RUN_TYPE`).
  * - Resolves user by exact email match; aborts if not found.
+ *
+ * Demo timeline:
+ * - Tenancy dates, rent instalments, onboarding task due dates, leads move-in, and maintenance
+ *   resolved_at are anchored to the seed run’s UTC calendar date so Command Center / Rent Tracker
+ *   “current month”, arrears, and due-soon behaviour stay coherent without hand-editing SQL.
  */
 
 import { readFileSync } from "node:fs";
@@ -69,6 +74,68 @@ const DEMO_AGENT_RUN_TYPE = "demo_queued_run";
 
 type UUID = string;
 
+/** UTC calendar date YYYY-MM-DD (matches app KPIs using `toISOString().slice(0, 10)`). */
+function utcYmd(year: number, monthIndex0: number, day: number): string {
+  return new Date(Date.UTC(year, monthIndex0, day)).toISOString().slice(0, 10);
+}
+
+function shiftMonth(year: number, monthIndex0: number, deltaMonths: number): [number, number] {
+  const t = new Date(Date.UTC(year, monthIndex0 + deltaMonths, 1));
+  return [t.getUTCFullYear(), t.getUTCMonth()];
+}
+
+function leaseEndDayBeforeAnniversary(startIso: string): string {
+  const parts = startIso.split("-").map(Number);
+  const ys = parts[0]!;
+  const ms = parts[1]!;
+  const ds = parts[2]!;
+  const end = new Date(Date.UTC(ys + 1, ms - 1, ds));
+  end.setUTCDate(end.getUTCDate() - 1);
+  return end.toISOString().slice(0, 10);
+}
+
+function daysBetweenInclusiveUtc(startIso: string, endIso: string): number {
+  const a = Date.UTC(+startIso.slice(0, 4), +startIso.slice(5, 7) - 1, +startIso.slice(8, 10));
+  const b = Date.UTC(+endIso.slice(0, 4), +endIso.slice(5, 7) - 1, +endIso.slice(8, 10));
+  return Math.floor((b - a) / 86400000);
+}
+
+function addUtcDays(iso: string, deltaDays: number): string {
+  const parts = iso.split("-").map(Number);
+  const yy = parts[0]!;
+  const mm = parts[1]!;
+  const dd = parts[2]!;
+  const t = new Date(Date.UTC(yy, mm - 1, dd + deltaDays));
+  return t.toISOString().slice(0, 10);
+}
+
+type DemoAnchor = {
+  todayIso: string;
+  /** First of anchor month (UTC). */
+  monthStart: (offsetFromAnchorMonth: number) => string;
+  /** Day N within month offset from anchor (clamped to month length). */
+  monthDay: (offsetFromAnchorMonth: number, day: number) => string;
+};
+
+function buildDemoAnchor(now: Date): DemoAnchor {
+  const y = now.getUTCFullYear();
+  const mon = now.getUTCMonth();
+  const todayIso = now.toISOString().slice(0, 10);
+
+  const monthStart = (offset: number): string => {
+    const [yy, mm] = shiftMonth(y, mon, offset);
+    return utcYmd(yy, mm, 1);
+  };
+
+  const monthDay = (offset: number, day: number): string => {
+    const [yy, mm] = shiftMonth(y, mon, offset);
+    const lastDay = new Date(Date.UTC(yy, mm + 1, 0)).getUTCDate();
+    return utcYmd(yy, mm, Math.min(day, lastDay));
+  };
+
+  return { todayIso, monthStart, monthDay };
+}
+
 function requireEnv(name: string): string {
   const v = process.env[name]?.trim();
   if (!v) {
@@ -88,7 +155,9 @@ async function resolveAuthUserId(supabase: SeedSupabase, email: string): Promise
       console.error("auth.admin.listUsers failed:", error.message);
       process.exit(1);
     }
-    const found = data.users.find((u) => (u.email ?? "").toLowerCase() === target);
+    const found = (data.users ?? []).find((u: { id?: string; email?: string | null }) => {
+      return (u.email ?? "").toLowerCase() === target;
+    });
     if (found?.id) return found.id;
     if (data.users.length < perPage) break;
     page += 1;
@@ -265,6 +334,9 @@ async function main(): Promise<void> {
 
   await wipeDemoPortfolio(supabase, userId);
 
+  const anchor = buildDemoAnchor(new Date());
+  const { todayIso, monthStart, monthDay } = anchor;
+
   const tenantsInsert = [
     {
       id: randomUUID(),
@@ -398,14 +470,22 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const oliverStart = monthStart(0);
+  const priyaStart = monthDay(-1, 15);
+  const jamesStart = monthStart(-2);
+  const amaraStart = monthStart(-3);
+  const noahStart = monthStart(-6);
+  const elenaStart = monthStart(-8);
+  const sofiaStart = monthStart(-9);
+
   const tenanciesInsert = [
     {
       id: randomUUID(),
       property_id: propMcr.id,
       tenant_id: tenantByKey.oliver.id,
-      start_date: "2026-05-01",
-      end_date: "2027-04-30",
-      move_in_date: "2026-05-08",
+      start_date: oliverStart,
+      end_date: leaseEndDayBeforeAnniversary(oliverStart),
+      move_in_date: monthDay(0, 8),
       monthly_rent: 1200,
       deposit_amount: 1200,
       deposit_protected: false,
@@ -416,9 +496,9 @@ async function main(): Promise<void> {
       id: randomUUID(),
       property_id: propMcr.id,
       tenant_id: tenantByKey.priya.id,
-      start_date: "2026-04-15",
-      end_date: "2027-04-14",
-      move_in_date: "2026-04-20",
+      start_date: priyaStart,
+      end_date: leaseEndDayBeforeAnniversary(priyaStart),
+      move_in_date: monthDay(-1, 20),
       monthly_rent: 1180,
       deposit_amount: 1180,
       deposit_protected: true,
@@ -429,9 +509,9 @@ async function main(): Promise<void> {
       id: randomUUID(),
       property_id: propBristol.id,
       tenant_id: tenantByKey.james.id,
-      start_date: "2026-03-01",
-      end_date: "2027-02-28",
-      move_in_date: "2026-03-07",
+      start_date: jamesStart,
+      end_date: leaseEndDayBeforeAnniversary(jamesStart),
+      move_in_date: monthDay(-2, 7),
       monthly_rent: 1850,
       deposit_amount: 1850,
       deposit_protected: true,
@@ -442,9 +522,9 @@ async function main(): Promise<void> {
       id: randomUUID(),
       property_id: propBristol.id,
       tenant_id: tenantByKey.amara.id,
-      start_date: "2026-02-01",
-      end_date: "2027-01-31",
-      move_in_date: "2026-02-10",
+      start_date: amaraStart,
+      end_date: leaseEndDayBeforeAnniversary(amaraStart),
+      move_in_date: monthDay(-3, 10),
       monthly_rent: 1825,
       deposit_amount: 1825,
       deposit_protected: true,
@@ -455,9 +535,9 @@ async function main(): Promise<void> {
       id: randomUUID(),
       property_id: propBristol.id,
       tenant_id: tenantByKey.noah.id,
-      start_date: "2025-11-01",
-      end_date: "2026-10-31",
-      move_in_date: "2026-05-12",
+      start_date: noahStart,
+      end_date: leaseEndDayBeforeAnniversary(noahStart),
+      move_in_date: monthDay(0, 12),
       monthly_rent: 1795,
       deposit_amount: 1795,
       deposit_protected: true,
@@ -468,9 +548,9 @@ async function main(): Promise<void> {
       id: randomUUID(),
       property_id: propLeeds.id,
       tenant_id: tenantByKey.elena.id,
-      start_date: "2025-09-01",
-      end_date: "2026-08-31",
-      move_in_date: "2025-09-05",
+      start_date: elenaStart,
+      end_date: leaseEndDayBeforeAnniversary(elenaStart),
+      move_in_date: monthDay(-8, 5),
       monthly_rent: 895,
       deposit_amount: 895,
       deposit_protected: true,
@@ -481,9 +561,9 @@ async function main(): Promise<void> {
       id: randomUUID(),
       property_id: propLeeds.id,
       tenant_id: tenantByKey.sofia.id,
-      start_date: "2025-08-01",
-      end_date: "2026-07-31",
-      move_in_date: "2025-08-08",
+      start_date: sofiaStart,
+      end_date: leaseEndDayBeforeAnniversary(sofiaStart),
+      move_in_date: monthDay(-9, 8),
       monthly_rent: 920,
       deposit_amount: 920,
       deposit_protected: true,
@@ -526,7 +606,7 @@ async function main(): Promise<void> {
       task_type: "check",
       status: "pending",
       email_log_id: null,
-      due_date: "2026-05-08",
+      due_date: addUtcDays(todayIso, 7),
       completed_at: null as string | null,
     },
     {
@@ -536,7 +616,7 @@ async function main(): Promise<void> {
       task_type: "check",
       status: "pending",
       email_log_id: null,
-      due_date: "2026-05-12",
+      due_date: addUtcDays(todayIso, 11),
       completed_at: null,
     },
     {
@@ -579,7 +659,7 @@ async function main(): Promise<void> {
       task_type: "check",
       status: "pending",
       email_log_id: null,
-      due_date: "2026-05-06",
+      due_date: addUtcDays(todayIso, 5),
       completed_at: null,
     },
     {
@@ -589,7 +669,7 @@ async function main(): Promise<void> {
       task_type: "check",
       status: "pending",
       email_log_id: null,
-      due_date: "2026-05-07",
+      due_date: addUtcDays(todayIso, 6),
       completed_at: null,
     },
   ];
@@ -618,289 +698,133 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const rentElenaFeb = randomUUID();
-  const rentElenaMar = randomUUID();
-  const rentElenaApr = randomUUID();
-  const rentElenaMay = randomUUID();
-  const rentElenaJun = randomUUID();
-  const rentSofiaMar = randomUUID();
-  const rentSofiaApr = randomUUID();
-  const rentSofiaMay = randomUUID();
-  const rentSofiaJun = randomUUID();
-  const rentJamesApr = randomUUID();
-  const rentJamesMay = randomUUID();
-  const rentJamesJun = randomUUID();
-  const rentAmaraApr = randomUUID();
-  const rentAmaraMay = randomUUID();
-  const rentAmaraJun = randomUUID();
-  const rentNoahApr = randomUUID();
-  const rentNoahMay = randomUUID();
-  const rentNoahJun = randomUUID();
-  const rentPriyaMay = randomUUID();
-  const rentPriyaJun = randomUUID();
-  const rentOliverJun = randomUUID();
+  /** Paid-on-time simulation: a few days after due, but never dated in the future vs seed run day. */
+  const paidSoonAfterDue = (dueIso: string, daysAfterDue: number): string => {
+    const target = addUtcDays(dueIso, daysAfterDue);
+    return target <= todayIso ? target : todayIso;
+  };
 
-  const rentRows = [
-    /* Elena — good payer; April paid in time for “collected last month” in May */
-    {
-      id: rentElenaFeb,
-      user_id: userId,
-      tenancy_id: tn.elena.id,
-      property_id: propLeeds.id,
-      tenant_id: tenantByKey.elena.id,
-      amount: 895,
-      due_date: "2026-02-01",
-      paid_date: "2026-02-03",
-      status: "paid",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentElenaMar,
-      user_id: userId,
-      tenancy_id: tn.elena.id,
-      property_id: propLeeds.id,
-      tenant_id: tenantByKey.elena.id,
-      amount: 895,
-      due_date: "2026-03-01",
-      paid_date: "2026-03-02",
-      status: "paid",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentElenaApr,
-      user_id: userId,
-      tenancy_id: tn.elena.id,
-      property_id: propLeeds.id,
-      tenant_id: tenantByKey.elena.id,
-      amount: 895,
-      due_date: "2026-04-01",
-      paid_date: "2026-04-29",
-      status: "paid",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentElenaMay,
-      user_id: userId,
-      tenancy_id: tn.elena.id,
-      property_id: propLeeds.id,
-      tenant_id: tenantByKey.elena.id,
-      amount: 895,
-      due_date: "2026-05-01",
-      paid_date: "2026-05-02",
-      status: "paid",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentElenaJun,
-      user_id: userId,
-      tenancy_id: tn.elena.id,
-      property_id: propLeeds.id,
-      tenant_id: tenantByKey.elena.id,
-      amount: 895,
-      due_date: "2026-06-01",
-      paid_date: null,
-      status: "pending",
-      notes: DEMO_RENT_NOTE,
-    },
-    /* Sofia — arrears (Mar–May) */
-    {
-      id: rentSofiaMar,
-      user_id: userId,
-      tenancy_id: tn.sofia.id,
-      property_id: propLeeds.id,
-      tenant_id: tenantByKey.sofia.id,
-      amount: 920,
-      due_date: "2026-03-01",
-      paid_date: null,
-      status: "overdue",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentSofiaApr,
-      user_id: userId,
-      tenancy_id: tn.sofia.id,
-      property_id: propLeeds.id,
-      tenant_id: tenantByKey.sofia.id,
-      amount: 920,
-      due_date: "2026-04-01",
-      paid_date: null,
-      status: "overdue",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentSofiaMay,
-      user_id: userId,
-      tenancy_id: tn.sofia.id,
-      property_id: propLeeds.id,
-      tenant_id: tenantByKey.sofia.id,
-      amount: 920,
-      due_date: "2026-05-01",
-      paid_date: null,
-      status: "overdue",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentSofiaJun,
-      user_id: userId,
-      tenancy_id: tn.sofia.id,
-      property_id: propLeeds.id,
-      tenant_id: tenantByKey.sofia.id,
-      amount: 920,
-      due_date: "2026-06-01",
-      paid_date: null,
-      status: "pending",
-      notes: DEMO_RENT_NOTE,
-    },
-    /* James — paid on time */
-    {
-      id: rentJamesApr,
-      user_id: userId,
-      tenancy_id: tn.james.id,
-      property_id: propBristol.id,
-      tenant_id: tenantByKey.james.id,
-      amount: 1850,
-      due_date: "2026-04-01",
-      paid_date: "2026-04-04",
-      status: "paid",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentJamesMay,
-      user_id: userId,
-      tenancy_id: tn.james.id,
-      property_id: propBristol.id,
-      tenant_id: tenantByKey.james.id,
-      amount: 1850,
-      due_date: "2026-05-01",
-      paid_date: "2026-05-01",
-      status: "paid",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentJamesJun,
-      user_id: userId,
-      tenancy_id: tn.james.id,
-      property_id: propBristol.id,
-      tenant_id: tenantByKey.james.id,
-      amount: 1850,
-      due_date: "2026-06-01",
-      paid_date: null,
-      status: "pending",
-      notes: DEMO_RENT_NOTE,
-    },
-    /* Amara — May currently late (pending past due → overdue in app logic) */
-    {
-      id: rentAmaraApr,
-      user_id: userId,
-      tenancy_id: tn.amara.id,
-      property_id: propBristol.id,
-      tenant_id: tenantByKey.amara.id,
-      amount: 1825,
-      due_date: "2026-04-01",
-      paid_date: "2026-04-06",
-      status: "paid",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentAmaraMay,
-      user_id: userId,
-      tenancy_id: tn.amara.id,
-      property_id: propBristol.id,
-      tenant_id: tenantByKey.amara.id,
-      amount: 1825,
-      due_date: "2026-05-01",
-      paid_date: null,
-      status: "pending",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentAmaraJun,
-      user_id: userId,
-      tenancy_id: tn.amara.id,
-      property_id: propBristol.id,
-      tenant_id: tenantByKey.amara.id,
-      amount: 1825,
-      due_date: "2026-06-01",
-      paid_date: null,
-      status: "pending",
-      notes: DEMO_RENT_NOTE,
-    },
-    /* Noah */
-    {
-      id: rentNoahApr,
-      user_id: userId,
-      tenancy_id: tn.noah.id,
-      property_id: propBristol.id,
-      tenant_id: tenantByKey.noah.id,
-      amount: 1795,
-      due_date: "2026-04-01",
-      paid_date: "2026-04-02",
-      status: "paid",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentNoahMay,
-      user_id: userId,
-      tenancy_id: tn.noah.id,
-      property_id: propBristol.id,
-      tenant_id: tenantByKey.noah.id,
-      amount: 1795,
-      due_date: "2026-05-01",
-      paid_date: "2026-05-03",
-      status: "paid",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentNoahJun,
-      user_id: userId,
-      tenancy_id: tn.noah.id,
-      property_id: propBristol.id,
-      tenant_id: tenantByKey.noah.id,
-      amount: 1795,
-      due_date: "2026-06-01",
-      paid_date: null,
-      status: "pending",
-      notes: DEMO_RENT_NOTE,
-    },
-    /* Priya — first monthly cycle from May (tenancy from mid-April) */
-    {
-      id: rentPriyaMay,
-      user_id: userId,
-      tenancy_id: tn.priya.id,
-      property_id: propMcr.id,
-      tenant_id: tenantByKey.priya.id,
-      amount: 1180,
-      due_date: "2026-05-01",
-      paid_date: "2026-05-02",
-      status: "paid",
-      notes: DEMO_RENT_NOTE,
-    },
-    {
-      id: rentPriyaJun,
-      user_id: userId,
-      tenancy_id: tn.priya.id,
-      property_id: propMcr.id,
-      tenant_id: tenantByKey.priya.id,
-      amount: 1180,
-      due_date: "2026-06-01",
-      paid_date: null,
-      status: "pending",
-      notes: DEMO_RENT_NOTE,
-    },
-    /* Oliver — first rent June (May is setup / move-in month) */
-    {
-      id: rentOliverJun,
-      user_id: userId,
-      tenancy_id: tn.oliver.id,
-      property_id: propMcr.id,
-      tenant_id: tenantByKey.oliver.id,
-      amount: 1200,
-      due_date: "2026-06-01",
-      paid_date: null,
-      status: "pending",
-      notes: DEMO_RENT_NOTE,
-    },
-  ];
+  const dueArrearsOldest = monthStart(-2);
+  const duePrev = monthStart(-1);
+  const dueCurr = monthStart(0);
+  const dueNext = monthStart(1);
+
+  const rp = (
+    id: string,
+    tenancyId: string,
+    propertyId: string,
+    tenantId: string,
+    amount: number,
+    due: string,
+    paid: string | null,
+    status: string,
+  ) => ({
+    id,
+    user_id: userId,
+    tenancy_id: tenancyId,
+    property_id: propertyId,
+    tenant_id: tenantId,
+    amount,
+    due_date: due,
+    paid_date: paid,
+    status,
+    notes: DEMO_RENT_NOTE,
+  });
+
+  const firstRentDueApplies = (tenancyStartIso: string, dueIso: string): boolean =>
+    tenancyStartIso.slice(0, 10) <= dueIso;
+
+  const rentElenaPrev = randomUUID();
+  const rentElenaCurr = randomUUID();
+  const rentElenaNext = randomUUID();
+  const rentSofiaOldest = randomUUID();
+  const rentSofiaPrev = randomUUID();
+  const rentSofiaCurr = randomUUID();
+  const rentSofiaNext = randomUUID();
+  const rentJamesPrev = randomUUID();
+  const rentJamesCurr = randomUUID();
+  const rentJamesNext = randomUUID();
+  const rentAmaraPrev = randomUUID();
+  const rentAmaraCurr = randomUUID();
+  const rentAmaraNext = randomUUID();
+  const rentNoahPrev = randomUUID();
+  const rentNoahCurr = randomUUID();
+  const rentNoahNext = randomUUID();
+  const rentPriyaCurr = randomUUID();
+  const rentPriyaNext = randomUUID();
+  const rentOliverNext = randomUUID();
+
+  const rentRows: ReturnType<typeof rp>[] = [];
+
+  /* Elena — reliable payer: previous + current month paid on time; next month upcoming */
+  if (firstRentDueApplies(elenaStart, duePrev)) {
+    rentRows.push(
+      rp(rentElenaPrev, tn.elena.id, propLeeds.id, tenantByKey.elena.id, 895, duePrev, paidSoonAfterDue(duePrev, 2), "paid"),
+    );
+  }
+  rentRows.push(
+    rp(rentElenaCurr, tn.elena.id, propLeeds.id, tenantByKey.elena.id, 895, dueCurr, paidSoonAfterDue(dueCurr, 2), "paid"),
+    rp(rentElenaNext, tn.elena.id, propLeeds.id, tenantByKey.elena.id, 895, dueNext, null, "pending"),
+  );
+
+  /* Sofia — rolling arrears: three overdue instalments + upcoming (Market Lane Lofts narrative) */
+  rentRows.push(
+    rp(rentSofiaOldest, tn.sofia.id, propLeeds.id, tenantByKey.sofia.id, 920, dueArrearsOldest, null, "overdue"),
+    rp(rentSofiaPrev, tn.sofia.id, propLeeds.id, tenantByKey.sofia.id, 920, duePrev, null, "overdue"),
+    rp(rentSofiaCurr, tn.sofia.id, propLeeds.id, tenantByKey.sofia.id, 920, dueCurr, null, "overdue"),
+    rp(rentSofiaNext, tn.sofia.id, propLeeds.id, tenantByKey.sofia.id, 920, dueNext, null, "pending"),
+  );
+
+  /* James — on-time payer */
+  if (firstRentDueApplies(jamesStart, duePrev)) {
+    rentRows.push(
+      rp(rentJamesPrev, tn.james.id, propBristol.id, tenantByKey.james.id, 1850, duePrev, paidSoonAfterDue(duePrev, 3), "paid"),
+    );
+  }
+  rentRows.push(
+    rp(rentJamesCurr, tn.james.id, propBristol.id, tenantByKey.james.id, 1850, dueCurr, paidSoonAfterDue(dueCurr, 1), "paid"),
+    rp(rentJamesNext, tn.james.id, propBristol.id, tenantByKey.james.id, 1850, dueNext, null, "pending"),
+  );
+
+  /* Amara — paid late last month; current month unpaid (shows overdue in UI when due < today) */
+  if (firstRentDueApplies(amaraStart, duePrev)) {
+    rentRows.push(
+      rp(rentAmaraPrev, tn.amara.id, propBristol.id, tenantByKey.amara.id, 1825, duePrev, paidSoonAfterDue(duePrev, 6), "paid"),
+    );
+  }
+  rentRows.push(
+    rp(rentAmaraCurr, tn.amara.id, propBristol.id, tenantByKey.amara.id, 1825, dueCurr, null, "pending"),
+    rp(rentAmaraNext, tn.amara.id, propBristol.id, tenantByKey.amara.id, 1825, dueNext, null, "pending"),
+  );
+
+  /* Noah — paid on time previously; current month paid a few days late; next unpaid */
+  if (firstRentDueApplies(noahStart, duePrev)) {
+    rentRows.push(
+      rp(rentNoahPrev, tn.noah.id, propBristol.id, tenantByKey.noah.id, 1795, duePrev, paidSoonAfterDue(duePrev, 2), "paid"),
+    );
+  }
+  rentRows.push(
+    rp(rentNoahCurr, tn.noah.id, propBristol.id, tenantByKey.noah.id, 1795, dueCurr, paidSoonAfterDue(dueCurr, 4), "paid"),
+    rp(rentNoahNext, tn.noah.id, propBristol.id, tenantByKey.noah.id, 1795, dueNext, null, "pending"),
+  );
+
+  /* Priya — first anchor-month cycle after mid-month start (skip prior month’s 1st if before tenancy start) */
+  if (firstRentDueApplies(priyaStart, dueCurr)) {
+    rentRows.push(
+      rp(rentPriyaCurr, tn.priya.id, propMcr.id, tenantByKey.priya.id, 1180, dueCurr, paidSoonAfterDue(dueCurr, 2), "paid"),
+    );
+  }
+  rentRows.push(rp(rentPriyaNext, tn.priya.id, propMcr.id, tenantByKey.priya.id, 1180, dueNext, null, "pending"));
+
+  /* Oliver — first instalment next month (setup / move-in month on current anchor month) */
+  if (firstRentDueApplies(oliverStart, dueNext)) {
+    rentRows.push(
+      rp(rentOliverNext, tn.oliver.id, propMcr.id, tenantByKey.oliver.id, 1200, dueNext, null, "pending"),
+    );
+  }
+
+  const sofiaArrearsAmount = 920 * 3;
+  const sofiaChaseDaysOverdue = Math.max(1, daysBetweenInclusiveUtc(dueArrearsOldest, todayIso));
 
   const { error: rpErr } = await supabase.from("rent_payments").insert(rentRows);
   if (rpErr) {
@@ -910,6 +834,8 @@ async function main(): Promise<void> {
 
   const maintLeak = randomUUID();
   const maintHeat = randomUUID();
+  const maintIntercom = randomUUID();
+  const maintFan = randomUUID();
 
   const { error: mErr } = await supabase.from("maintenance_requests").insert([
     {
@@ -934,6 +860,31 @@ async function main(): Promise<void> {
       status: "in_progress",
       ai_triage_category: "routine",
       ai_triage_summary: "Likely balancing or valve issue; schedule heating engineer.",
+    },
+    {
+      id: maintIntercom,
+      tenancy_id: tn.priya.id,
+      reported_by_tenant: true,
+      description:
+        "Buzzer at the main entrance not releasing the door strike for Flat 12 — visitors cannot get in.",
+      category: "electrical",
+      priority: "standard",
+      status: "open",
+      ai_triage_category: "routine",
+      ai_triage_summary: "Intermittent entry system fault — check strike power & handset routing.",
+    },
+    {
+      id: maintFan,
+      tenancy_id: tn.james.id,
+      reported_by_tenant: true,
+      description:
+        "Extractor fan in the ensuite stopped working; condensation after showers.",
+      category: "electrical",
+      priority: "standard",
+      status: "completed",
+      ai_triage_category: "routine",
+      ai_triage_summary: "Motor replaced; humidity clears within ~10 minutes.",
+      resolved_at: `${addUtcDays(todayIso, -18)}T14:30:00.000Z`,
     },
   ]);
   if (mErr) {
@@ -970,37 +921,66 @@ async function main(): Promise<void> {
       id: randomUUID(),
       user_id: userId,
       agent_run_id: null,
-      agent_type: "rent_chaser",
-      title: `${DEMO_TITLE_PREFIX}Rent chase — Sofia Martins (Mar–May)`,
+      agent_type: "tenant_onboarding",
+      title: `${DEMO_TITLE_PREFIX}Send move-in instructions — Noah Fischer`,
       summary:
-        "Draft polite rent reminder for overdue March, April, and May instalments. Approve to send the chase email only (no payment collection).",
-      action_type: "send_rent_chase_email" as const,
-      target_type: "rent_payment",
-      target_id: rentSofiaMar,
+        "Draft move-in instructions for the Clifton house tenancy ahead of keys day. Approve to send from Letora.",
+      action_type: "send_move_in_email" as const,
+      target_type: "tenancy",
+      target_id: tn.noah.id,
       payload: {
         userId,
-        rentPaymentId: rentSofiaMar,
+        tenancyId: tn.noah.id,
+        emailSubject: "Move-in instructions — 4 Crescent Road, Clifton",
+        emailBody: `Hi Noah,\n\nAhead of your scheduled move-in on ${monthDay(0, 12)}, here are meter locations, bin days, and access notes for the property.\n\nKind regards`,
+      },
+      evidence: {
+        tenantId: tenantByKey.noah.id,
+        tenantName: "Noah Fischer",
+        tenantEmail: tenantByKey.noah.email,
+        propertyAddress: propBristol.address.replace(DEMO_PROPERTY_PREFIX, "").trim(),
+        moveInDate: monthDay(0, 12),
+        subject: "Move-in instructions — 4 Crescent Road, Clifton",
+        bodyPreview: `Ahead of your scheduled move-in on ${monthDay(0, 12)}, here are meter locations…`,
+        run_correlation_id: "demo-seed",
+      },
+      status: "pending" as const,
+    },
+    {
+      id: randomUUID(),
+      user_id: userId,
+      agent_run_id: null,
+      agent_type: "rent_chaser",
+      title: `${DEMO_TITLE_PREFIX}Rent chase — Sofia Martins`,
+      summary:
+        "Draft polite rent reminder covering three overdue instalments plus context on next month’s due date. Approve to send the chase email only (no payment collection).",
+      action_type: "send_rent_chase_email" as const,
+      target_type: "rent_payment",
+      target_id: rentSofiaOldest,
+      payload: {
+        userId,
+        rentPaymentId: rentSofiaOldest,
         tenantId: tenantByKey.sofia.id,
         propertyId: propLeeds.id,
         tenantEmail: tenantByKey.sofia.email,
         tenantName: "Sofia Martins",
         emailSubject: "Rent reminder — Market Lane Lofts",
         emailBody:
-          "Hi Sofia,\n\nWe note March, April, and May rent remains outstanding. Please let us know when payment can be made or if you need to discuss a plan.\n\nKind regards",
-        amountOwed: 2760,
-        daysOverdue: 63,
-        dueDate: "2026-03-01",
+          "Hi Sofia,\n\nWe note multiple monthly instalments remain outstanding on your tenancy. Please confirm when payment will reach us, or reply if you’d like to discuss a repayment plan.\n\nKind regards",
+        amountOwed: sofiaArrearsAmount,
+        daysOverdue: sofiaChaseDaysOverdue,
+        dueDate: dueArrearsOldest,
       },
       evidence: {
         tenantName: "Sofia Martins",
         tenantId: tenantByKey.sofia.id,
         propertyId: propLeeds.id,
         propertyAddress: propLeeds.address.replace(DEMO_PROPERTY_PREFIX, "").trim(),
-        amountOwed: 2760,
-        daysOverdue: 63,
-        dueDate: "2026-03-01",
+        amountOwed: sofiaArrearsAmount,
+        daysOverdue: sofiaChaseDaysOverdue,
+        dueDate: dueArrearsOldest,
         emailSubject: "Rent reminder — Market Lane Lofts",
-        bodyPreview: "We note March, April, and May rent remains outstanding…",
+        bodyPreview: "We note multiple monthly instalments remain outstanding…",
         run_correlation_id: "demo-seed",
       },
       status: "pending" as const,
@@ -1068,7 +1048,7 @@ async function main(): Promise<void> {
       phone: "+44 7700 900101",
       source: "Rightmove",
       budget: 1300,
-      move_in_date: "2026-06-15",
+      move_in_date: monthDay(1, 15),
       qualified_status: "pending",
       status: "new",
       notes: DEMO_LEAD_NOTE,
@@ -1082,7 +1062,7 @@ async function main(): Promise<void> {
       phone: "+44 7700 900102",
       source: "Zoopla",
       budget: 1950,
-      move_in_date: "2026-07-01",
+      move_in_date: monthDay(2, 1),
       qualified_status: "pending",
       status: "contacted",
       notes: DEMO_LEAD_NOTE,
@@ -1186,7 +1166,7 @@ async function main(): Promise<void> {
     return String(count ?? 0);
   })();
 
-  console.log(`Pending agent_approvals (expected 3): ${pendingAll}`);
+  console.log(`Pending agent_approvals (expected 4 demo): ${pendingAll}`);
   console.log(`Demo agent_runs (${DEMO_AGENT_RUN_TYPE} queued): 1`);
 }
 

@@ -9,7 +9,7 @@ import { normalizeBatchOnboardingRow, type BatchOnboardingRow } from "./tenant-i
  */
 function makeFakeSupabase(data: {
   properties?: Array<{ id: string; address: string; city: string | null; postcode: string | null }>;
-  tenants?: Array<{ id: string; email: string }>;
+  tenants?: Array<{ id: string; email: string; full_name?: string | null }>;
   activePairs?: Array<{ property_id: string; tenant_id: string }>;
 }) {
   return {
@@ -69,17 +69,26 @@ function rawRow(partial: Partial<BatchOnboardingRow> & {
   startDate: string;
 }): BatchOnboardingRow {
   return normalizeBatchOnboardingRow({
+    rowKind: partial.rowKind ?? null,
     propertyAddress: partial.propertyAddress,
     city: partial.city ?? null,
     postcode: partial.postcode ?? null,
+    propertyDisplayName: partial.propertyDisplayName ?? null,
+    propertyType: partial.propertyType ?? null,
+    bedrooms: partial.bedrooms ?? null,
+    bathrooms: partial.bathrooms ?? null,
     tenantFullName: partial.tenantFullName,
     tenantEmail: partial.tenantEmail,
     tenantPhone: partial.tenantPhone ?? null,
     monthlyRent: partial.monthlyRent,
+    rentDueDay: partial.rentDueDay ?? null,
     startDate: partial.startDate,
     moveInDate: partial.moveInDate ?? null,
     endDate: partial.endDate ?? null,
     depositAmount: partial.depositAmount ?? null,
+    tenancyStatus: partial.tenancyStatusDb ?? null,
+    rentPosition: partial.rentPosition ?? null,
+    notes: partial.notes ?? null,
   });
 }
 

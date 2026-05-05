@@ -80,7 +80,7 @@ export async function createPlatformCheckoutSession(
       ? "/dashboard/billing?checkout=success"
       : returnTarget === "onboarding"
         ? "/onboarding?checkout=success"
-        : "/dashboard/home?success=true";
+        : "/dashboard?success=true";
   const cancelPath =
     returnTarget === "billing"
       ? "/dashboard/billing?checkout=cancelled"

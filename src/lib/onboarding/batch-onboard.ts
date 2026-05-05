@@ -1,8 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { runTenantOnboardingAgent } from "@/lib/agents/tenant-onboarding";
-import { normalizePropertyAddressLabel } from "@/lib/property-address";
+import {
+  arrearsDemoDueDate,
+  computeInitialRentDueDate,
+} from "@/lib/onboarding/portfolio-import-schema";
 import type { BatchOnboardingRow } from "@/lib/onboarding/tenant-import";
+import { buildStoredAddressForImport } from "@/lib/onboarding/tenant-import";
+import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { logActivity } from "@/lib/actions/activity-log";
 
 /**
@@ -11,13 +16,17 @@ import { logActivity } from "@/lib/actions/activity-log";
  * - `matched_property`:            address already in portfolio; reuse it
  * - `existing_tenant`:             tenant with that email already exists; reuse it (still creates tenancy)
  * - `existing_active_tenancy_skip`: an active tenancy already exists for (property, tenant) — skip, not an error
- * - `validation_error`:            parser-level errors prevent any write
+ * - `duplicate_csv_row_skip`:     identical occupancy key appears earlier — skip silently
+ * - `vacant_property_only`:       import row only allocates / updates portfolio property wiring
+ * - `validation_error`:           parser-level errors prevent any write
  */
 export type PreparedRowStatus =
   | "new_property"
   | "matched_property"
   | "existing_tenant"
   | "existing_active_tenancy_skip"
+  | "duplicate_csv_row_skip"
+  | "vacant_property_only"
   | "validation_error";
 
 export type PreparedRow = {
@@ -26,6 +35,8 @@ export type PreparedRow = {
   raw: BatchOnboardingRow;
   /** Human-readable tags ("new property", "existing tenant"). Can have multiple. */
   tags: PreparedRowStatus[];
+  /** Detect-only messages (duplicate email display name clashes, postcode hints surfaced earlier, etc.). */
+  prepareWarnings: string[];
   /** Pre-resolved property id if matched, else null (a new one will be created). */
   propertyId: string | null;
   /** Pre-resolved tenant id if matched, else null (a new one will be created). */
@@ -43,6 +54,8 @@ export type PreparedBatch = {
     matchedProperties: number;
     existingTenants: number;
     skippedActiveTenancies: number;
+    duplicateCsvSkips: number;
+    warningRows: number;
     actionableRows: number;
   };
 };
@@ -56,19 +69,20 @@ export async function prepareBatchOnboarding(
   userId: string,
   supabase: SupabaseClient,
 ): Promise<PreparedBatch> {
+  const emptySummary = {
+    total: 0,
+    validationErrors: 0,
+    newProperties: 0,
+    matchedProperties: 0,
+    existingTenants: 0,
+    skippedActiveTenancies: 0,
+    duplicateCsvSkips: 0,
+    warningRows: 0,
+    actionableRows: 0,
+  };
+
   if (rows.length === 0) {
-    return {
-      rows: [],
-      summary: {
-        total: 0,
-        validationErrors: 0,
-        newProperties: 0,
-        matchedProperties: 0,
-        existingTenants: 0,
-        skippedActiveTenancies: 0,
-        actionableRows: 0,
-      },
-    };
+    return { rows: [], summary: emptySummary };
   }
 
   const { data: propertyRows } = await supabase
@@ -89,23 +103,28 @@ export async function prepareBatchOnboarding(
     if (key && !propertyIndex.has(key)) propertyIndex.set(key, row.id);
   }
 
-  const emails = Array.from(
+  const tenantEmails = Array.from(
     new Set(
       rows
+        .filter((r) => r.rowKind !== "vacant")
         .map((r) => r.tenantEmail.trim().toLowerCase())
         .filter((e) => e.length > 0),
     ),
   );
+
   const tenantEmailToId = new Map<string, string>();
-  if (emails.length > 0) {
+  const tenantIdToProfile = new Map<string, { full_name: string | null; email: string | null }>();
+
+  if (tenantEmails.length > 0) {
     const { data: tenantRows } = await supabase
       .from("tenants")
-      .select("id, email")
+      .select("id, email, full_name")
       .eq("user_id", userId)
-      .in("email", emails);
+      .in("email", tenantEmails);
     for (const t of tenantRows ?? []) {
-      const row = t as { id: string; email: string | null };
+      const row = t as { id: string; email: string | null; full_name: string | null };
       if (row.email) tenantEmailToId.set(row.email.toLowerCase(), row.id);
+      tenantIdToProfile.set(row.id, { full_name: row.full_name ?? null, email: row.email ?? null });
     }
   }
 
@@ -125,34 +144,83 @@ export async function prepareBatchOnboarding(
     }
   }
 
+  const csvOccurrenceKey = (raw: BatchOnboardingRow): string => {
+    const propKey = normalizeAddr(raw.propertyAddress, raw.city);
+    if (!propKey) return "";
+    if (raw.rowKind === "vacant") return `${propKey}||vacant`;
+    return `${propKey}|${raw.tenantEmail.trim().toLowerCase()}`;
+  };
+
+  const csvSeen = new Set<string>();
+
   const prepared: PreparedRow[] = rows.map((raw, rowIndex) => {
+    const prepareWarnings = [...raw.rowWarnings];
+
     if (raw.rowErrors.length > 0) {
       return {
         rowIndex,
         raw,
         tags: ["validation_error"],
+        prepareWarnings,
         propertyId: null,
         tenantId: null,
         skipReason: null,
       };
     }
 
+    const tags: PreparedRowStatus[] = [];
+
+    if (raw.rowKind === "vacant") tags.push("vacant_property_only");
+
     const propKey = normalizeAddr(raw.propertyAddress, raw.city);
     const matchedPropertyId = propKey ? (propertyIndex.get(propKey) ?? null) : null;
 
-    const emailKey = raw.tenantEmail.trim().toLowerCase();
+    const emailKey =
+      raw.rowKind === "vacant" ? "" : raw.tenantEmail.trim().toLowerCase();
     const matchedTenantId = emailKey ? (tenantEmailToId.get(emailKey) ?? null) : null;
 
-    const tags: PreparedRowStatus[] = [];
-    tags.push(matchedPropertyId ? "matched_property" : "new_property");
-    if (matchedTenantId) tags.push("existing_tenant");
+    if (raw.rowKind !== "vacant") {
+      tags.push(matchedPropertyId ? "matched_property" : "new_property");
+      if (matchedTenantId) tags.push("existing_tenant");
+    } else {
+      tags.push(matchedPropertyId ? "matched_property" : "new_property");
+    }
+
+    if (matchedTenantId && raw.rowKind !== "vacant") {
+      const profile = tenantIdToProfile.get(matchedTenantId);
+      const existingName = (profile?.full_name ?? "").trim().toLowerCase();
+      const rowName = raw.tenantFullName.trim().toLowerCase();
+      if (
+        profile &&
+        profile.full_name &&
+        existingName !== rowName &&
+        rowName.length > 2
+      ) {
+        prepareWarnings.push(
+          `This email matches an existing tenant named "${profile.full_name.trim()}". Names differ from this row (${raw.tenantFullName}). Letora keeps one tenant profile per email.`,
+        );
+      }
+    }
 
     let skipReason: string | null = null;
-    if (matchedPropertyId && matchedTenantId) {
+    if (raw.rowKind !== "vacant" && matchedPropertyId && matchedTenantId) {
       const pair = `${matchedPropertyId}:${matchedTenantId}`;
       if (activePairs.has(pair)) {
         tags.push("existing_active_tenancy_skip");
-        skipReason = "Active tenancy already exists for this property + tenant";
+        skipReason = "Active tenancy already exists for this property and tenant.";
+      }
+    }
+
+    /* Duplicates measured only on actionable rows once basic validation succeeded. */
+    const occKey = csvOccurrenceKey(raw);
+    if (occKey) {
+      if (csvSeen.has(occKey)) {
+        tags.push("duplicate_csv_row_skip");
+        skipReason =
+          skipReason ??
+          "Removed as a duplicate of an earlier spreadsheet row at the same property (and tenant, if occupied).";
+      } else {
+        csvSeen.add(occKey);
       }
     }
 
@@ -160,6 +228,7 @@ export async function prepareBatchOnboarding(
       rowIndex,
       raw,
       tags,
+      prepareWarnings,
       propertyId: matchedPropertyId,
       tenantId: matchedTenantId,
       skipReason,
@@ -175,10 +244,13 @@ export async function prepareBatchOnboarding(
     skippedActiveTenancies: prepared.filter((r) =>
       r.tags.includes("existing_active_tenancy_skip"),
     ).length,
+    duplicateCsvSkips: prepared.filter((r) => r.tags.includes("duplicate_csv_row_skip")).length,
+    warningRows: prepared.filter((r) => r.prepareWarnings.length > 0).length,
     actionableRows: prepared.filter(
       (r) =>
         !r.tags.includes("validation_error") &&
-        !r.tags.includes("existing_active_tenancy_skip"),
+        !r.tags.includes("existing_active_tenancy_skip") &&
+        !r.tags.includes("duplicate_csv_row_skip"),
     ).length,
   };
 
@@ -322,9 +394,8 @@ export async function runBatchOnboarding(
         outcome.status = "error";
         outcome.error = row.raw.rowErrors.join("; ");
         totals.failed += 1;
-        errorsLog.push({ row_index: row.rowIndex, error: outcome.error });
+        errorsLog.push({ row_index: row.rowIndex, error: outcome.error ?? "" });
 
-        // Log row-level error (requires manual attention)
         await logActivity(
           {
             userId,
@@ -345,7 +416,28 @@ export async function runBatchOnboarding(
         return outcome;
       }
 
+      if (row.tags.includes("duplicate_csv_row_skip")) {
+        outcome.status = "skipped";
+        totals.skipped += 1;
+        options.onProgress?.(outcome, { ...totals });
+        return outcome;
+      }
+
       if (row.tags.includes("existing_active_tenancy_skip")) {
+        outcome.status = "skipped";
+        totals.skipped += 1;
+        options.onProgress?.(outcome, { ...totals });
+        return outcome;
+      }
+
+      const propertyAddressStored =
+        normalizePropertyAddressLabel(
+          buildStoredAddressForImport(row.raw.propertyDisplayName, row.raw.propertyAddress),
+        ) || buildStoredAddressForImport(row.raw.propertyDisplayName, row.raw.propertyAddress);
+
+      /** Vacancy row referencing an existing property — no inserts. */
+      if (row.tags.includes("vacant_property_only") && row.raw.rowKind === "vacant" && row.propertyId) {
+        outcome.propertyId = row.propertyId;
         outcome.status = "skipped";
         totals.skipped += 1;
         options.onProgress?.(outcome, { ...totals });
@@ -355,23 +447,32 @@ export async function runBatchOnboarding(
       let propertyId = row.propertyId;
       if (!propertyId) {
         propertyId = crypto.randomUUID();
-        const normalizedAddress =
-          normalizePropertyAddressLabel(row.raw.propertyAddress) || row.raw.propertyAddress;
         const { error: propErr } = await supabase.from("properties").insert({
           id: propertyId,
           user_id: userId,
-          address: normalizedAddress,
+          address: propertyAddressStored,
           postcode: row.raw.postcode ?? "",
           city: row.raw.city ?? "",
-          property_type: "Flat",
-          bedrooms: 1,
-          bathrooms: 1,
+          property_type:
+            row.raw.propertyType && row.raw.propertyType.trim().length > 0
+              ? row.raw.propertyType.trim().slice(0, 80)
+              : "Flat",
+          bedrooms: row.raw.bedrooms ?? 1,
+          bathrooms: row.raw.bathrooms ?? 1,
           monthly_rent: row.raw.monthlyRent,
-          status: "active",
+          status: row.raw.rowKind === "vacant" ? "vacant" : "active",
           has_gas_supply: true,
         });
         if (propErr) throw new Error(`property insert failed: ${propErr.message}`);
         outcome.propertyId = propertyId;
+      }
+
+      if (row.tags.includes("vacant_property_only") && row.raw.rowKind === "vacant") {
+        outcome.status = "created";
+        outcome.emailStatus = "skipped";
+        totals.succeeded += 1;
+        options.onProgress?.(outcome, { ...totals });
+        return outcome;
       }
 
       let tenantId = row.tenantId;
@@ -390,6 +491,10 @@ export async function runBatchOnboarding(
       }
 
       const tenancyId = crypto.randomUUID();
+
+      const deposit =
+        row.raw.depositAmount != null ? row.raw.depositAmount : row.raw.monthlyRent;
+
       const { error: tenancyErr } = await supabase.from("tenancies").insert({
         id: tenancyId,
         property_id: propertyId,
@@ -398,13 +503,57 @@ export async function runBatchOnboarding(
         end_date: row.raw.endDate,
         move_in_date: row.raw.moveInDate ?? row.raw.startDate,
         monthly_rent: row.raw.monthlyRent,
-        deposit_amount: row.raw.depositAmount ?? row.raw.monthlyRent,
-        status: "active",
+        deposit_amount: deposit ?? null,
+        status: row.raw.tenancyStatusDb,
+        onboarding_status: row.raw.rowKind === "onboarding" ? "in_progress" : "not_started",
       });
       if (tenancyErr) throw new Error(`tenancy insert failed: ${tenancyErr.message}`);
       outcome.tenancyId = tenancyId;
 
-      // Trigger Onboarding Agent
+      const shouldSeedRent =
+        row.raw.monthlyRent > 0 &&
+        row.raw.startDate.length > 0 &&
+        (row.raw.tenancyStatusDb === "active" || row.raw.tenancyStatusDb === "pending");
+
+      if (shouldSeedRent) {
+        let dueDate =
+          row.raw.rentDueDay != null && row.raw.rentDueDay > 0
+            ? computeInitialRentDueDate(row.raw.startDate, row.raw.rentDueDay)
+            : row.raw.startDate;
+        let payStatus: "pending" | "overdue" = "pending";
+
+        if (row.raw.rentPosition === "arrears") {
+          dueDate = arrearsDemoDueDate(row.raw.startDate);
+          payStatus = "overdue";
+        }
+
+        const { error: rpErr } = await supabase.from("rent_payments").insert({
+          id: crypto.randomUUID(),
+          user_id: userId,
+          tenancy_id: tenancyId,
+          property_id: propertyId,
+          tenant_id: tenantId,
+          amount: row.raw.monthlyRent,
+          due_date: dueDate,
+          status: payStatus,
+          notes: row.raw.notes ?? null,
+        });
+
+        if (rpErr)
+          console.error(
+            `[runBatchOnboarding] rent_payment seed tenancyId=${tenancyId} message=${rpErr.message}`,
+          );
+      }
+
+      const shouldRunAgent = row.raw.tenancyStatusDb !== "ended";
+      if (!shouldRunAgent) {
+        outcome.emailStatus = "skipped";
+        outcome.status = "created";
+        totals.succeeded += 1;
+        options.onProgress?.(outcome, { ...totals });
+        return outcome;
+      }
+
       const agentResult = await runTenantOnboardingAgent(tenancyId, userId, supabase);
       outcome.emailStatus = agentResult.emailStatus;
       outcome.status = agentResult.mode === "resume" ? "resumed" : "created";
@@ -413,7 +562,6 @@ export async function runBatchOnboarding(
 
       if (agentResult.emailStatus === "draft") {
         totals.approvalsCreated += 1;
-        // Log approval created
         await logActivity(
           {
             userId,
@@ -428,7 +576,6 @@ export async function runBatchOnboarding(
           supabase,
         );
       } else {
-        // Log meaningful downstream work
         await logActivity(
           {
             userId,
@@ -473,7 +620,7 @@ export async function runBatchOnboarding(
   });
 
   const finalStatus = totals.failed === 0 ? "completed" : totals.succeeded === 0 ? "failed" : "completed";
-  const updatePayload: any = {
+  const updatePayload: Record<string, unknown> = {
     status: finalStatus,
     rows_succeeded: totals.succeeded,
     rows_failed: totals.failed,
