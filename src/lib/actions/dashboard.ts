@@ -2,7 +2,8 @@
 
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
-import { isPaymentOverdue, resolvePaymentAmount } from "@/lib/rent-utils";
+import { buildRentPaymentArrearCandidateOrFilter } from "@/lib/rent-payment-arrear-candidate";
+import { isPaymentOverdue, resolvePaymentAmount } from "@/lib/rent-payment-helpers";
 import { getPortfolioCounts } from "@/lib/portfolio-utils";
 
 /** Sum of `monthly_rent` for tenancies with `status = 'active'` owned by the user. */
@@ -27,16 +28,14 @@ export async function getMonthlyRentFromActiveTenancies(userId: string): Promise
 export async function getOverdueRentPaymentCount(userId: string): Promise<number> {
   const supabase = await createClient();
   const today = new Date().toISOString().slice(0, 10);
-  const { data, error } = await supabase
+  const { count, error } = await supabase
     .from("rent_payments")
-    .select("id,status,due_date,tenancies!inner(properties!inner(user_id))")
-    .eq("tenancies.properties.user_id", userId);
+    .select("id,tenancies!inner(properties!inner(user_id))", { count: "exact", head: true })
+    .eq("tenancies.properties.user_id", userId)
+    .or(buildRentPaymentArrearCandidateOrFilter(today));
 
-  if (error || !data) return 0;
-
-  return data.filter((row) => {
-    return isPaymentOverdue(row.status, row.due_date, today);
-  }).length;
+  if (error) return 0;
+  return count ?? 0;
 }
 
 export type DashboardStats = {
@@ -67,12 +66,16 @@ function getMonthRangeUtc(date = new Date()) {
 
 export async function getDashboardStats(userId: string): Promise<DashboardStats> {
   const supabase = await createClient();
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   const [{ data: paymentRows }, portfolio, openMaintRes, activeLeadsRes] = await Promise.all([
     supabase
       .from("rent_payments")
-      .select("status,due_date,amount,tenancies!inner(properties!inner(user_id))")
-      .eq("tenancies.properties.user_id", userId),
+      .select(
+        "status,due_date,amount,amount_due,tenancies!inner(properties!inner(user_id))",
+      )
+      .eq("tenancies.properties.user_id", userId)
+      .or(buildRentPaymentArrearCandidateOrFilter(todayIso)),
     getPortfolioCounts(supabase, userId),
     supabase
       .from("maintenance_requests")
@@ -86,8 +89,7 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
       .ilike("qualified_status", "pending"),
   ]);
 
-  const todayIso = new Date().toISOString().slice(0, 10);
-  
+  /** DB filter matches {@link isPaymentOverdue}; keep reduce guard for trimming / edge statuses. */
   const arrearsTotal = (paymentRows ?? []).reduce((sum, p) => {
     if (isPaymentOverdue(p.status, p.due_date, todayIso)) {
       return sum + resolvePaymentAmount(p);

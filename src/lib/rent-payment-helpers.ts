@@ -3,17 +3,18 @@
  * (Kept separate from `@/lib/rent-utils` which pulls Supabase server client for totals.)
  */
 
+import { matchesRentPaymentArrearSqlCandidate } from "@/lib/rent-payment-arrear-candidate";
+
 /**
  * Checks if a payment is overdue based on its status and due date.
- * Consistent with Rent Tracker and Dashboard logic.
+ * Delegates to {@link matchesRentPaymentArrearSqlCandidate} so dashboard PostgREST narrowing stays aligned.
  */
 export function isPaymentOverdue(
   status: string | null,
   dueDate: string | null,
   todayIso: string,
 ): boolean {
-  const st = (status ?? "").toLowerCase();
-  return st === "overdue" || (st === "pending" && dueDate != null && dueDate < todayIso);
+  return matchesRentPaymentArrearSqlCandidate(status, dueDate, todayIso);
 }
 
 /**
