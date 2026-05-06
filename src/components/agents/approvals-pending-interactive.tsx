@@ -66,7 +66,7 @@ export function ApprovalsPendingInteractive({
       setBusyId(id);
       try {
         const r = await approveAgentApproval(id);
-        if (!r.ok) {
+        if (r.ok === false) {
           toast.error("Approval did not complete", { description: r.error });
           return;
         }
@@ -90,7 +90,7 @@ export function ApprovalsPendingInteractive({
       setBusyId(id);
       try {
         const r = await denyAgentApproval(id);
-        if (!r.ok) {
+        if (r.ok === false) {
           toast.error("Could not deny", { description: r.error });
           return;
         }

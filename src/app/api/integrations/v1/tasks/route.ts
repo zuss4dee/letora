@@ -92,12 +92,12 @@ export async function POST(request: Request) {
     payload: recordPayload,
   });
 
-  if (!recorded.ok) {
+  if (recorded.ok === false) {
     return Response.json({ ok: false, error: recorded.error }, { status: 500 });
   }
 
   const processed = await processInboundIntegrationEvent(supabase, recorded.id);
-  if (!processed.ok) {
+  if (processed.ok === false) {
     return Response.json({ ok: false, error: processed.error }, { status: 500 });
   }
 

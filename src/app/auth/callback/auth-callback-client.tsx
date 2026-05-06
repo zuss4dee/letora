@@ -115,7 +115,7 @@ export function AuthCallbackClient() {
       try {
         if (tokenHash && otpType) {
           const res = await verifySupabaseEmailOtp({ token_hash: tokenHash, type: otpType });
-          if (!res.ok) {
+          if (res.ok === false) {
             console.error("[auth/callback] verifyOtp:", res.error);
             if (!cancelled) {
               setStatus("error");
@@ -125,7 +125,7 @@ export function AuthCallbackClient() {
           }
         } else if (code) {
           const res = await exchangeSupabaseAuthCode(code);
-          if (!res.ok) {
+          if (res.ok === false) {
             console.error("[auth/callback] exchangeCodeForSession:", res.error);
             if (!cancelled) {
               setStatus("error");

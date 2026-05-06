@@ -208,7 +208,7 @@ async function loadRentPaymentForWebhook(
     logWebhookIssue("rent_payment load failed", { rentPaymentId });
     return null;
   }
-  return data as RentPaymentRow | null;
+  return data as unknown as RentPaymentRow | null;
 }
 
 function rentMetadataValid(

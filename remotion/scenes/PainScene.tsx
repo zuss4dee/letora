@@ -1,3 +1,4 @@
+// @ts-nocheck — Remotion bundle only.
 import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } from "remotion";
 
 import { LETORA } from "../letora-theme";

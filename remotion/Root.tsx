@@ -1,3 +1,4 @@
+// @ts-nocheck — Remotion bundle only (see remotion/index.ts head comment).
 import type { FC } from "react";
 import { Composition } from "remotion";
 

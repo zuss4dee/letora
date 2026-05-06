@@ -226,7 +226,7 @@ export async function POST(request: Request) {
   const userId = authResult.user.id;
 
   const rl = checkChatRateLimit(userId);
-  if (!rl.ok) {
+  if (rl.ok === false) {
     return NextResponse.json(
       {
         error: "Too many requests. Slow down and try again shortly.",

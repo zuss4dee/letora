@@ -1,3 +1,4 @@
+// @ts-nocheck — Remotion bundle only.
 /** Brand tokens aligned with Letora dashboard / globals.css (dark). */
 export const LETORA = {
   bg: "#0e0e0e",

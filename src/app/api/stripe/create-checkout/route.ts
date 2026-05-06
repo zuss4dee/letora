@@ -13,7 +13,7 @@ const baseUrl = () => process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
  */
 export async function GET(req: NextRequest) {
   const gate = platformCheckoutGate();
-  if (!gate.ok) {
+  if (gate.ok === false) {
     return NextResponse.redirect(`${baseUrl()}/pricing?checkout=unavailable`, 303);
   }
 
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
  */
 export async function POST(req: NextRequest) {
   const gate = platformCheckoutGate();
-  if (!gate.ok) {
+  if (gate.ok === false) {
     return NextResponse.json({ error: gate.message }, { status: gate.status });
   }
 

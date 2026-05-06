@@ -23,7 +23,7 @@ function portalEnabled(): { ok: true } | { ok: false; status: number; message: s
  */
 export async function POST() {
   const gate = portalEnabled();
-  if (!gate.ok) {
+  if (gate.ok === false) {
     return NextResponse.json({ error: gate.message }, { status: gate.status });
   }
 
