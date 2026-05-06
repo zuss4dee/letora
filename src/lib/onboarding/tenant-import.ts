@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { runLLM } from "@/lib/llm/router";
+import type { LLMRequestOptions } from "@/lib/llm/types";
 import {
   type PortfolioImportRowKind,
   isLikelyUkPostcode,
@@ -190,6 +190,12 @@ export async function extractTextFromTenantImportFile(
   };
 }
 
+/** Lazy-loads the LLM router so importing CSV/parsing helpers does not pull providers (tests + cold paths stay key-free until this runs). */
+async function invokeRunLLM(options: LLMRequestOptions) {
+  const { runLLM } = await import("@/lib/llm/router");
+  return runLLM(options);
+}
+
 export async function extractTenantsWithLlmFromText(documentText: string): Promise<
   { ok: true; rows: LooseTenantRow[] } | { ok: false; error: string }
 > {
@@ -215,7 +221,7 @@ Rules:
 
   let textOut: string;
   try {
-    const res = await runLLM({
+    const res = await invokeRunLLM({
       agentName: "analytics",
       temperature: 0.1,
       maxTokens: 8192,
@@ -955,7 +961,7 @@ Rules:
 
   let textOut: string;
   try {
-    const res = await runLLM({
+    const res = await invokeRunLLM({
       agentName: "analytics",
       temperature: 0.1,
       maxTokens: 8192,

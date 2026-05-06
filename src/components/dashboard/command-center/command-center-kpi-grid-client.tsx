@@ -1,12 +1,13 @@
 "use client";
 
-import { CircleHelp } from "lucide-react";
+import { AlertTriangle, CircleHelp } from "lucide-react";
 import Link from "next/link";
 
 import type { CommandCenterKpis } from "@/lib/dashboard/command-center-queries";
 import type { RentTrackerDisplayMode } from "@/lib/rent-tracker-url-mode";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 function rentTrackerHref(mode: RentTrackerDisplayMode) {
   const p = new URLSearchParams();
@@ -106,59 +107,94 @@ function KpiMaintenanceTile({ kpis }: MaintTileProps) {
 }
 
 /** Presentational KPI grid with operator-oriented labels (see product copy alongside loadCommandCenterFinancials). */
-export function CommandCenterKpiGridClient({ kpis }: { kpis: CommandCenterKpis }) {
+export function CommandCenterKpiGridClient({
+  kpis,
+  kpisDegraded = false,
+}: {
+  kpis: CommandCenterKpis;
+  /** When true, KPI values are the zero fallback (load failed or timed out) — show a lightweight notice. */
+  kpisDegraded?: boolean;
+}) {
+  const router = useRouter();
   return (
     <TooltipProvider delayDuration={180}>
-      <div className="mb-8 grid grid-cols-2 gap-px border border-[#333333] bg-[#333333] md:grid-cols-4">
-        <KpiMoneyTile
-          label="Scheduled · this month"
-          tooltip="Totals every rent instalment rows whose contract due_date falls in the current calendar month (any status). Use it as the month's rent roll versus cash collected."
-          value={kpis.rentScheduledThisMonth}
-          valueClassName="text-white"
-          href={rentTrackerHref("scheduled_this_month")}
-          tileAriaLabel="Open rent tracker: scheduled this month"
-        />
-        <KpiMoneyTile
-          label="Collected · this month"
-          tooltip='Sum of instalments marked paid whose paid_date is in this month. Paid rows missing paid_date fall back to due_date in this month.'
-          value={kpis.rentCollectedThisMonth}
-          valueClassName="text-[#afefdd]"
-          href={rentTrackerHref("collected_this_month")}
-          tileAriaLabel="Open rent tracker: collected this month"
-        />
-        <KpiMoneyTile
-          label="Still due · this month"
-          tooltip='Unpaid instalments with due_date inside the current calendar month. Older missed months stay in Total arrears, not here — by design.'
-          value={kpis.rentDueThisMonth}
-          valueClassName="text-white"
-          href={rentTrackerHref("due_this_month")}
-          tileAriaLabel="Open rent tracker: still due this month"
-        />
-        <KpiMoneyTile
-          label="Total arrears"
-          tooltip="Every unpaid overdue instalment: status overdue or pending with due_date before today. This is backlog across months, independent of Still due · this month."
-          value={kpis.overdueRentTotal}
-          valueClassName={kpis.overdueRentTotal > 0 ? "text-[#ffb4ab]" : "text-white"}
-          href={rentTrackerHref("arrears")}
-          tileAriaLabel="Open rent tracker: total arrears"
-        />
-        <KpiMoneyTile
-          label="Scheduled · next month"
-          tooltip="Forecast of contractual instalments hitting next calendar month (all statuses), not cash expected."
-          value={kpis.rentExpectedNextMonth}
-          valueClassName="text-zinc-400"
-          href={rentTrackerHref("scheduled_next_month")}
-          tileAriaLabel="Open rent tracker: scheduled next month"
-        />
-        <KpiMoneyTile
-          label="Collected · last month"
-          tooltip="Totals receipts whose paid_date was in the previous calendar month. Missing paid_date on paid rows can attribute to instalments due last month instead."
-          value={kpis.rentCollectedLastMonth}
-          valueClassName="text-zinc-400"
-          href={rentTrackerHref("collected_last_month")}
-          tileAriaLabel="Open rent tracker: collected last month"
-        />
-        <KpiMaintenanceTile kpis={kpis} />
+      <div className="mb-8 space-y-3">
+        {kpisDegraded ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex gap-2.5 rounded-md border border-[#3a3530] bg-[#12110f] px-3 py-2.5 shadow-sm"
+          >
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-[#9a8b6a]" aria-hidden />
+            <div className="min-w-0">
+              <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-[#c9b896]">
+                Live snapshot unavailable
+              </p>
+              <p className="mt-1 text-[11px] leading-snug text-zinc-500">
+                We couldn&apos;t load live KPIs — the figures below aren&apos;t your portfolio data.&nbsp;
+                <button
+                  type="button"
+                  onClick={() => router.refresh()}
+                  className="text-zinc-400 underline underline-offset-2 hover:text-white"
+                >
+                  Refresh
+                </button>
+                {" "}to try again.
+              </p>
+            </div>
+          </div>
+        ) : null}
+        <div className="grid grid-cols-2 gap-px border border-[#333333] bg-[#333333] md:grid-cols-4">
+          <KpiMoneyTile
+            label="Scheduled · this month"
+            tooltip="Totals every rent instalment rows whose contract due_date falls in the current calendar month (any status). Use it as the month's rent roll versus cash collected."
+            value={kpis.rentScheduledThisMonth}
+            valueClassName="text-white"
+            href={rentTrackerHref("scheduled_this_month")}
+            tileAriaLabel="Open rent tracker: scheduled this month"
+          />
+          <KpiMoneyTile
+            label="Collected · this month"
+            tooltip='Sum of instalments marked paid whose paid_date is in this month. Paid rows missing paid_date fall back to due_date in this month.'
+            value={kpis.rentCollectedThisMonth}
+            valueClassName="text-[#afefdd]"
+            href={rentTrackerHref("collected_this_month")}
+            tileAriaLabel="Open rent tracker: collected this month"
+          />
+          <KpiMoneyTile
+            label="Still due · this month"
+            tooltip='Unpaid instalments with due_date inside the current calendar month. Older missed months stay in Total arrears, not here — by design.'
+            value={kpis.rentDueThisMonth}
+            valueClassName="text-white"
+            href={rentTrackerHref("due_this_month")}
+            tileAriaLabel="Open rent tracker: still due this month"
+          />
+          <KpiMoneyTile
+            label="Total arrears"
+            tooltip="Every unpaid overdue instalment: status overdue or pending with due_date before today. This is backlog across months, independent of Still due · this month."
+            value={kpis.overdueRentTotal}
+            valueClassName={kpis.overdueRentTotal > 0 ? "text-[#ffb4ab]" : "text-white"}
+            href={rentTrackerHref("arrears")}
+            tileAriaLabel="Open rent tracker: total arrears"
+          />
+          <KpiMoneyTile
+            label="Scheduled · next month"
+            tooltip="Forecast of contractual instalments hitting next calendar month (all statuses), not cash expected."
+            value={kpis.rentExpectedNextMonth}
+            valueClassName="text-zinc-400"
+            href={rentTrackerHref("scheduled_next_month")}
+            tileAriaLabel="Open rent tracker: scheduled next month"
+          />
+          <KpiMoneyTile
+            label="Collected · last month"
+            tooltip="Totals receipts whose paid_date was in the previous calendar month. Missing paid_date on paid rows can attribute to instalments due last month instead."
+            value={kpis.rentCollectedLastMonth}
+            valueClassName="text-zinc-400"
+            href={rentTrackerHref("collected_last_month")}
+            tileAriaLabel="Open rent tracker: collected last month"
+          />
+          <KpiMaintenanceTile kpis={kpis} />
+        </div>
       </div>
     </TooltipProvider>
   );

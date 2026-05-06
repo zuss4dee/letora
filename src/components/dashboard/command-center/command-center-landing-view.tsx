@@ -20,8 +20,9 @@ import { loadCommandCenterKpis } from "@/lib/dashboard/command-center-queries";
  * Command Center landing — refactored for everyday operations.
  */
 export async function CommandCenterLandingView({ userId }: { userId: string }) {
-  const kpis = await loadCommandCenterKpis(userId);
-  const isNewUser = kpis.totalProperties === 0;
+  const kpiLoad = await loadCommandCenterKpis(userId);
+  /** Degraded KPIs also yield `totalProperties === 0` — do not show onboarding hero in that case. */
+  const isNewUser = !kpiLoad.kpisDegraded && kpiLoad.kpis.totalProperties === 0;
 
   return (
     <>
@@ -31,7 +32,7 @@ export async function CommandCenterLandingView({ userId }: { userId: string }) {
         {isNewUser ? (
           <CommandCenterOnboardingHero />
         ) : (
-          <CommandCenterKpis userId={userId} preloadKpis={kpis} />
+          <CommandCenterKpis userId={userId} preload={kpiLoad} />
         )}
 
         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">

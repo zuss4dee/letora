@@ -2,7 +2,8 @@ import { getRecentActivity } from "@/lib/actions/activity-log";
 import { getPendingAgentApprovals, getPendingApprovalsCount } from "@/lib/actions/agent-approvals";
 import { getDashboardStats } from "@/lib/actions/dashboard";
 import { withTimeout } from "@/lib/async/with-timeout";
-import { isoDateBetweenInclusive, monthBoundsIso } from "@/lib/rent-calendar-bounds";
+import { computeRentFinancialMonthKpis } from "@/lib/rent-financial-kpis";
+import { monthBoundsIso } from "@/lib/rent-calendar-bounds";
 import { createClient } from "@/lib/supabase/server";
 import { isPaymentOverdue, resolvePaymentAmount } from "@/lib/rent-utils";
 
@@ -29,6 +30,12 @@ export type CommandCenterKpis = {
   rentCollectedLastMonth: number;
 };
 
+/** Result of loading Command Center KPIs; `kpisDegraded` is true when timeout or error forced the zero fallback snapshot. */
+export type CommandCenterKpisLoadResult = {
+  kpis: CommandCenterKpis;
+  kpisDegraded: boolean;
+};
+
 const KPI_FALLBACK: CommandCenterKpis = {
   pendingApprovals: 0,
   overdueRentTotal: 0,
@@ -42,6 +49,10 @@ const KPI_FALLBACK: CommandCenterKpis = {
   rentExpectedNextMonth: 0,
   rentCollectedLastMonth: 0,
 };
+
+function degradedKpiResult(): CommandCenterKpisLoadResult {
+  return { kpis: KPI_FALLBACK, kpisDegraded: true };
+}
 
 async function highPriorityMaintenanceCount(userId: string): Promise<number> {
   const supabase = await createClient();
@@ -74,10 +85,6 @@ async function activeAgentCount(userId: string): Promise<number> {
   return count ?? 0;
 }
 
-function isPaidRentStatus(status: string | null): boolean {
-  return (status ?? "").toLowerCase() === "paid";
-}
-
 type RentPaymentFinanceRow = {
   id: string;
   amount: unknown;
@@ -89,10 +96,6 @@ type RentPaymentFinanceRow = {
 async function loadCommandCenterFinancials(userId: string) {
   const supabase = await createClient();
   const anchor = new Date().toISOString().slice(0, 10);
-
-  const current = monthBoundsIso(anchor, 0);
-  const nextMonth = monthBoundsIso(anchor, 1);
-  const lastMonth = monthBoundsIso(anchor, -1);
 
   const dueFetchStart = monthBoundsIso(anchor, -24).startIso;
   const dueFetchEnd = monthBoundsIso(anchor, 12).endIso;
@@ -129,82 +132,26 @@ async function loadCommandCenterFinancials(userId: string) {
   ingest((dueRes.data ?? []) as RentPaymentFinanceRow[]);
   ingest((paidRes.data ?? []) as RentPaymentFinanceRow[]);
 
-  const stats = {
-    rentDueThisMonth: 0,
-    rentScheduledThisMonth: 0,
-    rentCollectedThisMonth: 0,
-    rentExpectedNextMonth: 0,
-    rentCollectedLastMonth: 0,
-  };
-
-  const rawTotals = {
-    rows: merged.size,
-    scheduledCurrentMonth: 0,
-    currentMonthOutstanding: 0,
-    currentMonthCollected: 0,
-    nextMonthScheduled: 0,
-    lastMonthCollected: 0,
-    sampleIds: [] as string[],
-  };
-
-  for (const p of merged.values()) {
-    if (rawTotals.sampleIds.length < 5) rawTotals.sampleIds.push(String(p.id));
-    const amt = resolvePaymentAmount(p);
-    const due = (p.due_date ?? "").slice(0, 10);
-    const paidIso = (p.paid_date ?? "").slice(0, 10);
-
-    if (due && isoDateBetweenInclusive(due, current.startIso, current.endIso)) {
-      stats.rentScheduledThisMonth += amt;
-      rawTotals.scheduledCurrentMonth += amt;
-    }
-
-    if (due && isoDateBetweenInclusive(due, current.startIso, current.endIso) && !isPaidRentStatus(p.status)) {
-      stats.rentDueThisMonth += amt;
-      rawTotals.currentMonthOutstanding += amt;
-    }
-
-    if (
-      due &&
-      isoDateBetweenInclusive(due, nextMonth.startIso, nextMonth.endIso)
-    ) {
-      stats.rentExpectedNextMonth += amt;
-      rawTotals.nextMonthScheduled += amt;
-    }
-
-    if (isPaidRentStatus(p.status)) {
-      if (paidIso && isoDateBetweenInclusive(paidIso, current.startIso, current.endIso)) {
-        stats.rentCollectedThisMonth += amt;
-        rawTotals.currentMonthCollected += amt;
-      } else if (!paidIso && due && isoDateBetweenInclusive(due, current.startIso, current.endIso)) {
-        stats.rentCollectedThisMonth += amt;
-        rawTotals.currentMonthCollected += amt;
-      }
-
-      if (paidIso && isoDateBetweenInclusive(paidIso, lastMonth.startIso, lastMonth.endIso)) {
-        stats.rentCollectedLastMonth += amt;
-        rawTotals.lastMonthCollected += amt;
-      } else if (!paidIso && due && isoDateBetweenInclusive(due, lastMonth.startIso, lastMonth.endIso)) {
-        stats.rentCollectedLastMonth += amt;
-        rawTotals.lastMonthCollected += amt;
-      }
-    }
-  }
+  const stats = computeRentFinancialMonthKpis(merged.values(), anchor);
 
   if (process.env.NODE_ENV === "development") {
+    const current = monthBoundsIso(anchor, 0);
+    const nextMonth = monthBoundsIso(anchor, 1);
+    const lastMonth = monthBoundsIso(anchor, -1);
     console.info("[command-center-financials]", {
       anchor,
       windows: { current, nextMonth, lastMonth },
       stats,
-      rawTotals,
+      rowCount: merged.size,
     });
   }
 
   return stats;
 }
 
-export async function loadCommandCenterKpis(userId: string): Promise<CommandCenterKpis> {
+export async function loadCommandCenterKpis(userId: string): Promise<CommandCenterKpisLoadResult> {
   return withTimeout(
-    (async () => {
+    (async (): Promise<CommandCenterKpisLoadResult> => {
       try {
         const [
           approvalsCount,
@@ -221,21 +168,25 @@ export async function loadCommandCenterKpis(userId: string): Promise<CommandCent
         ]);
 
         return {
-          pendingApprovals: approvalsCount,
-          overdueRentTotal: stats.arrearsOutstanding,
-          maintenanceOpen: stats.openMaintenance,
-          maintenanceHighPriority: maintHigh,
-          totalProperties: stats.totalProperties,
-          activeAgents: agentCount,
-          ...financials,
+          kpisDegraded: false,
+          kpis: {
+            pendingApprovals: approvalsCount,
+            overdueRentTotal: stats.arrearsOutstanding,
+            maintenanceOpen: stats.openMaintenance,
+            maintenanceHighPriority: maintHigh,
+            totalProperties: stats.totalProperties,
+            activeAgents: agentCount,
+            ...financials,
+          },
         };
       } catch (e) {
-        console.error("[loadCommandCenterKpis] Failed to load operational KPIs:", e);
-        return KPI_FALLBACK;
+        const message = e instanceof Error ? e.message : String(e);
+        console.error("[loadCommandCenterKpis] Failed to load operational KPIs:", message);
+        return degradedKpiResult();
       }
     })(),
     7500,
-    KPI_FALLBACK,
+    degradedKpiResult(),
     "command-center:loadCommandCenterKpis",
   );
 }

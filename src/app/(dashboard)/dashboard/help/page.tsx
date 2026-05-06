@@ -48,8 +48,8 @@ export default async function DashboardHelpPage() {
                   className="text-foreground underline-offset-4 transition-colors hover:text-zinc-400 hover:underline"
                 >
                   support@letora.app
-                </a>{" "}
-                <span className="font-normal text-muted-foreground">(placeholder — replace with your address)</span>
+                </a>
+                <span className="font-normal text-muted-foreground"> — we aim to reply within one UK business day.</span>
               </p>
             </div>
           </div>

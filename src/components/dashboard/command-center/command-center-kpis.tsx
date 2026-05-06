@@ -1,6 +1,9 @@
 import Link from "next/link";
 
-import { loadCommandCenterKpis, type CommandCenterKpis as CommandCenterKpiPayload } from "@/lib/dashboard/command-center-queries";
+import {
+  loadCommandCenterKpis,
+  type CommandCenterKpisLoadResult,
+} from "@/lib/dashboard/command-center-queries";
 import { CommandCenterKpiGridClient } from "@/components/dashboard/command-center/command-center-kpi-grid-client";
 
 export function CommandCenterKpiGridSkeleton() {
@@ -18,13 +21,14 @@ export function CommandCenterKpiGridSkeleton() {
 
 export async function CommandCenterKpis({
   userId,
-  preloadKpis,
+  preload,
 }: {
   userId: string;
-  preloadKpis?: CommandCenterKpiPayload;
+  /** When provided (e.g. from the parent that already called `loadCommandCenterKpis`), must include `kpisDegraded` from the same load. */
+  preload?: CommandCenterKpisLoadResult;
 }) {
-  const k = preloadKpis ?? (await loadCommandCenterKpis(userId));
-  return <CommandCenterKpiGridClient kpis={k} />;
+  const { kpis, kpisDegraded } = preload ?? (await loadCommandCenterKpis(userId));
+  return <CommandCenterKpiGridClient kpis={kpis} kpisDegraded={kpisDegraded} />;
 }
 
 export function CommandCenterActionBar() {
