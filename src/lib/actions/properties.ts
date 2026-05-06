@@ -159,6 +159,11 @@ function splitIdentity(address: string | null, city: string | null, postcode: st
   };
 }
 
+/** PostgREST `or(...)`: landlord payments tied to portfolio properties (matches {@link resolvePropertyId} without under-fetching). */
+function portfolioScopedPaymentsOrFilter(propertyIds: readonly string[]): string {
+  const csv = propertyIds.join(",");
+  return `property_id.in.(${csv}),tenancies.property_id.in.(${csv})`;
+}
 
 /** Enriched property rows for the Managed Properties registry (stitch layout). */
 export async function getPropertiesPortfolio(userId: string): Promise<PropertyPortfolioRow[]> {
@@ -177,11 +182,13 @@ export async function getPropertiesPortfolio(userId: string): Promise<PropertyPo
         .in("property_id", ids),
       supabase
         .from("maintenance_requests")
-        .select("id, status, created_at, description, tenancies(property_id)"),
+        .select("id, status, created_at, description, tenancies!inner(property_id)")
+        .in("tenancies.property_id", ids),
       supabase
         .from("rent_payments")
         .select("amount, status, due_date, property_id, tenancies(property_id)")
-        .eq("user_id", userId),
+        .eq("user_id", userId)
+        .or(portfolioScopedPaymentsOrFilter(ids)),
     ]).then((res) => res.map((r) => r.data ?? [])),
     3000,
     [[], [], []],

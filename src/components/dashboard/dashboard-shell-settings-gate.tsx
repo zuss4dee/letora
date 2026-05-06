@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 
 import { SidebarPatch } from "@/components/dashboard/sidebar-dynamic-context";
-import { getDashboardShellUserSettingsSlice } from "@/lib/dashboard/dashboard-shell-user-settings";
 import { isOnboardingMarkedComplete } from "@/lib/onboarding/status";
 import { withTimeout } from "@/lib/async/with-timeout";
+import { getDashboardShellUserSettingsSliceCached } from "@/lib/dashboard/cached-shell-reads";
+
+const DASHBOARD_SHELL_FETCH_MS = 6000;
 
 /**
  * One narrow `user_settings` fetch for (1) onboarding gate and (2) sidebar subscription chip.
@@ -11,8 +13,8 @@ import { withTimeout } from "@/lib/async/with-timeout";
  */
 export async function DashboardShellSettingsGate({ userId }: { userId: string }) {
   const row = await withTimeout(
-    getDashboardShellUserSettingsSlice(userId),
-    4500,
+    getDashboardShellUserSettingsSliceCached(userId),
+    DASHBOARD_SHELL_FETCH_MS,
     null,
     "dashboard-shell:userSettingsSlice",
   );

@@ -1,4 +1,6 @@
-import { getRecentActivity } from "@/lib/actions/activity-log";
+import { cache } from "react";
+
+import { getRecentActivityCommandCenterLanding } from "@/lib/actions/activity-log";
 import { getPendingAgentApprovals, getPendingApprovalsCount } from "@/lib/actions/agent-approvals";
 import { getDashboardStats } from "@/lib/actions/dashboard";
 import { withTimeout } from "@/lib/async/with-timeout";
@@ -6,6 +8,10 @@ import { computeRentFinancialMonthKpis } from "@/lib/rent-financial-kpis";
 import { monthBoundsIso } from "@/lib/rent-calendar-bounds";
 import { createClient } from "@/lib/supabase/server";
 import { isPaymentOverdue, resolvePaymentAmount } from "@/lib/rent-utils";
+
+const getRecentActivityForCommandCenterLanding = cache((userId: string) =>
+  getRecentActivityCommandCenterLanding(userId, 12),
+);
 
 export type CommandCenterKpis = {
   pendingApprovals: number;
@@ -54,6 +60,28 @@ function degradedKpiResult(): CommandCenterKpisLoadResult {
   return { kpis: KPI_FALLBACK, kpisDegraded: true };
 }
 
+/** Set `LETORA_KPI_DIAG=1` for per-subcall timing in server logs (no user id / PII). */
+const KPI_LOAD_DIAG = process.env.LETORA_KPI_DIAG === "1";
+
+function kpiDiagLog(line: string) {
+  if (!KPI_LOAD_DIAG) return;
+  console.info(`[kpi-load] ${line}`);
+}
+
+async function timeKpiSubcall<T>(name: string, fn: () => Promise<T>): Promise<T> {
+  if (!KPI_LOAD_DIAG) return fn();
+  const t0 = performance.now();
+  try {
+    const out = await fn();
+    kpiDiagLog(`${name} ok ${Math.round(performance.now() - t0)}ms`);
+    return out;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    kpiDiagLog(`${name} throw ${Math.round(performance.now() - t0)}ms — ${msg}`);
+    throw e;
+  }
+}
+
 async function highPriorityMaintenanceCount(userId: string): Promise<number> {
   const supabase = await createClient();
   const { count, error } = await supabase
@@ -96,13 +124,14 @@ type RentPaymentFinanceRow = {
 async function loadCommandCenterFinancials(userId: string) {
   const supabase = await createClient();
   const anchor = new Date().toISOString().slice(0, 10);
+  const currentMonth = monthBoundsIso(anchor, 0);
 
   const dueFetchStart = monthBoundsIso(anchor, -24).startIso;
   const dueFetchEnd = monthBoundsIso(anchor, 12).endIso;
 
   /** Pull rows by paid_date so receipts are counted even when the original due_date is stale. */
   const paidFetchStart = monthBoundsIso(anchor, -24).startIso;
-  const paidFetchEnd = current.endIso;
+  const paidFetchEnd = currentMonth.endIso;
 
   const sel = "id,amount,status,due_date,paid_date,tenancies!inner(properties!inner(user_id))";
 
@@ -135,12 +164,11 @@ async function loadCommandCenterFinancials(userId: string) {
   const stats = computeRentFinancialMonthKpis(merged.values(), anchor);
 
   if (process.env.NODE_ENV === "development") {
-    const current = monthBoundsIso(anchor, 0);
     const nextMonth = monthBoundsIso(anchor, 1);
     const lastMonth = monthBoundsIso(anchor, -1);
     console.info("[command-center-financials]", {
       anchor,
-      windows: { current, nextMonth, lastMonth },
+      windows: { current: currentMonth, nextMonth, lastMonth },
       stats,
       rowCount: merged.size,
     });
@@ -149,10 +177,12 @@ async function loadCommandCenterFinancials(userId: string) {
   return stats;
 }
 
-export async function loadCommandCenterKpis(userId: string): Promise<CommandCenterKpisLoadResult> {
+async function loadCommandCenterKpisUncached(userId: string): Promise<CommandCenterKpisLoadResult> {
   return withTimeout(
     (async (): Promise<CommandCenterKpisLoadResult> => {
+      const tLoad0 = KPI_LOAD_DIAG ? performance.now() : 0;
       try {
+        kpiDiagLog("loadCommandCenterKpis start");
         const [
           approvalsCount,
           stats,
@@ -160,12 +190,13 @@ export async function loadCommandCenterKpis(userId: string): Promise<CommandCent
           maintHigh,
           financials,
         ] = await Promise.all([
-          getPendingApprovalsCount(userId),
-          getDashboardStats(userId),
-          activeAgentCount(userId),
-          highPriorityMaintenanceCount(userId),
-          loadCommandCenterFinancials(userId),
+          timeKpiSubcall("getPendingApprovalsCount", () => getPendingApprovalsCount(userId)),
+          timeKpiSubcall("getDashboardStats", () => getDashboardStats(userId)),
+          timeKpiSubcall("activeAgentCount", () => activeAgentCount(userId)),
+          timeKpiSubcall("highPriorityMaintenanceCount", () => highPriorityMaintenanceCount(userId)),
+          timeKpiSubcall("loadCommandCenterFinancials", () => loadCommandCenterFinancials(userId)),
         ]);
+        kpiDiagLog(`loadCommandCenterKpis all_subcalls ok total ${Math.round(performance.now() - tLoad0)}ms`);
 
         return {
           kpisDegraded: false,
@@ -181,7 +212,10 @@ export async function loadCommandCenterKpis(userId: string): Promise<CommandCent
         };
       } catch (e) {
         const message = e instanceof Error ? e.message : String(e);
-        console.error("[loadCommandCenterKpis] Failed to load operational KPIs:", message);
+        console.error("[loadCommandCenterKpis] reason=caught_exception", message);
+        if (KPI_LOAD_DIAG) {
+          kpiDiagLog(`loadCommandCenterKpis failed after ${Math.round(performance.now() - tLoad0)}ms`);
+        }
         return degradedKpiResult();
       }
     })(),
@@ -190,6 +224,12 @@ export async function loadCommandCenterKpis(userId: string): Promise<CommandCent
     "command-center:loadCommandCenterKpis",
   );
 }
+
+/**
+ * Per-request dedupe: multiple RSC modules calling this in the same render pass share one Supabase burst.
+ * (Cross-navigation refetches are still separate requests — see sidebar Home `prefetch` guard.)
+ */
+export const loadCommandCenterKpis = cache(loadCommandCenterKpisUncached);
 
 export type ArrearsQueueRow = {
   /** Stable identity — one queue row per tenancy in arrears. */
@@ -417,21 +457,43 @@ export type AgentWorkStats = {
 export async function loadCommandCenterAgentSummary(userId: string): Promise<AgentWorkStats> {
   const supabase = await createClient();
 
-  const [approvalsRes, agentCount] = await Promise.all([
+  const [pendingTotalRes, rentChaseRes, maintDispatchRes, agentCount] = await Promise.all([
     supabase
       .from("agent_approvals")
-      .select("action_type, status")
+      .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
       .eq("status", "pending"),
+    supabase
+      .from("agent_approvals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .eq("action_type", "send_rent_chase_email"),
+    supabase
+      .from("agent_approvals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .eq("action_type", "approve_maintenance_dispatch"),
     activeAgentCount(userId),
   ]);
 
-  const approvals = approvalsRes.data ?? [];
+  const approvalQueryError =
+    pendingTotalRes.error ?? rentChaseRes.error ?? maintDispatchRes.error;
+  if (approvalQueryError) {
+    console.warn("[loadCommandCenterAgentSummary]", approvalQueryError.message);
+    return {
+      rentChaseDrafts: 0,
+      maintenanceDrafts: 0,
+      pendingApprovals: 0,
+      activeAgents: agentCount,
+    };
+  }
 
   return {
-    rentChaseDrafts: approvals.filter((a) => a.action_type === "send_rent_chase_email").length,
-    maintenanceDrafts: approvals.filter((a) => a.action_type === "approve_maintenance_dispatch").length,
-    pendingApprovals: approvals.length,
+    rentChaseDrafts: rentChaseRes.count ?? 0,
+    maintenanceDrafts: maintDispatchRes.count ?? 0,
+    pendingApprovals: pendingTotalRes.count ?? 0,
     activeAgents: agentCount,
   };
 }
@@ -497,7 +559,7 @@ export type ActivityRow = { id: string; event: string; source: string; time: str
 export async function loadCommandCenterActivity(userId: string): Promise<ActivityRow[]> {
   return withTimeout(
     (async () => {
-      const data = await getRecentActivity(userId, 12);
+      const data = await getRecentActivityForCommandCenterLanding(userId);
 
       return (data ?? []).map((row) => {
         const d = new Date(String(row.created_at));
@@ -534,7 +596,7 @@ export async function loadCommandCenterActivity(userId: string): Promise<Activit
         };
       });
     })(),
-    4500,
+    6000,
     [],
     "command-center:loadCommandCenterActivity",
   );

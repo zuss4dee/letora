@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 
-import { CommandCenterActionBar, CommandCenterKpis } from "@/components/dashboard/command-center/command-center-kpis";
+import { CommandCenterActionBar, CommandCenterKpisPresentation } from "@/components/dashboard/command-center/command-center-kpis";
 import { CommandCenterActivity } from "@/components/dashboard/command-center/command-center-activity";
 import { CommandCenterActivitySkeleton } from "@/components/dashboard/command-center/command-center-activity";
 import { CommandCenterAiComposer } from "@/components/dashboard/command-center/command-center-ai-composer";
@@ -32,7 +32,7 @@ export async function CommandCenterLandingView({ userId }: { userId: string }) {
         {isNewUser ? (
           <CommandCenterOnboardingHero />
         ) : (
-          <CommandCenterKpis userId={userId} preload={kpiLoad} />
+          <CommandCenterKpisPresentation kpiLoad={kpiLoad} />
         )}
 
         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">

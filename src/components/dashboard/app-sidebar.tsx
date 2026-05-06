@@ -130,10 +130,14 @@ function NavSection({
           const Icon = item.icon;
           const attention = attentionByUrl.get(item.url);
           const showDot = Boolean(attention);
+          const onDashboardHome = pathname === "/dashboard" || pathname === "/dashboard/";
+          const prefetchHome =
+            item.url === "/dashboard" && onDashboardHome ? false : undefined;
           return (
             <li key={item.url}>
               <Link
                 href={item.url}
+                prefetch={prefetchHome}
                 data-mercury-tour={item.url === "/dashboard/compliance" ? "compliance" : undefined}
                 onClick={() => onNavigate?.()}
                 className={cn("group", navRowBase, active ? navRowActive : navRowIdle)}
@@ -338,6 +342,9 @@ export function AppSidebar({
       <SidebarHeader className="gap-0 px-0 pb-4 pt-6">
         <Link
           href="/dashboard"
+          prefetch={
+            pathname === "/dashboard" || pathname === "/dashboard/" ? false : undefined
+          }
           onClick={closeMobileNav}
           className="block touch-manipulation px-5 transition-opacity hover:opacity-90"
         >

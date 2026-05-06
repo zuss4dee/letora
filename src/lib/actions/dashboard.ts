@@ -3,8 +3,14 @@
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 import { buildRentPaymentArrearCandidateOrFilter } from "@/lib/rent-payment-arrear-candidate";
-import { isPaymentOverdue, resolvePaymentAmount } from "@/lib/rent-payment-helpers";
+import { resolvePaymentAmount } from "@/lib/rent-payment-helpers";
 import { getPortfolioCounts } from "@/lib/portfolio-utils";
+
+function parseRpcNumeric(value: unknown): number {
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : 0;
+}
 
 /** Sum of `monthly_rent` for tenancies with `status = 'active'` owned by the user. */
 export async function getMonthlyRentFromActiveTenancies(userId: string): Promise<number> {
@@ -44,7 +50,7 @@ export type DashboardStats = {
   lettableUnits: number;
   /** Rounded arrears GBP (historical KPI field name). Prefer `arrearsOutstanding`. */
   overduePayments: number;
-  /** Exact sum of overdue-ish instalments in GBP (`isPaymentOverdue` × `resolvePaymentAmount`). */
+  /** Exact sum of overdue-ish instalments in GBP (SQL matches prior `isPaymentOverdue` × `resolvePaymentAmount`). */
   arrearsOutstanding: number;
   openMaintenance: number;
   activeLeads: number;
@@ -68,34 +74,31 @@ export async function getDashboardStats(userId: string): Promise<DashboardStats>
   const supabase = await createClient();
   const todayIso = new Date().toISOString().slice(0, 10);
 
-  const [{ data: paymentRows }, portfolio, openMaintRes, activeLeadsRes] = await Promise.all([
-    supabase
-      .from("rent_payments")
-      .select(
-        "status,due_date,amount,amount_due,tenancies!inner(properties!inner(user_id))",
-      )
-      .eq("tenancies.properties.user_id", userId)
-      .or(buildRentPaymentArrearCandidateOrFilter(todayIso)),
-    getPortfolioCounts(supabase, userId),
-    supabase
-      .from("maintenance_requests")
-      .select("id,tenancies!inner(properties!inner(user_id))", { count: "exact", head: true })
-      .in("status", ["open", "in_progress"])
-      .eq("tenancies.properties.user_id", userId),
-    supabase
-      .from("leads")
-      .select("id, properties!inner(user_id)", { count: "exact", head: true })
-      .eq("properties.user_id", userId)
-      .ilike("qualified_status", "pending"),
-  ]);
+  const [{ data: arrearsSumRaw, error: arrearsErr }, portfolio, openMaintRes, activeLeadsRes] =
+    await Promise.all([
+      supabase.rpc("dashboard_arrears_outstanding_for_user", {
+        p_user_id: userId,
+        p_today: todayIso,
+      }),
+      getPortfolioCounts(supabase, userId),
+      supabase
+        .from("maintenance_requests")
+        .select("id,tenancies!inner(properties!inner(user_id))", { count: "exact", head: true })
+        .in("status", ["open", "in_progress"])
+        .eq("tenancies.properties.user_id", userId),
+      supabase
+        .from("leads")
+        .select("id, properties!inner(user_id)", { count: "exact", head: true })
+        .eq("properties.user_id", userId)
+        .ilike("qualified_status", "pending"),
+    ]);
 
-  /** DB filter matches {@link isPaymentOverdue}; keep reduce guard for trimming / edge statuses. */
-  const arrearsTotal = (paymentRows ?? []).reduce((sum, p) => {
-    if (isPaymentOverdue(p.status, p.due_date, todayIso)) {
-      return sum + resolvePaymentAmount(p);
-    }
-    return sum;
-  }, 0);
+  let arrearsTotal = 0;
+  if (arrearsErr) {
+    console.warn("[getDashboardStats] dashboard_arrears_outstanding_for_user", arrearsErr.message);
+  } else {
+    arrearsTotal = parseRpcNumeric(arrearsSumRaw as unknown);
+  }
 
   return {
     overduePayments: Math.round(arrearsTotal),

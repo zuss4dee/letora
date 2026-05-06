@@ -8,6 +8,7 @@ import { insertPendingAgentApproval } from "@/lib/approvals/create-agent-approva
 import { parseAgentApprovalActionType } from "@/lib/approvals/action-type-key";
 import { runApprovedAgentSideEffect } from "@/lib/approvals/execute-approved-action";
 import { normalizeApprovalJsonField } from "@/lib/approvals/evidence";
+import { APPROVAL_PENDING_STALE_MS } from "@/lib/approvals/queue-stats";
 import type {
   AgentApprovalActionType,
   AgentApprovalExecutionSlice,
@@ -353,26 +354,40 @@ export async function approveAgentApproval(approvalId: string): Promise<ApproveA
   return { ok: true, actionType: parsedActionType };
 }
 
-/**
- * Lightweight pending-queue read for sidebar stats (counts + staleness only).
- */
-export async function getPendingApprovalsQueueMetrics(
+/** Exact pending total + stale (≥{@link APPROVAL_PENDING_STALE_MS}) counts for sidebar — avoids scanning all pending rows. */
+export async function getPendingApprovalsQueueSidebarCounts(
   userId: string,
-): Promise<Pick<AgentApprovalRow, "action_type" | "created_at">[]> {
+): Promise<{ pendingTotal: number; stalePendingCount: number }> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("agent_approvals")
-    .select("action_type,created_at")
-    .eq("user_id", userId)
-    .eq("status", "pending")
-    .order("created_at", { ascending: false });
+  const staleBeforeIso = new Date(Date.now() - APPROVAL_PENDING_STALE_MS).toISOString();
 
-  if (error) {
-    console.warn("[getPendingApprovalsQueueMetrics]", error.message);
-    return [];
+  const [totalRes, staleRes] = await Promise.all([
+    supabase
+      .from("agent_approvals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "pending"),
+    supabase
+      .from("agent_approvals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .lte("created_at", staleBeforeIso),
+  ]);
+
+  if (totalRes.error) {
+    console.warn("[getPendingApprovalsQueueSidebarCounts] total", totalRes.error.message);
+    return { pendingTotal: 0, stalePendingCount: 0 };
+  }
+  if (staleRes.error) {
+    console.warn("[getPendingApprovalsQueueSidebarCounts] stale", staleRes.error.message);
+    return { pendingTotal: totalRes.count ?? 0, stalePendingCount: 0 };
   }
 
-  return (data ?? []) as Pick<AgentApprovalRow, "action_type" | "created_at">[];
+  return {
+    pendingTotal: totalRes.count ?? 0,
+    stalePendingCount: staleRes.count ?? 0,
+  };
 }
 
 export async function getPendingApprovalsCount(userId: string): Promise<number> {

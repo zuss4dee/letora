@@ -94,3 +94,35 @@ export async function getRecentActivity(userId: string, limit = 50) {
 
   return primaryResult.data || [];
 }
+
+/**
+ * Command Center landing only: smallest `agent_activity` row shape needed for {@link loadCommandCenterActivity}
+ * (`id`, `tool_name`, `args.message?`, `source`, `created_at`). Omits bulky `result` / `success` JSON.
+ */
+export async function getRecentActivityCommandCenterLanding(userId: string, limit = 12) {
+  const supabase = await createClient();
+
+  const slim = await supabase
+    .from("agent_activity")
+    .select("id, tool_name, args, created_at, source")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (slim.error && slim.error.code === "42703") {
+    console.warn("[getRecentActivityCommandCenterLanding] 'source' column missing; retrying without it");
+    const fallback = await supabase
+      .from("agent_activity")
+      .select("id, tool_name, args, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(limit);
+
+    return (fallback.data ?? []).map((row) => ({
+      ...row,
+      source: null as string | null,
+    }));
+  }
+
+  return slim.data ?? [];
+}
