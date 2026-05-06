@@ -5,7 +5,6 @@ import { redirect } from "next/navigation";
 
 import { ManagedPropertiesRegistry } from "@/components/properties/managed-properties-registry";
 import { getPropertiesPortfolio } from "@/lib/actions/properties";
-import { withTimeout } from "@/lib/async/with-timeout";
 import { createClient } from "@/lib/supabase/server";
 
 import { loadPropertyInspectorActivityByPropertyId } from "./property-inspector-activity";
@@ -18,7 +17,9 @@ async function PropertiesPortfolioContent({
   userId: string;
   initialSelectedPropertyId: string | null;
 }) {
-  const rows = await withTimeout(getPropertiesPortfolio(userId), 3000, [], "properties:getPropertiesPortfolio");
+  // Portfolio enrichment timeout lives inside getPropertiesPortfolio (batch only). Avoid a second,
+  // page-level ceiling that can return [] before that batch resolves—same label masked that race.
+  const rows = await getPropertiesPortfolio(userId);
   const ids = rows.map((r) => r.id);
   const [activityByPropertyId, complianceByPropertyId] = await Promise.all([
     loadPropertyInspectorActivityByPropertyId(ids),

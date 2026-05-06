@@ -190,7 +190,7 @@ export async function getPropertiesPortfolio(userId: string): Promise<PropertyPo
         .eq("user_id", userId)
         .or(portfolioScopedPaymentsOrFilter(ids)),
     ]).then((res) => res.map((r) => r.data ?? [])),
-    3000,
+    4500,
     [[], [], []],
     "properties:getPropertiesPortfolio",
   );
