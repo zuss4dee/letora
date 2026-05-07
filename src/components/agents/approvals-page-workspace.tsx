@@ -107,11 +107,11 @@ export function ApprovalsPageWorkspace({
   const filteredResolved = useMemo(() => filterByAction(resolved, actionFilter), [resolved, actionFilter]);
 
   return (
-    <div className="space-y-4">
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col space-y-4">
       <Tabs
         value={tab}
         onValueChange={(v) => setTab(v as "queue" | "decisions")}
-        className="w-full gap-4"
+        className="flex min-h-0 min-w-0 w-full flex-1 flex-col gap-4"
       >
         <TabsList
           variant="line"

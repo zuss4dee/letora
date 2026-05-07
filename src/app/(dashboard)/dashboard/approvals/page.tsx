@@ -19,14 +19,18 @@ export default async function ApprovalsPage({
   const focusApprovalId = typeof sp.id === "string" && sp.id.trim().length > 0 ? sp.id.trim() : undefined;
 
   return (
-    <div className="@container/main flex flex-1 flex-col gap-5 bg-[#0B0B0B] p-4 md:gap-6 md:p-6">
-      <ApprovalsStaticShell />
-      <Suspense fallback={<ApprovalsQueueSummarySkeleton />}>
-        <ApprovalsQueueHealthSection />
-      </Suspense>
-      <Suspense fallback={<ApprovalsWorkspaceSkeleton />}>
-        <ApprovalsWorkspaceSection focusApprovalId={focusApprovalId} />
-      </Suspense>
+    <div className="@container/main flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-[#0B0B0B]">
+      <div className="min-h-0 flex-1 overflow-y-auto p-4 md:p-6">
+        <div className="flex flex-col gap-5 md:gap-6">
+          <ApprovalsStaticShell />
+          <Suspense fallback={<ApprovalsQueueSummarySkeleton />}>
+            <ApprovalsQueueHealthSection />
+          </Suspense>
+          <Suspense fallback={<ApprovalsWorkspaceSkeleton />}>
+            <ApprovalsWorkspaceSection focusApprovalId={focusApprovalId} />
+          </Suspense>
+        </div>
+      </div>
     </div>
   );
 }

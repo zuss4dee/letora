@@ -19,6 +19,7 @@ export type CommandCenterKpis = {
   maintenanceOpen: number;
   maintenanceHighPriority: number;
   totalProperties: number;
+  /** agent_runs with status queued | running | pending | draft (in-flight or awaiting approval). */
   activeAgents: number;
   // Financials
   /** Sum of unpaid instalments with due_date in the current calendar month. */
@@ -98,13 +99,16 @@ async function highPriorityMaintenanceCount(userId: string): Promise<number> {
   return count ?? 0;
 }
 
+/** Count rows where agent work has not settled to completed/failed/skipped/error/open yet. Matches rent_chaser/onboarding lifecycle (often `pending`). */
+const ACTIVE_AGENT_RUN_STATUSES = ["running", "queued", "pending", "draft"] as const;
+
 async function activeAgentCount(userId: string): Promise<number> {
   const supabase = await createClient();
   const { count, error } = await supabase
     .from("agent_runs")
     .select("id", { count: "exact", head: true })
     .eq("user_id", userId)
-    .in("status", ["running", "queued"]);
+    .in("status", [...ACTIVE_AGENT_RUN_STATUSES]);
 
   if (error) {
     console.warn("[command-center] active agent count", error.message);
