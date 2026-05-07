@@ -63,11 +63,11 @@ export async function CommandCenterAgentSummary({ userId }: { userId: string }) 
 
         <div className="flex flex-col border border-[#333333] bg-[#161616] p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Loader2 className="size-3 text-[#afefdd] animate-spin" />
+            <Loader2 className="size-3 text-zinc-500 animate-spin" />
             <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Agents running</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold text-[#afefdd] tabular-nums">{s.activeAgents}</span>
+            <span className="text-xl font-bold text-white tabular-nums">{s.activeAgents}</span>
             <span className="font-mono text-[9px] uppercase text-zinc-600">Queued · running</span>
           </div>
         </div>

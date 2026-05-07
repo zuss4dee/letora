@@ -262,6 +262,17 @@ export function ApprovalsPendingInteractive({
             {/* Decision Actions */}
             <div className="shrink-0 border-t border-[#232323] bg-[#0B0B0B] p-6">
               <div className="grid grid-cols-1 gap-2">
+                {selectedApproval.action_type === "send_rent_chase_email" ? (
+                  <Button
+                    type="button"
+                    disabled={busyId === selectedApproval.id}
+                    variant="outline"
+                    className="border-emerald-700/40 bg-emerald-950/20 py-5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-300 hover:bg-emerald-950/35"
+                    asChild
+                  >
+                    <Link href={`/dashboard/approvals/${selectedApproval.id}/email`}>Review & edit email</Link>
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
                   disabled={busyId === selectedApproval.id}
