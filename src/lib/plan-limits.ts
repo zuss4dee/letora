@@ -1,16 +1,20 @@
-import { PLANS, PLAN_ORDER, type PlanKey } from "@/lib/stripe-plans";
+import { ALL_PLAN_KEYS, PLANS, type PlanKey } from "@/lib/stripe-plans";
 
-/** Maps DB / UI display string to canonical PlanKey. */
+/**
+ * Max properties for workspaces without an active paying Letora subscription.
+ * Matches the legacy free onboarding cap — not branded as a "Starter SKU" for entitlements anymore.
+ */
+export const FREE_WORKSPACE_PROPERTY_CAP = 3;
+
+/** Maps DB / UI display string to canonical PlanKey (including legacy tiers still stored from Stripe-only users). */
 export function planDisplayToKey(display: string | null | undefined): PlanKey | null {
   if (display == null || !String(display).trim()) return null;
   const t = display.trim();
   const lower = t.toLowerCase();
-  
-  // New plans
+
   if (lower === "monthly" || t === PLANS.monthly.name) return "monthly";
   if (lower === "yearly" || t === PLANS.yearly.name) return "yearly";
-  
-  // Legacy plans
+
   if (lower === "starter" || t === PLANS.starter.name) return "starter";
   if (lower === "pro" || t === PLANS.pro.name) return "pro";
   if (lower === "landlord_pro" || lower === "portfolio" || t === PLANS.landlord_pro.name) {
@@ -23,11 +27,11 @@ export function planKeyToDisplayName(key: PlanKey): string {
   return PLANS[key].name;
 }
 
-/** Resolve Stripe Price ID → PlanKey using env-configured IDs. */
+/** Resolve Stripe Price ID → PlanKey using env-configured IDs (modern + legacy products). */
 export function getPlanKeyFromStripePriceId(priceId: string | null | undefined): PlanKey | null {
   if (!priceId?.trim()) return null;
   const id = priceId.trim();
-  for (const key of PLAN_ORDER) {
+  for (const key of ALL_PLAN_KEYS) {
     const pid = PLANS[key].priceId?.trim();
     if (pid && pid === id) return key;
   }
@@ -63,49 +67,21 @@ export function isPayingPlatformSubscription(status: string | null | undefined):
   return PAYING_STATUSES.has(status);
 }
 
-function isSubscriptionEntitled(status: string | null | undefined): boolean {
-  return isPayingPlatformSubscription(status);
-}
-
 export type UserPlanSettings = {
   subscription_plan: string | null;
   subscription_status: string | null;
 };
 
 /**
- * Effective plan for limits: paying users use resolved plan; otherwise Starter (3 props).
- * Documented default: unsubscribed / canceled → Starter cap for frictionless onboarding.
+ * Property import / creation allowance.
+ * Single modern rule: anyone on an active platform subscription (`active` · `trialing` · `past_due`)
+ * gets uncapped portfolios. Only truly unsubscribed / inactive workspaces use the small free allowance.
+ *
+ * Billing tier SKU (Starter/Pro/etc.) must not downgrade an active payer when `subscription_plan` is stale or null.
  */
-export function getPlanKeyForUser(settings: UserPlanSettings): PlanKey {
-  if (!isSubscriptionEntitled(settings.subscription_status)) {
-    return "starter";
-  }
-  const fromDisplay = planDisplayToKey(settings.subscription_plan);
-  if (fromDisplay) return fromDisplay;
-  return "starter";
-}
-
 export function getMaxPropertiesForUser(settings: UserPlanSettings): number {
-  const key = getPlanKeyForUser(settings);
-  return PLANS[key].properties;
-}
-
-/** Optional structured flags for future Settings / agent gates (phase 2). */
-export function planFeatures(key: PlanKey) {
-  // Monthly and Yearly have full features
-  if (key === "monthly" || key === "yearly") {
-    return {
-      fullAgentLayer: true,
-      customAgentSettings: true,
-      contractTemplateUploads: true,
-      maxProperties: PLANS[key].properties,
-    };
+  if (isPayingPlatformSubscription(settings.subscription_status)) {
+    return -1;
   }
-
-  return {
-    fullAgentLayer: key !== "starter",
-    customAgentSettings: key !== "starter",
-    contractTemplateUploads: key === "landlord_pro",
-    maxProperties: (PLANS as any)[key]?.properties ?? 3,
-  };
+  return FREE_WORKSPACE_PROPERTY_CAP;
 }

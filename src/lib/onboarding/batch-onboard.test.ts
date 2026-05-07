@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { prepareBatchOnboarding } from "./batch-onboard";
-import { normalizeBatchOnboardingRow, type BatchOnboardingRow } from "./tenant-import";
+import {
+  normalizeBatchOnboardingRow,
+  parseBatchOnboardingCsvWithMeta,
+  type BatchOnboardingRow,
+} from "./tenant-import";
 
 /**
  * Tiny fake supabase client that satisfies the narrow slice of the Query Builder
@@ -180,5 +184,24 @@ describe("prepareBatchOnboarding", () => {
     expect(prepared.summary.actionableRows).toBe(1);
     expect(prepared.rows[0].tags).toContain("validation_error");
     expect(prepared.rows[1].tags).not.toContain("validation_error");
+  });
+
+  describe("portfolio CSV vacancy inference", () => {
+    it("infers vacant for property-only legacy headers when row_kind is absent", () => {
+      const csv = `property_address,city,tenant_name,tenant_email,monthly_rent,start_date
+1 Willow Way,London,,,,,`;
+      const res = parseBatchOnboardingCsvWithMeta(csv);
+      expect(res.parseLevel).toBe("ok");
+      expect(res.rows.length).toBe(1);
+      expect(res.rows[0]?.rowKind).toBe("vacant");
+    });
+
+    it("infers vacant when row_kind column exists but cells are empty and tenant signals are absent", () => {
+      const csv = `row_kind,property_address,city,tenant_name,tenant_email,monthly_rent,start_date
+,Brixton Flat,London,,,,,`;
+      const res = parseBatchOnboardingCsvWithMeta(csv);
+      expect(res.parseLevel).toBe("ok");
+      expect(res.rows[0]?.rowKind).toBe("vacant");
+    });
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -22,28 +22,15 @@ import {
 } from "@/lib/actions/batch-onboarding";
 import type { PreparedRow } from "@/lib/onboarding/batch-onboard";
 import { PORTFOLIO_IMPORT_SCHEMA_GUIDE } from "@/lib/onboarding/portfolio-import-schema";
+import { PricingPlanSubscribeButton } from "@/components/marketing/pricing-plan-button";
 import { cn } from "@/lib/utils";
 
-type PreparedRowSummary = {
-  total: number;
-  validationErrors: number;
-  newProperties: number;
-  matchedProperties: number;
-  existingTenants: number;
-  skippedActiveTenancies: number;
-  duplicateCsvSkips: number;
-  warningRows: number;
-  actionableRows: number;
-};
-
-type RunTotals = {
-  total: number;
-  succeeded: number;
-  failed: number;
-  skipped: number;
-  agentsTriggered: number;
-  approvalsCreated: number;
-};
+import {
+  clearPortfolioImportDraft,
+  loadPortfolioImportDraft,
+  savePortfolioImportDraft,
+  type PortfolioImportDraftSummary,
+} from "@/components/import/portfolio-import-draft-storage";
 
 type Tone = "error" | "skip" | "new" | "matched" | "ok";
 
@@ -51,17 +38,29 @@ function rowStatusLabel(row: PreparedRow): { label: string; tone: Tone } {
   if (row.tags.includes("validation_error")) return { label: "Fix row", tone: "error" };
   if (row.tags.includes("duplicate_csv_row_skip")) return { label: "Duplicate row", tone: "skip" };
   if (row.tags.includes("existing_active_tenancy_skip"))
-    return { label: "Already onboarded", tone: "skip" };
+    return { label: "Active tenancy exists", tone: "skip" };
   if (row.tags.includes("new_property")) return { label: "New property", tone: "new" };
   if (row.tags.includes("matched_property")) return { label: "Matched", tone: "matched" };
   return { label: "Ready", tone: "ok" };
+}
+
+function previewImportNote(row: PreparedRow): string {
+  if (row.tags.includes("validation_error")) return "—";
+  if (row.skipReason) return row.skipReason;
+  if (row.raw.rowKind === "vacant") return "Vacant → property-only; no tenant/tenancy or onboarding.";
+  if (row.raw.rowKind === "onboarding") {
+    if (row.raw.tenancyStatusDb === "ended")
+      return "Onboarding-like row but tenancy ended — no onboarding agent.";
+    return "Pre-move-in → onboarding agent runs (welcome checklist path).";
+  }
+  return "Live tenancy → onboarding marked complete on tenancy; onboarding agent skipped.";
 }
 
 function previewNotesCells(row: PreparedRow): { errors: string; warnings: string; note: string } {
   return {
     errors: row.raw.rowErrors.length > 0 ? row.raw.rowErrors.join("; ") : "—",
     warnings: row.raw.rowWarnings.length > 0 ? row.raw.rowWarnings.join("; ") : "—",
-    note: row.skipReason ?? "—",
+    note: previewImportNote(row),
   };
 }
 
@@ -132,14 +131,38 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
   const [csvText, setCsvText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<PreparedRow[] | null>(null);
-  const [summary, setSummary] = useState<PreparedRowSummary | null>(null);
+  const [summary, setSummary] = useState<PortfolioImportDraftSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [runTotals, setRunTotals] = useState<RunTotals | null>(null);
-  const [runBatchId, setRunBatchId] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importFailureKind, setImportFailureKind] = useState<"none" | "plan_limit" | "other">("none");
+  const [checkoutFlash, setCheckoutFlash] = useState<"success" | "cancelled" | null>(null);
+  const [hasStoredImportDraft, setHasStoredImportDraft] = useState(false);
   const [isPreviewing, startPreview] = useTransition();
-  const [isRunning, startRun] = useTransition();
+  const [isImportPending, startImport] = useTransition();
   const [isDragging, setIsDragging] = useState(false);
   const [confirmCommit, setConfirmCommit] = useState(false);
+
+  function refreshStoredDraftFlag() {
+    setHasStoredImportDraft(loadPortfolioImportDraft() !== null);
+  }
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const checkout = params.get("checkout");
+    if (checkout === "success") {
+      setCheckoutFlash("success");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (checkout === "cancelled") {
+      setCheckoutFlash("cancelled");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    refreshStoredDraftFlag();
+  }, []);
+
+  /** Always point at latest preview snapshot so submit matches the manifest (avoids stale JSON). */
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
 
   const importGuideBullets = useMemo(
     () =>
@@ -160,22 +183,24 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
   }
 
   const canRun = useMemo(() => {
-    if (!confirmCommit || !rows || rows.length === 0) return false;
+    if (!confirmCommit || !rows || rows.length === 0 || isImportPending || isPreviewing) return false;
     return rows.some(
       (r) =>
         !r.tags.includes("validation_error") &&
         !r.tags.includes("existing_active_tenancy_skip") &&
         !r.tags.includes("duplicate_csv_row_skip"),
     );
-  }, [rows, confirmCommit]);
+  }, [rows, confirmCommit, isImportPending, isPreviewing]);
 
   function resetPreview() {
     setRows(null);
     setSummary(null);
     setError(null);
-    setRunTotals(null);
-    setRunBatchId(null);
+    setImportError(null);
+    setImportFailureKind("none");
     setConfirmCommit(false);
+    clearPortfolioImportDraft();
+    setHasStoredImportDraft(false);
   }
 
   function onPreview() {
@@ -184,8 +209,8 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
       return;
     }
     setError(null);
-    setRunTotals(null);
-    setRunBatchId(null);
+    setImportFailureKind("none");
+    setImportError(null);
 
     const formData = new FormData();
     if (file) formData.set("file", file);
@@ -193,7 +218,7 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
 
     startPreview(async () => {
       const res = await previewBatchOnboardingFromFormData(formData);
-      if (!res.ok) {
+      if (res.ok === false) {
         setError(res.error);
         setRows(null);
         setSummary(null);
@@ -207,17 +232,30 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
   }
 
   function onRun() {
-    if (!rows) return;
+    if (isImportPending) return;
+    const latestRows = rowsRef.current;
+    if (!latestRows || latestRows.length === 0) return;
+    setImportError(null);
     setError(null);
-    startRun(async () => {
-      const res = await startBatchOnboardingAction(JSON.stringify(rows));
-      if (!res.ok) {
-        setError(res.error);
+
+    startImport(async () => {
+      const res = await startBatchOnboardingAction(JSON.stringify(latestRows));
+      if (res.ok === false) {
+        const hitLimit = res.reason === "plan_limit";
+        if (hitLimit && summary) {
+          savePortfolioImportDraft(latestRows, summary);
+          setHasStoredImportDraft(true);
+        }
+        setImportError(res.error);
+        setImportFailureKind(hitLimit ? "plan_limit" : "other");
+        if ("finalizeFailed" in res && res.finalizeFailed && "batchId" in res && res.batchId) {
+          router.push(`/dashboard/import/batch/${res.batchId}`);
+        }
         return;
       }
-      setRunTotals(res.totals);
-      setRunBatchId(res.batchId);
-      router.refresh();
+      clearPortfolioImportDraft();
+      setHasStoredImportDraft(false);
+      router.push(`/dashboard/import/batch/${res.batchId}`);
     });
   }
 
@@ -235,6 +273,74 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
           Import Portfolio · Run agents at scale
         </p>
       </header>
+
+      {checkoutFlash ? (
+        <div className="flex items-start justify-between gap-3 border-b border-[#306f60]/35 bg-[#152420]/80 px-6 py-3">
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#afefdd]">
+              {checkoutFlash === "success" ? "Billing update received" : "Checkout cancelled"}
+            </p>
+            <p className="mt-1 text-[11px] leading-relaxed text-[#c8dfd7]">
+              {checkoutFlash === "success"
+                ? hasStoredImportDraft
+                  ? "You were returned here from checkout. Restore your saved preview below, confirm the checklist, then run Confirm & import again."
+                  : "You were returned here from checkout. If your preview table is empty, paste or upload again and click Preview Rows before importing."
+                : "No charge was taken. Any preview saved earlier in this tab is still available below."}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+            aria-label="Dismiss billing notice"
+            onClick={() => setCheckoutFlash(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : null}
+
+      {hasStoredImportDraft ? (
+        <div className="flex flex-col gap-2 border-b border-[#306f60]/25 bg-[#1a2824]/70 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#afefdd]">
+              Saved preview in this browser
+            </p>
+            <p className="mt-1 text-[11px] leading-relaxed text-[#bdbdbd]">
+              Restoring reloads your last staged rows and manifest stats from this device. Clearing your browser storage removes it.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 border border-[#afefdd]/40 bg-[#afefdd] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-colors hover:bg-white"
+              onClick={() => {
+                const d = loadPortfolioImportDraft();
+                if (!d?.rows?.length) {
+                  refreshStoredDraftFlag();
+                  return;
+                }
+                setRows(d.rows);
+                setSummary(d.summary);
+                setImportError(null);
+                setImportFailureKind("none");
+                setConfirmCommit(false);
+              }}
+            >
+              Restore prepared import
+            </button>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 border border-[#333333] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#bbbbbb] transition-colors hover:border-white hover:text-white"
+              onClick={() => {
+                clearPortfolioImportDraft();
+                setHasStoredImportDraft(false);
+              }}
+            >
+              Discard saved preview
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* ── Left: Main Flow ── */}
@@ -372,7 +478,7 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                   <button
                     type="button"
                     onClick={onPreview}
-                    disabled={isPreviewing}
+                    disabled={isPreviewing || isImportPending}
                     className="flex items-center gap-2 bg-white px-5 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-opacity hover:opacity-90 disabled:opacity-50"
                   >
                     {isPreviewing ? (
@@ -429,6 +535,63 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                     ) : null}
                   </div>
                 </div>
+
+                {isImportPending ? (
+                  <div className="flex items-start gap-3 border-b border-[#f8cf83]/25 bg-[#2a2210]/90 px-4 py-4">
+                    <Loader2 className="mt-0.5 size-5 shrink-0 animate-spin text-[#f8cf83]" aria-hidden />
+                    <div>
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#f8cf83]">
+                        Import in progress
+                      </p>
+                      <p className="mt-2 text-[12px] leading-relaxed text-[#e5e2e1]">
+                        Writing properties, tenants, tenancies, and rent rows. Do not close this tab — you will be taken
+                        to the batch result when finished.
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+
+                {importError ? (
+                  <div className="flex items-start gap-3 border-b border-[#BB5551]/35 bg-[#7f2927]/15 px-4 py-3">
+                    <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-[#ee7d77]" aria-hidden />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#ee7d77]">
+                        {importFailureKind === "plan_limit" ? "Free workspace limit" : "Import could not complete"}
+                      </p>
+                      <p className="mt-1 text-[11px] text-[#ffb3ad]">{importError}</p>
+                      {importFailureKind === "plan_limit" ? (
+                        <>
+                          <p className="mt-2 text-[11px] leading-relaxed text-[#e8c8c5]">
+                            Your latest preview snapshot is saved in this browser. Use Restore prepared import at the top
+                            after upgrading, or paste and run Preview Rows again if it is missing.
+                          </p>
+                          <div className="mt-4 flex max-w-xl flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
+                            <div className="sm:min-w-[220px] sm:flex-1 [&_button]:min-h-[44px] [&_button]:text-xs">
+                              <PricingPlanSubscribeButton
+                                planKey="monthly"
+                                highlighted
+                                checkoutReturnTarget="import"
+                              >
+                                Upgrade plan
+                              </PricingPlanSubscribeButton>
+                            </div>
+                            <Link
+                              href="/dashboard/billing"
+                              className="inline-flex shrink-0 items-center justify-center gap-2 border border-[#5c2d2a]/50 bg-[#1a1212] px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-[#ffb3ad] transition-colors hover:border-[#ee7d77]/50 hover:text-white"
+                            >
+                              Open billing
+                              <ChevronRight className="size-3.5" aria-hidden />
+                            </Link>
+                          </div>
+                          <p className="mt-3 text-[10px] leading-relaxed text-[#c49a97]">
+                            Upgrade plan opens Monthly checkout (billing via Polar) for the current subscriber offering, then returns you here when payment completes.
+                            Open Billing for invoices, renewal dates, or to review monthly vs yearly.
+                          </p>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                ) : null}
 
                 {/* Mobile cards */}
                 <ul className="divide-y divide-[#282828] sm:hidden">
@@ -545,10 +708,14 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                 {/* Run footer */}
                 <div className="flex flex-col gap-3 border-t border-[#282828] bg-[#1A1A1A] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-col gap-2">
-                    <label className="flex cursor-pointer items-start gap-2 text-left">
+                    <label className={cn(
+                      "flex cursor-pointer items-start gap-2 text-left",
+                      isImportPending && "pointer-events-none opacity-60",
+                    )}>
                       <input
                         type="checkbox"
                         checked={confirmCommit}
+                        disabled={isImportPending}
                         onChange={(e) => setConfirmCommit(e.target.checked)}
                         className="mt-0.5 size-3.5 shrink-0 rounded border border-[#555555] bg-[#0B0B0B] accent-white"
                       />
@@ -565,73 +732,18 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                   <button
                     type="button"
                     onClick={onRun}
-                    disabled={!canRun || isRunning}
+                    disabled={!canRun || isImportPending || isPreviewing}
                     className="flex items-center gap-2 bg-white px-6 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-opacity hover:opacity-90 disabled:opacity-40"
                   >
-                    {isRunning ? (
+                    {isImportPending ? (
                       <>
                         <Loader2 className="size-3 animate-spin" />
-                        Onboarding
+                        Importing…
                       </>
                     ) : (
                       <>Confirm & import {summary.actionableRows}</>
                     )}
                   </button>
-                </div>
-              </section>
-            ) : null}
-
-            {/* ── Run Result ── */}
-            {runTotals ? (
-              <section className="animate-in fade-in zoom-in-95 duration-500 border border-[#afefdd]/30 bg-[#152420]">
-                <div className="flex flex-col gap-8 px-6 py-8 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-6">
-                    <div className="flex items-center gap-3">
-                      <div className="flex size-10 items-center justify-center bg-[#afefdd]/10">
-                        <Sparkles className="size-5 text-[#afefdd]" />
-                      </div>
-                      <div>
-                        <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#afefdd]">
-                          Import Success
-                        </p>
-                        <h2 className="text-xl font-bold text-white">Portfolio Data Ingested</h2>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="font-mono text-sm text-white">
-                        {runTotals.succeeded} units successfully onboarded · {runTotals.skipped} skipped
-                      </p>
-                      <p className="text-[13px] text-[#afefdd]/70">
-                        Your agentic workforce has been dispatched to audit these records. 
-                        They are currently processing leases and identifying compliance requirements.
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-8 border-t border-[#afefdd]/10 pt-6">
-                      <Stat label="Agents Dispatch" value={runTotals.agentsTriggered} accent={runTotals.agentsTriggered > 0} />
-                      <Stat label="Pending Queue" value={runTotals.approvalsCreated} accent={runTotals.approvalsCreated > 0} />
-                      {runTotals.failed > 0 && (
-                        <Stat label="Manual Fixes" value={runTotals.failed} danger />
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-3 min-w-[200px]">
-                    <Link
-                      href="/dashboard"
-                      className="flex items-center justify-center gap-2 bg-white px-6 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-black transition-all hover:bg-[#afefdd]"
-                    >
-                      Go to Command Center
-                      <ChevronRight className="size-3" />
-                    </Link>
-                    <Link
-                      href="/dashboard/rent-tracker"
-                      className="flex items-center justify-center gap-2 border border-[#282828] bg-[#0B0B0B] px-6 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:text-white"
-                    >
-                      Rent tracker
-                    </Link>
-                  </div>
                 </div>
               </section>
             ) : null}
@@ -687,27 +799,35 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
           ) : (
             <ul className="flex-1 divide-y divide-[#282828] overflow-y-auto">
               {history.map((h) => (
-                <li key={h.id} className="px-4 py-3 hover:bg-[#1A1A1A]">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <StatusIcon status={h.status} />
-                      <div className="min-w-0">
-                        <p className="text-[11px] font-medium text-white">
-                          {h.rowsSucceeded}/{h.rowsTotal} onboarded
-                          {h.rowsFailed > 0 ? ` · ${h.rowsFailed} failed` : ""}
-                        </p>
-                        <p className="font-mono text-[9px] text-[#555555]">
-                          {h.agentsTriggered} agents · {h.approvalsCreated} approvals
-                        </p>
-                        <p className="font-mono text-[9px] text-[#444748]">
-                          {h.createdAt ? new Date(h.createdAt).toLocaleString() : ""} · {h.kind}
-                        </p>
+                <li key={h.id} className="hover:bg-[#1A1A1A]">
+                  <Link
+                    href={`/dashboard/import/batch/${h.id}`}
+                    className="block px-4 py-3 focus-visible:outline focus-visible:outline-offset-[-2px] focus-visible:outline-[#afefdd]"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <StatusIcon status={h.status} />
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-medium text-white">
+                            {h.rowsSucceeded}/{h.rowsTotal} onboarded
+                            {h.rowsFailed > 0 ? ` · ${h.rowsFailed} failed` : ""}
+                          </p>
+                          <p className="font-mono text-[9px] text-[#555555]">
+                            {h.agentsTriggered} agents · {h.approvalsCreated} approvals
+                          </p>
+                          <p className="font-mono text-[9px] text-[#444748]">
+                            {h.createdAt ? new Date(h.createdAt).toLocaleString() : ""} · {h.kind}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-1">
+                        <ChevronRight className="size-3.5 text-[#555555]" aria-hidden />
+                        <span className="font-mono text-[8px] uppercase tracking-wider text-[#555555]">
+                          {h.status}
+                        </span>
                       </div>
                     </div>
-                    <span className="shrink-0 font-mono text-[9px] uppercase tracking-widest text-[#555555]">
-                      {h.status}
-                    </span>
-                  </div>
+                  </Link>
                 </li>
               ))}
             </ul>

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import {
+  type CheckoutReturnTarget,
+  checkoutSuccessPath,
+} from "@/lib/stripe/checkout-return-target";
 import { PLANS } from "@/lib/stripe-plans";
 
 const baseUrl = () => process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
@@ -18,14 +22,19 @@ export async function POST(req: NextRequest) {
 
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    let body: { priceId?: string; plan?: string; returnTarget?: string };
+    let body: { priceId?: string; plan?: string; returnTarget?: CheckoutReturnTarget };
     try {
-      body = (await req.json()) as { priceId?: string; plan?: string; returnTarget?: string };
+      body = (await req.json()) as { priceId?: string; plan?: string; returnTarget?: CheckoutReturnTarget };
     } catch {
       return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
     }
 
     const { priceId, plan } = body;
+    const rawReturn = body.returnTarget;
+    const returnTarget: CheckoutReturnTarget =
+      rawReturn === "billing" || rawReturn === "onboarding" || rawReturn === "import"
+        ? rawReturn
+        : "billing";
 
     if (!priceId?.trim()) {
       console.warn("[polar create-checkout] missing priceId in request body");
@@ -42,7 +51,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Polar not configured" }, { status: 500 });
     }
 
-    const successUrl = `${baseUrl()}/dashboard/billing?checkout=success`;
+    const successUrl = `${baseUrl()}${checkoutSuccessPath(returnTarget)}`;
 
     const polarRes = await fetch(`${POLAR_API}/v1/checkouts/`, {
       method: "POST",

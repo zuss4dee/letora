@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
 
+import { ImportBatchScopeChip } from "@/components/import/import-batch-scope-chip";
 import { TenanciesRegistry } from "@/components/tenancies/tenancies-registry";
 import { AddTenancyDialog } from "@/components/rent/add-tenancy-dialog";
 import {
@@ -13,6 +14,8 @@ import {
 } from "@/lib/actions/tenancies";
 import { getProperties } from "@/lib/actions/properties";
 import { getTenants } from "@/lib/actions/tenants";
+import { loadImportBatchIdFilterSets } from "@/lib/import-batch-filter-loader";
+import { importBatchShortLabel, parseImportBatchParam } from "@/lib/import-batch-query";
 import { createClient } from "@/lib/supabase/server";
 
 import {
@@ -20,7 +23,7 @@ import {
   loadTenancyOnboardingTasksByTenancyId,
 } from "./tenancy-inspector-data";
 
-async function TenanciesDataSection() {
+async function TenanciesDataSection({ importBatchId }: { importBatchId?: string }) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -33,20 +36,33 @@ async function TenanciesDataSection() {
     await autoGeneratePendingPayments(userId);
   }
 
-  const [properties, tenants, tenancies, payments] = userId
+  const [properties, tenants, tenancies, payments, batchFilter] = userId
     ? await Promise.all([
         getProperties(userId),
         getTenants(userId),
         getTenancies(userId),
         getThisMonthPayments(userId),
+        importBatchId ? loadImportBatchIdFilterSets(importBatchId) : Promise.resolve(null),
       ])
-    : [[], [], [], []];
+    : [[], [], [], [], null];
 
-  const tenancyIds = tenancies.map((t) => t.id);
+  let list = tenancies;
+  let scope: { batchId: string; short: string } | null = null;
+
+  if (userId && importBatchId && batchFilter?.ok) {
+    scope = { batchId: importBatchId, short: importBatchShortLabel(importBatchId) };
+    if (batchFilter.tenancyIds.size > 0) {
+      list = tenancies.filter((t) => batchFilter.tenancyIds.has(t.id));
+    } else {
+      list = [];
+    }
+  }
+
+  const tenancyIds = list.map((t) => t.id);
   const [activityByTenancyId, onboardingTasksByTenancyId] =
     tenancyIds.length > 0
       ? await Promise.all([
-          loadTenancyInspectorActivityByTenancyId(tenancies),
+          loadTenancyInspectorActivityByTenancyId(list),
           loadTenancyOnboardingTasksByTenancyId(tenancyIds),
         ])
       : [{}, {}];
@@ -62,16 +78,23 @@ async function TenanciesDataSection() {
   }));
 
   return (
-    <TenanciesRegistry
-      tenancies={tenancies}
-      paymentsThisMonth={payments}
-      userId={userId}
-      propertyOptions={propertyOptions}
-      tenantOptions={tenantOptions}
-      activityByTenancyId={activityByTenancyId}
-      onboardingTasksByTenancyId={onboardingTasksByTenancyId}
-      totalPropertiesCount={properties.length}
-    />
+    <>
+      {scope ? (
+        <div className="mb-6">
+          <ImportBatchScopeChip batchId={scope.batchId} shortId={scope.short} clearHref="/dashboard/tenancies" />
+        </div>
+      ) : null}
+      <TenanciesRegistry
+        tenancies={list}
+        paymentsThisMonth={payments}
+        userId={userId}
+        propertyOptions={propertyOptions}
+        tenantOptions={tenantOptions}
+        activityByTenancyId={activityByTenancyId}
+        onboardingTasksByTenancyId={onboardingTasksByTenancyId}
+        totalPropertiesCount={properties.length}
+      />
+    </>
   );
 }
 
@@ -100,13 +123,20 @@ function TenanciesPageFallback() {
   );
 }
 
-export default async function TenanciesPage() {
+export default async function TenanciesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ importBatch?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  const sp = await searchParams;
+  const importBatchId = parseImportBatchParam(sp);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[#0B0B0B] p-4 lg:p-8">
@@ -139,7 +169,7 @@ export default async function TenanciesPage() {
 
       {/* B & C. KPIs and Main Registry */}
       <Suspense fallback={<TenanciesPageFallback />}>
-        <TenanciesDataSection />
+        <TenanciesDataSection importBatchId={importBatchId} />
       </Suspense>
     </div>
   );

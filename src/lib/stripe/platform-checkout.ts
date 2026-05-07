@@ -1,7 +1,11 @@
 import type Stripe from "stripe";
 import type { User } from "@supabase/supabase-js";
 
-import type { CheckoutReturnTarget } from "@/lib/stripe/checkout-return-target";
+import {
+  type CheckoutReturnTarget,
+  checkoutCancelPath,
+  checkoutSuccessPath,
+} from "@/lib/stripe/checkout-return-target";
 import { PLANS, type PlanKey } from "@/lib/stripe-plans";
 import { stripe } from "@/lib/stripe";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -75,18 +79,8 @@ export async function createPlatformCheckoutSession(
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const planMeta = params.planKey;
   const returnTarget = params.returnTarget ?? "default";
-  const successPath =
-    returnTarget === "billing"
-      ? "/dashboard/billing?checkout=success"
-      : returnTarget === "onboarding"
-        ? "/onboarding?checkout=success"
-        : "/dashboard?success=true";
-  const cancelPath =
-    returnTarget === "billing"
-      ? "/dashboard/billing?checkout=cancelled"
-      : returnTarget === "onboarding"
-        ? "/onboarding?checkout=cancelled"
-        : "/pricing?cancelled=true";
+  const successPath = checkoutSuccessPath(returnTarget);
+  const cancelPath = checkoutCancelPath(returnTarget);
 
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);

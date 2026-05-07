@@ -45,7 +45,7 @@ export const PORTFOLIO_IMPORT_SCHEMA = {
     `${PORTFOLIO_IMPORT_COLUMNS.startDate}`,
   ],
   requiredWhenOnboarding: [
-    // Same as occupied; behaviour differs after insert (pipeline + invite rules).
+    // Same required fields as occupied; only `row_kind` decides whether the onboarding agent runs.
     ...[
       `${PORTFOLIO_IMPORT_COLUMNS.propertyAddress} (or alias)`,
       `${PORTFOLIO_IMPORT_COLUMNS.tenantName}`,
@@ -92,17 +92,19 @@ export const PORTFOLIO_IMPORT_SCHEMA_GUIDE = `
 Required columns — always:
 • property_address (aliases: property, address, property line)
 
-With row_kind (recommended): occupancy | vacant | onboarding (aliases: row_kind, import_type, occupancy)
-• vacant → only property columns needed; tenant/rent/start ignored for validation.
-• occupied | onboarding → tenant_name, tenant_email, monthly_rent, start_date (plus property_address).
+With row_kind (recommended): occupied | vacant | onboarding (aliases: row_kind, import_type, occupancy)
+• vacant → property-only; no tenant or tenancy rows.
+• occupied → active live tenancy + tenant; onboarding is marked complete — no welcome/onboarding agent (use for already-moved-in renters).
+• onboarding → pending / pre-move-in tenancy; onboarding agent runs after import (welcome path) unless tenancy is ended.
 
-Legacy (no row_kind): every row must include tenant_name, tenant_email, monthly_rent, start_date.
+Legacy (no row_kind): rows are treated as occupied (same as live import).
 
 Dates: prefer YYYY-MM-DD; DD/MM/YYYY accepted (UK day-first).
 Rent: numeric or £1,200 pcm-style; vacant allows 0.
 Postcodes: validated as UK outward+inward when present; omit for warning only — not an error unless format invalid.
 Duplicates: identical property+tenant rows in one file skip later rows; sheet order defines the survivor.
-Rent_position: clear | arrears — seeds first scheduled instalment (demo arrears trajectory where supported).
+Tenancy_status: lifecycle (active/pending/ended, etc.). Arrears/late/overdue belongs in tenancy_status OR rent_position — both map arrears onto the rent tracker without changing tenancy to “ended”.
+Rent_position: clear | arrears — seeds first instalment timing/status (use with occupied live tenancies).
 `.trim();
 
 export function normalizeUkPostcodeSpaces(raw: string): string {

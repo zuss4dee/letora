@@ -40,7 +40,13 @@ export async function GET(req: NextRequest) {
     const planKey = planRaw as PlanKey;
     const returnRaw = searchParams.get("return")?.trim();
     const returnTarget: CheckoutReturnTarget =
-      returnRaw === "billing" ? "billing" : returnRaw === "onboarding" ? "onboarding" : "default";
+      returnRaw === "billing"
+        ? "billing"
+        : returnRaw === "onboarding"
+          ? "onboarding"
+          : returnRaw === "import"
+            ? "import"
+            : "default";
 
     const result = await createPlatformCheckoutSession(supabase, user, {
       priceId,
@@ -105,7 +111,9 @@ export async function POST(req: NextRequest) {
         ? "billing"
         : returnTarget === "onboarding"
           ? "onboarding"
-          : "default";
+          : returnTarget === "import"
+            ? "import"
+            : "default";
     const result = await createPlatformCheckoutSession(supabase, user, {
       priceId: priceId.trim(),
       planKey,

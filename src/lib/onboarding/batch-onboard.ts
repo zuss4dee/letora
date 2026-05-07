@@ -10,6 +10,36 @@ import { buildStoredAddressForImport } from "@/lib/onboarding/tenant-import";
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { logActivity } from "@/lib/actions/activity-log";
 
+/** Import wrote domain rows but `batch_imports` could not be marked terminal — check logs for `[finalize_failure]` / `zero_rows_updated`. */
+export class PortfolioBatchFinalizeError extends Error {
+  readonly batchId: string;
+
+  constructor(batchId: string, detail: string) {
+    super(
+      `Portfolio import finalize failed for batch ${batchId}. Domain data may already be written. Detail: ${detail}`,
+    );
+    this.name = "PortfolioBatchFinalizeError";
+    this.batchId = batchId;
+  }
+}
+
+function mapRightToRentForPortfolioImport(rowKind: BatchOnboardingRow["rowKind"]): string {
+  if (rowKind === "occupied") return "verified";
+  return "pending";
+}
+
+/**
+ * `tenancies.onboarding_status` after portfolio import.
+ * - Occupied (incl. legacy): complete — landlords already ran real-world onboarding elsewhere.
+ * - Onboarding workflow rows: not_started until the agent promotes in_progress.
+ * - Ended: complete so nothing queues as “resume onboarding”.
+ */
+function portfolioImportTenancyOnboardingStatus(row: BatchOnboardingRow): string {
+  if (row.tenancyStatusDb === "ended") return "complete";
+  if (row.rowKind === "onboarding") return "not_started";
+  return "complete";
+}
+
 /**
  * Outcome classification per row AFTER matching but BEFORE inserting.
  * - `new_property`:                property doesn't exist yet; will be created
@@ -267,6 +297,8 @@ export type BatchRowOutcome = {
   tenancyId: string | null;
   emailStatus: "sent" | "draft" | "failed" | "skipped" | null;
   error?: string;
+  /** Row ran `runTenantOnboardingAgent` (used for aggregates / logging only). */
+  onboardingAgentInvoked?: boolean;
 };
 
 export type BatchRunResult = {
@@ -282,51 +314,289 @@ export type BatchRunResult = {
   outcomes: BatchRowOutcome[];
 };
 
+export type PortfolioImportStoredRowOutcome = {
+  rowIndex: number;
+  line: number;
+  rowKind: string;
+  propertyAddress: string;
+  tenantFullName: string;
+  tenantEmail: string;
+  tags: string[];
+  previewErrors: string[];
+  previewWarnings: string[];
+  prepareWarnings: string[];
+  skipReason: string | null;
+  outcome: string;
+  runtimeError?: string;
+  propertyId: string | null;
+  tenantId: string | null;
+  tenancyId: string | null;
+  emailStatus: string | null;
+};
+
+function buildPortfolioImportOutcomesSnapshot(
+  prepared: PreparedBatch,
+  outcomes: BatchRowOutcome[],
+): PortfolioImportStoredRowOutcome[] {
+  const byIdx = new Map<number, BatchRowOutcome>();
+  for (const o of outcomes) {
+    byIdx.set(o.rowIndex, o);
+  }
+
+  return prepared.rows.map((pr) => {
+    const o = byIdx.get(pr.rowIndex);
+    return {
+      rowIndex: pr.rowIndex,
+      line: pr.rowIndex + 1,
+      rowKind: pr.raw.rowKind,
+      propertyAddress: pr.raw.propertyAddress,
+      tenantFullName: pr.raw.tenantFullName ?? "",
+      tenantEmail: pr.raw.tenantEmail ?? "",
+      tags: [...pr.tags],
+      previewErrors: [...pr.raw.rowErrors],
+      previewWarnings: [...pr.raw.rowWarnings],
+      prepareWarnings: [...pr.prepareWarnings],
+      skipReason: pr.skipReason,
+      outcome: o?.status ?? "error",
+      runtimeError: typeof o?.error === "string" ? o.error : undefined,
+      propertyId: o?.propertyId ?? pr.propertyId,
+      tenantId: o?.tenantId ?? pr.tenantId,
+      tenancyId: o?.tenancyId ?? null,
+      emailStatus: o?.emailStatus ?? null,
+    };
+  });
+}
+
 export type BatchRunOptions = {
   /** Called after each row finishes — useful for streaming progress to a UI. */
   onProgress?: (outcome: BatchRowOutcome, totals: BatchRunResult["totals"]) => void;
-  /** Defaults to 3. Welcome emails go through Resend; keep it polite. */
+  /** Defaults to 1 — avoids intra-batch duplicate property races while still allowing higher limits for tooling. */
   concurrency?: number;
 };
 
-/**
- * Minimal concurrency limiter (avoids adding a `p-limit` dep just for this).
- * Runs `fn(input, index)` over `items`, up to `limit` in flight at a time.
- * Preserves insertion order in the returned array.
- */
-async function mapWithConcurrency<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T, index: number) => Promise<R>,
-): Promise<R[]> {
-  const results: R[] = new Array(items.length);
-  let next = 0;
-  const workers: Promise<void>[] = [];
-  const workerCount = Math.max(1, Math.min(limit, items.length));
-  for (let w = 0; w < workerCount; w++) {
-    workers.push(
-      (async () => {
-        while (true) {
-          const i = next++;
-          if (i >= items.length) return;
-          results[i] = await fn(items[i]!, i);
-        }
-      })(),
-    );
+function summarizeBatchRunTotalsFromOutcomes(
+  rowsTotal: number,
+  outcomes: BatchRowOutcome[],
+): { totals: BatchRunResult["totals"]; errorsLog: Array<{ row_index: number; error: string }> } {
+  const errorsLog: Array<{ row_index: number; error: string }> = [];
+  let succeeded = 0;
+  let failed = 0;
+  let skipped = 0;
+  let agentsTriggered = 0;
+  let approvalsCreated = 0;
+
+  for (const o of outcomes) {
+    if (o.status === "error") {
+      failed += 1;
+      if (o.error) errorsLog.push({ row_index: o.rowIndex, error: o.error });
+    } else if (o.status === "skipped") {
+      skipped += 1;
+    } else if (o.status === "created" || o.status === "resumed") {
+      succeeded += 1;
+      if (o.onboardingAgentInvoked) agentsTriggered += 1;
+      if (o.emailStatus === "draft") approvalsCreated += 1;
+    }
   }
-  await Promise.all(workers);
-  return results;
+
+  return {
+    totals: {
+      total: rowsTotal,
+      succeeded,
+      failed,
+      skipped,
+      agentsTriggered,
+      approvalsCreated,
+    },
+    errorsLog,
+  };
+}
+
+function terminalBatchStatusFromTotals(totals: BatchRunResult["totals"]): "completed" | "failed" {
+  if (totals.failed === 0) return "completed";
+  if (totals.succeeded === 0) return "failed";
+  return "completed";
+}
+
+/** Drop columns that older DBs might not yet have (migration not applied locally). */
+function stripUnsupportedBatchImportPayloadColumns(patch: Record<string, unknown>): Record<string, unknown> {
+  const p = { ...patch };
+  delete p.agents_triggered;
+  delete p.approvals_created;
+  delete p.outcomes_json;
+  delete p.finalize_error;
+  return p;
+}
+
+async function writeBatchImportFinalizeAttempt(
+  supabase: SupabaseClient,
+  batchId: string,
+  userId: string,
+  phase: string,
+  patch: Record<string, unknown>,
+): Promise<
+  | { ok: true }
+  | { ok: false; reason: "supabase_error"; code?: string; message: string }
+  | { ok: false; reason: "zero_rows"; message: string }
+> {
+  console.info("[batch_import][finalize_attempt]", {
+    batchId,
+    phase,
+    patchKeys: Object.keys(patch),
+  });
+
+  const { data, error } = await supabase
+    .from("batch_imports")
+    .update(patch)
+    .eq("id", batchId)
+    .eq("user_id", userId)
+    .select("id, status, completed_at")
+    .maybeSingle();
+
+  if (error) {
+    console.error("[batch_import][finalize_failure]", {
+      batchId,
+      phase,
+      mode: "supabase_error",
+      code: error.code,
+      message: error.message,
+    });
+    return { ok: false, reason: "supabase_error", code: error.code, message: error.message };
+  }
+
+  if (!data) {
+    const msg =
+      "UPDATE touched 0 rows under id+user_id filters. Typical causes: RLS denies UPDATE, JWT user_id mismatched the inserting session, wrong batch UUID, or the row was deleted.";
+    console.error("[batch_import][finalize_failure]", {
+      batchId,
+      phase,
+      mode: "zero_rows_updated",
+      message: msg,
+    });
+    return { ok: false, reason: "zero_rows", message: msg };
+  }
+
+  console.info("[batch_import][finalize_success]", {
+    batchId,
+    phase,
+    observedStatus: data.status,
+    completedAt: data.completed_at,
+  });
+
+  return { ok: true };
+}
+
+async function persistBatchImportTermination(
+  supabase: SupabaseClient,
+  batchId: string,
+  userId: string,
+  updatePayload: Record<string, unknown>,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  const failureNotes: string[] = [];
+
+  type AttemptResult =
+    | { ok: true }
+    | { ok: false; reason: "supabase_error"; code?: string; message: string }
+    | { ok: false; reason: "zero_rows"; message: string };
+
+  const bump = async (payload: Record<string, unknown>, phase: string): Promise<AttemptResult> => {
+    const attempt = await writeBatchImportFinalizeAttempt(
+      supabase,
+      batchId,
+      userId,
+      phase,
+      payload,
+    );
+    if (attempt.ok) {
+      return { ok: true };
+    }
+    failureNotes.push(
+      `${phase}: ${attempt.reason === "supabase_error" ? `pg ${attempt.code ?? "?"} ${attempt.message}` : attempt.message}`,
+    );
+    return attempt;
+  };
+
+  let r = await bump({ ...updatePayload }, "payload_full");
+  if (r.ok) return { ok: true };
+
+  if (r.reason === "supabase_error" && r.code === "42703") {
+    r = await bump(stripUnsupportedBatchImportPayloadColumns({ ...updatePayload }), "strip_42703_columns");
+    if (r.ok) return { ok: true };
+  }
+
+  if (!r.ok) {
+    const minimal: Record<string, unknown> = {
+      status: updatePayload.status,
+      completed_at: updatePayload.completed_at,
+      rows_succeeded: updatePayload.rows_succeeded,
+      rows_failed: updatePayload.rows_failed,
+      errors_json: updatePayload.errors_json,
+      finalize_error: failureNotes.slice(-4).join(" | ").slice(0, 1900),
+    };
+
+    let rMin = await bump(minimal, "minimal_counters_plus_finalize_error");
+    if (!rMin.ok && rMin.reason === "supabase_error" && rMin.code === "42703") {
+      delete minimal.finalize_error;
+      rMin = await bump(minimal, "minimal_counters_only");
+    }
+    if (rMin.ok) return { ok: true };
+    r = rMin;
+  }
+
+  if (!r.ok) {
+    const doom: Record<string, unknown> = {
+      status: "failed",
+      completed_at: new Date().toISOString(),
+      finalize_error: `${failureNotes.join(" || ")} | forcing failed`.slice(0, 1900),
+      errors_json: [
+        {
+          row_index: -1,
+          error:
+            failureNotes.join("; ") ||
+            "All portfolio-import finalize payloads failed — see finalize_error.",
+        },
+      ],
+    };
+
+    let rDoom = await bump(doom, "doom_failed_with_finalize_error");
+    if (!rDoom.ok && rDoom.reason === "supabase_error" && rDoom.code === "42703") {
+      delete doom.finalize_error;
+      rDoom = await bump(doom, "doom_failed_without_finalize_error_col");
+    }
+    if (rDoom.ok) return { ok: true };
+    r = rDoom;
+  }
+
+  if (r.ok) {
+    return { ok: true };
+  }
+
+  const detail =
+    r.reason === "supabase_error" ? `[${r.code ?? "?"}] ${r.message}` : r.message;
+
+  console.error("[batch_import][finalize_failure]", {
+    batchId,
+    phase: "exhausted",
+    exhaustedAllKnownPaths: true,
+    attemptsSummary: failureNotes,
+    lastError: detail,
+  });
+
+  return {
+    ok: false,
+    message: `persistBatchImportTermination exhausted retries (${failureNotes.join(" · ") || detail})`,
+  };
 }
 
 /**
- * Executes a prepared batch: creates property/tenant/tenancy rows as needed,
- * then fires the existing tenant-onboarding agent (welcome email + 8 tasks).
- * Idempotent: re-running the same CSV only creates what's missing.
+ * Executes a prepared batch: creates property/tenant/tenancy rows as needed.
+ * - **row_kind onboarding** (non-ended): runs the tenant onboarding agent (welcome email path).
+ * - **row_kind occupied** (including legacy imports where `row_kind` was missing and inferred) or ended tenancies:
+ *   skips that agent; live rows use `tenancies.onboarding_status = complete` so rent/arrears work without re-onboarding.
+ *
+ * Portfolio import runs **sequentially** (one row at a time) so address memo + idempotency checks stay deterministic.
+ * The `concurrency` option is accepted for API compatibility but values > 1 are ignored with a warning.
  *
  * Assumes rows have already been validated by `prepareBatchOnboarding`.
- * Uses the provided supabase client directly — when called from a CEO tool
- * pass the request-scoped client; when called from an API route pass a
- * server-side client authenticated as the landlord.
  */
 export async function runBatchOnboarding(
   prepared: PreparedBatch,
@@ -334,9 +604,16 @@ export async function runBatchOnboarding(
   supabase: SupabaseClient,
   options: BatchRunOptions = {},
 ): Promise<BatchRunResult> {
-  const concurrency = Math.max(1, Math.min(options.concurrency ?? 3, 5));
+  const requestedConcurrency = options.concurrency ?? 1;
 
-  // Log Import Started
+  const normalizeAddr = (addr: string, city: string | null): string => {
+    const base = normalizePropertyAddressLabel(addr) || addr.trim();
+    const withCity = city ? `${base}, ${city}` : base;
+    return withCity.toLowerCase().replace(/\s+/g, " ").trim();
+  };
+
+  const startedAt = Date.now();
+
   await logActivity(
     {
       userId,
@@ -368,18 +645,20 @@ export async function runBatchOnboarding(
     throw new Error(`Could not create batch record: ${batchErr?.message ?? "unknown error"}`);
   }
   const batchId = batchInsert.id as string;
+  const logTag = `[batch_import] batchId=${batchId}`;
 
-  const totals: BatchRunResult["totals"] = {
-    total: prepared.rows.length,
-    succeeded: 0,
-    failed: 0,
-    skipped: 0,
-    agentsTriggered: 0,
-    approvalsCreated: 0,
-  };
-  const errorsLog: Array<{ row_index: number; error: string }> = [];
+  console.info(`${logTag} execution start rows=${prepared.rows.length}`);
 
-  const outcomes = await mapWithConcurrency(prepared.rows, concurrency, async (row) => {
+  if (requestedConcurrency > 1) {
+    console.warn(
+      `${logTag} concurrency=${requestedConcurrency} ignored — portfolio executor is sequential`,
+    );
+  }
+
+  /** Intra-batch dedupe: same normalized address as `prepareBatchOnboarding` maps to one runtime property row. */
+  const batchPropertyByKey = new Map<string, string>();
+
+  async function processPreparedRow(row: PreparedRow): Promise<BatchRowOutcome> {
     const outcome: BatchRowOutcome = {
       rowIndex: row.rowIndex,
       status: "error",
@@ -393,8 +672,6 @@ export async function runBatchOnboarding(
       if (row.tags.includes("validation_error")) {
         outcome.status = "error";
         outcome.error = row.raw.rowErrors.join("; ");
-        totals.failed += 1;
-        errorsLog.push({ row_index: row.rowIndex, error: outcome.error ?? "" });
 
         await logActivity(
           {
@@ -411,22 +688,16 @@ export async function runBatchOnboarding(
           },
           supabase,
         );
-
-        options.onProgress?.(outcome, { ...totals });
         return outcome;
       }
 
       if (row.tags.includes("duplicate_csv_row_skip")) {
         outcome.status = "skipped";
-        totals.skipped += 1;
-        options.onProgress?.(outcome, { ...totals });
         return outcome;
       }
 
       if (row.tags.includes("existing_active_tenancy_skip")) {
         outcome.status = "skipped";
-        totals.skipped += 1;
-        options.onProgress?.(outcome, { ...totals });
         return outcome;
       }
 
@@ -435,16 +706,22 @@ export async function runBatchOnboarding(
           buildStoredAddressForImport(row.raw.propertyDisplayName, row.raw.propertyAddress),
         ) || buildStoredAddressForImport(row.raw.propertyDisplayName, row.raw.propertyAddress);
 
+      const pk = normalizeAddr(row.raw.propertyAddress, row.raw.city);
+      if (pk.length > 0 && row.propertyId) {
+        batchPropertyByKey.set(pk, row.propertyId);
+      }
+
       /** Vacancy row referencing an existing property — no inserts. */
       if (row.tags.includes("vacant_property_only") && row.raw.rowKind === "vacant" && row.propertyId) {
         outcome.propertyId = row.propertyId;
         outcome.status = "skipped";
-        totals.skipped += 1;
-        options.onProgress?.(outcome, { ...totals });
+        outcome.emailStatus = "skipped";
         return outcome;
       }
 
-      let propertyId = row.propertyId;
+      let propertyId: string | null =
+        row.propertyId ?? (pk.length > 0 ? (batchPropertyByKey.get(pk) ?? null) : null);
+
       if (!propertyId) {
         propertyId = crypto.randomUUID();
         const { error: propErr } = await supabase.from("properties").insert({
@@ -465,17 +742,35 @@ export async function runBatchOnboarding(
         });
         if (propErr) throw new Error(`property insert failed: ${propErr.message}`);
         outcome.propertyId = propertyId;
+        if (pk.length > 0) batchPropertyByKey.set(pk, propertyId);
+      } else if (pk.length > 0) {
+        batchPropertyByKey.set(pk, propertyId);
+        outcome.propertyId = propertyId;
       }
 
-      if (row.tags.includes("vacant_property_only") && row.raw.rowKind === "vacant") {
+      /**
+       * Property-only imports: never attach tenant / tenancy regardless of tagging drift during prepare.
+       */
+      if (row.raw.rowKind === "vacant" || row.tags.includes("vacant_property_only")) {
+        outcome.propertyId = propertyId;
         outcome.status = "created";
         outcome.emailStatus = "skipped";
-        totals.succeeded += 1;
-        options.onProgress?.(outcome, { ...totals });
         return outcome;
       }
 
-      let tenantId = row.tenantId;
+      const emailTrim = row.raw.tenantEmail.trim();
+
+      let tenantId: string | null = row.tenantId;
+      if (!tenantId && emailTrim.length > 0) {
+        const { data: tenantRow } = await supabase
+          .from("tenants")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("email", emailTrim)
+          .maybeSingle();
+        if (tenantRow?.id) tenantId = tenantRow.id as string;
+      }
+
       if (!tenantId) {
         tenantId = crypto.randomUUID();
         const { error: tenantErr } = await supabase.from("tenants").insert({
@@ -484,10 +779,28 @@ export async function runBatchOnboarding(
           full_name: row.raw.tenantFullName,
           email: row.raw.tenantEmail,
           phone: row.raw.tenantPhone,
-          right_to_rent_status: "pending",
+          right_to_rent_status: mapRightToRentForPortfolioImport(row.raw.rowKind),
         });
         if (tenantErr) throw new Error(`tenant insert failed: ${tenantErr.message}`);
+      }
+
+      outcome.tenantId = tenantId;
+
+      const { data: activeTenancy } = await supabase
+        .from("tenancies")
+        .select("id")
+        .eq("property_id", propertyId)
+        .eq("tenant_id", tenantId)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (activeTenancy?.id) {
+        outcome.propertyId = propertyId;
         outcome.tenantId = tenantId;
+        outcome.tenancyId = activeTenancy.id as string;
+        outcome.status = "skipped";
+        outcome.emailStatus = "skipped";
+        return outcome;
       }
 
       const tenancyId = crypto.randomUUID();
@@ -505,7 +818,7 @@ export async function runBatchOnboarding(
         monthly_rent: row.raw.monthlyRent,
         deposit_amount: deposit ?? null,
         status: row.raw.tenancyStatusDb,
-        onboarding_status: row.raw.rowKind === "onboarding" ? "in_progress" : "not_started",
+        onboarding_status: portfolioImportTenancyOnboardingStatus(row.raw),
       });
       if (tenancyErr) throw new Error(`tenancy insert failed: ${tenancyErr.message}`);
       outcome.tenancyId = tenancyId;
@@ -540,28 +853,25 @@ export async function runBatchOnboarding(
         });
 
         if (rpErr)
-          console.error(
-            `[runBatchOnboarding] rent_payment seed tenancyId=${tenancyId} message=${rpErr.message}`,
-          );
+          console.error(`${logTag} rent_payment seed tenancyId=${tenancyId}`, {
+            message: rpErr.message,
+          });
       }
 
-      const shouldRunAgent = row.raw.tenancyStatusDb !== "ended";
-      if (!shouldRunAgent) {
+      const shouldRunOnboardingAgent =
+        row.raw.rowKind === "onboarding" && row.raw.tenancyStatusDb !== "ended";
+      if (!shouldRunOnboardingAgent) {
         outcome.emailStatus = "skipped";
         outcome.status = "created";
-        totals.succeeded += 1;
-        options.onProgress?.(outcome, { ...totals });
         return outcome;
       }
 
+      outcome.onboardingAgentInvoked = true;
       const agentResult = await runTenantOnboardingAgent(tenancyId, userId, supabase);
       outcome.emailStatus = agentResult.emailStatus;
       outcome.status = agentResult.mode === "resume" ? "resumed" : "created";
-      totals.succeeded += 1;
-      totals.agentsTriggered += 1;
 
       if (agentResult.emailStatus === "draft") {
-        totals.approvalsCreated += 1;
         await logActivity(
           {
             userId,
@@ -591,14 +901,11 @@ export async function runBatchOnboarding(
         );
       }
 
-      options.onProgress?.(outcome, { ...totals });
       return outcome;
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       outcome.status = "error";
       outcome.error = msg;
-      totals.failed += 1;
-      errorsLog.push({ row_index: row.rowIndex, error: msg });
 
       await logActivity(
         {
@@ -613,13 +920,37 @@ export async function runBatchOnboarding(
         },
         supabase,
       );
-
-      options.onProgress?.(outcome, { ...totals });
       return outcome;
     }
+  }
+
+  const outcomes: BatchRowOutcome[] = [];
+
+  for (const row of prepared.rows) {
+    const o = await processPreparedRow(row);
+    outcomes.push(o);
+    const { totals: progressTotals } = summarizeBatchRunTotalsFromOutcomes(prepared.rows.length, outcomes);
+    options.onProgress?.(o, progressTotals);
+  }
+
+  const summed = summarizeBatchRunTotalsFromOutcomes(prepared.rows.length, outcomes);
+  const totals = summed.totals;
+  const errorsLog = summed.errorsLog;
+
+  const outcomesSnapshot = buildPortfolioImportOutcomesSnapshot(prepared, outcomes);
+  const finalStatus = terminalBatchStatusFromTotals(totals);
+  const completedAt = new Date().toISOString();
+
+  const insertCount = outcomes.filter((o) => o.status === "created" || o.status === "resumed").length;
+
+  console.info(`${logTag} rows processed=${outcomes.length}`, {
+    rowsInsertedEstimated: insertCount,
+    rowsSkipped: totals.skipped,
+    rowsFailed: totals.failed,
+    finalStatus,
+    elapsedMs: Date.now() - startedAt,
   });
 
-  const finalStatus = totals.failed === 0 ? "completed" : totals.succeeded === 0 ? "failed" : "completed";
   const updatePayload: Record<string, unknown> = {
     status: finalStatus,
     rows_succeeded: totals.succeeded,
@@ -627,29 +958,49 @@ export async function runBatchOnboarding(
     agents_triggered: totals.agentsTriggered,
     approvals_created: totals.approvalsCreated,
     errors_json: errorsLog,
-    completed_at: new Date().toISOString(),
+    outcomes_json: outcomesSnapshot,
+    completed_at: completedAt,
   };
 
-  const { error: updateErr } = await supabase
-    .from("batch_imports")
-    .update(updatePayload)
-    .eq("id", batchId)
-    .eq("user_id", userId);
-
-  // Resilience: Fallback if migration hasn't run
-  if (updateErr?.code === "42703") {
-    const fallbackPayload = { ...updatePayload };
-    delete fallbackPayload.agents_triggered;
-    delete fallbackPayload.approvals_created;
-
-    await supabase
-      .from("batch_imports")
-      .update(fallbackPayload)
-      .eq("id", batchId)
-      .eq("user_id", userId);
+  const persisted = await persistBatchImportTermination(supabase, batchId, userId, updatePayload);
+  if (!persisted.ok) {
+    console.error(`${logTag} finalize did not persist`, { message: persisted.message });
+    throw new PortfolioBatchFinalizeError(batchId, persisted.message);
   }
 
-  // Log Import Completed
+  const { data: verify, error: verifyErr } = await supabase
+    .from("batch_imports")
+    .select("id, status, completed_at")
+    .eq("id", batchId)
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  console.info("[batch_import][read_after_finalize]", {
+    batchId,
+    verifyErr: verifyErr?.message,
+    observedStatus: verify?.status,
+    completedAt: verify?.completed_at,
+  });
+
+  if (verifyErr) {
+    throw new PortfolioBatchFinalizeError(
+      batchId,
+      `Post-finalize SELECT failed: ${verifyErr.message}`,
+    );
+  }
+  if (!verify || verify.status === "running") {
+    throw new PortfolioBatchFinalizeError(
+      batchId,
+      "Post-finalize verification still shows status=running — batch_imports UPDATE likely matched 0 rows or RLS blocked the write.",
+    );
+  }
+
+  console.info(`${logTag} execution end`, {
+    finalStatus,
+    observedStatus: verify.status,
+    totals,
+  });
+
   await logActivity(
     {
       userId,
@@ -659,6 +1010,9 @@ export async function runBatchOnboarding(
         message: `Portfolio import finished: ${totals.succeeded} successful, ${totals.failed} failed`,
         succeeded: totals.succeeded,
         failed: totals.failed,
+        batchId,
+        persisted_ok: true,
+        terminal_status: verify.status,
       },
     },
     supabase,

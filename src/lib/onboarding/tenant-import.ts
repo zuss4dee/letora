@@ -272,9 +272,9 @@ Rules:
  * Batch onboarding import (combined CSV: property + tenant + tenancy per row)
  * ────────────────────────────────────────────────────────────────────────── */
 
-/** One CSV row = one onboarding: property + tenant + tenancy fields combined (or property-only vacant). */
+/** One CSV row = one portfolio line: property + optional tenant + tenancy (or property-only vacant). */
 export type BatchOnboardingRow = {
-  /** occupied | onboarding: full tenancy workflow. vacant: portfolio property only (no tenant/tenancy). */
+  /** vacant: property only. occupied: live tenancy — no Letora onboarding agent. onboarding: pre-move-in — agent runs. */
   rowKind: PortfolioImportRowKind;
   propertyAddress: string;
   /** Optional portfolio label merged into saved address ("Name — line1"). */
@@ -398,12 +398,22 @@ function parseRentDueDayCell(raw: string | null | undefined): number | null {
   return n;
 }
 
+/** Rent/account health words belong in `rent_position`, not `tenancy_status` — map to active tenancy. */
+function isTenancyStatusRentAccountOnly(raw: string | null | undefined): boolean {
+  const s = (raw ?? "").trim().toLowerCase();
+  if (!s) return false;
+  return ["arrears", "arrear", "in arrears", "behind", "late", "overdue"].some(
+    (k) => s === k || s.includes(k),
+  );
+}
+
 function parseTenancyStatusDb(raw: string | null | undefined): {
   status: "active" | "ended" | "pending";
   unknown: boolean;
 } {
   const s = (raw ?? "").trim().toLowerCase();
   if (!s) return { status: "active", unknown: false };
+  if (isTenancyStatusRentAccountOnly(raw)) return { status: "active", unknown: false };
   if (["active", "live", "occupied", "current"].includes(s))
     return { status: "active", unknown: false };
   if (["ended", "past", "former", "expired", "terminated"].includes(s))
@@ -581,13 +591,18 @@ export function normalizeBatchOnboardingRow(raw: {
   const { status: tenancyStatusDb, unknown: tenancyStatusUnknown } = parseTenancyStatusDb(
     raw.tenancyStatus,
   );
+  let rentPosition = parseRentPosition(raw.rentPosition);
+  if (isTenancyStatusRentAccountOnly(raw.tenancyStatus)) {
+    rentPosition = "arrears";
+    warnings.push(
+      `Tenancy status "${(raw.tenancyStatus ?? "").trim()}" was read as arrears/account state — tenancy stays active; rent tracker uses arrears.`,
+    );
+  }
   if (tenancyStatusUnknown) {
     warnings.push(
       `Tenancy status "${(raw.tenancyStatus ?? "").trim()}" was not recognised — defaulting to active.`,
     );
   }
-
-  const rentPosition = parseRentPosition(raw.rentPosition);
   const notes = (raw.notes ?? "").replace(/\s+/g, " ").trim() || null;
 
   if (rowKind === "vacant") {
@@ -613,7 +628,7 @@ export function normalizeBatchOnboardingRow(raw: {
     /* occupied / onboarding */
     if (rowKind === "onboarding") {
       warnings.push(
-        "Marked as onboarding: tenancy is imported in the onboarding pipeline (tenant welcome still runs unless tenancy status is ended).",
+        "Marked as onboarding: Letora runs the onboarding agent after import unless the tenancy is ended.",
       );
     }
 
@@ -702,6 +717,40 @@ function pruneRowWarningsAgainstErrors(row: BatchOnboardingRow): BatchOnboarding
     row.rowWarnings = row.rowWarnings.filter((w) => !w.includes("Postcode is missing"));
   }
   return row;
+}
+
+/**
+ * Spreadsheet exports often leave `row_kind` empty on property-only rows (with or without a `row_kind` column).
+ * When the cell is empty, classify as vacant only when there are no tenancy/tenant signals; otherwise defer to
+ * `parseRowKindCell` for legacy rows that omit `row_kind` but supply tenant_email / rent / start_date.
+ *
+ * IMPORTANT: Do not shortcut when `row_kind` is absent — the old `return rowKindCell` bypass meant every
+ * legacy header-only/no-tenant-data line became "occupied".
+ */
+function inferRowKindCellWhenColumnPresent(
+  _hasRowKindColumn: boolean,
+  rowKindCell: string,
+  tenantNameCell: string,
+  tenantEmailCell: string,
+  rentCellRaw: string | number,
+  startRawStr: string,
+): string {
+  if ((rowKindCell ?? "").trim().length > 0) return rowKindCell;
+  const nameOk = (tenantNameCell ?? "").replace(/\s+/g, " ").trim().length >= 2;
+  const emailOk = (tenantEmailCell ?? "").trim().length > 0;
+  let rentOk = false;
+  if (typeof rentCellRaw === "number") {
+    rentOk = rentCellRaw > 0;
+  } else {
+    const rs = String(rentCellRaw ?? "").trim();
+    if (rs.length > 0) {
+      const n = cellToMoneyAllowZero(rs);
+      rentOk = n != null && n > 0;
+    }
+  }
+  const startOk = (startRawStr ?? "").trim().length > 0;
+  if (!nameOk && !emailOk && !rentOk && !startOk) return "vacant";
+  return rowKindCell;
 }
 
 export type ParsedBatchCsvLevel = "ok" | "no_data" | "header_error";
@@ -817,14 +866,23 @@ export function parseBatchOnboardingCsvWithMeta(text: string): ParseBatchOnboard
       startRawStr = iStart >= 0 ? (cells[iStart] ?? "") : "";
     }
 
-    const rk = parseRowKindCell(rowKindCell);
+    const rowKindForRow = inferRowKindCellWhenColumnPresent(
+      hasRowKindColumn,
+      rowKindCell,
+      tenantNameCell,
+      tenantEmailCell,
+      rentCellRaw,
+      startRawStr,
+    );
+
+    const rk = parseRowKindCell(rowKindForRow);
     if (
       hasRowKindColumn &&
       (rk === "occupied" || rk === "onboarding") &&
       (iName < 0 || iEmail < 0 || iRent < 0 || iStart < 0)
     ) {
       const row = normalizeBatchOnboardingRow({
-        rowKind: rowKindCell,
+        rowKind: rowKindForRow,
         propertyAddress: propertyAddressCell,
       });
       row.rowErrors.unshift(
@@ -835,7 +893,7 @@ export function parseBatchOnboardingCsvWithMeta(text: string): ParseBatchOnboard
     }
 
     const row = normalizeBatchOnboardingRow({
-      rowKind: rowKindCell,
+      rowKind: rowKindForRow,
       propertyAddress: propertyAddressCell,
       propertyDisplayName: iPropName >= 0 ? (cells[iPropName] ?? null) : null,
       city: iCity >= 0 ? (cells[iCity] ?? null) : null,

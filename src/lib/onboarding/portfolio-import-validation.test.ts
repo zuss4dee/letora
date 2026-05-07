@@ -81,6 +81,26 @@ describe("portfolio import validation matrix", () => {
     expect(r.tenantEmail).toBe("");
   });
 
+  it("infers vacant when row_kind column exists but the cell is empty and occupant columns are empty", () => {
+    const csv = [
+      "row_kind,property_address,city,postcode,monthly_rent",
+      ",99 Empty Rd,Leeds,,0",
+    ].join("\n");
+    const [r] = parseBatchOnboardingCsv(csv)!;
+    expect(r.rowKind).toBe("vacant");
+    expect(r.rowErrors).toEqual([]);
+  });
+
+  it("defaults blank row_kind to occupied when tenant fields are present (legacy-compatible)", () => {
+    const csv = [
+      "row_kind,property_address,city,postcode,tenant_name,tenant_email,monthly_rent,start_date",
+      ",12 Oak St,London,SW1A 1AA,Jane Doe,jane@example.com,1500,2026-04-01",
+    ].join("\n");
+    const [r] = parseBatchOnboardingCsv(csv)!;
+    expect(r.rowKind).toBe("occupied");
+    expect(r.rowErrors).toEqual([]);
+  });
+
   it("marks onboarding tenancy with onboarding row kind", () => {
     const csv = [
       "row_kind,property_address,tenant_name,tenant_email,monthly_rent,start_date",
@@ -89,7 +109,7 @@ describe("portfolio import validation matrix", () => {
     const [r] = parseBatchOnboardingCsv(csv)!;
     expect(r.rowKind).toBe("onboarding");
     expect(r.rowErrors).toEqual([]);
-    expect(r.rowWarnings.some((w) => w.toLowerCase().includes("onboarding"))).toBe(true);
+    expect(r.rowWarnings.some((w) => w.toLowerCase().includes("onboarding agent"))).toBe(true);
   });
 
   it("captures arrears-related rent positioning on occupied rows", () => {
@@ -103,6 +123,21 @@ describe("portfolio import validation matrix", () => {
     });
     expect(r.rowErrors).toEqual([]);
     expect(r.rentPosition).toBe("arrears");
+  });
+
+  it("treats arrears in tenancy_status as active tenancy plus arrears rent state", () => {
+    const r = normalizeBatchOnboardingRow({
+      propertyAddress: "1 Arrears Terrace",
+      tenantFullName: "Sam Tenant",
+      tenantEmail: "x@example.com",
+      monthlyRent: 1000,
+      startDate: "2026-01-15",
+      tenancyStatus: "arrears",
+    });
+    expect(r.rowErrors).toEqual([]);
+    expect(r.tenancyStatusDb).toBe("active");
+    expect(r.rentPosition).toBe("arrears");
+    expect(r.rowWarnings.some((w) => w.includes("rent tracker"))).toBe(true);
   });
 
   it("allows missing optional fields when required columns satisfy legacy mode", () => {
