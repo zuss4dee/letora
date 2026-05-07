@@ -481,34 +481,31 @@ export type AgentWorkStats = {
   maintenanceDrafts: number;
   pendingApprovals: number;
   activeAgents: number;
-  awaitingApprovalAgentRuns: number;
 };
 
 export async function loadCommandCenterAgentSummary(userId: string): Promise<AgentWorkStats> {
   const supabase = await createClient();
 
-  const [pendingTotalRes, rentChaseRes, maintDispatchRes, agentCount, pendingRunsCount] =
-    await Promise.all([
-      supabase
-        .from("agent_approvals")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("status", "pending"),
-      supabase
-        .from("agent_approvals")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("status", "pending")
-        .eq("action_type", "send_rent_chase_email"),
-      supabase
-        .from("agent_approvals")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", userId)
-        .eq("status", "pending")
-        .eq("action_type", "approve_maintenance_dispatch"),
-      activeAgentCount(userId),
-      awaitingApprovalAgentRunsCount(userId),
-    ]);
+  const [pendingTotalRes, rentChaseRes, maintDispatchRes, agentCount] = await Promise.all([
+    supabase
+      .from("agent_approvals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "pending"),
+    supabase
+      .from("agent_approvals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .eq("action_type", "send_rent_chase_email"),
+    supabase
+      .from("agent_approvals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .eq("action_type", "approve_maintenance_dispatch"),
+    activeAgentCount(userId),
+  ]);
 
   const approvalQueryError =
     pendingTotalRes.error ?? rentChaseRes.error ?? maintDispatchRes.error;
@@ -519,7 +516,6 @@ export async function loadCommandCenterAgentSummary(userId: string): Promise<Age
       maintenanceDrafts: 0,
       pendingApprovals: 0,
       activeAgents: agentCount,
-      awaitingApprovalAgentRuns: pendingRunsCount,
     };
   }
 
@@ -528,7 +524,6 @@ export async function loadCommandCenterAgentSummary(userId: string): Promise<Age
     maintenanceDrafts: maintDispatchRes.count ?? 0,
     pendingApprovals: pendingTotalRes.count ?? 0,
     activeAgents: agentCount,
-    awaitingApprovalAgentRuns: pendingRunsCount,
   };
 }
 
