@@ -16,6 +16,8 @@ function rentTrackerHref(mode: RentTrackerDisplayMode) {
 }
 
 const MAINTENANCE_HREF = "/dashboard/maintenance";
+const AGENTS_HREF = "/dashboard/agents";
+const APPROVALS_AGENT_RUNS_HREF = "/dashboard/approvals";
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP", maximumFractionDigits: 2 }).format(
@@ -63,6 +65,47 @@ function KpiMoneyTile({ label, tooltip, value, valueClassName, href, tileAriaLab
 type MaintTileProps = {
   kpis: CommandCenterKpis;
 };
+
+type CountTileProps = {
+  label: string;
+  tooltip: string;
+  value: number;
+  href: string;
+  tileAriaLabel: string;
+  valueClassName?: string;
+};
+
+function KpiCountTile({ label, tooltip, value, href, tileAriaLabel, valueClassName }: CountTileProps) {
+  return (
+    <div className="relative flex min-h-[88px] flex-col bg-[#161616] p-4 transition-colors hover:bg-[#1c1c1c] focus-within:bg-[#1c1c1c]">
+      <Link
+        href={href}
+        className="absolute inset-0 z-0 outline-none ring-inset focus-visible:ring-1 focus-visible:ring-zinc-500"
+        aria-label={tileAriaLabel}
+      />
+      <div className="relative z-10 mb-2 flex items-start gap-1.5 pointer-events-none">
+        <span className="flex-1 text-[9px] font-bold uppercase leading-snug tracking-wider text-zinc-500">{label}</span>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              type="button"
+              className="pointer-events-auto mt-0.5 shrink-0 rounded border border-transparent p-0.5 text-zinc-600 transition-colors hover:border-zinc-700 hover:text-zinc-400"
+              aria-label={`What ${label} means`}
+            >
+              <CircleHelp className="size-3.5" aria-hidden />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-[260px] text-left text-[11px] leading-snug">
+            {tooltip}
+          </TooltipContent>
+        </Tooltip>
+      </div>
+      <div className="relative z-10 flex flex-1 flex-col pointer-events-none">
+        <span className={cn("text-xl font-bold tabular-nums", valueClassName ?? "text-[#afefdd]")}>{value}</span>
+      </div>
+    </div>
+  );
+}
 
 function KpiMaintenanceTile({ kpis }: MaintTileProps) {
   const label = "Open maintenance";
@@ -194,6 +237,21 @@ export function CommandCenterKpiGridClient({
             tileAriaLabel="Open rent tracker: collected last month"
           />
           <KpiMaintenanceTile kpis={kpis} />
+          <KpiCountTile
+            label="Agents running"
+            tooltip="runs in queued or running — automation that is executing now. Rows waiting for your approval are counted in Awaiting approval."
+            value={kpis.activeAgents}
+            href={AGENTS_HREF}
+            tileAriaLabel="Open agent runs: queued or running"
+          />
+          <KpiCountTile
+            label="Awaiting approval"
+            tooltip="agent runs in pending — they need a decision before the next step (for example, send rent chase). This is separate from queued/running execution."
+            value={kpis.awaitingApprovalAgentRuns}
+            href={APPROVALS_AGENT_RUNS_HREF}
+            tileAriaLabel="Open approvals for pending agent runs"
+            valueClassName={kpis.awaitingApprovalAgentRuns > 0 ? "text-[#ffb4ab]" : "text-zinc-300"}
+          />
         </div>
       </div>
     </TooltipProvider>

@@ -17,6 +17,15 @@ function debugRentChaser(label: string, detail: Record<string, unknown>) {
   console.info(`[RentChaser][debug] ${label}`, detail);
 }
 
+/** Matches command-center / DB unique index on lower(trim(payload->>'tenantEmail')). */
+function normalizeRentChaserTenantEmail(raw: string) {
+  return raw.trim().toLowerCase();
+}
+
+function isPgUniqueViolation(err: { code?: string } | null | undefined) {
+  return err?.code === "23505";
+}
+
 export interface AgentResult {
   tenantName: string;
   tenantEmail: string;
@@ -290,11 +299,53 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
   for (const entry of filtered) {
     const { row, property, tenant } = entry;
     const tenantName = tenant?.full_name ?? "Unknown tenant";
-    const tenantEmail = tenant?.email?.trim() || landlordFallbackEmail;
+    const tenantEmailRaw = tenant?.email?.trim() || landlordFallbackEmail;
+    const tenantEmail = normalizeRentChaserTenantEmail(tenantEmailRaw);
+    const instalmentKey = row.id;
     const propertyAddress =
       normalizePropertyAddressLabel(property?.address ?? "") || "Unknown property";
     const amountOwed = Math.max(0, toNumber(row.amount));
     const daysOverdue = getDaysOverdue(row.due_date);
+
+    const [{ data: dupByInst }, { data: dupByLegacy }] = await Promise.all([
+      supabase
+        .from("agent_runs")
+        .select("id, payload")
+        .eq("user_id", resolvedUserId)
+        .eq("agent_type", "rent_chaser")
+        .eq("status", "pending")
+        .contains("payload", { instalmentId: instalmentKey }),
+      supabase
+        .from("agent_runs")
+        .select("id, payload")
+        .eq("user_id", resolvedUserId)
+        .eq("agent_type", "rent_chaser")
+        .eq("status", "pending")
+        .contains("payload", { rentPaymentId: instalmentKey }),
+    ]);
+
+    const dupRows = [...(dupByInst ?? []), ...(dupByLegacy ?? [])];
+    const dupSeen = new Set<string>();
+    let duplicatePending = false;
+    for (const r of dupRows) {
+      if (dupSeen.has(r.id)) continue;
+      dupSeen.add(r.id);
+      const p = r.payload as { tenantEmail?: string; instalmentId?: string; rentPaymentId?: string } | null;
+      const instalmentMatches =
+        (p?.instalmentId != null && String(p.instalmentId) === instalmentKey) ||
+        (p?.rentPaymentId != null && String(p.rentPaymentId) === instalmentKey);
+      if (!instalmentMatches) continue;
+      if (normalizeRentChaserTenantEmail(p?.tenantEmail ?? "") === tenantEmail) {
+        duplicatePending = true;
+        break;
+      }
+    }
+    if (duplicatePending) {
+      debugRentChaser("skip_duplicate_pending", {
+        instalmentId: instalmentKey,
+      });
+      continue;
+    }
 
     /** One LLM call per row — OTA billing is consolidated into a single `rent_chase_row` audit step (not 3). */
     const draft = await generateEmailDraft(
@@ -308,6 +359,7 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
     );
 
     const payload = {
+      instalmentId: instalmentKey,
       rentPaymentId: row.id,
       tenantName,
       tenantEmail,
@@ -330,6 +382,10 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
       .single();
 
     if (insertError || !inserted) {
+      if (isPgUniqueViolation(insertError)) {
+        debugRentChaser("insert_unique_skip", { rentPaymentId: row.id });
+        continue;
+      }
       debugRentChaser("ota_step", {
         cumulativeSteps: stepCount,
         toolLabel: "agent_runs_insert",
@@ -340,14 +396,14 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
       continue;
     }
 
-    let emailSent = false;
+    const emailSent = false;
     let approvalId: string | null = null;
     let emailDraftId: string | null = null;
 
     let rowOutcome: "awaiting_human_approval" | "completed_no_email_recipient" | "approval_create_failed" =
       "completed_no_email_recipient";
 
-    if (tenantEmail.trim()) {
+    if (tenantEmail.length > 0) {
       const dueDateLabel = row.due_date ?? "—";
       const evidence: SendRentChaseEmailEvidence = {
         tenantName,
@@ -456,8 +512,8 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
         .eq("user_id", resolvedUserId);
     }
 
-    const awaitingApproval = Boolean(tenantEmail.trim() && approvalId);
-    await supabase
+    const awaitingApproval = Boolean(tenantEmail.length > 0 && approvalId);
+    const { error: finalizeRunError } = await supabase
       .from("agent_runs")
       .update({
         status: awaitingApproval ? "pending" : "completed",
@@ -465,12 +521,32 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
           ...payload,
           source: sourceTag,
           approvalId,
-          approvalRequiredForRentChase: tenantEmail.trim() ? true : false,
+          approvalRequiredForRentChase: tenantEmail.length > 0,
           emailSent,
         },
       })
       .eq("id", inserted.id)
       .eq("user_id", resolvedUserId);
+
+    if (isPgUniqueViolation(finalizeRunError) && awaitingApproval) {
+      if (approvalId) {
+        await supabase.from("agent_approvals").delete().eq("id", approvalId).eq("user_id", resolvedUserId);
+      }
+      await supabase.from("agent_runs").delete().eq("id", inserted.id).eq("user_id", resolvedUserId);
+      debugRentChaser("pending_unique_conflict_cleanup", { rentPaymentId: row.id });
+      continue;
+    }
+
+    if (finalizeRunError) {
+      debugRentChaser("ota_step", {
+        cumulativeSteps: stepCount,
+        toolLabel: "agent_runs_finalize",
+        success: false,
+        rentPaymentId: row.id,
+        reason: finalizeRunError.message,
+      });
+      continue;
+    }
 
     await recordAgentRunStep(supabase, {
       userId: resolvedUserId,
@@ -485,7 +561,7 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
         agentRunId: inserted.id,
         approvalId,
         emailDraftId,
-        hadRecipientEmail: tenantEmail.trim().length > 0,
+        hadRecipientEmail: tenantEmail.length > 0,
         llmDraftOk: true,
       },
     });

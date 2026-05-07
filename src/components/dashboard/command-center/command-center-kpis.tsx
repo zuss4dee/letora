@@ -6,7 +6,7 @@ import type { CommandCenterKpisLoadResult } from "@/lib/dashboard/command-center
 export function CommandCenterKpiGridSkeleton() {
   return (
     <div className="mb-8 grid grid-cols-2 gap-px border border-[#333333] bg-[#333333] md:grid-cols-4">
-      {Array.from({ length: 7 }).map((_, i) => (
+      {Array.from({ length: 9 }).map((_, i) => (
         <div key={i} className="flex min-h-[88px] flex-col bg-[#161616] p-4 last:col-span-full md:last:col-span-2">
           <div className="mb-2 h-2 w-24 animate-pulse rounded bg-zinc-700" />
           <div className="h-8 w-16 animate-pulse rounded bg-zinc-700" />

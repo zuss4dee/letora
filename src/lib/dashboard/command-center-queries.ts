@@ -19,8 +19,10 @@ export type CommandCenterKpis = {
   maintenanceOpen: number;
   maintenanceHighPriority: number;
   totalProperties: number;
-  /** agent_runs with status queued | running | pending | draft (in-flight or awaiting approval). */
+  /** agent_runs with status queued | running (in-flight execution only). */
   activeAgents: number;
+  /** agent_runs with status pending (awaiting human approval / settlement). */
+  awaitingApprovalAgentRuns: number;
   // Financials
   /** Sum of unpaid instalments with due_date in the current calendar month. */
   rentDueThisMonth: number;
@@ -50,6 +52,7 @@ const KPI_FALLBACK: CommandCenterKpis = {
   maintenanceHighPriority: 0,
   totalProperties: 0,
   activeAgents: 0,
+  awaitingApprovalAgentRuns: 0,
   rentDueThisMonth: 0,
   rentScheduledThisMonth: 0,
   rentCollectedThisMonth: 0,
@@ -99,8 +102,8 @@ async function highPriorityMaintenanceCount(userId: string): Promise<number> {
   return count ?? 0;
 }
 
-/** Count rows where agent work has not settled to completed/failed/skipped/error/open yet. Matches rent_chaser/onboarding lifecycle (often `pending`). */
-const ACTIVE_AGENT_RUN_STATUSES = ["running", "queued", "pending", "draft"] as const;
+/** In-flight execution only — not draft/pending approval buckets. */
+const ACTIVE_AGENT_RUN_STATUSES = ["running", "queued"] as const;
 
 async function activeAgentCount(userId: string): Promise<number> {
   const supabase = await createClient();
@@ -112,6 +115,21 @@ async function activeAgentCount(userId: string): Promise<number> {
 
   if (error) {
     console.warn("[command-center] active agent count", error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
+async function awaitingApprovalAgentRunsCount(userId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("agent_runs")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("status", "pending");
+
+  if (error) {
+    console.warn("[command-center] pending agent_runs count", error.message);
     return 0;
   }
   return count ?? 0;
@@ -195,12 +213,14 @@ async function loadCommandCenterKpisUncached(userId: string): Promise<CommandCen
           approvalsCount,
           stats,
           agentCount,
+          pendingRunsCount,
           maintHigh,
           financials,
         ] = await Promise.all([
           timeKpiSubcall("getPendingApprovalsCount", () => getPendingApprovalsCount(userId)),
           timeKpiSubcall("getDashboardStats", () => getDashboardStats(userId)),
           timeKpiSubcall("activeAgentCount", () => activeAgentCount(userId)),
+          timeKpiSubcall("awaitingApprovalAgentRunsCount", () => awaitingApprovalAgentRunsCount(userId)),
           timeKpiSubcall("highPriorityMaintenanceCount", () => highPriorityMaintenanceCount(userId)),
           timeKpiSubcall("loadCommandCenterFinancials", () => loadCommandCenterFinancials(userId)),
         ]);
@@ -215,6 +235,7 @@ async function loadCommandCenterKpisUncached(userId: string): Promise<CommandCen
             maintenanceHighPriority: maintHigh,
             totalProperties: stats.totalProperties,
             activeAgents: agentCount,
+            awaitingApprovalAgentRuns: pendingRunsCount,
             ...financials,
           },
         };
@@ -460,31 +481,34 @@ export type AgentWorkStats = {
   maintenanceDrafts: number;
   pendingApprovals: number;
   activeAgents: number;
+  awaitingApprovalAgentRuns: number;
 };
 
 export async function loadCommandCenterAgentSummary(userId: string): Promise<AgentWorkStats> {
   const supabase = await createClient();
 
-  const [pendingTotalRes, rentChaseRes, maintDispatchRes, agentCount] = await Promise.all([
-    supabase
-      .from("agent_approvals")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("status", "pending"),
-    supabase
-      .from("agent_approvals")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("status", "pending")
-      .eq("action_type", "send_rent_chase_email"),
-    supabase
-      .from("agent_approvals")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("status", "pending")
-      .eq("action_type", "approve_maintenance_dispatch"),
-    activeAgentCount(userId),
-  ]);
+  const [pendingTotalRes, rentChaseRes, maintDispatchRes, agentCount, pendingRunsCount] =
+    await Promise.all([
+      supabase
+        .from("agent_approvals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("status", "pending"),
+      supabase
+        .from("agent_approvals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("status", "pending")
+        .eq("action_type", "send_rent_chase_email"),
+      supabase
+        .from("agent_approvals")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", userId)
+        .eq("status", "pending")
+        .eq("action_type", "approve_maintenance_dispatch"),
+      activeAgentCount(userId),
+      awaitingApprovalAgentRunsCount(userId),
+    ]);
 
   const approvalQueryError =
     pendingTotalRes.error ?? rentChaseRes.error ?? maintDispatchRes.error;
@@ -495,6 +519,7 @@ export async function loadCommandCenterAgentSummary(userId: string): Promise<Age
       maintenanceDrafts: 0,
       pendingApprovals: 0,
       activeAgents: agentCount,
+      awaitingApprovalAgentRuns: pendingRunsCount,
     };
   }
 
@@ -503,6 +528,7 @@ export async function loadCommandCenterAgentSummary(userId: string): Promise<Age
     maintenanceDrafts: maintDispatchRes.count ?? 0,
     pendingApprovals: pendingTotalRes.count ?? 0,
     activeAgents: agentCount,
+    awaitingApprovalAgentRuns: pendingRunsCount,
   };
 }
 
