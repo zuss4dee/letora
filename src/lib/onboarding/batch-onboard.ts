@@ -6,7 +6,7 @@ import {
   computeInitialRentDueDate,
 } from "@/lib/onboarding/portfolio-import-schema";
 import type { BatchOnboardingRow } from "@/lib/onboarding/tenant-import";
-import { buildStoredAddressForImport } from "@/lib/onboarding/tenant-import";
+import { buildStoredAddressForImport, normalizeBatchOnboardingRow } from "@/lib/onboarding/tenant-import";
 import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { logActivity } from "@/lib/actions/activity-log";
 
@@ -367,6 +367,88 @@ function buildPortfolioImportOutcomesSnapshot(
   });
 }
 
+/** Frozen row payloads persisted on `batch_imports.source_rows_json` (same ordering as executor rowIndex). */
+function portfolioImportPersistedSourceShape(raw: BatchOnboardingRow): Record<string, unknown> {
+  return {
+    rowKind: raw.rowKind,
+    propertyAddress: raw.propertyAddress,
+    propertyDisplayName: raw.propertyDisplayName,
+    city: raw.city,
+    postcode: raw.postcode,
+    propertyType: raw.propertyType,
+    bedrooms: raw.bedrooms,
+    bathrooms: raw.bathrooms,
+    tenantFullName: raw.tenantFullName,
+    tenantEmail: raw.tenantEmail,
+    tenantPhone: raw.tenantPhone,
+    monthlyRent: raw.monthlyRent,
+    rentDueDay: raw.rentDueDay,
+    startDate: raw.startDate,
+    moveInDate: raw.moveInDate,
+    endDate: raw.endDate,
+    depositAmount: raw.depositAmount,
+    tenancyStatusDb: raw.tenancyStatusDb,
+    rentPosition: raw.rentPosition,
+    notes: raw.notes,
+    rowErrors: [...raw.rowErrors],
+    rowWarnings: [...raw.rowWarnings],
+  };
+}
+
+/** JSON-safe array for `batch_imports.source_rows_json`. */
+export function serializedPortfolioBatchSourceRows(prepared: PreparedBatch): Record<string, unknown>[] {
+  return prepared.rows.map((pr) => portfolioImportPersistedSourceShape(pr.raw));
+}
+
+/**
+ * Recover onboarding rows persisted on the batch row.
+ * Returns null when malformed or older batches missing this payload.
+ */
+export function coercePortfolioImportSourceRows(raw: unknown): BatchOnboardingRow[] | null {
+  if (!Array.isArray(raw) || raw.length === 0) return null;
+  const out: BatchOnboardingRow[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== "object") return null;
+    const r = entry as Record<string, unknown>;
+    const tenancyStatusRaw =
+      typeof r.tenancyStatusDb === "string"
+        ? r.tenancyStatusDb
+        : typeof r.tenancyStatus === "string"
+          ? r.tenancyStatus
+          : null;
+    out.push(
+      normalizeBatchOnboardingRow({
+        rowKind: typeof r.rowKind === "string" ? r.rowKind : null,
+        propertyAddress: typeof r.propertyAddress === "string" ? r.propertyAddress : null,
+        propertyDisplayName: typeof r.propertyDisplayName === "string" ? r.propertyDisplayName : null,
+        city: typeof r.city === "string" ? r.city : null,
+        postcode: typeof r.postcode === "string" ? r.postcode : null,
+        propertyType: typeof r.propertyType === "string" ? r.propertyType : null,
+        bedrooms: typeof r.bedrooms === "number" || typeof r.bedrooms === "string" ? (r.bedrooms as string | number) : null,
+        bathrooms: typeof r.bathrooms === "number" || typeof r.bathrooms === "string" ? (r.bathrooms as string | number) : null,
+        tenantFullName: typeof r.tenantFullName === "string" ? r.tenantFullName : null,
+        tenantEmail: typeof r.tenantEmail === "string" ? r.tenantEmail : null,
+        tenantPhone: typeof r.tenantPhone === "string" ? r.tenantPhone : null,
+        monthlyRent:
+          typeof r.monthlyRent === "number" || typeof r.monthlyRent === "string" ? (r.monthlyRent as string | number) : null,
+        rentDueDay:
+          typeof r.rentDueDay === "number" || typeof r.rentDueDay === "string" ? (r.rentDueDay as string | number) : null,
+        startDate: typeof r.startDate === "string" ? r.startDate : null,
+        moveInDate: typeof r.moveInDate === "string" ? r.moveInDate : null,
+        endDate: r.endDate === null || typeof r.endDate === "string" ? (r.endDate as string | null) : null,
+        depositAmount:
+          typeof r.depositAmount === "number" || typeof r.depositAmount === "string"
+            ? (r.depositAmount as string | number)
+            : null,
+        tenancyStatus: tenancyStatusRaw,
+        rentPosition: typeof r.rentPosition === "string" ? r.rentPosition : null,
+        notes: typeof r.notes === "string" ? r.notes : null,
+      }),
+    );
+  }
+  return out;
+}
+
 export type BatchRunOptions = {
   /** Called after each row finishes — useful for streaming progress to a UI. */
   onProgress?: (outcome: BatchRowOutcome, totals: BatchRunResult["totals"]) => void;
@@ -424,6 +506,7 @@ function stripUnsupportedBatchImportPayloadColumns(patch: Record<string, unknown
   delete p.approvals_created;
   delete p.outcomes_json;
   delete p.finalize_error;
+  delete p.source_rows_json;
   return p;
 }
 
@@ -506,7 +589,7 @@ async function persistBatchImportTermination(
       phase,
       payload,
     );
-    if (attempt.ok) {
+    if (attempt.ok === true) {
       return { ok: true };
     }
     failureNotes.push(
@@ -516,14 +599,14 @@ async function persistBatchImportTermination(
   };
 
   let r = await bump({ ...updatePayload }, "payload_full");
-  if (r.ok) return { ok: true };
+  if (r.ok === true) return { ok: true };
 
-  if (r.reason === "supabase_error" && r.code === "42703") {
+  if (r.ok === false && r.reason === "supabase_error" && r.code === "42703") {
     r = await bump(stripUnsupportedBatchImportPayloadColumns({ ...updatePayload }), "strip_42703_columns");
-    if (r.ok) return { ok: true };
+    if (r.ok === true) return { ok: true };
   }
 
-  if (!r.ok) {
+  if (r.ok === false) {
     const minimal: Record<string, unknown> = {
       status: updatePayload.status,
       completed_at: updatePayload.completed_at,
@@ -534,15 +617,15 @@ async function persistBatchImportTermination(
     };
 
     let rMin = await bump(minimal, "minimal_counters_plus_finalize_error");
-    if (!rMin.ok && rMin.reason === "supabase_error" && rMin.code === "42703") {
+    if (rMin.ok === false && rMin.reason === "supabase_error" && rMin.code === "42703") {
       delete minimal.finalize_error;
       rMin = await bump(minimal, "minimal_counters_only");
     }
-    if (rMin.ok) return { ok: true };
+    if (rMin.ok === true) return { ok: true };
     r = rMin;
   }
 
-  if (!r.ok) {
+  if (r.ok === false) {
     const doom: Record<string, unknown> = {
       status: "failed",
       completed_at: new Date().toISOString(),
@@ -558,16 +641,12 @@ async function persistBatchImportTermination(
     };
 
     let rDoom = await bump(doom, "doom_failed_with_finalize_error");
-    if (!rDoom.ok && rDoom.reason === "supabase_error" && rDoom.code === "42703") {
+    if (rDoom.ok === false && rDoom.reason === "supabase_error" && rDoom.code === "42703") {
       delete doom.finalize_error;
       rDoom = await bump(doom, "doom_failed_without_finalize_error_col");
     }
-    if (rDoom.ok) return { ok: true };
+    if (rDoom.ok === true) return { ok: true };
     r = rDoom;
-  }
-
-  if (r.ok) {
-    return { ok: true };
   }
 
   const detail =
@@ -959,11 +1038,12 @@ export async function runBatchOnboarding(
     approvals_created: totals.approvalsCreated,
     errors_json: errorsLog,
     outcomes_json: outcomesSnapshot,
+    source_rows_json: serializedPortfolioBatchSourceRows(prepared),
     completed_at: completedAt,
   };
 
   const persisted = await persistBatchImportTermination(supabase, batchId, userId, updatePayload);
-  if (!persisted.ok) {
+  if (persisted.ok === false) {
     console.error(`${logTag} finalize did not persist`, { message: persisted.message });
     throw new PortfolioBatchFinalizeError(batchId, persisted.message);
   }

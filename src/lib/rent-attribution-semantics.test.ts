@@ -3,7 +3,7 @@
  *
  * | Concern | Command Center (dashboard KPI strip) | Rent Tracker (registry summary) |
  * |---------|--------------------------------------|----------------------------------|
- * | Scheduled in current month (`due_date` ∈ month) | `computeRentFinancialMonthKpis` → `rentScheduledThisMonth` | Same rows: falls into `scheduledDueThisMonth`; exposed as `expectedThisMonth` **only when** active rent roll sum is 0 — otherwise `expectedThisMonth` is **rent roll**, not instalment sum. |
+ * | Scheduled in current month (`due_date` ∈ month), after **active rent roll** overlay when roll &gt; 0 | `computeRentFinancialMonthKpis` → `rentScheduledThisMonth`; pass `activeMonthlyRentRoll` from `getMonthlyRentFromActiveTenancies` | Matches `computeRentTrackerStats`: if active rent roll sum &gt; 0, **expected** shows roll; else instalment sum in month. |
  * | Unpaid in current month (`due_date` ∈ month, status not paid) | `rentDueThisMonth` | `outstandingThisMonth` — **same arithmetic** when both use `resolvePaymentAmount` / same status rules. |
  * | Cash this month | `rentCollectedThisMonth`: paid + `paid_date` in month OR paid + no `paid_date` + due in month | `receivedThisMonth` — **matching branches** in `computeRentTrackerStats`. |
  * | Cash last month | `rentCollectedLastMonth` (same legacy rule on **last** window) | *(not surfaced on tracker summary — Command Center only).* |
@@ -51,25 +51,24 @@ function toFinanceInputs(payments: RentPaymentListRow[]): RentFinanceKpiRowInput
   }));
 }
 
-/** With no active rent-roll fallback, instalment-derived “expected” should match CC scheduled-this-month. */
+/** Stripe / Command Center overlays: pass active rent roll so “scheduled” matches Rent Tracker Expected (Mo). */
 function expectOverlappingStripeMatches(
   payments: RentPaymentListRow[],
   anchor: string,
   tenancies: RentTenancyRentRollRow[],
 ) {
-  const cc = computeRentFinancialMonthKpis(toFinanceInputs(payments), anchor);
-  const tr = computeRentTrackerStats(payments, anchor, tenancies);
-  expect(tr.receivedThisMonth).toBe(cc.rentCollectedThisMonth);
-  expect(tr.outstandingThisMonth).toBe(cc.rentDueThisMonth);
-
   const roll = tenancies.reduce((s, t) => {
     if ((t.status ?? "").toLowerCase() !== "active") return s;
     const r = t.monthlyRent;
     return s + (r != null && Number.isFinite(r) ? r : 0);
   }, 0);
-  if (roll === 0) {
-    expect(tr.expectedThisMonth).toBe(cc.rentScheduledThisMonth);
-  }
+  const cc = computeRentFinancialMonthKpis(toFinanceInputs(payments), anchor, {
+    activeMonthlyRentRoll: roll > 0 ? roll : undefined,
+  });
+  const tr = computeRentTrackerStats(payments, anchor, tenancies);
+  expect(tr.receivedThisMonth).toBe(cc.rentCollectedThisMonth);
+  expect(tr.outstandingThisMonth).toBe(cc.rentDueThisMonth);
+  expect(tr.expectedThisMonth).toBe(cc.rentScheduledThisMonth);
 }
 
 describe("rent attribution semantics (Command Center monthly strip vs Rent Tracker)", () => {
@@ -213,13 +212,15 @@ describe("rent attribution semantics (Command Center monthly strip vs Rent Track
     expect(computeRentTrackerStats(paymentsMonthEndDue, "2026-06-01", NO_RENT_ROLL).overdueCount).toBe(1);
   });
 
-  it("roll vs instalments: when active rent-roll is non-zero, expectedThisMonth diverges from rentScheduledThisMonth (documented, not a bug)", () => {
+  it("rent roll overlays scheduled-this-month totals (parity with Rent Tracker Expected Mo)", () => {
     const payments = [
       pay({ id: "r1", due_date: "2026-05-10", status: "pending", amount: 950 }),
     ];
-    const cc = computeRentFinancialMonthKpis(toFinanceInputs(payments), "2026-05-12");
+    const cc = computeRentFinancialMonthKpis(toFinanceInputs(payments), "2026-05-12", {
+      activeMonthlyRentRoll: 1200,
+    });
     const tr = computeRentTrackerStats(payments, "2026-05-12", RENT_ROLL_1200);
-    expect(cc.rentScheduledThisMonth).toBe(950);
+    expect(cc.rentScheduledThisMonth).toBe(1200);
     expect(tr.expectedThisMonth).toBe(1200);
     expect(tr.receivedThisMonth).toBe(cc.rentCollectedThisMonth);
     expect(tr.outstandingThisMonth).toBe(cc.rentDueThisMonth);

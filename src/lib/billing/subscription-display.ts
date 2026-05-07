@@ -1,18 +1,46 @@
-import { isPayingPlatformSubscription } from "@/lib/plan-limits";
+import { isPayingPlatformSubscription, planDisplayToKey } from "@/lib/plan-limits";
+import { PLANS } from "@/lib/stripe-plans";
 
 export type SubscriptionFields = {
   subscriptionPlan: string | null | undefined;
   subscriptionStatus: string | null | undefined;
   subscriptionPeriodEnd: string | null | undefined;
   subscriptionTrialEnd: string | null | undefined;
+  /** When Polar has linked IDs on this workspace (modern Monthly/Yearly checkout). */
+  polarBillingLinked?: boolean;
 };
 
+/**
+ * Canonical plan label aligned with entitlement + naming model:
+ * - Free workspace → never "Starter".
+ * - Paying Polar with stale SKU text → "Letora subscription" until webhook rewrites Monthly/Yearly.
+ * - Paying Stripe-legacy subscribers → preserve catalog names until migrated.
+ */
 export function getPlanDisplayName(fields: SubscriptionFields): string {
   const paying = isPayingPlatformSubscription(fields.subscriptionStatus);
-  const name = fields.subscriptionPlan?.trim();
-  if (paying && name) return name;
-  if (paying && !name) return "Paid plan";
-  return "Starter";
+  const name = fields.subscriptionPlan?.trim() ?? "";
+  const key = planDisplayToKey(name || null);
+
+  if (!paying) {
+    return "Free workspace";
+  }
+
+  if (key === "monthly") return PLANS.monthly.name;
+  if (key === "yearly") return PLANS.yearly.name;
+  if (name === PLANS.monthly.name || name === PLANS.yearly.name) return name;
+
+  if (fields.polarBillingLinked) {
+    if (!name || key === "starter" || key === "pro" || key === null) {
+      return "Letora subscription";
+    }
+    return name;
+  }
+
+  if (key && key in PLANS) {
+    return PLANS[key].name;
+  }
+
+  return name.length > 0 ? name : "Paid plan";
 }
 
 export function subscriptionStatusLabel(status: string | null | undefined): string {
@@ -33,7 +61,7 @@ export function subscriptionStatusLabel(status: string | null | undefined): stri
   return map[s] ?? status;
 }
 
-/** One line for sidebar: "Starter — Trial", "Pro — Active", "Starter — Free". */
+/** Sidebar line, e.g. "Monthly — Active" or "Free workspace — Free". */
 export function getSidebarPlanStatusCompact(fields: SubscriptionFields): string {
   const planName = getPlanDisplayName(fields);
   const st = fields.subscriptionStatus?.toLowerCase() ?? "";

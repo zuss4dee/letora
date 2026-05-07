@@ -7,6 +7,7 @@ import { useForm, type Resolver } from "react-hook-form";
 import { toast } from "sonner";
 
 import { saveSettings, type UserSettingsRow } from "@/lib/actions/user-settings";
+import { getPlanDisplayName } from "@/lib/billing/subscription-display";
 import { type UserSettingsInput, userSettingsSchema } from "@/lib/validations/user-settings";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +20,16 @@ type Props = {
 export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const tierLabel = getPlanDisplayName({
+    subscriptionPlan: metadata.subscriptionPlan,
+    subscriptionStatus: metadata.subscriptionStatus,
+    subscriptionPeriodEnd: metadata.subscriptionPeriodEnd,
+    subscriptionTrialEnd: metadata.subscriptionTrialEnd,
+    polarBillingLinked: Boolean(
+      metadata.polarCustomerId?.trim() || metadata.polarSubscriptionId?.trim(),
+    ),
+  });
 
   const form = useForm<UserSettingsInput>({
     resolver: zodResolver(userSettingsSchema) as Resolver<UserSettingsInput>,
@@ -108,7 +119,7 @@ export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props
             <div className="space-y-4">
               <div className="space-y-1">
                 <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Active Tier</p>
-                <p className="text-[13px] font-black text-white uppercase">{metadata.subscriptionPlan || "Standard"}</p>
+                <p className="text-[13px] font-black text-white uppercase">{tierLabel}</p>
               </div>
             </div>
             <div className="text-right space-y-4">

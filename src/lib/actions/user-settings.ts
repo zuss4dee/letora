@@ -45,7 +45,7 @@ export type UserSettingsRow = UserSettingsInput & {
   hasSeenTour?: boolean;
   /** When set, dashboard workspace setup checklist is hidden. */
   onboardingSetupReminderDismissedAt?: string | null;
-  /** Stripe subscription display name (e.g. Pro). */
+  /** Stripe / Polar subscription display label (e.g. Monthly). */
   subscriptionPlan?: string | null;
   subscriptionStatus?: string | null;
   subscriptionPeriodEnd?: string | null;

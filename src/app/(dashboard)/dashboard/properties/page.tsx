@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { ImportBatchScopeChip } from "@/components/import/import-batch-scope-chip";
 import { ManagedPropertiesRegistry } from "@/components/properties/managed-properties-registry";
 import { loadImportBatchIdFilterSets } from "@/lib/import-batch-filter-loader";
+import { scopedPortfolioRows } from "@/lib/import-batch-list-scope";
 import { importBatchShortLabel, parseImportBatchParam } from "@/lib/import-batch-query";
 import { getPropertiesPortfolio } from "@/lib/actions/properties";
 import { createClient } from "@/lib/supabase/server";
@@ -25,17 +26,22 @@ async function PropertiesPortfolioContent({
   const rows = await getPropertiesPortfolio(userId);
   const batchFilter = importBatchId ? await loadImportBatchIdFilterSets(importBatchId) : null;
 
-  let list = rows;
-  let scope: { batchId: string; short: string } | null = null;
+  const scopeBatch =
+    importBatchId && batchFilter?.ok
+      ? { batchId: importBatchId, short: importBatchShortLabel(importBatchId) }
+      : null;
 
-  if (importBatchId && batchFilter?.ok) {
-    scope = { batchId: importBatchId, short: importBatchShortLabel(importBatchId) };
-    if (batchFilter.propertyIds.size > 0) {
-      list = rows.filter((r) => batchFilter.propertyIds.has(r.id));
-    } else {
-      list = [];
-    }
-  }
+  let list = scopedPortfolioRows(rows, batchFilter ?? null);
+
+  const selectedEffective =
+    initialSelectedPropertyId != null && list.some((r) => r.id === initialSelectedPropertyId)
+      ? initialSelectedPropertyId
+      : null;
+
+  const clearHref =
+    initialSelectedPropertyId != null && initialSelectedPropertyId.length > 0
+      ? `/dashboard/properties?propertyId=${encodeURIComponent(initialSelectedPropertyId)}`
+      : "/dashboard/properties";
 
   const ids = list.map((r) => r.id);
   const [activityByPropertyId, complianceByPropertyId] = await Promise.all([
@@ -45,16 +51,22 @@ async function PropertiesPortfolioContent({
 
   return (
     <>
-      {scope ? (
+      {scopeBatch ? (
         <div className="shrink-0 px-4 pt-4 lg:px-6">
-          <ImportBatchScopeChip batchId={scope.batchId} shortId={scope.short} clearHref="/dashboard/properties" />
+          <ImportBatchScopeChip batchId={scopeBatch.batchId} shortId={scopeBatch.short} clearHref={clearHref} />
+          {list.length === 0 ? (
+            <p className="mx-auto mb-4 max-w-5xl font-mono text-[11px] text-zinc-500">
+              No portfolio properties matched this batch snapshot — either IDs were missing on older imports, or the
+              selected property drill-down excludes all batch rows.
+            </p>
+          ) : null}
         </div>
       ) : null}
       <ManagedPropertiesRegistry
         rows={list}
         activityByPropertyId={activityByPropertyId}
         complianceByPropertyId={complianceByPropertyId}
-        initialSelectedPropertyId={initialSelectedPropertyId}
+        initialSelectedPropertyId={selectedEffective}
       />
     </>
   );

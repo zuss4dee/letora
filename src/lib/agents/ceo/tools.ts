@@ -65,12 +65,13 @@ export const CEO_TOOLS: Anthropic.Tool[] = [
       properties: {
         month: {
           type: "string",
-          description: "The month to chase rent for in YYYY-MM format. Defaults to current month if not provided.",
+          description:
+            "Optional. When set to YYYY-MM, only instalments with due_date in that calendar month are drafted. **Omit** to draft chases for **all** overdue / past-due pending instalments (recommended for arrears).",
         },
         tenant_name: {
           type: "string",
           description:
-            "When the user asked to chase a **specific tenant** (e.g. “Sofia Martins”), pass their full name so only that tenant’s overdue instalments in the month are drafted — not every overdue tenant.",
+            "When the user asked to chase a **specific tenant** (e.g. “Sofia Martins”), pass their full name so only that tenant’s chaseable overdue instalments are drafted (respects **month** when provided).",
         },
         tenant_id: {
           type: "string",

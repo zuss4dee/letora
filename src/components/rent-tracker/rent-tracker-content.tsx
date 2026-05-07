@@ -26,8 +26,10 @@ export function RentTrackerContent({
   rentTrackerPreserveHref: string;
 }) {
   return (
-    <div className="flex min-h-0 flex-col gap-4">
-      <RentTrackerCheckoutReturnBanner />
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      <div className="shrink-0">
+        <RentTrackerCheckoutReturnBanner />
+      </div>
       <RentTrackerRegistry
         payments={payments}
         stats={stats}

@@ -3,6 +3,7 @@
 import { revalidatePath, unstable_noStore } from "next/cache";
 
 import {
+  coercePortfolioImportSourceRows,
   PortfolioBatchFinalizeError,
   prepareBatchOnboarding,
   runBatchOnboarding,
@@ -12,6 +13,7 @@ import {
   decidePortfolioCsvParse,
   extractBatchOnboardingRowsWithLlmFromText,
   extractTextFromTenantImportFile,
+  normalizeBatchOnboardingRow,
   type BatchOnboardingRow,
 } from "@/lib/onboarding/tenant-import";
 import { createClient } from "@/lib/supabase/server";
@@ -76,7 +78,7 @@ async function loadBatchOnboardingRowsFromText(
   }
 
   const llm = await extractBatchOnboardingRowsWithLlmFromText(text);
-  if (!llm.ok) {
+  if (llm.ok === false) {
     const hint = structuredInput ? "" : " If this is meant to be CSV, export as .csv with a header row.";
     return { ok: false, error: `${llm.error}${hint}` };
   }
@@ -108,13 +110,13 @@ export async function previewBatchOnboardingFromFormData(
     }
     const buf = Buffer.from(await file.arrayBuffer());
     const extracted = await extractTextFromTenantImportFile(buf, file.name, file.type || "");
-    if (!extracted.ok) return { ok: false, error: extracted.error };
+    if (extracted.ok === false) return { ok: false, error: extracted.error };
 
     const structured = isStructuredPortfolioFilename(file.name);
     load = await loadBatchOnboardingRowsFromText(extracted.text, structured);
   }
 
-  if (!load.ok) return load;
+  if (load.ok === false) return { ok: false, error: load.error };
   if (load.rows.length === 0) {
     return {
       ok: false,
@@ -124,6 +126,153 @@ export async function previewBatchOnboardingFromFormData(
   }
 
   const prepared = await prepareBatchOnboarding(load.rows, user.id, supabase);
+  return { ok: true, rows: prepared.rows, summary: prepared.summary };
+}
+
+/**
+ * Re-run spreadsheet normalization + DB prepare after inline edits.
+ * Read-only — does not write portfolio data.
+ */
+export async function reprepareBatchImportRowsAction(
+  rowsJson: string,
+): Promise<PreparePayload | { ok: false; error: string }> {
+  unstable_noStore();
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  let parsedRows: BatchOnboardingRow[];
+  try {
+    const parsed = JSON.parse(rowsJson) as unknown;
+    if (!Array.isArray(parsed)) throw new Error("Expected row array");
+    parsedRows = parsed as BatchOnboardingRow[];
+  } catch {
+    return { ok: false, error: "Could not read edited rows." };
+  }
+
+  if (parsedRows.length === 0) return { ok: false, error: "No rows to validate." };
+
+  const badPayload = parsedRows.some(
+    (r) =>
+      !r ||
+      typeof r !== "object" ||
+      typeof r.rowKind !== "string" ||
+      typeof r.propertyAddress !== "string",
+  );
+  if (badPayload) {
+    return { ok: false, error: "Invalid row data. Run Preview Rows again." };
+  }
+
+  const normalized = parsedRows.map((r) =>
+    normalizeBatchOnboardingRow({
+      rowKind: r.rowKind,
+      propertyAddress: r.propertyAddress,
+      propertyDisplayName: r.propertyDisplayName,
+      city: r.city,
+      postcode: r.postcode,
+      propertyType: r.propertyType,
+      bedrooms: r.bedrooms,
+      bathrooms: r.bathrooms,
+      tenantFullName: r.tenantFullName,
+      tenantEmail: r.tenantEmail,
+      tenantPhone: r.tenantPhone,
+      monthlyRent: r.monthlyRent,
+      rentDueDay: r.rentDueDay,
+      startDate: r.startDate,
+      moveInDate: r.moveInDate,
+      endDate: r.endDate,
+      depositAmount: r.depositAmount,
+      tenancyStatus: r.tenancyStatusDb,
+      rentPosition: r.rentPosition,
+      notes: r.notes,
+    }),
+  );
+
+  const prepared = await prepareBatchOnboarding(normalized, user.id, supabase);
+  return { ok: true, rows: prepared.rows, summary: prepared.summary };
+}
+
+function batchRowForRetryFromStored(src: BatchOnboardingRow): BatchOnboardingRow {
+  return normalizeBatchOnboardingRow({
+    rowKind: src.rowKind,
+    propertyAddress: src.propertyAddress,
+    propertyDisplayName: src.propertyDisplayName,
+    city: src.city,
+    postcode: src.postcode,
+    propertyType: src.propertyType,
+    bedrooms: src.bedrooms,
+    bathrooms: src.bathrooms,
+    tenantFullName: src.tenantFullName,
+    tenantEmail: src.tenantEmail,
+    tenantPhone: src.tenantPhone,
+    monthlyRent: src.monthlyRent,
+    rentDueDay: src.rentDueDay,
+    startDate: src.startDate,
+    moveInDate: src.moveInDate,
+    endDate: src.endDate,
+    depositAmount: src.depositAmount,
+    tenancyStatus: src.tenancyStatusDb,
+    rentPosition: src.rentPosition,
+    notes: src.notes,
+  });
+}
+
+/**
+ * Load persisted row payloads from a completed batch and run prepare for **failed outcome rows only**,
+ * so the import preflight opens with just those lines — no spreadsheet re-upload required.
+ */
+export async function prepareRetryFailedRowsFromBatchAction(
+  batchId: string,
+): Promise<PreparePayload | { ok: false; error: string }> {
+  unstable_noStore();
+  const id = typeof batchId === "string" ? batchId.trim() : "";
+  if (!UUID_RE.test(id)) return { ok: false, error: "Invalid batch id." };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated." };
+
+  const loaded = await getBatchImportById(id);
+  if (loaded.ok === false) {
+    return { ok: false, error: loaded.error };
+  }
+
+  const { batch } = loaded;
+  if (batch.rowsFailed <= 0) return { ok: false, error: "This batch has no failed rows." };
+  if (batch.status === "running") {
+    return { ok: false, error: "This import is still running. Refresh when it completes." };
+  }
+
+  const sourceRows = batch.sourceRows;
+  if (!sourceRows || sourceRows.length === 0) {
+    return {
+      ok: false,
+      error:
+        "Letora can't reload these rows automatically (older import). Use Upload again with your file — lines that already saved are matched and won't duplicate tenants or tenancies.",
+    };
+  }
+
+  const failedSnapshots = batch.rows.filter((r) => r.outcome === "error").sort((a, b) => a.rowIndex - b.rowIndex);
+  if (failedSnapshots.length === 0) return { ok: false, error: "No failed rows in this snapshot." };
+
+  const retryBodies: BatchOnboardingRow[] = [];
+  for (const snap of failedSnapshots) {
+    const src = sourceRows[snap.rowIndex];
+    if (!src) {
+      return {
+        ok: false,
+        error:
+          "Stored data for at least one failed line is incomplete. Upload the spreadsheet again to retry.",
+      };
+    }
+    retryBodies.push(batchRowForRetryFromStored(src));
+  }
+
+  const prepared = await prepareBatchOnboarding(retryBodies, user.id, supabase);
   return { ok: true, rows: prepared.rows, summary: prepared.summary };
 }
 
@@ -285,6 +434,8 @@ export type BatchImportDetail = {
   completedAt: string | null;
   finalizeError?: string | null;
   rows: BatchImportDetailRow[];
+  /** Full row payloads stored when batch finished — used to retry failed lines without re-upload */
+  sourceRows: BatchOnboardingRow[] | null;
 };
 
 function coerceOutcomesPayload(raw: unknown): BatchImportDetailRow[] {
@@ -341,6 +492,9 @@ export async function getBatchImportById(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Not authenticated." };
 
+  const selectWithSourceFinalize =
+    "id, kind, status, rows_total, rows_succeeded, rows_failed, agents_triggered, approvals_created, errors_json, outcomes_json, source_rows_json, created_at, completed_at, finalize_error";
+
   const selectMetricsOutcomesFinalize =
     "id, kind, status, rows_total, rows_succeeded, rows_failed, agents_triggered, approvals_created, errors_json, outcomes_json, created_at, completed_at, finalize_error";
 
@@ -349,10 +503,21 @@ export async function getBatchImportById(
 
   let { data, error } = await supabase
     .from("batch_imports")
-    .select(selectMetricsOutcomesFinalize)
+    .select(selectWithSourceFinalize)
     .eq("id", id)
     .eq("user_id", user.id)
     .maybeSingle();
+
+  if (error?.code === "42703") {
+    const r = await supabase
+      .from("batch_imports")
+      .select(selectMetricsOutcomesFinalize)
+      .eq("id", id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    data = r.data as typeof data;
+    error = r.error;
+  }
 
   if (error?.code === "42703") {
     const r = await supabase
@@ -430,6 +595,8 @@ export async function getBatchImportById(
     }
   }
 
+  const sourceRows = coercePortfolioImportSourceRows(row.source_rows_json);
+
   const batch: BatchImportDetail = {
     id: String(row.id ?? id),
     kind: String(row.kind ?? ""),
@@ -443,6 +610,7 @@ export async function getBatchImportById(
     completedAt: (row.completed_at as string | null) ?? null,
     finalizeError: typeof row.finalize_error === "string" ? row.finalize_error : null,
     rows,
+    sourceRows,
   };
 
   console.info("[batch_import][page_read]", {

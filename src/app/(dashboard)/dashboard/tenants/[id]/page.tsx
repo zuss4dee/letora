@@ -12,8 +12,10 @@ import {
   Wrench,
 } from "lucide-react";
 
+import { BatchReviewReturnBanner } from "@/components/dashboard/batch-review-return-banner";
 import { EditTenantDialog } from "@/components/tenants/edit-tenant-dialog";
 import { getTenantProfileOperationalData } from "@/lib/actions/tenants";
+import { parseSafeBatchReviewReturnFromSearchParams } from "@/lib/navigation/batch-review-return";
 import { type UpdateTenantInput } from "@/lib/validations/tenant";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -367,9 +369,19 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
   );
 }
 
-export default function TenantDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TenantDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const batchReviewReturnHref = parseSafeBatchReviewReturnFromSearchParams(sp);
+
   return (
     <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-[#0B0B0B] text-zinc-950 dark:text-zinc-100">
+      {batchReviewReturnHref ? <BatchReviewReturnBanner href={batchReviewReturnHref} /> : null}
       <Suspense fallback={<TenantDetailSkeleton />}>
         <TenantDetailContent params={params} />
       </Suspense>

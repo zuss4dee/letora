@@ -74,7 +74,20 @@ RLS: users manage rows where `user_id = auth.uid()`.
 
 ## Cron
 
-Configure your host (e.g. Vercel Cron) to `GET /api/cron/rent-chase` with header `Authorization: Bearer $CRON_SECRET` daily or as needed.
+**Vercel (`vercel.json`):**
+
+| Path | Default schedule (UTC) | Purpose |
+|------|------------------------|---------|
+| `/api/cron/rent-chase` | `0 7 * * *` (daily 07:00) | Runs **`runRentChaserAgent`** for every `user_settings` user (service role). Drafts → **`agent_approvals`** (`send_rent_chase_email`) when chaseable arrears exist. |
+| `/api/cron/stale-approval-reminders` | `0 8 * * *` (daily 08:00) | Operator reminders for stale pending approvals. |
+
+Vercel Cron sends **`Authorization: Bearer <CRON_SECRET>`** when **`CRON_SECRET`** is set on the Vercel project.
+
+**Required env for rent-chase cron:** `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_AI_API_KEY`. Missing `GOOGLE_AI_API_KEY` causes **`runRentChaserAgent`** to throw for that user (see function runtime check).
+
+Manual test:
+
+`curl -sS -H "Authorization: Bearer $CRON_SECRET" "https://<deployment>/api/cron/rent-chase"`
 
 ## Orchestrator
 

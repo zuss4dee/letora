@@ -6,9 +6,10 @@ export type DashboardShellUserSettingsSlice = {
   subscriptionStatus: string | null;
   subscriptionPeriodEnd: string | null;
   subscriptionTrialEnd: string | null;
+  polarBillingLinked: boolean;
 };
 
-/** Single narrow read for dashboard shell onboarding gate + sidebar subscription stripe. */
+/** Narrow read for dashboard shell onboarding gate + sidebar subscription hint. */
 export async function getDashboardShellUserSettingsSlice(
   userId: string,
 ): Promise<DashboardShellUserSettingsSlice | null> {
@@ -16,7 +17,7 @@ export async function getDashboardShellUserSettingsSlice(
   const { data, error } = await supabase
     .from("user_settings")
     .select(
-      "onboarding_status, subscription_plan, subscription_status, subscription_period_end, subscription_trial_end",
+      "onboarding_status, subscription_plan, subscription_status, subscription_period_end, subscription_trial_end, polar_customer_id, polar_subscription_id",
     )
     .eq("user_id", userId)
     .maybeSingle();
@@ -30,11 +31,17 @@ export async function getDashboardShellUserSettingsSlice(
   const raw = data.onboarding_status as string | null | undefined;
   const onboardingStatus = typeof raw === "string" ? raw : null;
 
+  const polarBillingLinked = Boolean(
+    ((data.polar_customer_id as string | null | undefined) ?? "").trim().length > 0 ||
+      ((data.polar_subscription_id as string | null | undefined) ?? "").trim().length > 0,
+  );
+
   return {
     onboardingStatus,
     subscriptionPlan: (data.subscription_plan as string | null) ?? null,
     subscriptionStatus: (data.subscription_status as string | null) ?? null,
     subscriptionPeriodEnd: (data.subscription_period_end as string | null) ?? null,
     subscriptionTrialEnd: (data.subscription_trial_end as string | null) ?? null,
+    polarBillingLinked,
   };
 }

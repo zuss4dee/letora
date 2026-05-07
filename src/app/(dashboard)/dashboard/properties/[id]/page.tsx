@@ -5,8 +5,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Bath, BedDouble } from "lucide-react";
 
+import { BatchReviewReturnBanner } from "@/components/dashboard/batch-review-return-banner";
 import { EditPropertyDialog } from "@/components/properties/edit-property-dialog";
 import { getPropertyById, getTenanciesForProperty, type PropertyRow } from "@/lib/actions/properties";
+import { parseSafeBatchReviewReturnFromSearchParams } from "@/lib/navigation/batch-review-return";
 import { type AddPropertyInput } from "@/lib/validations/property";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
@@ -300,9 +302,19 @@ async function PropertyDetailContent({ params }: { params: Promise<{ id: string 
   );
 }
 
-export default function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PropertyDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const batchReviewReturnHref = parseSafeBatchReviewReturnFromSearchParams(sp);
+
   return (
     <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
+      {batchReviewReturnHref ? <BatchReviewReturnBanner href={batchReviewReturnHref} /> : null}
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-y border-zinc-200/70 bg-[#161616] dark:border-zinc-800 dark:bg-[#1A1A1A]">
         <Suspense fallback={<PropertyDetailSkeleton />}>
           <PropertyDetailContent params={params} />

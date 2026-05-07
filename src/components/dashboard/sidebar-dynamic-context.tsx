@@ -9,6 +9,7 @@ export type SidebarDynamicState = {
   subscriptionStatus: string | null;
   subscriptionPeriodEnd: string | null;
   subscriptionTrialEnd: string | null;
+  polarBillingLinked: boolean;
   pendingApprovalsCount: number;
   pendingApprovalsBadgeTitle: string | null;
 };
@@ -20,6 +21,7 @@ const defaultState: SidebarDynamicState = {
   subscriptionStatus: null,
   subscriptionPeriodEnd: null,
   subscriptionTrialEnd: null,
+  polarBillingLinked: false,
   pendingApprovalsCount: 0,
   pendingApprovalsBadgeTitle: null,
 };

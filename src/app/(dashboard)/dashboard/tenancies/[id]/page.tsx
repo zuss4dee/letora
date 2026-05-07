@@ -4,12 +4,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 
+import { BatchReviewReturnBanner } from "@/components/dashboard/batch-review-return-banner";
 import { EditTenancyDialog } from "@/components/tenancies/edit-tenancy-dialog";
 import { ReferencingPanel } from "@/components/tenancies/referencing-panel";
 import { TenancyOnboardingPanel } from "@/components/tenancies/tenancy-onboarding-panel";
 import { TENANCY_LABEL } from "@/components/tenancies/tenancy-letora-surfaces";
 import { getReferencingEvents } from "@/lib/actions/referencing";
 import { getTenancyOnboardingDetail } from "@/lib/actions/onboarding";
+import { parseSafeBatchReviewReturnFromSearchParams } from "@/lib/navigation/batch-review-return";
 import { createClient } from "@/lib/supabase/server";
 
 const gbp = new Intl.NumberFormat("en-GB", {
@@ -18,8 +20,16 @@ const gbp = new Intl.NumberFormat("en-GB", {
   maximumFractionDigits: 0,
 });
 
-export default async function TenancyDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TenancyDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { id } = await params;
+  const sp = await searchParams;
+  const batchReviewReturnHref = parseSafeBatchReviewReturnFromSearchParams(sp);
   const supabase = await createClient();
   const {
     data: { user },
@@ -68,6 +78,7 @@ export default async function TenancyDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
+      {batchReviewReturnHref ? <BatchReviewReturnBanner href={batchReviewReturnHref} /> : null}
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-y border-zinc-200/70 bg-[#161616] dark:border-zinc-800 dark:bg-[#1A1A1A]">
         <div className="relative flex min-h-0 flex-1 flex-col">
           <div

@@ -20,9 +20,22 @@ export type PortfolioImportDraftV1 = {
   savedAt: string;
   rows: PreparedRow[];
   summary: PortfolioImportDraftSummary;
+  /** Rows excluded from the next import attempt (by `rowIndex`). */
+  excludedRowIndices?: number[];
+  /** Mirrors preflight “Import only rows with zero warnings”. */
+  importOnlyNoWarnings?: boolean;
 };
 
-export function savePortfolioImportDraft(rows: PreparedRow[], summary: PortfolioImportDraftSummary): void {
+export type PortfolioImportDraftMeta = {
+  excludedRowIndices?: number[];
+  importOnlyNoWarnings?: boolean;
+};
+
+export function savePortfolioImportDraft(
+  rows: PreparedRow[],
+  summary: PortfolioImportDraftSummary,
+  meta?: PortfolioImportDraftMeta,
+): void {
   if (typeof window === "undefined") return;
   try {
     const payload: PortfolioImportDraftV1 = {
@@ -30,6 +43,10 @@ export function savePortfolioImportDraft(rows: PreparedRow[], summary: Portfolio
       savedAt: new Date().toISOString(),
       rows,
       summary,
+      ...(meta?.excludedRowIndices && meta.excludedRowIndices.length > 0
+        ? { excludedRowIndices: meta.excludedRowIndices }
+        : {}),
+      ...(meta?.importOnlyNoWarnings ? { importOnlyNoWarnings: true } : {}),
     };
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch {

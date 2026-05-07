@@ -1,7 +1,9 @@
 import { Suspense } from "react";
+
+import { WorkspaceBillingView } from "@/components/billing/workspace-billing-view";
+import type { WorkspaceOperationalStats } from "@/components/billing/workspace-billing-view";
 import { getUserSettings } from "@/lib/actions/user-settings";
 import { createClient } from "@/lib/supabase/server";
-import { WorkspaceBillingView } from "@/components/billing/workspace-billing-view";
 
 export const dynamic = "force-dynamic";
 
@@ -12,16 +14,29 @@ async function BillingAsyncSection() {
   } = await supabase.auth.getUser();
 
   const existing = user?.id ? await getUserSettings(user.id) : null;
-  const hasStripeCustomer = Boolean(existing?.stripeCustomerId?.trim());
-  const hasPolarCustomer = Boolean(existing?.polarCustomerId?.trim());
 
-  return (
-    <WorkspaceBillingView 
-      settings={existing} 
-      hasStripeCustomer={hasStripeCustomer} 
-      hasPolarCustomer={hasPolarCustomer} 
-    />
-  );
+  let operationalStats: WorkspaceOperationalStats = { propertyCount: 0, tenancyCount: null };
+
+  if (user?.id) {
+    const [{ count: propertyCount }, tenancyRes] = await Promise.all([
+      supabase.from("properties").select("id", { count: "exact", head: true }).eq("user_id", user.id),
+      supabase
+        .from("tenancies")
+        .select("id, properties!inner(user_id)", { count: "exact", head: true })
+        .eq("properties.user_id", user.id),
+    ]);
+
+    operationalStats = {
+      propertyCount: propertyCount ?? 0,
+      tenancyCount: tenancyRes.error ? null : tenancyRes.count ?? 0,
+    };
+
+    if (tenancyRes.error && process.env.NODE_ENV === "development") {
+      console.warn("[billing] tenancy count embed failed:", tenancyRes.error.message);
+    }
+  }
+
+  return <WorkspaceBillingView settings={existing} operationalStats={operationalStats} />;
 }
 
 export default async function BillingPage() {
@@ -30,7 +45,7 @@ export default async function BillingPage() {
       <div className="relative flex h-full min-h-0 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-0 lg:px-12">
           <div className="mx-auto w-full max-w-6xl py-12">
-            <Suspense fallback={<div className="h-96 bg-zinc-900 animate-pulse rounded-[2px]" />}>
+            <Suspense fallback={<div className="h-96 animate-pulse rounded-[2px] bg-zinc-900" />}>
               <BillingAsyncSection />
             </Suspense>
           </div>

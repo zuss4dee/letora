@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { getMaxPropertiesForUser } from "@/lib/plan-limits";
+import { FREE_WORKSPACE_PROPERTY_CAP, getMaxPropertiesForUser } from "@/lib/plan-limits";
 import { createClient } from "@/lib/supabase/server";
 import { propertySchema } from "@/lib/validations/property";
 import { userFacingError } from "@/lib/user-facing-errors";
@@ -426,8 +426,7 @@ export async function addProperty(formData: unknown): Promise<AddPropertyResult>
     if ((count ?? 0) >= maxProps) {
       return {
         ok: false as const,
-        error:
-          "You have reached the property limit for your plan. Upgrade on the Pricing page to add more.",
+        error: `You've reached the free workspace limit of ${FREE_WORKSPACE_PROPERTY_CAP} properties. Subscribe from Billing or Pricing to add unlimited units, or archive unused properties.`,
         code: "PROPERTY_LIMIT" as const,
       };
     }

@@ -37,6 +37,7 @@ export async function DashboardShellSettingsGate({ userId }: { userId: string })
       subscriptionStatus={row.subscriptionStatus}
       subscriptionPeriodEnd={row.subscriptionPeriodEnd}
       subscriptionTrialEnd={row.subscriptionTrialEnd}
+      polarBillingLinked={row.polarBillingLinked}
     />
   );
 }

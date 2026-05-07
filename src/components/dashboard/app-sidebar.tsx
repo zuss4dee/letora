@@ -210,6 +210,7 @@ export function AppSidebar({
   subscriptionStatus = null,
   subscriptionPeriodEnd = null,
   subscriptionTrialEnd = null,
+  polarBillingLinked = false,
   pendingApprovalsCount = 0,
   pendingApprovalsBadgeTitle = null,
   variant,
@@ -224,6 +225,7 @@ export function AppSidebar({
   subscriptionStatus?: string | null;
   subscriptionPeriodEnd?: string | null;
   subscriptionTrialEnd?: string | null;
+  polarBillingLinked?: boolean;
   pendingApprovalsCount?: number;
   pendingApprovalsBadgeTitle?: string | null;
 }) {
@@ -240,6 +242,7 @@ export function AppSidebar({
   const subscriptionStatusResolved = subscriptionStatus ?? d?.subscriptionStatus ?? null;
   const subscriptionPeriodEndResolved = subscriptionPeriodEnd ?? d?.subscriptionPeriodEnd ?? null;
   const subscriptionTrialEndResolved = subscriptionTrialEnd ?? d?.subscriptionTrialEnd ?? null;
+  const polarBillingLinkedResolved = polarBillingLinked || (d?.polarBillingLinked ?? false);
   const pendingApprovalsBadgeTitleResolved =
     pendingApprovalsBadgeTitle ?? d?.pendingApprovalsBadgeTitle ?? null;
   const serverPendingApprovalsCount = d?.pendingApprovalsCount ?? pendingApprovalsCount;
@@ -308,6 +311,7 @@ export function AppSidebar({
     subscriptionStatus: subscriptionStatusResolved,
     subscriptionPeriodEnd: subscriptionPeriodEndResolved,
     subscriptionTrialEnd: subscriptionTrialEndResolved,
+    polarBillingLinked: polarBillingLinkedResolved,
   };
   const planStatusLine = getSidebarPlanStatusCompact(subFields);
   const presence = planPresenceStyles(subscriptionStatusResolved);

@@ -38,6 +38,10 @@ export async function DashboardSidebarBoundary({ userId, userEmail }: DashboardS
       ? `${pendingApprovalQueueStats.stalePendingCount} pending over 48 hours - review when you can`
       : null;
 
+  const polarBillingLinked = Boolean(
+    settings?.polarCustomerId?.trim() || settings?.polarSubscriptionId?.trim(),
+  );
+
   return (
     <AppSidebar
       variant="sidebar"
@@ -48,6 +52,7 @@ export async function DashboardSidebarBoundary({ userId, userEmail }: DashboardS
       subscriptionStatus={settings?.subscriptionStatus ?? null}
       subscriptionPeriodEnd={settings?.subscriptionPeriodEnd ?? null}
       subscriptionTrialEnd={settings?.subscriptionTrialEnd ?? null}
+      polarBillingLinked={polarBillingLinked}
       pendingApprovalsCount={pendingApprovals.length}
       pendingApprovalsBadgeTitle={pendingApprovalsBadgeTitle}
     />

@@ -1298,7 +1298,8 @@ export async function executeCEOTool(
       });
     }
     case "chase_rent": {
-      const month = args.month ?? new Date().toISOString().slice(0, 7);
+      const rawMonth = typeof args.month === "string" ? args.month.trim() : "";
+      const explicitMonth = /^\d{4}-\d{2}$/.test(rawMonth) ? rawMonth : undefined;
       const rawTenantId = typeof args.tenant_id === "string" ? args.tenant_id.trim() : "";
       const rawTenantName =
         typeof args.tenant_name === "string" ? sanitizeTenantName(args.tenant_name.trim()) : "";
@@ -1307,9 +1308,10 @@ export async function executeCEOTool(
       if (rawTenantId || rawTenantName) {
         const lookupKey = rawTenantId || rawTenantName;
         const resolved = await resolveTenantProfileForAccount(supabase, userId, lookupKey);
-        if (!resolved.ok) {
+        if (resolved.ok === false) {
           return JSON.stringify({
-            month,
+            month: explicitMonth ?? null,
+            month_scope: explicitMonth ? "calendar_due_month" : "all_chaseable",
             chased: 0,
             results: [],
             ...resolved.body,
@@ -1320,13 +1322,14 @@ export async function executeCEOTool(
 
       const results = await runRentChaserAgent(userId, {
         supabase,
-        month,
+        ...(explicitMonth ? { month: explicitMonth } : {}),
         source: "ceo_assistant",
         ...(scopedTenantId ? { tenantId: scopedTenantId } : {}),
       });
       if (results.length === 0) {
         return JSON.stringify({
-          month,
+          month: explicitMonth ?? null,
+          month_scope: explicitMonth ? "calendar_due_month" : "all_chaseable",
           message:
             "No bulk rent-chase set was created for this period. Check individual overdue tenancies before deciding next action.",
           chased: 0,
@@ -1338,7 +1341,8 @@ export async function executeCEOTool(
       // to ensure stable IDs and linking to Approvals.
 
       return JSON.stringify({
-        month,
+        month: explicitMonth ?? null,
+        month_scope: explicitMonth ? "calendar_due_month" : "all_chaseable",
         message: `Processed ${results.length} rent chase run(s). Chase emails need approval in Approvals before they send (one email per approval).`,
         chased: results.length,
         results: results.map((r) => ({

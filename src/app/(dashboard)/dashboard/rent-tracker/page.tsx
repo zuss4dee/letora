@@ -324,11 +324,24 @@ async function RentTrackerAsyncSection({
   unknownRentTrackerModeDropped: boolean;
   rentTrackerPreserveHref: string;
 }) {
+  const dbgRentTracker = process.env.LETORA_DEBUG_RENT_TRACKER === "1";
+  if (dbgRentTracker) {
+    console.info("[rent-tracker] server fetch start");
+  }
+  const fetchStarted = dbgRentTracker ? Date.now() : 0;
   const [payments, tenancies, pendingApprovals] = await Promise.all([
     getRentPayments(),
     getTenancies(userId),
     getPendingApprovalsForRentChase(),
   ]);
+  if (dbgRentTracker) {
+    console.info("[rent-tracker] server fetch end", {
+      ms: Date.now() - fetchStarted,
+      payments: payments.length,
+      tenancies: tenancies.length,
+      pendingApprovals: pendingApprovals.length,
+    });
+  }
   const {
     scopedTenancies,
     scopedPayments,
@@ -379,7 +392,7 @@ async function RentTrackerAsyncSection({
         </div>
       ) : null}
 
-      <div className="min-h-0 flex-1 px-4 pb-24 pt-4 md:px-6 md:pb-32 md:pt-6">
+      <div className="flex min-h-0 flex-1 flex-col px-4 pb-24 pt-4 md:px-6 md:pb-32 md:pt-6">
         <RentTrackerContent
           payments={scopedPayments}
           stats={stats}
@@ -396,7 +409,7 @@ async function RentTrackerAsyncSection({
 
 function RentTrackerLoadingShell({ todayIso }: { todayIso: string }) {
   return (
-    <div className="relative flex min-h-[50vh] min-w-0 flex-1 flex-col overflow-hidden bg-[#0B0B0B] font-['Inter',system-ui,sans-serif] text-[#e6e3e1]">
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-[#0B0B0B] font-['Inter',system-ui,sans-serif] text-[#e6e3e1]">
       <div className="border-b border-[#282828] bg-[#141414] px-4 py-5 md:px-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#868686]">
           Rent tracker / {todayIso}

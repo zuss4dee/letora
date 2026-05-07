@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import type { UserSettingsRow } from "@/lib/actions/user-settings";
 import { formatSubscriptionDate } from "@/lib/billing/subscription-display";
-import { isPayingPlatformSubscription, planDisplayToKey } from "@/lib/plan-limits";
+import { FREE_WORKSPACE_PROPERTY_CAP, isPayingPlatformSubscription, planDisplayToKey } from "@/lib/plan-limits";
 import { PLANS } from "@/lib/stripe-plans";
 
 export function CurrentPlanSummary({
@@ -29,10 +29,10 @@ export function CurrentPlanSummary({
   const catalog = planKey ? PLANS[planKey] : null;
   const billingProvider = hasPolarCustomer ? "Polar" : "Stripe";
 
-  const planTitle =
-    settings?.subscriptionPlan?.trim() ||
-    catalog?.name ||
-    (paying ? "Your subscription" : "Starter");
+  const planTitle = getPlanDisplayName({
+    ...fields,
+    polarBillingLinked: hasPolarCustomer,
+  });
 
   const trialEnd = formatSubscriptionDate(fields.subscriptionTrialEnd);
   const periodEnd = formatSubscriptionDate(fields.subscriptionPeriodEnd);
@@ -57,7 +57,7 @@ export function CurrentPlanSummary({
           href="/pricing"
           className="shrink-0 text-sm font-medium text-foreground underline-offset-4 hover:text-zinc-400 hover:underline"
         >
-          Compare plans
+          View plans
         </Link>
       </div>
 
@@ -144,10 +144,11 @@ export function CurrentPlanSummary({
 
       {!paying && !(hasStripeCustomer || hasPolarCustomer) ? (
         <p className="mt-4 text-sm text-muted-foreground">
-          You&apos;re on the included <span className="text-foreground">Starter</span> workspace limits. To start a
-          paid plan or trial, continue from the{" "}
+          You&apos;re on Letora&apos;s included free workspace (up to{" "}
+          <span className="tabular-nums text-foreground">{FREE_WORKSPACE_PROPERTY_CAP}</span> properties). Subscribe for unlimited properties and agents
+          — start from{" "}
           <Link href="/pricing" className="font-medium text-foreground underline-offset-4 hover:text-zinc-400 hover:underline">
-            pricing page
+            pricing
           </Link>
           .
         </p>

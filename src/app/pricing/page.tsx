@@ -9,7 +9,7 @@ import { LetoraPricingSection } from "@/components/marketing/letora-pricing";
 export const metadata: Metadata = {
   title: "Pricing · Letora",
   description:
-    "Starter, Pro, and Portfolio plans for UK landlords. Self-serve monthly billing in GBP. Enterprise for larger portfolios.",
+    "Letora for UK landlords — monthly or yearly subscription. Full agent layer, portfolio import, and rent operations. Enterprise for larger teams.",
 };
 
 export default function PricingPage() {

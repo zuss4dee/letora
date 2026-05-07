@@ -32,7 +32,7 @@ export function CommandCenterActionBar() {
           Command Center
         </h1>
         <p className="mt-1 font-mono text-[10px] uppercase tracking-wide text-zinc-500">
-          Live portfolio snapshot
+          Snapshot of rent, upkeep, and what needs a decision today
         </p>
       </div>
       <div className="flex flex-wrap gap-2">

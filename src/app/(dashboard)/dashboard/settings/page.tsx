@@ -97,6 +97,8 @@ async function SettingsAsyncSection() {
     onboardingStatus: existing?.onboardingStatus,
     stripeCustomerId: existing?.stripeCustomerId,
     stripeConnectAccountId: existing?.stripeConnectAccountId,
+    polarCustomerId: existing?.polarCustomerId,
+    polarSubscriptionId: existing?.polarSubscriptionId,
   };
 
   return (

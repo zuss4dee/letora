@@ -147,7 +147,7 @@ export function CommandCenterKpiGridClient({
         <div className="grid grid-cols-2 gap-px border border-[#333333] bg-[#333333] md:grid-cols-4">
           <KpiMoneyTile
             label="Scheduled · this month"
-            tooltip="Totals every rent instalment rows whose contract due_date falls in the current calendar month (any status). Use it as the month's rent roll versus cash collected."
+            tooltip="Contractual monthly rent for active tenancies (sum of monthly_rent) when the portfolio has a non‑zero rent roll — matches Rent Tracker Expected (Mo). Otherwise sums instalment amounts with due_date in this month. Use it as the month’s rent roll versus cash collected."
             value={kpis.rentScheduledThisMonth}
             valueClassName="text-white"
             href={rentTrackerHref("scheduled_this_month")}
@@ -163,19 +163,19 @@ export function CommandCenterKpiGridClient({
           />
           <KpiMoneyTile
             label="Still due · this month"
-            tooltip='Unpaid instalments with due_date inside the current calendar month. Older missed months stay in Total arrears, not here — by design.'
+            tooltip="Unpaid instalments due in the current calendar month. Older missed payments are rolled into Total unpaid (late), not this tile."
             value={kpis.rentDueThisMonth}
             valueClassName="text-white"
             href={rentTrackerHref("due_this_month")}
             tileAriaLabel="Open rent tracker: still due this month"
           />
           <KpiMoneyTile
-            label="Total arrears"
-            tooltip="Every unpaid overdue instalment: status overdue or pending with due_date before today. This is backlog across months, independent of Still due · this month."
+            label="Total unpaid (late)"
+            tooltip="All unpaid overdue instalments across past months (anything still owed from before today). Distinct from Still due · this month, which only looks at the current month window."
             value={kpis.overdueRentTotal}
             valueClassName={kpis.overdueRentTotal > 0 ? "text-[#ffb4ab]" : "text-white"}
             href={rentTrackerHref("arrears")}
-            tileAriaLabel="Open rent tracker: total arrears"
+            tileAriaLabel="Open rent tracker: total unpaid late rent"
           />
           <KpiMoneyTile
             label="Scheduled · next month"

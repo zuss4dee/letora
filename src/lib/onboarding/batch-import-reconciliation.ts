@@ -1,5 +1,11 @@
 import type { BatchImportDetailRow } from "@/lib/actions/batch-onboarding";
 
+import {
+  type ReviewPriority,
+  classifyNeedsReviewPriority,
+  reviewPriorityRank,
+} from "@/lib/onboarding/batch-import-review-priority";
+
 export function rowKindNorm(r: BatchImportDetailRow): string {
   return (r.rowKind || "").trim().toLowerCase();
 }
@@ -56,8 +62,10 @@ export type BatchReconciliationModel = {
   /** Created/resumed rows for occupied or onboarding (excludes vacant-only successes) */
   successfulImports: BatchImportDetailRow[];
   failed: BatchImportDetailRow[];
-  /** Non-failed rows that need a human glance */
+  /** Non-failed rows that need a human glance (priority order) */
   needsReview: BatchImportDetailRow[];
+  /** Same rows as `needsReview` with triage labels — fix now → check soon → informational */
+  needsReviewQueue: Array<{ row: BatchImportDetailRow; priority: ReviewPriority }>;
   vacantOrPropertyOnly: BatchImportDetailRow[];
   suspicious: SuspiciousFlag[];
   /** ID sets for deep-links (successful / touched records only) */
@@ -147,12 +155,28 @@ export function reconcilePortfolioBatch(rows: BatchImportDetailRow[]): BatchReco
 
   const successfulImports = successRows.filter((r) => rk(r) !== "vacant");
 
-  const needsReview = rows.filter((r) => {
+  const needsReviewBase = rows.filter((r) => {
     if (isImportOutcomeFailed(r.outcome)) return false;
     if (mightNeedReview(r)) return true;
     if (suspiciousLineSet.has(r.line)) return true;
     return false;
   });
+
+  const duplicatePatternLines = new Set<number>();
+  for (const f of suspicious) {
+    if (f.code === "duplicate_address" || f.code === "duplicate_email") {
+      for (const ln of f.lines) duplicatePatternLines.add(ln);
+    }
+  }
+
+  const needsReviewQueue = needsReviewBase
+    .map((row) => ({
+      row,
+      priority: classifyNeedsReviewPriority(row, duplicatePatternLines.has(row.line)),
+    }))
+    .sort((a, b) => reviewPriorityRank(a.priority) - reviewPriorityRank(b.priority));
+
+  const needsReview = needsReviewQueue.map((q) => q.row);
 
   const reviewLines = new Set(needsReview.map((r) => r.line));
 
@@ -167,6 +191,7 @@ export function reconcilePortfolioBatch(rows: BatchImportDetailRow[]): BatchReco
     successfulImports,
     failed,
     needsReview,
+    needsReviewQueue,
     vacantOrPropertyOnly,
     suspicious,
     filterSets: {

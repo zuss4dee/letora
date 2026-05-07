@@ -15,6 +15,7 @@ import {
 import { getProperties } from "@/lib/actions/properties";
 import { getTenants } from "@/lib/actions/tenants";
 import { loadImportBatchIdFilterSets } from "@/lib/import-batch-filter-loader";
+import { scopedTenancyRows } from "@/lib/import-batch-list-scope";
 import { importBatchShortLabel, parseImportBatchParam } from "@/lib/import-batch-query";
 import { createClient } from "@/lib/supabase/server";
 
@@ -46,17 +47,12 @@ async function TenanciesDataSection({ importBatchId }: { importBatchId?: string 
       ])
     : [[], [], [], [], null];
 
-  let list = tenancies;
-  let scope: { batchId: string; short: string } | null = null;
+  let list = scopedTenancyRows(tenancies, batchFilter ?? null);
 
-  if (userId && importBatchId && batchFilter?.ok) {
-    scope = { batchId: importBatchId, short: importBatchShortLabel(importBatchId) };
-    if (batchFilter.tenancyIds.size > 0) {
-      list = tenancies.filter((t) => batchFilter.tenancyIds.has(t.id));
-    } else {
-      list = [];
-    }
-  }
+  const scope =
+    userId && importBatchId && batchFilter?.ok
+      ? { batchId: importBatchId, short: importBatchShortLabel(importBatchId) }
+      : null;
 
   const tenancyIds = list.map((t) => t.id);
   const [activityByTenancyId, onboardingTasksByTenancyId] =
@@ -82,6 +78,11 @@ async function TenanciesDataSection({ importBatchId }: { importBatchId?: string 
       {scope ? (
         <div className="mb-6">
           <ImportBatchScopeChip batchId={scope.batchId} shortId={scope.short} clearHref="/dashboard/tenancies" />
+          {list.length === 0 ? (
+            <p className="mt-3 font-mono text-[11px] text-zinc-500">
+              No tenancies matched this batch snapshot — open batch results to confirm tenancy IDs, or clear the filter.
+            </p>
+          ) : null}
         </div>
       ) : null}
       <TenanciesRegistry

@@ -22,8 +22,8 @@ export function CommandCenterAiComposer() {
   }, [busy, router, text]);
 
   return (
-    <div className="pointer-events-none fixed bottom-0 left-0 right-0 z-50 flex justify-center pb-6 md:left-[var(--sidebar-width)]">
-      <div className="pointer-events-auto w-full max-w-4xl px-6">
+    <div className="w-full border-t border-[#282828] bg-[#0B0B0B]/98 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-[#0B0B0B]/90 md:pb-5 md:pt-4">
+      <div className="mx-auto w-full max-w-4xl px-4 md:px-6">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -31,7 +31,7 @@ export function CommandCenterAiComposer() {
           }}
           className="mx-auto w-full"
         >
-          <div className="flex items-center border border-[#282828] bg-[#1A1A1A] p-1.5 shadow-2xl">
+          <div className="flex items-center border border-[#282828] bg-[#1A1A1A] p-1.5 shadow-lg">
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -59,11 +59,6 @@ export function CommandCenterAiComposer() {
                 </>
               )}
             </button>
-          </div>
-          <div className="mt-3 flex justify-center">
-            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#555555] drop-shadow-md">
-              Agent LX-Core v4.2 Active
-            </span>
           </div>
         </form>
       </div>

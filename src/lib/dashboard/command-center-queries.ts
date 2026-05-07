@@ -2,7 +2,7 @@ import { cache } from "react";
 
 import { getRecentActivityCommandCenterLanding } from "@/lib/actions/activity-log";
 import { getPendingAgentApprovals, getPendingApprovalsCount } from "@/lib/actions/agent-approvals";
-import { getDashboardStats } from "@/lib/actions/dashboard";
+import { getDashboardStats, getMonthlyRentFromActiveTenancies } from "@/lib/actions/dashboard";
 import { withTimeout } from "@/lib/async/with-timeout";
 import { computeRentFinancialMonthKpis } from "@/lib/rent-financial-kpis";
 import { monthBoundsIso } from "@/lib/rent-calendar-bounds";
@@ -24,8 +24,8 @@ export type CommandCenterKpis = {
   /** Sum of unpaid instalments with due_date in the current calendar month. */
   rentDueThisMonth: number;
   /**
-   * Contract roll for the current calendar month: sum of all instalment amounts with `due_date`
-   * in this month (paid or unpaid — so operators can reconcile vs collected vs unpaid-in-month).
+   * “Scheduled · this month”: sum of active-tenancy `monthly_rent` when roll &gt; 0 (Rent Tracker parity);
+   * else sum of instalment amounts with due_date in the current UTC calendar month (any status).
    */
   rentScheduledThisMonth: number;
   /** Cash receipts this month: instalments marked paid with paid_date in the current calendar month (legacy: paid + no paid_date → due-month attribution only). */
@@ -135,7 +135,7 @@ async function loadCommandCenterFinancials(userId: string) {
 
   const sel = "id,amount,status,due_date,paid_date,tenancies!inner(properties!inner(user_id))";
 
-  const [dueRes, paidRes] = await Promise.all([
+  const [dueRes, paidRes, activeMonthlyRentRoll] = await Promise.all([
     supabase
       .from("rent_payments")
       .select(sel)
@@ -149,6 +149,7 @@ async function loadCommandCenterFinancials(userId: string) {
       .not("paid_date", "is", null)
       .gte("paid_date", paidFetchStart)
       .lte("paid_date", paidFetchEnd),
+    getMonthlyRentFromActiveTenancies(userId),
   ]);
 
   if (dueRes.error) console.warn("[command-center] rent by due_date", dueRes.error.message);
@@ -161,7 +162,9 @@ async function loadCommandCenterFinancials(userId: string) {
   ingest((dueRes.data ?? []) as RentPaymentFinanceRow[]);
   ingest((paidRes.data ?? []) as RentPaymentFinanceRow[]);
 
-  const stats = computeRentFinancialMonthKpis(merged.values(), anchor);
+  const stats = computeRentFinancialMonthKpis(merged.values(), anchor, {
+    activeMonthlyRentRoll: activeMonthlyRentRoll > 0 ? activeMonthlyRentRoll : undefined,
+  });
 
   if (process.env.NODE_ENV === "development") {
     const nextMonth = monthBoundsIso(anchor, 1);
@@ -170,6 +173,7 @@ async function loadCommandCenterFinancials(userId: string) {
       anchor,
       windows: { current: currentMonth, nextMonth, lastMonth },
       stats,
+      activeMonthlyRentRoll,
       rowCount: merged.size,
     });
   }

@@ -20,6 +20,15 @@ export type RentFinancialMonthKpis = {
   rentCollectedLastMonth: number;
 };
 
+/** Options for parity with Rent Tracker “Expected (Mo)”. */
+export type ComputeRentFinancialMonthKpisOptions = {
+  /**
+   * Sum of `monthly_rent` for **active** tenancies in scope (`getMonthlyRentFromActiveTenancies`).
+   * When &gt; 0, replaces instalment-derived “scheduled this month” — same branch as {@link computeRentTrackerStats}.
+   */
+  activeMonthlyRentRoll?: number;
+};
+
 function isPaidRentStatus(status: string | null): boolean {
   return (status ?? "").toLowerCase() === "paid";
 }
@@ -31,6 +40,7 @@ function isPaidRentStatus(status: string | null): boolean {
 export function computeRentFinancialMonthKpis(
   rows: Iterable<RentFinanceKpiRowInput>,
   anchorIsoDate: string,
+  options?: ComputeRentFinancialMonthKpisOptions,
 ): RentFinancialMonthKpis {
   const anchor = anchorIsoDate.slice(0, 10);
   const current = monthBoundsIso(anchor, 0);
@@ -45,13 +55,15 @@ export function computeRentFinancialMonthKpis(
     rentCollectedLastMonth: 0,
   };
 
+  let scheduledFromInstalmentsThisMonth = 0;
+
   for (const p of rows) {
     const amt = resolvePaymentAmount(p);
     const due = (p.due_date ?? "").slice(0, 10);
     const paidIso = (p.paid_date ?? "").slice(0, 10);
 
     if (due && isoDateBetweenInclusive(due, current.startIso, current.endIso)) {
-      stats.rentScheduledThisMonth += amt;
+      scheduledFromInstalmentsThisMonth += amt;
     }
 
     if (due && isoDateBetweenInclusive(due, current.startIso, current.endIso) && !isPaidRentStatus(p.status)) {
@@ -75,6 +87,18 @@ export function computeRentFinancialMonthKpis(
         stats.rentCollectedLastMonth += amt;
       }
     }
+  }
+
+  const roll = options?.activeMonthlyRentRoll ?? 0;
+  stats.rentScheduledThisMonth =
+    roll > 0 ? roll : scheduledFromInstalmentsThisMonth;
+
+  if (process.env.NODE_ENV === "development" && roll > 0) {
+    console.info("[rent-financial-kpis] rentScheduledThisMonth uses active rent roll", {
+      anchor,
+      activeMonthlyRentRoll: roll,
+      scheduledFromInstalmentsThisMonth,
+    });
   }
 
   return stats;

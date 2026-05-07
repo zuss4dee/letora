@@ -21,7 +21,7 @@ export async function generateMetadata({
   const { id } = await params;
   return {
     title: `Import batch ${id.slice(0, 8)} · Letora`,
-    description: "Portfolio import reconciliation and row detail.",
+    description: "See what saved, what to double-check, and what to fix after a portfolio upload.",
   };
 }
 
@@ -65,26 +65,34 @@ export default async function PortfolioImportBatchPage({ params }: { params: Pro
   let bandClass: string;
 
   if (failed === 0 && succeeded > 0) {
-    headline = "Import completed successfully";
-    sub = "Your portfolio records are up to date. Scan “Needs review” if any rows carried warnings.";
+    headline = "Import finished";
+    sub = "Your changes are saved. Use quick checks below only if we flagged a row.";
     bandClass = "border-[#afefdd]/30 bg-[#152420]";
   } else if (succeeded > 0 && failed > 0) {
-    headline = "Import completed with partial failures";
-    sub =
-      "Some rows are live in Letora; others need a fix in your sheet. Use failed rows below, then re-import only what failed.";
+    headline = "Some rows didn't save";
+    sub = "Failed rows were not imported. Fix the file and import again.";
     bandClass = "border-[#f8cf83]/35 bg-[#2a2210]";
   } else if (succeeded === 0 && failed > 0) {
-    headline = "Import did not complete";
-    sub = "No rows were written successfully. Correct validation errors, then run the import again.";
+    headline = "Nothing was saved";
+    sub = "Failed rows were not imported. Fix the file and import again.";
     bandClass = "border-[#BB5551]/35 bg-[#2a1514]";
   } else {
     headline = "Import finished";
-    sub =
-      "Rows may be skipped (inactive, duplicates, or property-only). Expand sections to reconcile each line.";
+    sub = "Skim the sections below if anything looks off.";
     bandClass = "border-[#333333] bg-[#1A1A1A]";
   }
 
   const model = reconcilePortfolioBatch(b.rows);
+
+  const failedOutcomes = b.rows.filter((r) => r.outcome === "error");
+  const sr = b.sourceRows;
+  const retryFailedAvailable =
+    b.status !== "running" &&
+    b.rowsFailed > 0 &&
+    failedOutcomes.length > 0 &&
+    sr != null &&
+    sr.length > 0 &&
+    failedOutcomes.every((r) => r.rowIndex >= 0 && r.rowIndex < sr.length);
 
   return (
     <>
@@ -101,6 +109,7 @@ export default async function PortfolioImportBatchPage({ params }: { params: Pro
         skippedCount={skipped}
         model={model}
         rawRows={b.rows}
+        retryFailedAvailable={retryFailedAvailable}
       />
     </>
   );

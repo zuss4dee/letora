@@ -63,15 +63,15 @@ export async function CommandCenterArrearsQueue({ userId }: { userId: string }) 
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <span className="size-1.5 bg-[#ffb4ab]" />
-        <h2 className="text-xs font-bold uppercase tracking-widest text-white">Overdue Rent Action Queue</h2>
+        <h2 className="text-xs font-bold uppercase tracking-widest text-white">Late rent — needs action</h2>
       </div>
       
       <div className="border border-[#333333] bg-[#161616]">
         {rows.length === 0 ? (
           <div className="p-12 text-center">
-            <p className="text-xs font-bold uppercase tracking-widest text-zinc-600 mb-1">0 Overdue Rent Cases</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-zinc-600 mb-1">You’re up to date here</p>
             <p className="font-mono text-[10px] uppercase text-zinc-700">
-              All tenancies are current — nothing in the overdue action queue.
+              No late payments need action right now.
             </p>
           </div>
         ) : (
@@ -80,7 +80,7 @@ export async function CommandCenterArrearsQueue({ userId }: { userId: string }) 
               <Link
                 key={row.tenancyId}
                 href={arrearsRowHref(row)}
-                aria-label={`Open overdue rent case for ${row.tenantName} in Rent Tracker`}
+                aria-label={`Open late rent details for ${row.tenantName}`}
                 className="group flex items-center justify-between p-4 transition-colors hover:bg-[#242424]"
               >
                 <div className="flex items-center gap-4 min-w-0">
@@ -91,10 +91,10 @@ export async function CommandCenterArrearsQueue({ userId }: { userId: string }) 
                     <p className="text-[13px] font-bold text-white truncate">{row.tenantName}</p>
                     <p className="font-mono text-[10px] uppercase text-zinc-500 truncate">{row.propertyAddress}</p>
                     <p className="mt-1 font-mono text-[9px] uppercase tracking-wide text-zinc-600 truncate">
-                      {row.overdueInstalmentCount} overdue instalment{row.overdueInstalmentCount === 1 ? "" : "s"} · oldest{" "}
+                      {row.overdueInstalmentCount} missed payment{row.overdueInstalmentCount === 1 ? "" : "s"} · oldest{" "}
                       {formatShortIso(row.oldestDueDate)}
                       {row.actionState === "approval_needed"
-                        ? " · chase draft pending approval"
+                        ? " · reminder waiting for your OK"
                         : ""}
                     </p>
                   </div>
@@ -103,7 +103,7 @@ export async function CommandCenterArrearsQueue({ userId }: { userId: string }) 
                 <div className="flex items-center gap-8">
                   <div className="text-right hidden sm:block">
                     <p className="text-[13px] font-bold text-white tabular-nums">{formatMoney(row.totalOverdueAmount)}</p>
-                    <p className="font-mono text-[9px] uppercase text-zinc-500">{row.daysOverdue} days overdue (oldest)</p>
+                    <p className="font-mono text-[9px] uppercase text-zinc-500">{row.daysOverdue} days late (oldest)</p>
                   </div>
                   <div className="flex items-center gap-4">
                     <StatusBadge status={row.actionState} />

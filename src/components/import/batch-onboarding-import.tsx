@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   Download,
   Loader2,
@@ -17,9 +18,14 @@ import {
 
 import {
   previewBatchOnboardingFromFormData,
+  prepareRetryFailedRowsFromBatchAction,
   startBatchOnboardingAction,
   type BatchImportHistoryRow,
 } from "@/lib/actions/batch-onboarding";
+import {
+  PortfolioImportPreflight,
+} from "@/components/import/portfolio-import-preflight";
+import { filterRowsForCommit } from "@/components/import/portfolio-import-preflight-model";
 import type { PreparedRow } from "@/lib/onboarding/batch-onboard";
 import { PORTFOLIO_IMPORT_SCHEMA_GUIDE } from "@/lib/onboarding/portfolio-import-schema";
 import { PricingPlanSubscribeButton } from "@/components/marketing/pricing-plan-button";
@@ -32,92 +38,6 @@ import {
   type PortfolioImportDraftSummary,
 } from "@/components/import/portfolio-import-draft-storage";
 
-type Tone = "error" | "skip" | "new" | "matched" | "ok";
-
-function rowStatusLabel(row: PreparedRow): { label: string; tone: Tone } {
-  if (row.tags.includes("validation_error")) return { label: "Fix row", tone: "error" };
-  if (row.tags.includes("duplicate_csv_row_skip")) return { label: "Duplicate row", tone: "skip" };
-  if (row.tags.includes("existing_active_tenancy_skip"))
-    return { label: "Active tenancy exists", tone: "skip" };
-  if (row.tags.includes("new_property")) return { label: "New property", tone: "new" };
-  if (row.tags.includes("matched_property")) return { label: "Matched", tone: "matched" };
-  return { label: "Ready", tone: "ok" };
-}
-
-function previewImportNote(row: PreparedRow): string {
-  if (row.tags.includes("validation_error")) return "—";
-  if (row.skipReason) return row.skipReason;
-  if (row.raw.rowKind === "vacant") return "Vacant → property-only; no tenant/tenancy or onboarding.";
-  if (row.raw.rowKind === "onboarding") {
-    if (row.raw.tenancyStatusDb === "ended")
-      return "Onboarding-like row but tenancy ended — no onboarding agent.";
-    return "Pre-move-in → onboarding agent runs (welcome checklist path).";
-  }
-  return "Live tenancy → onboarding marked complete on tenancy; onboarding agent skipped.";
-}
-
-function previewNotesCells(row: PreparedRow): { errors: string; warnings: string; note: string } {
-  return {
-    errors: row.raw.rowErrors.length > 0 ? row.raw.rowErrors.join("; ") : "—",
-    warnings: row.raw.rowWarnings.length > 0 ? row.raw.rowWarnings.join("; ") : "—",
-    note: previewImportNote(row),
-  };
-}
-
-function StatusPill({ label, tone }: { label: string; tone: Tone }) {
-  const map: Record<Tone, string> = {
-    error: "border border-[#BB5551]/30 bg-[#7f2927]/20 text-[#ee7d77]",
-    skip: "border border-[#333333] bg-[#1a1a1a] text-[#888888]",
-    new: "border border-[#afefdd]/25 bg-[#1a2e28]/80 text-[#afefdd]",
-    matched: "border border-[#4f3700]/40 bg-[#4f3700]/25 text-[#f8cf83]",
-    ok: "border border-[#306f60]/30 bg-[#206153]/20 text-[#afefdd]",
-  };
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center px-2 py-0.5 text-[9px] font-bold uppercase tracking-widest",
-        map[tone],
-      )}
-    >
-      {label}
-    </span>
-  );
-}
-
-function Stat({
-  label,
-  value,
-  accent,
-  muted,
-  danger,
-}: {
-  label: string;
-  value: number;
-  accent?: boolean;
-  muted?: boolean;
-  danger?: boolean;
-}) {
-  return (
-    <div>
-      <p className="text-[9px] uppercase tracking-widest text-[#888888]">{label}</p>
-      <p
-        className={cn(
-          "mt-0.5 font-mono text-xl font-semibold tabular-nums",
-          danger
-            ? "text-[#ee7d77]"
-            : accent
-              ? "text-[#f8cf83]"
-              : muted
-                ? "text-[#555555]"
-                : "text-white",
-        )}
-      >
-        {value.toLocaleString("en-GB")}
-      </p>
-    </div>
-  );
-}
-
 function StatusIcon({ status }: { status: string }) {
   if (status === "completed") return <CheckCircle2 className="size-3.5 text-[#afefdd]" />;
   if (status === "failed") return <XCircle className="size-3.5 text-[#ee7d77]" />;
@@ -125,13 +45,40 @@ function StatusIcon({ status }: { status: string }) {
   return <CheckCircle2 className="size-3.5 text-[#555555]" />;
 }
 
-export function BatchOnboardingImport({ history }: { history: BatchImportHistoryRow[] }) {
+/** Deterministic UK timestamps for SSR + client (avoids `Date#toLocaleString()` env mismatch). */
+const importBatchCreatedAtFormatter = new Intl.DateTimeFormat("en-GB", {
+  day: "2-digit",
+  month: "2-digit",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+  timeZone: "Europe/London",
+});
+
+function formatImportBatchCreatedAt(iso: string | null): string {
+  if (!iso) return "";
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms)) return "";
+  return importBatchCreatedAtFormatter.format(new Date(ms));
+}
+
+export function BatchOnboardingImport({
+  history,
+  retryBatchId = null,
+}: {
+  history: BatchImportHistoryRow[];
+  retryBatchId?: string | null;
+}) {
   const router = useRouter();
 
   const [csvText, setCsvText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<PreparedRow[] | null>(null);
   const [summary, setSummary] = useState<PortfolioImportDraftSummary | null>(null);
+  const [excludedRowIndices, setExcludedRowIndices] = useState<Set<number>>(() => new Set());
+  const [importOnlyClean, setImportOnlyClean] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [importFailureKind, setImportFailureKind] = useState<"none" | "plan_limit" | "other">("none");
@@ -141,6 +88,13 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
   const [isImportPending, startImport] = useTransition();
   const [isDragging, setIsDragging] = useState(false);
   const [confirmCommit, setConfirmCommit] = useState(false);
+  const [retryFromBatchContext, setRetryFromBatchContext] = useState<string | null>(null);
+  const [retryBatchLoadError, setRetryBatchLoadError] = useState<string | null>(null);
+  const [isRetryBatchHydrating, setIsRetryBatchHydrating] = useState(() => Boolean(retryBatchId));
+
+  const importInFlightRef = useRef(false);
+  const lastImportFingerprintRef = useRef("");
+  const lastImportAtRef = useRef(0);
 
   function refreshStoredDraftFlag() {
     setHasStoredImportDraft(loadPortfolioImportDraft() !== null);
@@ -159,6 +113,54 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
     }
     refreshStoredDraftFlag();
   }, []);
+
+  useEffect(() => {
+    if (!retryBatchId) {
+      setIsRetryBatchHydrating(false);
+      return;
+    }
+    let cancelled = false;
+    setRetryBatchLoadError(null);
+    setIsRetryBatchHydrating(true);
+    setError(null);
+    setImportError(null);
+    setImportFailureKind("none");
+
+    void (async () => {
+      const res = await prepareRetryFailedRowsFromBatchAction(retryBatchId);
+      if (cancelled) return;
+      if (typeof window !== "undefined") {
+        window.history.replaceState({}, "", "/dashboard/import");
+      }
+      if (res.ok === false) {
+        setRetryBatchLoadError(res.error);
+        setRows(null);
+        setSummary(null);
+        setConfirmCommit(false);
+        setRetryFromBatchContext(null);
+        setIsRetryBatchHydrating(false);
+        return;
+      }
+      clearPortfolioImportDraft();
+      setHasStoredImportDraft(false);
+      setRows(res.rows);
+      setSummary(res.summary);
+      setExcludedRowIndices(new Set());
+      setImportOnlyClean(false);
+      setConfirmCommit(false);
+      setRetryFromBatchContext(retryBatchId);
+      setIsRetryBatchHydrating(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [retryBatchId]);
+
+  const excludedRef = useRef(excludedRowIndices);
+  excludedRef.current = excludedRowIndices;
+  const importOnlyCleanRef = useRef(importOnlyClean);
+  importOnlyCleanRef.current = importOnlyClean;
 
   /** Always point at latest preview snapshot so submit matches the manifest (avoids stale JSON). */
   const rowsRef = useRef(rows);
@@ -182,25 +184,19 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
     resetPreview();
   }
 
-  const canRun = useMemo(() => {
-    if (!confirmCommit || !rows || rows.length === 0 || isImportPending || isPreviewing) return false;
-    return rows.some(
-      (r) =>
-        !r.tags.includes("validation_error") &&
-        !r.tags.includes("existing_active_tenancy_skip") &&
-        !r.tags.includes("duplicate_csv_row_skip"),
-    );
-  }, [rows, confirmCommit, isImportPending, isPreviewing]);
-
   function resetPreview() {
     setRows(null);
     setSummary(null);
+    setExcludedRowIndices(new Set());
+    setImportOnlyClean(false);
     setError(null);
     setImportError(null);
     setImportFailureKind("none");
     setConfirmCommit(false);
     clearPortfolioImportDraft();
     setHasStoredImportDraft(false);
+    setRetryFromBatchContext(null);
+    setRetryBatchLoadError(null);
   }
 
   function onPreview() {
@@ -227,37 +223,86 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
       }
       setRows(res.rows);
       setSummary(res.summary);
+      setExcludedRowIndices(new Set());
+      setImportOnlyClean(false);
       setConfirmCommit(false);
     });
   }
 
+  function fingerprintPreparedRows(payload: PreparedRow[]): string {
+    return JSON.stringify(
+      payload.map((r) => ({
+        i: r.rowIndex,
+        k: r.raw.rowKind,
+        addr: r.raw.propertyAddress,
+        email: r.raw.tenantEmail ?? "",
+        tags: [...r.tags].sort(),
+        skip: r.skipReason ?? "",
+        errs: [...r.raw.rowErrors],
+        warns: [...r.raw.rowWarnings],
+      })),
+    );
+  }
+
   function onRun() {
-    if (isImportPending) return;
+    if (isImportPending || importInFlightRef.current) return;
     const latestRows = rowsRef.current;
     if (!latestRows || latestRows.length === 0) return;
+    const toSend = filterRowsForCommit(latestRows, {
+      excluded: excludedRef.current,
+      onlyNoWarnings: importOnlyCleanRef.current,
+    });
+    if (toSend.length === 0) return;
     setImportError(null);
     setError(null);
 
+    const fp = fingerprintPreparedRows(toSend);
+    const now = Date.now();
+    if (
+      fp === lastImportFingerprintRef.current &&
+      now - lastImportAtRef.current < 12_000
+    ) {
+      setImportError(
+        "This preview was just submitted. Wait for navigation to the batch result, or refresh if nothing happens — double imports are blocked for a few seconds.",
+      );
+      setImportFailureKind("other");
+      return;
+    }
+
     startImport(async () => {
-      const res = await startBatchOnboardingAction(JSON.stringify(latestRows));
-      if (res.ok === false) {
-        const hitLimit = res.reason === "plan_limit";
-        if (hitLimit && summary) {
-          savePortfolioImportDraft(latestRows, summary);
-          setHasStoredImportDraft(true);
+      if (importInFlightRef.current) return;
+      importInFlightRef.current = true;
+      lastImportFingerprintRef.current = fp;
+      lastImportAtRef.current = Date.now();
+      try {
+        const res = await startBatchOnboardingAction(JSON.stringify(toSend));
+        if (res.ok === false) {
+          const hitLimit = res.reason === "plan_limit";
+          if (hitLimit && summary) {
+            savePortfolioImportDraft(latestRows, summary, {
+              excludedRowIndices: excludedRef.current.size > 0 ? [...excludedRef.current] : undefined,
+              importOnlyNoWarnings: importOnlyCleanRef.current || undefined,
+            });
+            setHasStoredImportDraft(true);
+          }
+          setImportError(res.error);
+          setImportFailureKind(hitLimit ? "plan_limit" : "other");
+          if ("finalizeFailed" in res && res.finalizeFailed && "batchId" in res && res.batchId) {
+            router.push(`/dashboard/import/batch/${res.batchId}`);
+          }
+          return;
         }
-        setImportError(res.error);
-        setImportFailureKind(hitLimit ? "plan_limit" : "other");
-        if ("finalizeFailed" in res && res.finalizeFailed && "batchId" in res && res.batchId) {
-          router.push(`/dashboard/import/batch/${res.batchId}`);
-        }
-        return;
+        clearPortfolioImportDraft();
+        setHasStoredImportDraft(false);
+        router.push(`/dashboard/import/batch/${res.batchId}`);
+      } finally {
+        importInFlightRef.current = false;
       }
-      clearPortfolioImportDraft();
-      setHasStoredImportDraft(false);
-      router.push(`/dashboard/import/batch/${res.batchId}`);
     });
   }
+
+  const sidebarPreflightMuted =
+    summary !== null && rows !== null && rows.length > 0;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-[#131313] text-[#e5e2e1]">
@@ -283,7 +328,7 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
             <p className="mt-1 text-[11px] leading-relaxed text-[#c8dfd7]">
               {checkoutFlash === "success"
                 ? hasStoredImportDraft
-                  ? "You were returned here from checkout. Restore your saved preview below, confirm the checklist, then run Confirm & import again."
+                  ? "You were returned here from checkout. Restore your saved preview below, confirm in step 02, then import your ready rows."
                   : "You were returned here from checkout. If your preview table is empty, paste or upload again and click Preview Rows before importing."
                 : "No charge was taken. Any preview saved earlier in this tab is still available below."}
             </p>
@@ -296,6 +341,50 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
           >
             Dismiss
           </button>
+        </div>
+      ) : null}
+
+      {isRetryBatchHydrating ? (
+        <div className="flex items-center gap-3 border-b border-[#f8cf83]/25 bg-[#2a2210]/45 px-6 py-3">
+          <Loader2 className="size-4 shrink-0 animate-spin text-[#f8cf83]" aria-hidden />
+          <p className="text-[12px] leading-snug text-[#e5e2e1]">Loading failed rows from that import into the preflight editor…</p>
+        </div>
+      ) : null}
+
+      {retryBatchLoadError ? (
+        <div className="flex items-start justify-between gap-3 border-b border-[#BB5551]/40 bg-[#2a1514]/60 px-6 py-3">
+          <div className="min-w-0">
+            <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#ee7d77]">Could not open retry</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-zinc-400">{retryBatchLoadError}</p>
+          </div>
+          <button
+            type="button"
+            className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+            aria-label="Dismiss retry error"
+            onClick={() => setRetryBatchLoadError(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      ) : null}
+
+      {retryFromBatchContext && !isRetryBatchHydrating ? (
+        <div className="border-b border-[#f8cf83]/25 bg-[#2a2210]/35 px-6 py-3">
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#f8cf83]">Retry mode</p>
+          <p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-[#cfc9c4]">
+            <span className="font-medium text-white">Retry failed rows</span> uses only the lines that didn&apos;t save on batch{" "}
+            <span className="font-mono text-[11px] text-zinc-300">{retryFromBatchContext.slice(0, 8)}…</span> — edit below, run
+            preview checks, then import. Letora matches what already exists, so successful rows aren&apos;t touched.
+          </p>
+          <p className="mt-2 max-w-2xl text-[11px] leading-relaxed text-zinc-500">
+            <span className="font-medium text-zinc-400">Upload again</span> starts a separate full import when you paste or upload a file in step&nbsp;01.
+          </p>
+          <Link
+            href={`/dashboard/import/batch/${encodeURIComponent(retryFromBatchContext)}`}
+            className="mt-3 inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+          >
+            Back to batch results
+          </Link>
         </div>
       ) : null}
 
@@ -321,6 +410,8 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                 }
                 setRows(d.rows);
                 setSummary(d.summary);
+                setExcludedRowIndices(new Set(d.excludedRowIndices ?? []));
+                setImportOnlyClean(!!d.importOnlyNoWarnings);
                 setImportError(null);
                 setImportFailureKind("none");
                 setConfirmCommit(false);
@@ -505,37 +596,8 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
               ) : null}
             </section>
 
-            {/* ── Step 02: Review Manifest ── */}
             {summary && rows ? (
-              <section className="border-b border-[#282828]">
-                {/* Step header */}
-                <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#282828] bg-[#1A1A1A] px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <span className="bg-white px-1.5 py-0.5 font-mono text-[10px] font-black text-[#161616]">
-                      02
-                    </span>
-                    <h2 className="text-[11px] font-bold uppercase tracking-widest text-white">
-                      Review the manifest
-                    </h2>
-                  </div>
-                  <div className="flex flex-wrap items-center gap-6">
-                    <Stat label="Total" value={summary.total} />
-                    <Stat label="Ready" value={summary.actionableRows} accent />
-                    <Stat label="Dup rows" value={summary.duplicateCsvSkips} muted />
-                    {summary.warningRows > 0 ? (
-                      <Stat label="Rows w/ warnings" value={summary.warningRows} muted />
-                    ) : null}
-                    <Stat label="New" value={summary.newProperties} />
-                    <Stat label="Matched" value={summary.matchedProperties} />
-                    {summary.skippedActiveTenancies > 0 ? (
-                      <Stat label="Already active" value={summary.skippedActiveTenancies} muted />
-                    ) : null}
-                    {summary.validationErrors > 0 ? (
-                      <Stat label="Errors" value={summary.validationErrors} danger />
-                    ) : null}
-                  </div>
-                </div>
-
+              <>
                 {isImportPending ? (
                   <div className="flex items-start gap-3 border-b border-[#f8cf83]/25 bg-[#2a2210]/90 px-4 py-4">
                     <Loader2 className="mt-0.5 size-5 shrink-0 animate-spin text-[#f8cf83]" aria-hidden />
@@ -544,8 +606,8 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                         Import in progress
                       </p>
                       <p className="mt-2 text-[12px] leading-relaxed text-[#e5e2e1]">
-                        Writing properties, tenants, tenancies, and rent rows. Do not close this tab — you will be taken
-                        to the batch result when finished.
+                        Writing properties, tenants, tenancies, and rent rows. Do not close this tab — you will be taken to
+                        the batch result when finished.
                       </p>
                     </div>
                   </div>
@@ -562,8 +624,8 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                       {importFailureKind === "plan_limit" ? (
                         <>
                           <p className="mt-2 text-[11px] leading-relaxed text-[#e8c8c5]">
-                            Your latest preview snapshot is saved in this browser. Use Restore prepared import at the top
-                            after upgrading, or paste and run Preview Rows again if it is missing.
+                            Your latest preview snapshot can be saved with “Save and finish later” in step 02. Restore from
+                            the banner at the top of this page after upgrading, or paste and run Preview Rows again.
                           </p>
                           <div className="mt-4 flex max-w-xl flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
                             <div className="sm:min-w-[220px] sm:flex-1 [&_button]:min-h-[44px] [&_button]:text-xs">
@@ -584,8 +646,9 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                             </Link>
                           </div>
                           <p className="mt-3 text-[10px] leading-relaxed text-[#c49a97]">
-                            Upgrade plan opens Monthly checkout (billing via Polar) for the current subscriber offering, then returns you here when payment completes.
-                            Open Billing for invoices, renewal dates, or to review monthly vs yearly.
+                            Upgrade plan opens Monthly checkout (billing via Polar) for the current subscriber offering, then
+                            returns you here when payment completes. Open Billing for invoices, renewal dates, or to review
+                            monthly vs yearly.
                           </p>
                         </>
                       ) : null}
@@ -593,159 +656,24 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
                   </div>
                 ) : null}
 
-                {/* Mobile cards */}
-                <ul className="divide-y divide-[#282828] sm:hidden">
-                  {rows.map((row) => {
-                    const status = rowStatusLabel(row);
-                    const cells = previewNotesCells(row);
-                    return (
-                      <li key={`m-${row.rowIndex}`} className="px-4 py-3">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="truncate text-[11px] font-medium text-white">
-                              {row.raw.propertyAddress || "—"}
-                            </p>
-                            <p className="truncate font-mono text-[10px] text-[#888888]">
-                              {row.raw.rowKind === "vacant"
-                                ? "(vacant)"
-                                : `${row.raw.tenantFullName || "—"} · ${row.raw.tenantEmail || "—"}`}
-                            </p>
-                          </div>
-                          <StatusPill label={status.label} tone={status.tone} />
-                        </div>
-                        <div className="mt-2 flex items-center justify-between border-t border-[#282828] pt-2 font-mono text-[10px] text-[#888888]">
-                          <span>{row.raw.monthlyRent > 0 ? `£${row.raw.monthlyRent.toLocaleString()}/mo` : "—"}</span>
-                          <span>{row.raw.startDate || "—"}</span>
-                        </div>
-                        {cells.errors !== "—" ? (
-                          <p className="mt-2 font-mono text-[10px] text-[#ee7d77]">
-                            Errors: {cells.errors}
-                          </p>
-                        ) : null}
-                        {cells.warnings !== "—" ? (
-                          <p className="mt-1 font-mono text-[10px] text-[#f8cf83]">
-                            Warnings: {cells.warnings}
-                          </p>
-                        ) : null}
-                        {cells.note !== "—" ? (
-                          <p className="mt-1 font-mono text-[10px] text-[#888888]">Note: {cells.note}</p>
-                        ) : null}
-                      </li>
-                    );
-                  })}
-                </ul>
-
-                {/* Desktop table */}
-                <div className="hidden overflow-x-auto sm:block">
-                  <table className="w-full min-w-[1020px] border-collapse text-left">
-                    <thead>
-                      <tr className="border-b border-[#282828] bg-[#161616] text-[9px] uppercase tracking-widest text-[#555555]">
-                        {["#", "Status", "Kind", "Property", "Tenant", "Rent", "Start", "Errors", "Warnings", "Import note"].map(
-                          (h) => (
-                            <th key={h} className="px-4 py-2.5 font-medium">
-                              {h}
-                            </th>
-                          ),
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rows.map((row) => {
-                        const status = rowStatusLabel(row);
-                        const cells = previewNotesCells(row);
-                        return (
-                          <tr
-                            key={row.rowIndex}
-                            className="border-b border-[#282828] align-top transition-colors hover:bg-[#1A1A1A]"
-                          >
-                            <td className="px-4 py-3 font-mono text-[10px] tabular-nums text-[#555555]">
-                              {String(row.rowIndex + 1).padStart(2, "0")}
-                            </td>
-                            <td className="px-4 py-3">
-                              <StatusPill label={status.label} tone={status.tone} />
-                            </td>
-                            <td className="px-4 py-3 font-mono text-[10px] uppercase tracking-wide text-[#888888]">
-                              {row.raw.rowKind}
-                            </td>
-                            <td className="px-4 py-3">
-                              <p className="text-[11px] font-medium text-white">
-                                {row.raw.propertyAddress || "—"}
-                              </p>
-                              <p className="font-mono text-[10px] text-[#888888]">
-                                {[row.raw.city, row.raw.postcode].filter(Boolean).join(", ") || "—"}
-                              </p>
-                            </td>
-                            <td className="px-4 py-3">
-                              <p className="text-[11px] font-medium text-white">
-                                {row.raw.tenantFullName || "—"}
-                              </p>
-                              <p className="truncate font-mono text-[10px] text-[#888888]">
-                                {row.raw.tenantEmail || "—"}
-                              </p>
-                            </td>
-                            <td className="px-4 py-3 font-mono text-[11px] tabular-nums text-white">
-                              {row.raw.monthlyRent > 0 ? `£${row.raw.monthlyRent.toLocaleString()}` : "—"}
-                            </td>
-                            <td className="px-4 py-3 font-mono text-[10px] tabular-nums text-[#888888]">
-                              {row.raw.startDate || "—"}
-                            </td>
-                            <td className="max-w-[200px] px-4 py-3 font-mono text-[10px] text-[#ee7d77]">
-                              {cells.errors}
-                            </td>
-                            <td className="max-w-[200px] px-4 py-3 font-mono text-[10px] text-[#f8cf83]">
-                              {cells.warnings}
-                            </td>
-                            <td className="max-w-[220px] px-4 py-3 font-mono text-[10px] text-[#888888]">
-                              {cells.note}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Run footer */}
-                <div className="flex flex-col gap-3 border-t border-[#282828] bg-[#1A1A1A] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex flex-col gap-2">
-                    <label className={cn(
-                      "flex cursor-pointer items-start gap-2 text-left",
-                      isImportPending && "pointer-events-none opacity-60",
-                    )}>
-                      <input
-                        type="checkbox"
-                        checked={confirmCommit}
-                        disabled={isImportPending}
-                        onChange={(e) => setConfirmCommit(e.target.checked)}
-                        className="mt-0.5 size-3.5 shrink-0 rounded border border-[#555555] bg-[#0B0B0B] accent-white"
-                      />
-                      <span className="font-mono text-[9px] uppercase tracking-widest leading-relaxed text-[#aaaaaa]">
-                        I have checked this preview — create or match properties and tenancies exactly as shown. Rows with
-                        errors will not import; duplicates and already-active pairs are skipped.
-                      </span>
-                    </label>
-                    <p className="font-mono text-[9px] uppercase tracking-widest text-[#555555]">
-                      {summary.actionableRows} row{summary.actionableRows === 1 ? "" : "s"} will run · Portfolio, Tenants,
-                      Tenancies, and Rent Tracker update after completion
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={onRun}
-                    disabled={!canRun || isImportPending || isPreviewing}
-                    className="flex items-center gap-2 bg-white px-6 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-opacity hover:opacity-90 disabled:opacity-40"
-                  >
-                    {isImportPending ? (
-                      <>
-                        <Loader2 className="size-3 animate-spin" />
-                        Importing…
-                      </>
-                    ) : (
-                      <>Confirm & import {summary.actionableRows}</>
-                    )}
-                  </button>
-                </div>
-              </section>
+                <PortfolioImportPreflight
+                  rows={rows}
+                  summary={summary}
+                  onRowsSummaryChange={(r, s) => {
+                    setRows(r);
+                    setSummary(s);
+                  }}
+                  excluded={excludedRowIndices}
+                  onExcludedChange={setExcludedRowIndices}
+                  importOnlyClean={importOnlyClean}
+                  onImportOnlyCleanChange={setImportOnlyClean}
+                  confirmCommit={confirmCommit}
+                  onConfirmCommitChange={setConfirmCommit}
+                  isImportPending={isImportPending}
+                  isPreviewing={isPreviewing}
+                  onImport={onRun}
+                />
+              </>
             ) : null}
 
             {/* ── Or Use Chat ── */}
@@ -775,83 +703,154 @@ export function BatchOnboardingImport({ history }: { history: BatchImportHistory
           </div>
         </div>
 
-        {/* ── Right Sidebar ── */}
-        <aside className="hidden w-72 shrink-0 flex-col border-l border-[#282828] lg:flex">
-          {/* Recent Batches */}
-          <div className="border-b border-[#282828] bg-[#1A1A1A] px-4 py-3">
-            <h3 className="text-[9px] font-bold uppercase tracking-widest text-[#888888]">
-              Recent Batches
-            </h3>
-          </div>
-
-          {history.length === 0 ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-12 opacity-40">
-              <div className="flex size-10 items-center justify-center border border-[#333333]">
-                <Upload className="size-4 text-[#555555]" />
-              </div>
-              <p className="text-center font-mono text-[9px] uppercase tracking-widest text-[#555555]">
-                No batches yet
-              </p>
-              <p className="text-center text-[9px] text-[#444748]">
-                Completed imports and historical agent logs will appear here.
-              </p>
-            </div>
-          ) : (
-            <ul className="flex-1 divide-y divide-[#282828] overflow-y-auto">
-              {history.map((h) => (
-                <li key={h.id} className="hover:bg-[#1A1A1A]">
-                  <Link
-                    href={`/dashboard/import/batch/${h.id}`}
-                    className="block px-4 py-3 focus-visible:outline focus-visible:outline-offset-[-2px] focus-visible:outline-[#afefdd]"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-2">
-                        <StatusIcon status={h.status} />
-                        <div className="min-w-0">
-                          <p className="text-[11px] font-medium text-white">
-                            {h.rowsSucceeded}/{h.rowsTotal} onboarded
-                            {h.rowsFailed > 0 ? ` · ${h.rowsFailed} failed` : ""}
-                          </p>
-                          <p className="font-mono text-[9px] text-[#555555]">
-                            {h.agentsTriggered} agents · {h.approvalsCreated} approvals
-                          </p>
-                          <p className="font-mono text-[9px] text-[#444748]">
-                            {h.createdAt ? new Date(h.createdAt).toLocaleString() : ""} · {h.kind}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex shrink-0 flex-col items-end gap-1">
-                        <ChevronRight className="size-3.5 text-[#555555]" aria-hidden />
-                        <span className="font-mono text-[8px] uppercase tracking-wider text-[#555555]">
-                          {h.status}
-                        </span>
-                      </div>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-            </ul>
+        {/* ── Right Sidebar: muted while preflight is active so editing stays focal ── */}
+        <aside
+          className={cn(
+            "hidden w-64 shrink-0 flex-col border-l lg:flex",
+            sidebarPreflightMuted ? "border-[#1d1d1d] bg-[#101010]" : "border-[#282828]",
           )}
-
-          {/* Import Guide */}
-          <div className="border-t border-[#282828] bg-[#1A1A1A] p-4">
-            <div className="mb-3 flex items-center gap-2">
-              <p className="text-[9px] font-bold uppercase tracking-widest text-[#555555]">
-                Import Guide
-              </p>
+        >
+          <details
+            className={cn(
+              "group border-b [&_summary::-webkit-details-marker]:hidden [&[open]_summary_.past-import-chevron]:rotate-180",
+              sidebarPreflightMuted ? "border-[#1d1d1d] bg-[#121212]" : "border-[#282828] bg-[#1A1A1A]",
+            )}
+          >
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 [&::marker]:content-none [&::marker]:hidden">
+              <div>
+                <h3 className={cn(
+                  "text-[9px] font-bold uppercase tracking-widest",
+                  sidebarPreflightMuted ? "text-[#595959]" : "text-[#888888]",
+                )}>
+                  Past imports
+                </h3>
+                <p className={cn(
+                  "mt-0.5 font-mono text-[8px] uppercase tracking-wider",
+                  sidebarPreflightMuted ? "text-[#4a4a4a]" : "text-[#555555]",
+                )}>
+                  Open when you need history
+                </p>
+              </div>
+              <ChevronDown
+                aria-hidden
+                className="past-import-chevron size-4 shrink-0 rotate-0 text-[#555555] transition-transform"
+              />
+            </summary>
+            <div
+              className={cn(
+                "max-h-[32vh] overflow-y-auto border-t",
+                sidebarPreflightMuted ? "border-[#1d1d1d] bg-[#0f0f0f]" : "border-[#282828] bg-[#131313]",
+              )}
+            >
+              {history.length === 0 ? (
+                <div className="flex flex-col gap-3 px-6 py-8 opacity-50">
+                  <div className="flex size-10 items-center justify-center border border-[#333333]">
+                    <Upload className="size-4 text-[#555555]" />
+                  </div>
+                  <p className="text-center font-mono text-[9px] uppercase tracking-widest text-[#555555]">
+                    No batches yet
+                  </p>
+                  <p className="text-center text-[9px] text-[#444748]">
+                    Finished runs collect here once you confirm an import below.
+                  </p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-[#282828]">
+                  {history.map((h) => (
+                    <li key={h.id} className="hover:bg-[#1A1A1A]">
+                      <Link
+                        href={`/dashboard/import/batch/${h.id}`}
+                        className="block px-4 py-3 focus-visible:outline focus-visible:outline-offset-[-2px] focus-visible:outline-[#afefdd]"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <StatusIcon status={h.status} />
+                            <div className="min-w-0">
+                              <p className="text-[11px] font-medium text-white">
+                                {h.rowsSucceeded}/{h.rowsTotal} onboarded
+                                {h.rowsFailed > 0 ? ` · ${h.rowsFailed} failed` : ""}
+                              </p>
+                              <p className="font-mono text-[9px] text-[#555555]">
+                                {h.agentsTriggered} agents · {h.approvalsCreated} approvals
+                              </p>
+                              <p className="font-mono text-[9px] text-[#444748]">
+                                {formatImportBatchCreatedAt(h.createdAt)} · {h.kind}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 flex-col items-end gap-1">
+                            <ChevronRight className="size-3.5 text-[#555555]" aria-hidden />
+                            <span className="font-mono text-[8px] uppercase tracking-wider text-[#555555]">
+                              {h.status}
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
-            <ul className="max-h-[min(40vh,320px)] space-y-2 overflow-y-auto pr-1">
-              {importGuideBullets.map((item) => (
-                <li
-                  key={item}
-                  className="flex gap-2 text-[9px] leading-snug text-[#666666]"
+          </details>
+
+          {/* Schema reference — collapsible during preflight to reduce clutter */}
+          <details
+            key={sidebarPreflightMuted ? "preflight-muted" : "pre-preview"}
+            className={cn(
+              "border-t [&_summary::-webkit-details-marker]:hidden [&[open]_summary_.guide-chevron]:rotate-180",
+              sidebarPreflightMuted ? "border-[#1d1d1d] bg-[#101010]" : "border-[#282828] bg-[#1A1A1A]",
+            )}
+            {...({
+              // DOM supports defaultOpen on <details>; current React typings omit it.
+              defaultOpen: !sidebarPreflightMuted,
+            } satisfies Record<string, unknown>)}
+          >
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-2.5 [&::marker]:content-none [&::marker]:hidden">
+              <div>
+                <p
+                  className={cn(
+                    "text-[9px] font-bold uppercase tracking-widest",
+                    sidebarPreflightMuted ? "text-[#505050]" : "text-[#555555]",
+                  )}
                 >
-                  <span className="mt-1.5 size-1 shrink-0 rounded-full bg-[#444444]" aria-hidden />
-                  <span>{item.startsWith("•") ? item.slice(1).trim() : item}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+                  Import guide
+                </p>
+                <p
+                  className={cn(
+                    "mt-0.5 font-mono text-[8px] uppercase tracking-wider leading-snug",
+                    sidebarPreflightMuted ? "text-[#474747]" : "text-[#444748]",
+                  )}
+                >
+                  Column hints · optional unless you paste a strange export
+                </p>
+              </div>
+              <ChevronDown
+                aria-hidden
+                className="guide-chevron size-4 shrink-0 rotate-0 text-[#454545] transition-transform"
+              />
+            </summary>
+            <div className="border-t border-[#1f1f1f]/80 px-3 pb-3 pt-2">
+              <ul
+                className={cn(
+                  "max-h-[min(34vh,280px)] space-y-1.5 overflow-y-auto pr-1",
+                  sidebarPreflightMuted ? "text-[#595959]" : "text-[#666666]",
+                )}
+              >
+                {importGuideBullets.map((item) => (
+                  <li key={item} className="flex gap-2 text-[8px] leading-snug">
+                    <span
+                      className={cn(
+                        "mt-1.5 size-1 shrink-0 rounded-full",
+                        sidebarPreflightMuted ? "bg-[#333333]" : "bg-[#444444]",
+                      )}
+                      aria-hidden
+                    />
+                    <span>{item.startsWith("•") ? item.slice(1).trim() : item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </details>
         </aside>
       </div>
     </div>

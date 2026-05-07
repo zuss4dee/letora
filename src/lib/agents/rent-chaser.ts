@@ -10,6 +10,13 @@ import { normalizePropertyAddressLabel } from "@/lib/property-address";
 import { createClient } from "@/lib/supabase/server";
 import { insertEmailDraft } from "@/lib/email-drafts/store";
 
+const RENT_CHASER_DEBUG = process.env.LETORA_DEBUG_RENT_CHASER === "1";
+
+function debugRentChaser(label: string, detail: Record<string, unknown>) {
+  if (!RENT_CHASER_DEBUG) return;
+  console.info(`[RentChaser][debug] ${label}`, detail);
+}
+
 export interface AgentResult {
   tenantName: string;
   tenantEmail: string;
@@ -172,22 +179,33 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
     instructions: settings?.rent_chaser_instructions ?? "",
   };
 
+  /** Match arrears KPI / Rent Tracker: overdue (prefix) or pending with past due_date — case-insensitive status. */
   const { data: overdueData, error: overdueError } = await supabase
     .from("rent_payments")
     .select("id,property_id,tenant_id,tenancy_id,amount,due_date,status, tenancies!inner(properties!inner(user_id))")
     .eq("tenancies.properties.user_id", resolvedUserId)
-    .eq("status", "overdue");
+    .ilike("status", "overdue%");
 
   const { data: pendingData, error: pendingError } = await supabase
     .from("rent_payments")
     .select("id,property_id,tenant_id,tenancy_id,amount,due_date,status, tenancies!inner(properties!inner(user_id))")
     .eq("tenancies.properties.user_id", resolvedUserId)
-    .eq("status", "pending")
+    .ilike("status", "pending")
     .lt("due_date", today);
 
   if (overdueError || pendingError) {
+    console.warn("[RentChaser] chaseable payment query failed", {
+      overdue: overdueError?.message,
+      pending: pendingError?.message,
+    });
     return [];
   }
+
+  debugRentChaser("raw_query_counts", {
+    overdueRows: overdueData?.length ?? 0,
+    pendingPastDueRows: pendingData?.length ?? 0,
+    today,
+  });
 
   const merged = [...(overdueData ?? []), ...(pendingData ?? [])] as PaymentRow[];
   const seenIds = new Set<string>();
@@ -200,10 +218,16 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
   if (monthFilter && /^\d{4}-\d{2}$/.test(monthFilter)) {
     const start = `${monthFilter}-01`;
     const end = `${monthFilter}-31`;
+    const beforeMonth = candidates.length;
     candidates = candidates.filter((row) => {
       const d = row.due_date;
       if (!d) return false;
       return d >= start && d <= end;
+    });
+    debugRentChaser("after_month_filter", {
+      monthFilter,
+      before: beforeMonth,
+      after: candidates.length,
     });
   }
 
@@ -348,7 +372,7 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
       if (draftResult.ok) {
         emailDraftId = draftResult.id;
         console.log(`[RentChaser] Email draft created: ${emailDraftId}`);
-      } else {
+      } else if (draftResult.ok === false) {
         console.error(`[RentChaser] Failed to create email draft: ${draftResult.error}`);
       }
 
@@ -380,7 +404,11 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
         { supabase, userId: resolvedUserId },
       );
 
-      if (!approval.ok) {
+      if (approval.ok) {
+        debugRentChaser("approval_created", { approvalId: approval.id, rentPaymentId: row.id, tenantName });
+      }
+
+      if (approval.ok === false) {
         await supabase
           .from("agent_runs")
           .update({

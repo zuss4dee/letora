@@ -2,6 +2,10 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "crons": [
     {
+      "path": "/api/cron/rent-chase",
+      "schedule": "0 7 * * *"
+    },
+    {
       "path": "/api/cron/stale-approval-reminders",
       "schedule": "0 8 * * *"
     }

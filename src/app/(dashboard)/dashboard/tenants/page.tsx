@@ -6,6 +6,7 @@ import { ImportBatchScopeChip } from "@/components/import/import-batch-scope-chi
 import { PropertyPortfolioBackLink } from "@/components/dashboard/property-portfolio-back-link";
 import { TenantsDashboardList } from "@/components/tenants/tenants-dashboard-list";
 import { loadImportBatchIdFilterSets } from "@/lib/import-batch-filter-loader";
+import { scopedTenantRows } from "@/lib/import-batch-list-scope";
 import { importBatchShortLabel, parseImportBatchParam } from "@/lib/import-batch-query";
 import { getTenancies } from "@/lib/actions/tenancies";
 import { getTenants } from "@/lib/actions/tenants";
@@ -26,40 +27,39 @@ async function TenantsTableSection({
   const tenants = userId ? await getTenants(userId) : [];
 
   const batchFilter = importBatchId ? await loadImportBatchIdFilterSets(importBatchId) : null;
-  let scope: { batchId: string; short: string } | null = null;
-  let list = tenants;
+  const scopeBatch =
+    importBatchId && batchFilter?.ok
+      ? { batchId: importBatchId, short: importBatchShortLabel(importBatchId) }
+      : null;
 
-  if (userId != null && propertyId == null && importBatchId && batchFilter?.ok) {
-    scope = { batchId: importBatchId, short: importBatchShortLabel(importBatchId) };
-    if (batchFilter.tenantIds.size > 0) {
-      list = tenants.filter((t) => batchFilter.tenantIds.has(t.id));
-    } else {
-      list = [];
-    }
-  }
-
-  if (userId == null || propertyId == null) {
-    return (
-      <>
-        {scope ? (
-          <div className="shrink-0 border-b border-zinc-200/70 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-[#141414]">
-            <ImportBatchScopeChip batchId={scope.batchId} shortId={scope.short} clearHref="/dashboard/tenants" />
-          </div>
-        ) : null}
-        <TenantsDashboardList tenants={list} />
-      </>
-    );
+  if (userId == null) {
+    return <TenantsDashboardList tenants={[]} />;
   }
 
   const tenancies = await getTenancies(userId);
-  const tenantIdsOnProperty = new Set(
-    tenancies
-      .filter((t) => t.propertyId === propertyId && t.tenantId != null)
-      .map((t) => String(t.tenantId)),
-  );
-  const scoped = tenants.filter((t) => tenantIdsOnProperty.has(t.id));
+  const list = scopedTenantRows(tenants, tenancies, batchFilter ?? null, propertyId ?? null);
 
-  return <TenantsDashboardList tenants={scoped} />;
+  const clearHref =
+    propertyId != null && propertyId.length > 0
+      ? `/dashboard/tenants?propertyId=${encodeURIComponent(propertyId)}`
+      : "/dashboard/tenants";
+
+  return (
+    <>
+      {scopeBatch ? (
+        <div className="shrink-0 border-b border-zinc-200/70 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-[#141414]">
+          <ImportBatchScopeChip batchId={scopeBatch.batchId} shortId={scopeBatch.short} clearHref={clearHref} />
+          {list.length === 0 ? (
+            <p className="mt-3 font-mono text-[11px] text-zinc-500">
+              No tenants matched this batch filter{propertyId ? " for this property" : ""}. Clear the filter or open
+              batch results to verify tenant IDs on the snapshot.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+      <TenantsDashboardList tenants={list} />
+    </>
+  );
 }
 
 function TenantsTableFallback() {

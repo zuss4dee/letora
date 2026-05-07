@@ -60,7 +60,7 @@ export function PricingPlanSubscribeButton({
         const res = await fetch("/api/polar/create-checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ priceId, plan: planKey }),
+          body: JSON.stringify({ priceId, plan: planKey, returnTarget: checkoutReturnTarget }),
         });
 
         const data = (await res.json().catch(() => ({}))) as { url?: string; error?: string };
