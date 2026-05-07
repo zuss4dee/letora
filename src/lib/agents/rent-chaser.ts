@@ -129,9 +129,14 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
   if (!resolvedUserId) return [];
 
   let stepCount = 0;
-  function nextStep() {
+  function nextStep(toolLabel: string) {
     stepCount += 1;
     assertStepBudget(stepCount);
+    debugRentChaser("ota_step", {
+      cumulativeSteps: stepCount,
+      toolLabel,
+      success: true,
+    });
     return stepCount;
   }
 
@@ -239,7 +244,7 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
   await recordAgentRunStep(supabase, {
     userId: resolvedUserId,
     agentRunId: null,
-    stepIndex: nextStep(),
+    stepIndex: nextStep("list_chaseable_payments"),
     stepType: "observe",
     toolName: "list_chaseable_payments",
     detail: {
@@ -291,15 +296,7 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
     const amountOwed = Math.max(0, toNumber(row.amount));
     const daysOverdue = getDaysOverdue(row.due_date);
 
-    await recordAgentRunStep(supabase, {
-      userId: resolvedUserId,
-      agentRunId: null,
-      stepIndex: nextStep(),
-      stepType: "think",
-      toolName: "draft_chase_email",
-      detail: { rentPaymentId: row.id, tenantName, propertyAddress },
-    });
-
+    /** One LLM call per row — OTA billing is consolidated into a single `rent_chase_row` audit step (not 3). */
     const draft = await generateEmailDraft(
       model,
       systemContext,
@@ -332,20 +329,23 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
       .select("id")
       .single();
 
-    if (insertError || !inserted) continue;
-
-    await recordAgentRunStep(supabase, {
-      userId: resolvedUserId,
-      agentRunId: inserted.id,
-      stepIndex: nextStep(),
-      stepType: "act",
-      toolName: "save_agent_run",
-      detail: { rentPaymentId: row.id, agentRunId: inserted.id },
-    });
+    if (insertError || !inserted) {
+      debugRentChaser("ota_step", {
+        cumulativeSteps: stepCount,
+        toolLabel: "agent_runs_insert",
+        success: false,
+        rentPaymentId: row.id,
+        reason: insertError?.message ?? "no_row",
+      });
+      continue;
+    }
 
     let emailSent = false;
     let approvalId: string | null = null;
     let emailDraftId: string | null = null;
+
+    let rowOutcome: "awaiting_human_approval" | "completed_no_email_recipient" | "approval_create_failed" =
+      "completed_no_email_recipient";
 
     if (tenantEmail.trim()) {
       const dueDateLabel = row.due_date ?? "—";
@@ -417,31 +417,35 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
           })
           .eq("id", inserted.id)
           .eq("user_id", resolvedUserId);
+        rowOutcome = "approval_create_failed";
+        await recordAgentRunStep(supabase, {
+          userId: resolvedUserId,
+          agentRunId: inserted.id,
+          stepIndex: nextStep("rent_chase_row"),
+          stepType: "act",
+          toolName: "rent_chase_row",
+          detail: {
+            outcome: rowOutcome,
+            rentPaymentId: row.id,
+            tenantName,
+            agentRunId: inserted.id,
+            approvalError: approval.error,
+          },
+        });
+        debugRentChaser("ota_step", {
+          cumulativeSteps: stepCount,
+          toolLabel: "rent_chase_row",
+          success: false,
+          outcome: rowOutcome,
+          rentPaymentId: row.id,
+        });
         continue;
       }
 
       approvalId = approval.id;
-
-      await recordAgentRunStep(supabase, {
-        userId: resolvedUserId,
-        agentRunId: inserted.id,
-        stepIndex: nextStep(),
-        stepType: "act",
-        toolName: "request_rent_chase_approval",
-        detail: {
-          rentPaymentId: row.id,
-          approvalId,
-        },
-      });
+      rowOutcome = "awaiting_human_approval";
     } else {
-      await recordAgentRunStep(supabase, {
-        userId: resolvedUserId,
-        agentRunId: inserted.id,
-        stepIndex: nextStep(),
-        stepType: "act",
-        toolName: "send_email_tool",
-        detail: { skipped: true, reason: "No recipient email" },
-      });
+      rowOutcome = "completed_no_email_recipient";
     }
 
     if ((row.status ?? "").toLowerCase() === "pending") {
@@ -467,6 +471,24 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
       })
       .eq("id", inserted.id)
       .eq("user_id", resolvedUserId);
+
+    await recordAgentRunStep(supabase, {
+      userId: resolvedUserId,
+      agentRunId: inserted.id,
+      stepIndex: nextStep("rent_chase_row"),
+      stepType: "act",
+      toolName: "rent_chase_row",
+      detail: {
+        outcome: rowOutcome,
+        rentPaymentId: row.id,
+        tenantName,
+        agentRunId: inserted.id,
+        approvalId,
+        emailDraftId,
+        hadRecipientEmail: tenantEmail.trim().length > 0,
+        llmDraftOk: true,
+      },
+    });
 
     results.push({
       tenantName,
