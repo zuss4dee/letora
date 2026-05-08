@@ -32,17 +32,17 @@ export async function CommandCenterLandingView({ userId }: { userId: string }) {
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-[#0B0B0B] font-['Inter',system-ui,sans-serif] text-[#e5e2e1]">
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-10 pt-4 md:px-6 md:pb-12 md:pt-6">
-        <CommandCenterActionBar />
-
-        {failedImportFollowUp ? (
-          <CommandCenterFailedImportBanner batchId={failedImportFollowUp.id} failedCount={failedImportFollowUp.rowsFailed} />
-        ) : null}
+        <CommandCenterActionBar pendingApprovalsCount={kpiLoad.kpis.pendingApprovals} />
 
         {isNewUser ? (
           <CommandCenterOnboardingHero />
         ) : (
           <CommandCenterKpisPresentation kpiLoad={kpiLoad} />
         )}
+
+        {failedImportFollowUp ? (
+          <CommandCenterFailedImportBanner batchId={failedImportFollowUp.id} failedCount={failedImportFollowUp.rowsFailed} />
+        ) : null}
 
         <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-12">
           {/* Main Action Queues (7 Columns) */}

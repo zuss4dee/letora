@@ -1,5 +1,5 @@
 import { loadCommandCenterAgentSummary } from "@/lib/dashboard/command-center-queries";
-import { Loader2, Mail, Sparkles, UserCheck } from "lucide-react";
+import { Activity, Mail, Sparkles, UserCheck } from "lucide-react";
 
 export function CommandCenterAgentSummarySkeleton() {
   return (
@@ -16,6 +16,8 @@ export function CommandCenterAgentSummarySkeleton() {
 
 export async function CommandCenterAgentSummary({ userId }: { userId: string }) {
   const s = await loadCommandCenterAgentSummary(userId);
+  const activeAgents =
+    typeof s.activeAgents === "number" && Number.isFinite(s.activeAgents) ? s.activeAgents : 0;
 
   return (
     <div className="flex flex-col gap-4">
@@ -70,11 +72,11 @@ export async function CommandCenterAgentSummary({ userId }: { userId: string }) 
 
         <div className="flex flex-col border border-[#333333] bg-[#161616] p-4">
           <div className="flex items-center gap-2 mb-2">
-            <Loader2 className="size-3 text-zinc-500 animate-spin" />
+            <Activity className="size-3 text-zinc-500" aria-hidden />
             <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Agents running</span>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-xl font-bold text-white tabular-nums">{s.activeAgents}</span>
+            <span className="text-xl font-bold text-white tabular-nums">{activeAgents}</span>
             <span className="font-mono text-[9px] uppercase text-zinc-600">Queued · running</span>
           </div>
         </div>

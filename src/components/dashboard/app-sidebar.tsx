@@ -140,7 +140,7 @@ function NavSection({
                 prefetch={prefetchHome}
                 data-mercury-tour={item.url === "/dashboard/compliance" ? "compliance" : undefined}
                 onClick={() => onNavigate?.()}
-                className={cn("group", navRowBase, active ? navRowActive : navRowIdle)}
+                className={cn("group relative", navRowBase, active ? navRowActive : navRowIdle)}
               >
                 <Icon
                   className={cn(
@@ -154,11 +154,14 @@ function NavSection({
                 <span className="min-w-0 flex-1 truncate">{item.title}</span>
                 {item.badgeCount != null && item.badgeCount > 0 ? (
                   <span
-                    className="inline-flex h-4.5 min-w-4.5 shrink-0 items-center justify-center rounded-full border border-red-500/20 bg-red-500/10 px-1 font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold tabular-nums text-red-600 dark:bg-red-500/10 dark:text-red-500"
-                    aria-label={`${item.badgeCount} pending approval${item.badgeCount === 1 ? "" : "s"}`}
+                    className="absolute right-2.5 top-2 h-2 w-2 shrink-0 rounded-full bg-red-500"
                     title={item.badgeTitle}
-                  >
-                    {item.badgeCount > 99 ? "99+" : item.badgeCount}
+                    aria-hidden
+                  />
+                ) : null}
+                {item.badgeCount != null && item.badgeCount > 0 && item.url === "/dashboard/approvals" ? (
+                  <span className="sr-only">
+                    {`${item.badgeCount} pending approval${item.badgeCount === 1 ? "" : "s"}`}
                   </span>
                 ) : null}
                 {showDot && attention ? (
@@ -247,7 +250,11 @@ export function AppSidebar({
     pendingApprovalsBadgeTitle ?? d?.pendingApprovalsBadgeTitle ?? null;
   const serverPendingApprovalsCount = d?.pendingApprovalsCount ?? pendingApprovalsCount;
 
-  const [livePendingApprovalCount, setLivePendingApprovalCount] = React.useState(pendingApprovalsCount);
+  const [livePendingApprovalCount, setLivePendingApprovalCount] = React.useState(serverPendingApprovalsCount);
+
+  React.useEffect(() => {
+    setLivePendingApprovalCount(serverPendingApprovalsCount);
+  }, [serverPendingApprovalsCount]);
 
   const refreshPendingApprovalCount = React.useCallback(async () => {
     const supabase = createClient();

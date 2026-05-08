@@ -31,7 +31,9 @@ export function CommandCenterKpisPresentation({ kpiLoad }: { kpiLoad: CommandCen
   return <CommandCenterKpiGridClient kpis={kpiLoad.kpis} kpisDegraded={kpiLoad.kpisDegraded} />;
 }
 
-export function CommandCenterActionBar() {
+export function CommandCenterActionBar({ pendingApprovalsCount = 0 }: { pendingApprovalsCount?: number }) {
+  const showApprovalDot = pendingApprovalsCount > 0;
+
   return (
     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -45,9 +47,20 @@ export function CommandCenterActionBar() {
       <div className="flex flex-wrap gap-2">
         <Link
           href="/dashboard/approvals"
-          className="border border-[#333333] px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-300 transition-colors hover:bg-[#161616]"
+          aria-label={
+            pendingApprovalsCount > 0
+              ? `Open approvals — ${pendingApprovalsCount} pending`
+              : "Open approvals"
+          }
+          className="relative inline-flex border border-[#333333] px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-300 transition-colors hover:bg-[#161616]"
         >
           Open Approvals
+          {showApprovalDot ? (
+            <span
+              className="pointer-events-none absolute right-1.5 top-1.5 size-2 shrink-0 rounded-full bg-red-500"
+              aria-hidden
+            />
+          ) : null}
         </Link>
         <Link
           href="/dashboard/properties"

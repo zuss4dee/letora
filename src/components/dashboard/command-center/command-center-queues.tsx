@@ -1,17 +1,13 @@
 import Link from "next/link";
-import { AlertCircle, ChevronRight, Wrench } from "lucide-react";
+import { ChevronRight, Wrench } from "lucide-react";
 
-import { 
-  loadCommandCenterArrearsQueue, 
+import { CommandCenterArrearsQueueList } from "@/components/dashboard/command-center/command-center-arrears-queue-list";
+import {
+  loadCommandCenterArrearsQueue,
   loadCommandCenterMaintenanceQueue,
-  ArrearsQueueRow,
-  MaintenanceQueueRow
+  type MaintenanceQueueRow,
 } from "@/lib/dashboard/command-center-queries";
 import { cn } from "@/lib/utils";
-
-function formatMoney(n: number) {
-  return new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" }).format(n);
-}
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
@@ -31,25 +27,6 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function arrearsRowHref(row: ArrearsQueueRow): string {
-  const params = new URLSearchParams();
-  params.set("mode", "arrears");
-  params.set("paymentId", row.canonicalPaymentId);
-  if (row.tenancyId) params.set("tenancyId", row.tenancyId);
-  if (row.tenantId) params.set("tenantId", row.tenantId);
-  return `/dashboard/rent-tracker?${params.toString()}`;
-}
-
-function formatShortIso(iso: string): string {
-  const d = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T12:00:00Z`) : new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 function maintenanceQueueRowHref(row: MaintenanceQueueRow): string {
   const params = new URLSearchParams();
   params.set("issueId", row.id);
@@ -65,7 +42,7 @@ export async function CommandCenterArrearsQueue({ userId }: { userId: string }) 
         <span className="size-1.5 bg-[#ffb4ab]" />
         <h2 className="text-xs font-bold uppercase tracking-widest text-white">Late rent — needs action</h2>
       </div>
-      
+
       <div className="border border-[#333333] bg-[#161616]">
         {rows.length === 0 ? (
           <div className="p-12 text-center">
@@ -75,44 +52,7 @@ export async function CommandCenterArrearsQueue({ userId }: { userId: string }) 
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-[#282828]">
-            {rows.map((row) => (
-              <Link
-                key={row.tenancyId}
-                href={arrearsRowHref(row)}
-                aria-label={`Open late rent details for ${row.tenantName}`}
-                className="group flex items-center justify-between p-4 transition-colors hover:bg-[#242424]"
-              >
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="flex size-8 shrink-0 items-center justify-center bg-zinc-900 text-[#ffb4ab]">
-                    <AlertCircle className="size-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[13px] font-bold text-white truncate">{row.tenantName}</p>
-                    <p className="font-mono text-[10px] uppercase text-zinc-500 truncate">{row.propertyAddress}</p>
-                    <p className="mt-1 font-mono text-[9px] uppercase tracking-wide text-zinc-600 truncate">
-                      {row.overdueInstalmentCount} missed payment{row.overdueInstalmentCount === 1 ? "" : "s"} · oldest{" "}
-                      {formatShortIso(row.oldestDueDate)}
-                      {row.actionState === "approval_needed"
-                        ? " · reminder waiting for your OK"
-                        : ""}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-8">
-                  <div className="text-right hidden sm:block">
-                    <p className="text-[13px] font-bold text-white tabular-nums">{formatMoney(row.totalOverdueAmount)}</p>
-                    <p className="font-mono text-[9px] uppercase text-zinc-500">{row.daysOverdue} days late (oldest)</p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <StatusBadge status={row.actionState} />
-                    <ChevronRight className="size-4 text-zinc-700 group-hover:text-white transition-colors" />
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
+          <CommandCenterArrearsQueueList rows={rows} />
         )}
       </div>
     </div>

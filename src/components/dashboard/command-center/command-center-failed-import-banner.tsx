@@ -1,4 +1,8 @@
+"use client";
+
 import Link from "next/link";
+import { X } from "lucide-react";
+import { useCallback, useState } from "react";
 
 /**
  * Highlights the most recent import batch that still has failed rows (server provides id + counts).
@@ -10,7 +14,13 @@ export function CommandCenterFailedImportBanner({
   batchId: string;
   failedCount: number;
 }) {
-  if (failedCount <= 0) return null;
+  const [dismissed, setDismissed] = useState(false);
+
+  const onDismiss = useCallback(() => {
+    setDismissed(true);
+  }, []);
+
+  if (failedCount <= 0 || dismissed) return null;
 
   const href = `/dashboard/import/batch/${encodeURIComponent(batchId)}#attention-failed`;
 
@@ -18,8 +28,16 @@ export function CommandCenterFailedImportBanner({
     <aside
       role="status"
       aria-live="polite"
-      className="mb-6 flex flex-col gap-3 rounded-md border border-[#BB5551]/45 bg-[#2a1514]/55 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
+      className="relative mb-6 flex flex-col gap-3 rounded-md border border-[#BB5551]/45 bg-[#2a1514]/55 px-4 py-4 pr-11 sm:flex-row sm:items-center sm:justify-between sm:gap-6"
     >
+      <button
+        type="button"
+        onClick={onDismiss}
+        className="absolute right-3 top-3 rounded border border-transparent p-1 text-zinc-400 transition-colors hover:border-[#BB5551]/35 hover:bg-black/20 hover:text-white"
+        aria-label="Dismiss import notice"
+      >
+        <X className="size-4" aria-hidden />
+      </button>
       <div className="min-w-0 flex-1">
         <p className="font-['Inter',sans-serif] text-sm font-semibold text-white">
           Recent import didn&apos;t finish cleanly

@@ -6,8 +6,26 @@ import { getDashboardStats, getMonthlyRentFromActiveTenancies } from "@/lib/acti
 import { withTimeout } from "@/lib/async/with-timeout";
 import { computeRentFinancialMonthKpis } from "@/lib/rent-financial-kpis";
 import { monthBoundsIso } from "@/lib/rent-calendar-bounds";
+import { buildRentPaymentArrearCandidateOrFilter } from "@/lib/rent-payment-arrear-candidate";
 import { createClient } from "@/lib/supabase/server";
 import { isPaymentOverdue, resolvePaymentAmount } from "@/lib/rent-utils";
+
+/** Calendar YYYY-MM-DD in Europe/London (matches UK landlord-facing “today” for due_date). */
+function ukCalendarDateIso(): string {
+  const formatted = new Date().toLocaleDateString("en-CA", { timeZone: "Europe/London" });
+  if (/^\d{4}-\d{2}-\d{2}$/.test(formatted)) return formatted;
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const y = parts.find((p) => p.type === "year")?.value;
+  const m = parts.find((p) => p.type === "month")?.value;
+  const d = parts.find((p) => p.type === "day")?.value;
+  if (y && m && d) return `${y}-${m}-${d}`;
+  return new Date().toISOString().slice(0, 10);
+}
 
 const getRecentActivityForCommandCenterLanding = cache((userId: string) =>
   getRecentActivityCommandCenterLanding(userId, 12),
@@ -260,31 +278,91 @@ async function loadCommandCenterKpisUncached(userId: string): Promise<CommandCen
  */
 export const loadCommandCenterKpis = cache(loadCommandCenterKpisUncached);
 
+/** Per-instalment Command Center late-rent ribbon + agent column (see command-center-queues UI). */
+export type LateRentCommandCenterState =
+  | "chase_pending"
+  | "awaiting_agent"
+  | "chased"
+  | "no_action";
+
 export type ArrearsQueueRow = {
-  /** Stable identity — one queue row per tenancy in arrears. */
+  /** This overdue instalment — Rent Tracker `paymentId` deep-link. */
+  rentPaymentId: string;
   tenancyId: string;
-  /** Tenant profile id when join resolves (for Rent Tracker `tenantId` deep-link). */
+  /** Tenant profile id when join resolves (Rent Tracker `tenantId` deep-link). */
   tenantId: string | null;
-  /** Oldest overdue instalment — matches typical rent-chase `target_id`; used for Rent Tracker deep-link. */
-  canonicalPaymentId: string;
   tenantName: string;
   propertyAddress: string;
-  /** Sum of all overdue instalments for this tenancy. */
-  totalOverdueAmount: number;
-  overdueInstalmentCount: number;
-  /** Oldest overdue `due_date` (YYYY-MM-DD). */
-  oldestDueDate: string;
-  /** Whole days since `oldestDueDate`. */
+  amountDue: number;
+  /** YYYY-MM-DD */
+  dueDate: string;
+  /** Whole days overdue (UK “today” vs due date). */
   daysOverdue: number;
-  actionState: "draft_ready" | "approval_needed" | "sent" | "no_draft";
-  approvalId?: string;
+  lateRentUiState: LateRentCommandCenterState;
+  /** Present when `lateRentUiState === "chase_pending"` — optional `?id=` on Approvals. */
+  pendingApprovalId: string | null;
 };
+
+const APPROVAL_CHUNK = 120;
+
+function unwrapRelation<T>(rel: T | T[] | null | undefined): T | null {
+  if (rel == null) return null;
+  return Array.isArray(rel) ? (rel[0] ?? null) : rel;
+}
+
+function wholeDaysOverdue(dueIso: string, anchorIso: string): number {
+  const d = dueIso ? new Date(`${dueIso.slice(0, 10)}T12:00:00Z`) : new Date(NaN);
+  const today = new Date(`${anchorIso.slice(0, 10)}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return 0;
+  return Math.max(0, Math.floor((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
+function rentPaymentIdFromAgentPayload(payload: unknown): string | null {
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) return null;
+  const p = payload as Record<string, unknown>;
+  const rent = p.rentPaymentId;
+  if (typeof rent === "string" && rent.trim() !== "") return rent.trim();
+  const inst = p.instalmentId;
+  if (typeof inst === "string" && inst.trim() !== "") return inst.trim();
+  return null;
+}
+
+function deriveLateRentUiState(
+  paymentId: string,
+  byTarget: Map<string, { id: string; status: string; target_id: string | null }[]>,
+  rentChaserTouchedPaymentIds: Set<string>,
+  chasedPaymentIds: Set<string>,
+): { state: LateRentCommandCenterState; pendingApprovalId: string | null } {
+  const rowsForTarget = byTarget.get(paymentId) ?? [];
+
+  const pending = rowsForTarget.find((r) => r.status === "pending");
+  if (pending) return { state: "chase_pending", pendingApprovalId: pending.id };
+
+  const hasExecuted = rowsForTarget.some((r) => r.status === "executed");
+  if (hasExecuted || chasedPaymentIds.has(paymentId)) {
+    return { state: "chased", pendingApprovalId: null };
+  }
+
+  const approved = rowsForTarget.find((r) => r.status === "approved");
+  if (approved) return { state: "awaiting_agent", pendingApprovalId: null };
+
+  if (rowsForTarget.some((r) => r.status === "denied" || r.status === "expired")) {
+    return { state: "no_action", pendingApprovalId: null };
+  }
+
+  if (rowsForTarget.length === 0) {
+    return rentChaserTouchedPaymentIds.has(paymentId)
+      ? { state: "no_action", pendingApprovalId: null }
+      : { state: "awaiting_agent", pendingApprovalId: null };
+  }
+
+  return { state: "no_action", pendingApprovalId: null };
+}
 
 export async function loadCommandCenterArrearsQueue(userId: string): Promise<ArrearsQueueRow[]> {
   const supabase = await createClient();
-  const todayIso = new Date().toISOString().slice(0, 10);
+  const ukToday = ukCalendarDateIso();
 
-  // Embed shape aligns with rent-tracker `getRentPayments` (stable PostgREST path).
   const { data: payments, error } = await supabase
     .from("rent_payments")
     .select(
@@ -302,43 +380,89 @@ export async function loadCommandCenterArrearsQueue(userId: string): Promise<Arr
     `,
     )
     .eq("tenancies.properties.user_id", userId)
-    .order("due_date", { ascending: true });
+    .or(buildRentPaymentArrearCandidateOrFilter(ukToday));
 
   if (error) {
     console.warn("[loadCommandCenterArrearsQueue] query error:", error.message);
     return [];
   }
 
-  const unwrap = <T,>(rel: T | T[] | null | undefined): T | null => {
-    if (rel == null) return null;
-    return Array.isArray(rel) ? (rel[0] ?? null) : rel;
-  };
-
   const filtered = (payments ?? []).filter((p) =>
-    isPaymentOverdue((p.status as string | null) ?? null, (p.due_date as string | null) ?? null, todayIso),
+    isPaymentOverdue((p.status as string | null) ?? null, (p.due_date as string | null) ?? null, ukToday),
   );
 
   if (filtered.length === 0) return [];
 
-  const { data: approvals } = await supabase
-    .from("agent_approvals")
-    .select("id, status, target_id")
+  const paymentIds = filtered.map((p) => String(p.id));
+  const paymentIdSet = new Set(paymentIds);
+
+  /** Batch-fetch rent-chase approvals for these instalments (`target_id` = `rent_payments.id`). */
+  const approvalRows: { id: string; status: string; target_id: string | null }[] = [];
+  for (let i = 0; i < paymentIds.length; i += APPROVAL_CHUNK) {
+    const chunk = paymentIds.slice(i, i + APPROVAL_CHUNK);
+    const { data: chunkRows, error: apprErr } = await supabase
+      .from("agent_approvals")
+      .select("id, status, target_id")
+      .eq("user_id", userId)
+      .eq("action_type", "send_rent_chase_email")
+      .in("status", ["pending", "approved", "executed", "denied", "expired"])
+      .in("target_id", chunk);
+    if (apprErr) {
+      console.warn("[loadCommandCenterArrearsQueue] approvals batch:", apprErr.message);
+    } else if (chunkRows) {
+      approvalRows.push(...chunkRows);
+    }
+  }
+
+  const byTarget = new Map<string, { id: string; status: string; target_id: string | null }[]>();
+  for (const a of approvalRows) {
+    const tid = a.target_id != null ? String(a.target_id) : "";
+    if (!tid) continue;
+    const list = byTarget.get(tid) ?? [];
+    list.push(a);
+    byTarget.set(tid, list);
+  }
+
+  const { data: sentChaseLogs } = await supabase
+    .from("email_logs")
+    .select("agent_run_id")
     .eq("user_id", userId)
-    .eq("action_type", "send_rent_chase_email")
-    .eq("status", "pending");
+    .eq("agent_type", "rent_chaser")
+    .not("sent_at", "is", null);
 
-  type GroupAcc = {
-    tenancyId: string;
-    tenantId: string | null;
-    tenantName: string;
-    propertyAddress: string;
-    instalments: { paymentId: string; dueIso: string; amount: number }[];
-  };
+  const sentRunIds = [...new Set((sentChaseLogs ?? []).map((l) => l.agent_run_id).filter(Boolean))] as string[];
 
-  const byTenancy = new Map<string, GroupAcc>();
+  const chasedPaymentIds = new Set<string>();
+  if (sentRunIds.length > 0) {
+    const { data: chaseRuns } = await supabase
+      .from("agent_runs")
+      .select("id, payload")
+      .eq("user_id", userId)
+      .in("id", sentRunIds);
+    for (const r of chaseRuns ?? []) {
+      const pid = rentPaymentIdFromAgentPayload(r.payload);
+      if (pid && paymentIdSet.has(pid)) chasedPaymentIds.add(pid);
+    }
+  }
+
+  const { data: rentChaserRuns } = await supabase
+    .from("agent_runs")
+    .select("payload")
+    .eq("user_id", userId)
+    .eq("agent_type", "rent_chaser")
+    .order("created_at", { ascending: false })
+    .limit(400);
+
+  const rentChaserTouchedPaymentIds = new Set<string>();
+  for (const r of rentChaserRuns ?? []) {
+    const pid = rentPaymentIdFromAgentPayload(r.payload);
+    if (pid && paymentIdSet.has(pid)) rentChaserTouchedPaymentIds.add(pid);
+  }
+
+  const rows: ArrearsQueueRow[] = [];
 
   for (const p of filtered) {
-    const tenancyRaw = unwrap(
+    const tenancyRaw = unwrapRelation(
       p.tenancies as
         | { id?: string; properties?: unknown; tenants?: unknown }
         | { id?: string; properties?: unknown; tenants?: unknown }[]
@@ -347,8 +471,10 @@ export async function loadCommandCenterArrearsQueue(userId: string): Promise<Arr
     const tenancyId = String(tenancyRaw?.id ?? "");
     if (!tenancyId) continue;
 
-    const property = unwrap(tenancyRaw?.properties as { address?: string | null } | { address?: string | null }[] | null);
-    const tenant = unwrap(
+    const property = unwrapRelation(
+      tenancyRaw?.properties as { address?: string | null } | { address?: string | null }[] | null,
+    );
+    const tenant = unwrapRelation(
       tenancyRaw?.tenants as
         | { id?: string; full_name?: string | null }
         | { id?: string; full_name?: string | null }[]
@@ -358,70 +484,28 @@ export async function loadCommandCenterArrearsQueue(userId: string): Promise<Arr
     const dueIso = typeof p.due_date === "string" ? p.due_date.slice(0, 10) : "";
     const paymentId = String(p.id);
     const tenantRowId = typeof tenant?.id === "string" && tenant.id.trim().length > 0 ? tenant.id.trim() : null;
-
-    let g = byTenancy.get(tenancyId);
-    if (!g) {
-      g = {
-        tenancyId,
-        tenantId: tenantRowId,
-        tenantName: tenant?.full_name?.trim() || "Tenant",
-        propertyAddress: (property?.address ?? "").split(",")[0]?.trim() || "",
-        instalments: [],
-      };
-      byTenancy.set(tenancyId, g);
-    } else if (g.tenantId == null && tenantRowId != null) {
-      g.tenantId = tenantRowId;
-    }
-    g.instalments.push({
+    const { state, pendingApprovalId } = deriveLateRentUiState(
       paymentId,
-      dueIso,
-      amount: resolvePaymentAmount(p),
-    });
-  }
-
-  const daysSinceDue = (dueIso: string): number => {
-    const d = dueIso ? new Date(`${dueIso}T12:00:00Z`) : new Date(NaN);
-    const today = new Date(`${todayIso}T12:00:00Z`);
-    return Number.isNaN(d.getTime())
-      ? 0
-      : Math.max(0, Math.floor((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24)));
-  };
-
-  const rows: ArrearsQueueRow[] = [];
-
-  for (const g of byTenancy.values()) {
-    const sorted = [...g.instalments].sort((a, b) => a.dueIso.localeCompare(b.dueIso));
-    if (sorted.length === 0) continue;
-
-    const oldest = sorted[0]!;
-    const totalAmount = sorted.reduce((s, x) => s + x.amount, 0);
-    const paymentIdSet = new Set(sorted.map((x) => x.paymentId));
-
-    const candidates = (approvals ?? []).filter((a) => paymentIdSet.has(String(a.target_id)));
-
-    /** Prefer approval keyed to oldest overdue instalment (canonical chase / seed convention). */
-    const approval =
-      candidates.find((a) => String(a.target_id) === oldest.paymentId) ?? candidates[0] ?? undefined;
+      byTarget,
+      rentChaserTouchedPaymentIds,
+      chasedPaymentIds,
+    );
 
     rows.push({
-      tenancyId: g.tenancyId,
-      tenantId: g.tenantId,
-      canonicalPaymentId: oldest.paymentId,
-      tenantName: g.tenantName,
-      propertyAddress: g.propertyAddress,
-      totalOverdueAmount: totalAmount,
-      overdueInstalmentCount: sorted.length,
-      oldestDueDate: oldest.dueIso,
-      daysOverdue: daysSinceDue(oldest.dueIso),
-      actionState: approval ? "approval_needed" : "no_draft",
-      approvalId: approval?.id,
+      rentPaymentId: paymentId,
+      tenancyId,
+      tenantId: tenantRowId,
+      tenantName: tenant?.full_name?.trim() || "Tenant",
+      propertyAddress: (property?.address ?? "").split(",")[0]?.trim() || "",
+      amountDue: resolvePaymentAmount(p),
+      dueDate: dueIso,
+      daysOverdue: wholeDaysOverdue(dueIso, ukToday),
+      lateRentUiState: state,
+      pendingApprovalId,
     });
   }
 
-  rows.sort(
-    (a, b) =>
-      a.oldestDueDate.localeCompare(b.oldestDueDate) || b.totalOverdueAmount - a.totalOverdueAmount,
-  );
+  rows.sort((a, b) => b.daysOverdue - a.daysOverdue || b.dueDate.localeCompare(a.dueDate));
 
   return rows.slice(0, 5);
 }
@@ -515,7 +599,8 @@ export async function loadCommandCenterAgentSummary(userId: string): Promise<Age
       rentChaseDrafts: 0,
       maintenanceDrafts: 0,
       pendingApprovals: 0,
-      activeAgents: agentCount,
+      activeAgents:
+        typeof agentCount === "number" && Number.isFinite(agentCount) ? agentCount : 0,
     };
   }
 
@@ -523,7 +608,7 @@ export async function loadCommandCenterAgentSummary(userId: string): Promise<Age
     rentChaseDrafts: rentChaseRes.count ?? 0,
     maintenanceDrafts: maintDispatchRes.count ?? 0,
     pendingApprovals: pendingTotalRes.count ?? 0,
-    activeAgents: agentCount,
+    activeAgents: typeof agentCount === "number" && Number.isFinite(agentCount) ? agentCount : 0,
   };
 }
 
