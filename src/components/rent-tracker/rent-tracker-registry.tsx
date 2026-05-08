@@ -683,6 +683,9 @@ export function RentTrackerRegistry({
                         ? `/dashboard/tenancies/${selectedRow.tenancyId}`
                         : "#"
                     }
+                    {...(selectedRow.tenancyId
+                      ? { target: "_blank", rel: "noopener noreferrer" }
+                      : {})}
                   >
                     Tenancy
                   </Link>
@@ -698,6 +701,9 @@ export function RentTrackerRegistry({
                         ? `/dashboard/tenants/${selectedRow.tenantId}`
                         : "#"
                     }
+                    {...(selectedRow.tenantId
+                      ? { target: "_blank", rel: "noopener noreferrer" }
+                      : {})}
                   >
                     Tenant
                   </Link>
