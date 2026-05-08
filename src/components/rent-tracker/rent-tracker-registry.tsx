@@ -250,7 +250,9 @@ export function RentTrackerRegistry({
       toast.success("Payment marked as paid", { duration: 2500 });
       onMarkPaidSuccess?.();
       setSelectedId(null);
-      router.refresh();
+      setTimeout(() => {
+        router.refresh();
+      }, 400);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Something went wrong");
     } finally {

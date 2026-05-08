@@ -161,8 +161,8 @@ export async function markRentPaid(paymentId: string, paidDate: string): Promise
 
   if (error) throw new Error(error.message);
 
-  revalidatePath("/dashboard/rent-tracker");
-  revalidatePath("/dashboard");
+  revalidatePath("/dashboard", "page");
+  revalidatePath("/dashboard/rent-tracker", "page");
 }
 
 export async function markRentOverdue(paymentId: string): Promise<void> {
