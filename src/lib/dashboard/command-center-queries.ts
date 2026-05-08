@@ -129,6 +129,20 @@ async function highPriorityMaintenanceCount(userId: string): Promise<number> {
 /** In-flight execution only — not draft/pending approval buckets. */
 const ACTIVE_AGENT_RUN_STATUSES = ["running", "queued"] as const;
 
+/**
+ * Approvals that still need landlord attention for dashboard tiles.
+ * DB check (20260422150000): pending | approved | denied | expired | executed — filters include draft / awaiting_approval for forward compatibility until migrated.
+ */
+const AGENT_APPROVAL_ACTIONABLE_STATUSES = ["pending", "draft", "awaiting_approval"] as const;
+
+function isDashboardDevLogging(): boolean {
+  return (
+    process.env.NODE_ENV === "development" ||
+    process.env.VERCEL_ENV === "development" ||
+    process.env.NEXT_PUBLIC_VERCEL_ENV === "development"
+  );
+}
+
 async function activeAgentCount(userId: string): Promise<number> {
   const supabase = await createClient();
   const { count, error } = await supabase
@@ -559,45 +573,86 @@ export type AgentWorkStats = {
 export async function loadCommandCenterAgentSummary(userId: string): Promise<AgentWorkStats> {
   const supabase = await createClient();
 
-  const [pendingTotalRes, rentChaseRes, maintDispatchRes, agentCount] = await Promise.all([
+  const actionableStatuses = [...AGENT_APPROVAL_ACTIONABLE_STATUSES];
+
+  const [pendingTotalRes, rentChaseRes, maintDispatchRes, activeRunsRes] = await Promise.all([
     supabase
       .from("agent_approvals")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .eq("status", "pending"),
+      .in("status", actionableStatuses),
     supabase
       .from("agent_approvals")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .eq("status", "pending")
+      .in("status", actionableStatuses)
       .eq("action_type", "send_rent_chase_email"),
     supabase
       .from("agent_approvals")
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId)
-      .eq("status", "pending")
+      .in("status", actionableStatuses)
       .eq("action_type", "approve_maintenance_dispatch"),
-    activeAgentCount(userId),
+    supabase
+      .from("agent_runs")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", userId)
+      .in("status", [...ACTIVE_AGENT_RUN_STATUSES]),
   ]);
+
+  if (isDashboardDevLogging()) {
+    console.log("[command-center-agent-summary] pendingApprovalsTotal", {
+      count: pendingTotalRes.count,
+      error: pendingTotalRes.error?.message,
+    });
+    console.log("[command-center-agent-summary] rentChaseDrafts(send_rent_chase_email)", {
+      count: rentChaseRes.count,
+      error: rentChaseRes.error?.message,
+    });
+    console.log("[command-center-agent-summary] maintenanceDrafts(approve_maintenance_dispatch)", {
+      count: maintDispatchRes.count,
+      error: maintDispatchRes.error?.message,
+    });
+    console.log("[command-center-agent-summary] activeAgents(running|queued)", {
+      count: activeRunsRes.count,
+      error: activeRunsRes.error?.message,
+    });
+  }
 
   const approvalQueryError =
     pendingTotalRes.error ?? rentChaseRes.error ?? maintDispatchRes.error;
   if (approvalQueryError) {
     console.warn("[loadCommandCenterAgentSummary]", approvalQueryError.message);
+    const activeFallback =
+      activeRunsRes.error != null
+        ? 0
+        : typeof activeRunsRes.count === "number" && Number.isFinite(activeRunsRes.count)
+          ? activeRunsRes.count
+          : 0;
     return {
       rentChaseDrafts: 0,
       maintenanceDrafts: 0,
       pendingApprovals: 0,
-      activeAgents:
-        typeof agentCount === "number" && Number.isFinite(agentCount) ? agentCount : 0,
+      activeAgents: activeFallback,
     };
   }
+
+  if (activeRunsRes.error) {
+    console.warn("[loadCommandCenterAgentSummary] agent_runs active count", activeRunsRes.error.message);
+  }
+
+  const activeAgents =
+    activeRunsRes.error != null
+      ? 0
+      : typeof activeRunsRes.count === "number" && Number.isFinite(activeRunsRes.count)
+        ? activeRunsRes.count
+        : 0;
 
   return {
     rentChaseDrafts: rentChaseRes.count ?? 0,
     maintenanceDrafts: maintDispatchRes.count ?? 0,
     pendingApprovals: pendingTotalRes.count ?? 0,
-    activeAgents: typeof agentCount === "number" && Number.isFinite(agentCount) ? agentCount : 0,
+    activeAgents,
   };
 }
 
