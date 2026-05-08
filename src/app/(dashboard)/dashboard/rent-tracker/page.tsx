@@ -7,11 +7,14 @@ import { RentTrackerOperationalContextStrip } from "@/components/dashboard/rent-
 import { PropertyPortfolioBackLink } from "@/components/dashboard/property-portfolio-back-link";
 import { RentTrackerContent } from "@/components/rent-tracker/rent-tracker-content";
 import { getRentPayments } from "@/lib/actions/rent-tracker";
+import { loadLateRentChaseDerivationContext } from "@/lib/dashboard/command-center-queries";
+import { deriveLateRentChaseUiState, type LateRentChaseUiState } from "@/lib/dashboard/late-rent-chase-status";
 import { computeRentTrackerStats } from "@/lib/rent-tracker-stats";
 import { getTenancies } from "@/lib/actions/tenancies";
 import { getPendingApprovalsForRentChase } from "@/lib/actions/agent-approvals";
 import type { RentPaymentListRow } from "@/lib/actions/rent-tracker";
 import type { TenancyRow } from "@/lib/actions/tenancies";
+import { isPaymentOverdue } from "@/lib/rent-payment-helpers";
 import {
   applyRentTrackerDisplayMode,
   parseRentTrackerModeParam,
@@ -328,7 +331,6 @@ async function RentTrackerAsyncSection({
   if (dbgRentTracker) {
     console.info("[rent-tracker] server fetch start");
   }
-  const fetchStarted = dbgRentTracker ? Date.now() : 0;
   const [payments, tenancies, pendingApprovals] = await Promise.all([
     getRentPayments(),
     getTenancies(userId),
@@ -336,7 +338,6 @@ async function RentTrackerAsyncSection({
   ]);
   if (dbgRentTracker) {
     console.info("[rent-tracker] server fetch end", {
-      ms: Date.now() - fetchStarted,
       payments: payments.length,
       tenancies: tenancies.length,
       pendingApprovals: pendingApprovals.length,
@@ -361,6 +362,23 @@ async function RentTrackerAsyncSection({
     tenantId,
   });
   const stats = computeRentTrackerStats(scopedPayments, todayIso, scopedTenancies);
+
+  const overduePaymentIds = scopedPayments
+    .filter((p) => isPaymentOverdue(p.status, p.due_date, todayIso))
+    .map((p) => p.id);
+
+  const chaseCtx = await loadLateRentChaseDerivationContext(userId, overduePaymentIds);
+  const chaseStatusByPaymentId: Record<string, LateRentChaseUiState> = {};
+  for (const id of overduePaymentIds) {
+    const { state } = deriveLateRentChaseUiState(
+      id,
+      chaseCtx.byTarget,
+      chaseCtx.rentChaserTouchedPaymentIds,
+      chaseCtx.chasedPaymentIds,
+    );
+    chaseStatusByPaymentId[id] = state;
+  }
+
   const showQueueBacktrail = Boolean(paymentId ?? tenancyId ?? tenantId);
   const { modePausedForFocus: rentTrackerModePausedForFocus } = applyRentTrackerDisplayMode(
     scopedPayments,
@@ -401,6 +419,7 @@ async function RentTrackerAsyncSection({
           focusPaymentId={focusPaymentId}
           canonicalRentTrackerMode={resolvedRentTrackerMode}
           rentTrackerPreserveHref={rentTrackerPreserveHref}
+          chaseStatusByPaymentId={chaseStatusByPaymentId}
         />
       </div>
     </div>

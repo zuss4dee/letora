@@ -8,12 +8,10 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import type { AgentApprovalRow } from "@/lib/approvals/types";
-import {
-  deleteRentPayment,
-  markRentPaid,
-  type RentPaymentListRow,
-} from "@/lib/actions/rent-tracker";
+import { markRentPaid, type RentPaymentListRow } from "@/lib/actions/rent-tracker";
+import type { LateRentChaseUiState } from "@/lib/dashboard/late-rent-chase-status";
 import type { RentTrackerSummaryStats } from "@/lib/rent-tracker-stats";
+import { isPaymentOverdue } from "@/lib/rent-payment-helpers";
 import { applyRentTrackerDisplayMode, type RentTrackerResolvedDisplayMode } from "@/lib/rent-tracker-url-mode";
 import { cn } from "@/lib/utils";
 
@@ -132,6 +130,53 @@ function getAgentState(row: RentPaymentListRow, pendingApprovals: AgentApprovalR
   return { label: "PENDING", tone: "zinc" as const };
 }
 
+function ChaseStatusCell({
+  row,
+  todayIso,
+  chaseStatusByPaymentId,
+}: {
+  row: RentPaymentListRow;
+  todayIso: string;
+  chaseStatusByPaymentId: Record<string, LateRentChaseUiState>;
+}) {
+  if (!isPaymentOverdue(row.status, row.due_date, todayIso)) {
+    return <span className="font-mono text-[11px] tabular-nums text-zinc-600">—</span>;
+  }
+  const state = chaseStatusByPaymentId[row.id] ?? "awaiting_agent";
+  const config: Record<
+    LateRentChaseUiState,
+    { label: string; className: string }
+  > = {
+    chased: {
+      label: "CHASED",
+      className: "border-emerald-500/35 bg-emerald-500/10 text-emerald-400",
+    },
+    chase_pending: {
+      label: "CHASE PENDING",
+      className: "border-amber-500/40 bg-amber-500/10 text-amber-300",
+    },
+    awaiting_agent: {
+      label: "AWAITING AGENT",
+      className: "border-[#333333] bg-[#161616] text-zinc-500",
+    },
+    no_action: {
+      label: "NO ACTION",
+      className: "border-[#333333] bg-[#141414] text-zinc-600",
+    },
+  };
+  const c = config[state];
+  return (
+    <span
+      className={cn(
+        "inline-block border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider",
+        c.className,
+      )}
+    >
+      {c.label}
+    </span>
+  );
+}
+
 export function RentTrackerRegistry({
   payments,
   stats,
@@ -140,6 +185,8 @@ export function RentTrackerRegistry({
   focusPaymentId,
   canonicalRentTrackerMode,
   rentTrackerPreserveHref,
+  chaseStatusByPaymentId,
+  onMarkPaidSuccess,
 }: {
   payments: RentPaymentListRow[];
   stats: RentTrackerSummaryStats;
@@ -148,6 +195,8 @@ export function RentTrackerRegistry({
   focusPaymentId?: string;
   canonicalRentTrackerMode: RentTrackerResolvedDisplayMode;
   rentTrackerPreserveHref: string;
+  chaseStatusByPaymentId: Record<string, LateRentChaseUiState>;
+  onMarkPaidSuccess?: () => void;
 }) {
   const router = useRouter();
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -194,11 +243,13 @@ export function RentTrackerRegistry({
     el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }, [focusPaymentId, selectedId, displayPayments]);
 
-  async function run(id: string, fn: () => Promise<void>) {
+  async function handleMarkAsPaid(id: string) {
     setBusyId(id);
     try {
-      await fn();
-      toast.success("Updated.");
+      await markRentPaid(id, todayIso);
+      toast.success("Payment marked as paid", { duration: 2500 });
+      onMarkPaidSuccess?.();
+      setSelectedId(null);
       router.refresh();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Something went wrong");
@@ -394,9 +445,10 @@ export function RentTrackerRegistry({
           )}
         >
           <div className="sticky top-0 z-10 grid grid-cols-12 gap-2 border-b border-[#282828] bg-[#161616] px-5 py-2.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500 md:gap-4 md:px-6">
-            <div className="col-span-5">Tenant · property</div>
+            <div className="col-span-4">Tenant · property</div>
             <div className="col-span-2 text-right">Rent due</div>
-            <div className="col-span-3 text-center">Status</div>
+            <div className="col-span-2 text-center">Status</div>
+            <div className="col-span-2 text-center">Chase status</div>
             <div className="col-span-2 text-right">Agent</div>
           </div>
 
@@ -425,7 +477,7 @@ export function RentTrackerRegistry({
                     isSelected ? "bg-[#141414] shadow-[inset_3px_0_0_0_#afefdd]" : "bg-transparent",
                   )}
                 >
-                  <div className="col-span-5 min-w-0">
+                  <div className="col-span-4 min-w-0">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                       <span className="text-[12px] font-semibold text-zinc-100">{p.tenantName}</span>
                       <span className="truncate text-[10px] text-zinc-500">· {p.propertyAddress}</span>
@@ -444,8 +496,15 @@ export function RentTrackerRegistry({
                       Due {formatDisplayDate(p.due_date)}
                     </div>
                   </div>
-                  <div className="col-span-3 flex justify-center">
+                  <div className="col-span-2 flex justify-center">
                     <StatusPill status={status} />
+                  </div>
+                  <div className="col-span-2 flex justify-center">
+                    <ChaseStatusCell
+                      row={p}
+                      todayIso={todayIso}
+                      chaseStatusByPaymentId={chaseStatusByPaymentId}
+                    />
                   </div>
                   <div className="col-span-2 text-right">
                     <span
@@ -603,20 +662,12 @@ export function RentTrackerRegistry({
               ) : selectedRow.status !== "paid" ? (
                 <Button
                   disabled={busyId === selectedRow.id}
-                  onClick={() => void run(selectedRow.id, () => markRentPaid(selectedRow.id, todayIso))}
+                  onClick={() => void handleMarkAsPaid(selectedRow.id)}
                   className="w-full bg-white py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-black hover:bg-zinc-200 disabled:opacity-50"
                 >
                   Mark as paid
                 </Button>
-              ) : (
-                <Button
-                  disabled={busyId === selectedRow.id}
-                  onClick={() => void run(selectedRow.id, () => deleteRentPayment(selectedRow.id))}
-                  className="w-full border border-rose-900/40 bg-rose-900/20 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-rose-400 hover:bg-rose-900/30 disabled:opacity-50"
-                >
-                  Delete record
-                </Button>
-              )}
+              ) : null}
 
               <div className="grid grid-cols-2 gap-2">
                 <Button

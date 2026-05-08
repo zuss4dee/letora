@@ -38,9 +38,14 @@ export async function CommandCenterArrearsQueue({ userId }: { userId: string }) 
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <span className="size-1.5 bg-[#ffb4ab]" />
         <h2 className="text-xs font-bold uppercase tracking-widest text-white">Late rent — needs action</h2>
+        {rows.length > 0 ? (
+          <span className="inline-flex min-h-[1.25rem] min-w-[1.5rem] items-center justify-center rounded-full border border-zinc-700/60 bg-zinc-900/50 px-2 font-mono text-[10px] font-bold tabular-nums text-muted-foreground">
+            {rows.length}
+          </span>
+        ) : null}
       </div>
 
       <div className="border border-[#333333] bg-[#161616]">
