@@ -37,8 +37,9 @@ export function ThemeProviderClient({
   enableColorScheme = true,
 }: ThemeProviderClientProps) {
   const [theme, setThemeState] = React.useState<Theme>(defaultTheme);
+  /** Avoid `window` in the initializer — keeps SSR/CSR hydration consistent; inline script paints first. */
   const [resolvedTheme, setResolvedTheme] = React.useState<ResolvedTheme>(
-    defaultTheme === "light" ? "light" : "dark",
+    () => (defaultTheme === "light" ? "light" : defaultTheme === "dark" ? "dark" : "light"),
   );
   const [mounted, setMounted] = React.useState(false);
 

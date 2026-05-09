@@ -6,12 +6,12 @@ import { cn } from "@/lib/utils";
 
 export function CommandCenterKpiGridSkeleton() {
   return (
-    <div className="mb-8 grid grid-cols-2 gap-px border border-[#333333] bg-[#333333] md:grid-cols-12">
+    <div className="mb-8 grid grid-cols-2 gap-px border border-zinc-200 bg-zinc-200 dark:border-[#333333] dark:bg-[#333333] md:grid-cols-12">
       {Array.from({ length: 7 }).map((_, i) => (
         <div
           key={i}
           className={cn(
-            "flex min-h-[88px] flex-col bg-[#161616] p-4",
+            "flex min-h-[88px] flex-col bg-white p-4 dark:bg-[#161616]",
             i < 4 ? "md:col-span-3" : i < 6 ? "md:col-span-4" : "col-span-2 md:col-span-4",
           )}
         >
@@ -37,7 +37,7 @@ export function CommandCenterActionBar({ pendingApprovalsCount = 0 }: { pendingA
   return (
     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 className="font-['Inter',sans-serif] text-xl font-semibold tracking-tight text-white md:text-2xl">
+        <h1 className="font-['Inter',sans-serif] text-xl font-semibold tracking-tight text-zinc-900 md:text-2xl dark:text-white">
           Command Center
         </h1>
         <p className="mt-1 font-mono text-[10px] uppercase tracking-wide text-zinc-500">
@@ -52,7 +52,7 @@ export function CommandCenterActionBar({ pendingApprovalsCount = 0 }: { pendingA
               ? `Open approvals — ${pendingApprovalsCount} pending`
               : "Open approvals"
           }
-          className="relative inline-flex border border-[#333333] px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-300 transition-colors hover:bg-[#161616]"
+          className="relative inline-flex border border-zinc-200 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-300 dark:hover:bg-[#161616]"
         >
           Open Approvals
           {showApprovalDot ? (
@@ -64,7 +64,7 @@ export function CommandCenterActionBar({ pendingApprovalsCount = 0 }: { pendingA
         </Link>
         <Link
           href="/dashboard/properties"
-          className="border border-[#333333] px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-300 transition-colors hover:bg-[#161616]"
+          className="border border-zinc-200 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-300 dark:hover:bg-[#161616]"
         >
           View Portfolio
         </Link>

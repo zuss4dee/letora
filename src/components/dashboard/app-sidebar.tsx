@@ -445,8 +445,14 @@ export function AppSidebar({
             footerOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
           )}
         >
-          <div className="min-h-0 overflow-hidden">
+            <div className="min-h-0 overflow-hidden">
             <div className={cn("flex flex-col gap-0.5 pt-1", !footerOpen && "pointer-events-none")}>
+              <div className="mx-2 mb-1 flex items-center gap-2">
+                <span className="font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-[#7f7569] dark:text-[#7d7a75]">
+                  Theme
+                </span>
+                <ThemeToggle />
+              </div>
               <Link href="/dashboard/settings" onClick={closeMobileNav} className={footerNavClass(settingsNavActive)}>
                 <Settings
                   className={cn(

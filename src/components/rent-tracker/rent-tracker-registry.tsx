@@ -64,34 +64,34 @@ function getDisplayStatus(
 function StatusPill({ status }: { status: ReturnType<typeof getDisplayStatus> }) {
   if (status === "overdue") {
     return (
-      <span className="bg-[#93000a] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-white">
+      <span className="bg-red-100 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-red-900 dark:bg-[#93000a] dark:text-white">
         OVERDUE
       </span>
     );
   }
   if (status === "partial") {
     return (
-      <span className="bg-[#464747] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#b5b5b5]">
+      <span className="bg-zinc-200 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-zinc-700 dark:bg-[#464747] dark:text-[#b5b5b5]">
         PARTIAL
       </span>
     );
   }
   if (status === "due_soon") {
     return (
-      <span className="border border-[#282828] bg-[#161616] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#888888]">
+      <span className="border border-zinc-200 bg-white px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-zinc-600 dark:border-[#282828] dark:bg-[#161616] dark:text-[#888888]">
         DUE SOON
       </span>
     );
   }
   if (status === "paid") {
     return (
-      <span className="border border-[#21473c] bg-[#152420] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#9ad7c3]">
+      <span className="border border-green-700/30 bg-green-950/10 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-green-900 dark:border-[#21473c] dark:bg-[#152420] dark:text-[#9ad7c3]">
         PAID
       </span>
     );
   }
   return (
-    <span className="border border-[#282828] bg-[#161616] px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-[#888888]">
+    <span className="border border-zinc-200 bg-white px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-zinc-600 dark:border-[#282828] dark:bg-[#161616] dark:text-[#888888]">
       PENDING
     </span>
   );
@@ -149,19 +149,23 @@ function ChaseStatusCell({
   > = {
     chased: {
       label: "CHASED",
-      className: "border-emerald-500/35 bg-emerald-500/10 text-emerald-400",
+      className:
+        "border-green-700/25 bg-green-100 text-green-800 dark:border-emerald-500/35 dark:bg-emerald-950/60 dark:text-[#9ad7c3]",
     },
     chase_pending: {
       label: "CHASE PENDING",
-      className: "border-amber-500/40 bg-amber-500/10 text-amber-300",
+      className:
+        "border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300",
     },
     awaiting_agent: {
       label: "AWAITING AGENT",
-      className: "border-[#333333] bg-[#161616] text-zinc-500",
+      className:
+        "border-zinc-200 bg-zinc-100 text-zinc-600 dark:border-[#333333] dark:bg-[#161616] dark:text-zinc-400",
     },
     no_action: {
       label: "NO ACTION",
-      className: "border-[#333333] bg-[#141414] text-zinc-600",
+      className:
+        "border-zinc-200 bg-zinc-100 text-zinc-600 dark:border-[#333333] dark:bg-[#141414] dark:text-zinc-600",
     },
   };
   const c = config[state];
@@ -286,10 +290,10 @@ export function RentTrackerRegistry({
 
   if (payments.length > 0 && displayPayments.length === 0) {
     return (
-      <div className="flex min-h-[22rem] flex-col border border-[#333333] bg-[#161616]">
-        <header className="flex items-center gap-2 border-b border-[#282828] px-5 py-4 md:px-6">
+      <div className="flex min-h-[22rem] flex-col border border-zinc-200 dark:border-[#333333] bg-white dark:bg-[#161616]">
+        <header className="flex items-center gap-2 border-b border-zinc-200 dark:border-[#282828] px-5 py-4 md:px-6">
           <span className="size-1.5 shrink-0 bg-zinc-500" aria-hidden />
-          <h1 className="text-xs font-bold uppercase tracking-widest text-white">Rent operations</h1>
+          <h1 className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Rent operations</h1>
         </header>
         <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 py-16 text-center">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-600">0 matching instalments</p>
@@ -309,10 +313,10 @@ export function RentTrackerRegistry({
 
   if (payments.length === 0) {
     return (
-      <div className="flex min-h-[22rem] flex-col border border-[#333333] bg-[#161616]">
-        <header className="flex items-center gap-2 border-b border-[#282828] px-5 py-4 md:px-6">
+      <div className="flex min-h-[22rem] flex-col border border-zinc-200 dark:border-[#333333] bg-white dark:bg-[#161616]">
+        <header className="flex items-center gap-2 border-b border-zinc-200 dark:border-[#282828] px-5 py-4 md:px-6">
           <span className="size-1.5 shrink-0 bg-zinc-500" aria-hidden />
-          <h1 className="text-xs font-bold uppercase tracking-widest text-white">Rent operations</h1>
+          <h1 className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Rent operations</h1>
         </header>
         <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-16 text-center">
           <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-600">0 rent cases</p>
@@ -329,13 +333,13 @@ export function RentTrackerRegistry({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden border border-[#333333] bg-[#161616]">
-      <header className="flex shrink-0 flex-col gap-3 border-b border-[#282828] bg-[#161616] px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden border border-zinc-200 dark:border-[#333333] bg-white dark:bg-[#161616]">
+      <header className="flex shrink-0 flex-col gap-3 border-b border-zinc-200 dark:border-[#282828] bg-white dark:bg-[#161616] px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
         <div className="flex items-start gap-3">
           <span className="mt-1 size-1.5 shrink-0 bg-[#afefdd]" aria-hidden />
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">Rent tracker</p>
-            <h1 className="text-sm font-bold uppercase tracking-widest text-white">Rent operations</h1>
+            <h1 className="text-sm font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Rent operations</h1>
             <p className="mt-1 text-[11px] text-zinc-500">
               Arrears triage and collection workflow
               {pendingApprovals.length > 0 ? (
@@ -350,7 +354,7 @@ export function RentTrackerRegistry({
           {canonicalRentTrackerMode !== "all" ? (
             <Link
               href={rentTrackerPreserveHref}
-              className="flex h-8 items-center border border-[#333333] bg-[#0B0B0B] px-3 text-[10px] font-bold uppercase tracking-wider text-[#afefdd] transition-colors hover:border-zinc-600 hover:text-white"
+              className="flex h-8 items-center border border-zinc-200 dark:border-[#333333] bg-zinc-50 dark:bg-[#0B0B0B] px-3 text-[10px] font-bold uppercase tracking-wider text-emerald-800 transition-colors hover:border-zinc-400 hover:text-emerald-950 dark:text-[#afefdd] dark:hover:border-zinc-600 dark:hover:text-white"
             >
               Exit filtered view
             </Link>
@@ -360,14 +364,14 @@ export function RentTrackerRegistry({
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              className="h-8 w-full border border-[#333333] bg-[#0B0B0B] pl-8 pr-3 text-[11px] text-zinc-200 placeholder-zinc-600 transition-colors focus:border-zinc-600 focus:outline-none"
+              className="h-8 w-full border border-zinc-200 dark:border-[#333333] bg-zinc-50 dark:bg-[#0B0B0B] pl-8 pr-3 text-[11px] text-zinc-900 placeholder-zinc-500 transition-colors focus:border-zinc-400 focus:outline-none dark:text-zinc-200 dark:placeholder-zinc-600 dark:focus:border-zinc-600"
               placeholder="Search tenants, properties…"
             />
           </div>
           <button
             type="button"
             onClick={() => downloadReportCsv(filtered, todayIso)}
-            className="flex h-8 items-center gap-1.5 border border-[#333333] bg-[#0B0B0B] px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-400 transition-colors hover:border-zinc-600 hover:text-white"
+            className="flex h-8 items-center gap-1.5 border border-zinc-200 dark:border-[#333333] bg-zinc-50 dark:bg-[#0B0B0B] px-3 text-[10px] font-bold uppercase tracking-wider text-zinc-600 transition-colors hover:border-zinc-400 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-zinc-600 dark:hover:text-white"
           >
             <Download className="size-3.5" />
             Report
@@ -375,7 +379,7 @@ export function RentTrackerRegistry({
         </div>
       </header>
 
-      <div className="grid shrink-0 grid-cols-2 gap-px border-b border-[#282828] bg-[#282828] sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid shrink-0 grid-cols-2 gap-px border-b border-zinc-200 dark:border-[#282828] bg-zinc-200 dark:bg-[#282828] sm:grid-cols-3 lg:grid-cols-5">
         {[
           {
             label: "Expected (Mo)",
@@ -406,7 +410,7 @@ export function RentTrackerRegistry({
             body: "Due in horizon",
           },
         ].map((stat) => (
-          <div key={stat.label} className="flex flex-col bg-[#0B0B0B] p-4">
+          <div key={stat.label} className="flex flex-col bg-zinc-50 dark:bg-[#0B0B0B] p-4">
             <span className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500">{stat.label}</span>
             <span
               className={cn(
@@ -417,7 +421,7 @@ export function RentTrackerRegistry({
                     ? "text-[#afefdd]"
                     : stat.tone === "amber"
                       ? "text-amber-400"
-                    : "text-white",
+                    : "text-zinc-900 dark:text-white",
               )}
             >
               {stat.value}
@@ -430,7 +434,7 @@ export function RentTrackerRegistry({
       </div>
 
       {canonicalRentTrackerMode !== "all" ? (
-        <div className="flex shrink-0 items-start gap-2 border-b border-[#282828] bg-[#141414] px-4 py-2 md:px-6">
+        <div className="flex shrink-0 items-start gap-2 border-b border-zinc-200 dark:border-[#282828] bg-zinc-100 dark:bg-[#141414] px-4 py-2 md:px-6">
           <span className="mt-1 size-1 shrink-0 rounded-[1px] bg-amber-500/75" aria-hidden />
           <p className="max-w-4xl font-mono text-[9px] uppercase leading-relaxed tracking-[0.12em] text-zinc-500">
             Summary KPIs reflect every instalment in your scoped roster (portfolio / deep-link). The instalment list
@@ -439,14 +443,14 @@ export function RentTrackerRegistry({
         </div>
       ) : null}
 
-      <div className="flex min-h-0 flex-1 overflow-hidden bg-[#0B0B0B]">
+      <div className="flex min-h-0 flex-1 overflow-hidden bg-zinc-50 dark:bg-[#0B0B0B]">
         <section
           className={cn(
-            "flex min-h-0 min-w-0 flex-1 flex-col border-[#282828] bg-[#161616]",
+            "flex min-h-0 min-w-0 flex-1 flex-col border-zinc-200 dark:border-[#282828] bg-white dark:bg-[#161616]",
             selectedRow ? "border-r" : "",
           )}
         >
-          <div className="sticky top-0 z-10 grid grid-cols-12 gap-2 border-b border-[#282828] bg-[#161616] px-5 py-2.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500 md:gap-4 md:px-6">
+          <div className="sticky top-0 z-10 grid grid-cols-12 gap-2 border-b border-zinc-200 dark:border-[#282828] bg-white dark:bg-[#161616] px-5 py-2.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500 md:gap-4 md:px-6">
             <div className="col-span-4">Tenant · property</div>
             <div className="col-span-2 text-right">Rent due</div>
             <div className="col-span-2 text-center">Status</div>
@@ -454,7 +458,7 @@ export function RentTrackerRegistry({
             <div className="col-span-2 text-right">Agent</div>
           </div>
 
-          <div className="min-h-0 flex-1 divide-y divide-[#282828] overflow-y-auto">
+          <div className="min-h-0 flex-1 divide-y divide-zinc-200 dark:divide-[#282828] overflow-y-auto">
             {filtered.map((p) => {
               const isSelected = selectedId === p.id;
               const status = getDisplayStatus(p, todayIso);
@@ -475,13 +479,13 @@ export function RentTrackerRegistry({
                     }
                   }}
                   className={cn(
-                    "grid cursor-pointer grid-cols-12 items-center gap-2 px-5 py-4 transition-colors hover:bg-[#1c1c1c] md:gap-4 md:px-6",
-                    isSelected ? "bg-[#141414] shadow-[inset_3px_0_0_0_#afefdd]" : "bg-transparent",
+                    "grid cursor-pointer grid-cols-12 items-center gap-2 px-5 py-4 transition-colors hover:bg-zinc-100 md:gap-4 md:px-6 dark:hover:bg-[#1c1c1c]",
+                    isSelected ? "bg-zinc-100 dark:bg-[#141414] shadow-[inset_3px_0_0_0_#afefdd]" : "bg-transparent",
                   )}
                 >
                   <div className="col-span-4 min-w-0">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                      <span className="text-[12px] font-semibold text-zinc-100">{p.tenantName}</span>
+                      <span className="text-[12px] font-semibold text-zinc-900 dark:text-zinc-100">{p.tenantName}</span>
                       <span className="truncate text-[10px] text-zinc-500">· {p.propertyAddress}</span>
                     </div>
                     {status === "overdue" && daysLate ? (
@@ -491,7 +495,7 @@ export function RentTrackerRegistry({
                     ) : null}
                   </div>
                   <div className="col-span-2 text-right">
-                    <div className="font-mono text-[11px] font-bold tabular-nums text-zinc-100">
+                    <div className="font-mono text-[11px] font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
                       {gbp.format(p.amount)}
                     </div>
                     <div className="text-[9px] uppercase tracking-tighter text-zinc-500">
@@ -514,7 +518,7 @@ export function RentTrackerRegistry({
                         "inline-block border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider",
                         agentState.tone === "emerald"
                           ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                          : "border-[#333333] text-zinc-500",
+                          : "border-zinc-200 dark:border-[#333333] text-zinc-500",
                       )}
                     >
                       {agentState.label}
@@ -542,15 +546,15 @@ export function RentTrackerRegistry({
         </section>
 
         {selectedRow ? (
-          <aside className="flex h-full w-full max-w-[22rem] shrink-0 flex-col overflow-hidden border-l border-[#282828] bg-[#161616] md:w-80">
-            <header className="flex shrink-0 items-start justify-between gap-3 border-b border-[#282828] px-5 py-5 md:px-6">
+          <aside className="flex h-full w-full max-w-[22rem] shrink-0 flex-col overflow-hidden border-l border-zinc-200 dark:border-[#282828] bg-white dark:bg-[#161616] md:w-80">
+            <header className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-200 dark:border-[#282828] px-5 py-5 md:px-6">
               <div>
                 <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Case detail</p>
-                <h2 className="text-base font-bold uppercase tracking-tight text-white">Rent case</h2>
+                <h2 className="text-base font-bold uppercase tracking-tight text-zinc-900 dark:text-white">Rent case</h2>
               </div>
               <button
                 type="button"
-                className="rounded border border-transparent p-1 text-zinc-500 transition-colors hover:border-[#333333] hover:text-white"
+                className="rounded border border-transparent p-1 text-zinc-500 transition-colors hover:border-zinc-200 hover:text-zinc-900 dark:hover:border-[#333333] dark:hover:text-white"
                 aria-label="Close detail"
                 onClick={() => setSelectedId(null)}
               >
@@ -564,7 +568,7 @@ export function RentTrackerRegistry({
                 <div className="space-y-4">
                   <div>
                     <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Tenant</p>
-                    <p className="text-[12px] font-semibold text-white">{selectedRow.tenantName}</p>
+                    <p className="text-[12px] font-semibold text-zinc-900 dark:text-white">{selectedRow.tenantName}</p>
                   </div>
                   <div>
                     <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Property</p>
@@ -577,11 +581,11 @@ export function RentTrackerRegistry({
                 <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">
                   Payment
                 </h3>
-                <div className="border border-[#333333] bg-[#0B0B0B] p-4">
+                <div className="border border-zinc-200 dark:border-[#333333] bg-zinc-50 dark:bg-[#0B0B0B] p-4">
                   <div className="flex items-baseline justify-between gap-3">
                     <div>
                       <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Due</p>
-                      <p className="font-mono text-xl font-bold text-white">{gbp.format(selectedRow.amount)}</p>
+                    <p className="font-mono text-xl font-bold text-zinc-900 dark:text-white">{gbp.format(selectedRow.amount)}</p>
                     </div>
                     {getDisplayStatus(selectedRow, todayIso) === "overdue" ? (
                       <div className="text-right">
@@ -626,10 +630,10 @@ export function RentTrackerRegistry({
                     return (
                       <div
                         key={hr.id}
-                        className="flex items-center justify-between border-l border-[#282828] py-1 pl-4"
+                        className="flex items-center justify-between border-l border-zinc-200 dark:border-[#282828] py-1 pl-4"
                       >
                         <div>
-                          <p className="text-[11px] font-bold text-white">{formatDisplayDate(hr.due_date)}</p>
+                          <p className="text-[11px] font-bold text-zinc-900 dark:text-white">{formatDisplayDate(hr.due_date)}</p>
                           <p className="font-mono text-[10px] text-zinc-500">{gbp.format(hr.amount)}</p>
                         </div>
                         <span
@@ -649,7 +653,7 @@ export function RentTrackerRegistry({
               </section>
             </div>
 
-            <footer className="shrink-0 space-y-2 border-t border-[#282828] bg-[#0B0B0B] p-5 md:p-6">
+            <footer className="shrink-0 space-y-2 border-t border-zinc-200 dark:border-[#282828] bg-zinc-50 dark:bg-[#0B0B0B] p-5 md:p-6">
               {getAgentState(selectedRow, pendingApprovals).label === "DRAFT READY" ? (
                 <Button
                   asChild
@@ -675,7 +679,7 @@ export function RentTrackerRegistry({
                 <Button
                   asChild
                   variant="outline"
-                  className="border-[#333333] bg-transparent py-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-[#161616]"
+                  className="border-zinc-200 bg-transparent py-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-zinc-100 dark:border-[#333333] dark:hover:bg-[#161616]"
                 >
                   <Link
                     href={
@@ -690,7 +694,7 @@ export function RentTrackerRegistry({
                 <Button
                   asChild
                   variant="outline"
-                  className="border-[#333333] bg-transparent py-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-[#161616]"
+                  className="border-zinc-200 bg-transparent py-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-zinc-100 dark:border-[#333333] dark:hover:bg-[#161616]"
                 >
                   <Link
                     href={
