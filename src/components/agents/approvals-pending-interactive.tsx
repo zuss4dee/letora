@@ -265,7 +265,7 @@ export function ApprovalsPendingInteractive({
                     type="button"
                     disabled={busyId === selectedApproval.id}
                     variant="outline"
-                    className="border-emerald-700/40 bg-emerald-950/20 py-5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-300 hover:bg-emerald-950/35"
+                    className="border border-emerald-200 bg-emerald-50 py-5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-800 hover:bg-emerald-100 dark:border-[#9ad7c3]/20 dark:bg-[#152420] dark:text-[#9ad7c3] dark:hover:bg-[#1a2e29]"
                     asChild
                   >
                     <Link href={`/dashboard/approvals/${selectedApproval.id}/email`}>Review & edit email</Link>
@@ -274,7 +274,7 @@ export function ApprovalsPendingInteractive({
                 <Button
                   type="button"
                   disabled={busyId === selectedApproval.id}
-                  className="bg-emerald-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-[#ffffff] hover:bg-emerald-700 transition-colors"
+                  className="border border-transparent bg-green-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-white hover:bg-green-700 dark:border-[#9ad7c3]/20 dark:bg-[#152420] dark:text-[#9ad7c3] dark:hover:bg-[#1a2e29]"
                   onClick={() => void runApprove(selectedApproval.id)}
                 >
                   {busyId === selectedApproval.id ? "Processing..." : "Approve & Execute Action"}

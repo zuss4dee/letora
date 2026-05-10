@@ -48,7 +48,7 @@ export function CommandCenterAiComposer() {
             <button
               type="submit"
               disabled={busy || !text.trim()}
-              className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 px-6 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-zinc-700 disabled:opacity-50 active:scale-95 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="flex items-center gap-2 bg-zinc-900 px-6 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-zinc-700 disabled:opacity-50 active:scale-95 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 [&_svg]:text-white dark:[&_svg]:text-zinc-900"
             >
               {busy ? (
                 <Loader2 className="size-3.5 animate-spin" />

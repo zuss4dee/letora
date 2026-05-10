@@ -19,7 +19,6 @@ const crumbMap: { prefix: string; label: string }[] = [
   { prefix: "/dashboard/activity", label: "Activity" },
   { prefix: "/dashboard/approvals", label: "Approvals" },
   { prefix: "/dashboard/billing", label: "Billing" },
-  { prefix: "/dashboard/help", label: "Help" },
   { prefix: "/dashboard/settings", label: "Settings" },
 ];
 
@@ -79,7 +78,7 @@ export function DashboardMobileInsetBar() {
         "dark:bg-[#0b0b0b]",
       )}
     >
-      <SidebarTrigger className="-ml-1 text-muted-foreground hover:bg-transparent hover:text-foreground dark:text-zinc-400 dark:hover:text-white" />
+      <SidebarTrigger className="-ml-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white" />
       <span className="font-headline min-w-0 flex-1 truncate text-sm font-light text-foreground">{current}</span>
     </div>
   );

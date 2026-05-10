@@ -64,7 +64,7 @@ function getDisplayStatus(
 function StatusPill({ status }: { status: ReturnType<typeof getDisplayStatus> }) {
   if (status === "overdue") {
     return (
-      <span className="bg-red-100 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-red-900 dark:bg-[#93000a] dark:text-white">
+      <span className="border border-red-200 bg-red-100 px-1.5 py-0.5 text-[9px] font-bold tracking-wider text-red-800 dark:border-red-900/30 dark:bg-red-950/50 dark:text-red-400">
         OVERDUE
       </span>
     );
@@ -150,17 +150,17 @@ function ChaseStatusCell({
     chased: {
       label: "CHASED",
       className:
-        "border-green-700/25 bg-green-100 text-green-800 dark:border-emerald-500/35 dark:bg-emerald-950/60 dark:text-[#9ad7c3]",
+        "border border-green-200 bg-green-100 text-green-800 dark:border-green-900/30 dark:bg-[#152420] dark:text-[#9ad7c3]",
     },
     chase_pending: {
       label: "CHASE PENDING",
       className:
-        "border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-300",
+        "border border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/20 dark:text-amber-400",
     },
     awaiting_agent: {
       label: "AWAITING AGENT",
       className:
-        "border-zinc-200 bg-zinc-100 text-zinc-600 dark:border-[#333333] dark:bg-[#161616] dark:text-zinc-400",
+        "border border-zinc-200 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400",
     },
     no_action: {
       label: "NO ACTION",
@@ -657,7 +657,7 @@ export function RentTrackerRegistry({
               {getAgentState(selectedRow, pendingApprovals).label === "DRAFT READY" ? (
                 <Button
                   asChild
-                  className="w-full bg-emerald-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-[#ffffff] hover:bg-emerald-700"
+                  className="w-full border border-transparent bg-green-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-white hover:bg-green-700 dark:border-[#9ad7c3]/20 dark:bg-[#152420] dark:text-[#9ad7c3] dark:hover:bg-[#1a2e29]"
                 >
                   <Link
                     href={`/dashboard/approvals?id=${getAgentState(selectedRow, pendingApprovals).approvalId}`}

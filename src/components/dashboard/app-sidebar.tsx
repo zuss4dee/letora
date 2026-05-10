@@ -5,31 +5,21 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   BadgeCheck,
-  Bell,
   Building2,
   ChevronDown,
   CircleDollarSign,
-  ClipboardCheck,
-  Command,
   CreditCard,
-  FileText,
-  HelpCircle,
   History,
   Home,
   Key,
   LogOut,
-  Mail,
   PlusCircle,
   Settings,
   Upload,
-  UserCircle2,
-  UserPlus,
   Users,
   Wrench,
 } from "lucide-react";
 
-import { useOpenCommandPalette } from "@/components/dashboard/dashboard-command-palette";
-import { SidebarAgentActivityButton } from "@/components/dashboard/sidebar-agent-activity-button";
 import { useSidebarDynamicOptional } from "@/components/dashboard/sidebar-dynamic-context";
 import { getSidebarPlanStatusCompact } from "@/lib/billing/subscription-display";
 import { getPendingApprovalsCount } from "@/lib/actions/agent-approvals";
@@ -42,7 +32,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type NavItem = {
@@ -98,7 +87,7 @@ function planPresenceStyles(subscriptionStatus: string | null | undefined): {
 const navRowBase =
   "relative mx-2 flex touch-manipulation items-center gap-2.5 rounded-md px-2.5 py-2 text-left font-[family-name:var(--font-inter)] text-[0.74rem] font-medium leading-none tracking-[0.01em] transition-[background-color,color,box-shadow] duration-150 ease-out";
 const navRowIdle =
-  "text-[#6a655d] hover:bg-zinc-950 dark:bg-black/[0.04] hover:text-[#23211f] active:bg-zinc-950 dark:bg-black/[0.06] dark:text-[#a19f9a] dark:hover:bg-white/[0.055] dark:hover:text-[#e7e5e2] dark:active:bg-white/[0.07]";
+  "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 active:bg-zinc-200 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100 dark:active:bg-zinc-900";
 const navRowActive =
   "bg-zinc-100 text-zinc-900 shadow-[inset_2px_0_0_0_#000000] dark:bg-zinc-800/80 dark:text-zinc-100 dark:shadow-[inset_2px_0_0_0_#ffffff]";
 
@@ -235,7 +224,6 @@ export function AppSidebar({
 }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { openPalette } = useOpenCommandPalette();
   const { isMobile, setOpenMobile } = useSidebar();
   const dyn = useSidebarDynamicOptional();
   const d = dyn?.state;
@@ -335,7 +323,6 @@ export function AppSidebar({
     },
     { title: "Activity", url: "/dashboard/activity", icon: History },
     { title: "Portfolio Import", url: "/dashboard/import", icon: Upload },
-    { title: "Help & Support", url: "/dashboard/help", icon: HelpCircle },
   ];
 
   const footerNavClass = (active: boolean) =>
@@ -401,7 +388,7 @@ export function AppSidebar({
           <Link
             href="/dashboard/properties"
             onClick={closeMobileNav}
-            className="flex touch-manipulation items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white py-2 font-[family-name:var(--font-inter)] text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-100 dark:bg-zinc-900"
+            className="flex touch-manipulation items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white py-2 font-[family-name:var(--font-inter)] text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
           >
             <PlusCircle className="size-4 shrink-0 stroke-[1.5]" aria-hidden />
             Add to Portfolio

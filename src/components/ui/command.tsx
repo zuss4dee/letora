@@ -14,7 +14,7 @@ const Command = React.forwardRef<
   <CommandPrimitive
     ref={ref}
     className={cn(
-      "flex h-full w-full flex-col overflow-hidden rounded-md bg-popover text-popover-foreground",
+      "flex h-full w-full flex-col overflow-hidden rounded-md border border-zinc-200 bg-white text-zinc-900 dark:border-[#333333] dark:bg-[#1a1a1a] dark:text-zinc-100",
       className,
     )}
     {...props}
@@ -106,7 +106,7 @@ const CommandSeparator = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <CommandPrimitive.Separator
     ref={ref}
-    className={cn("-mx-1 h-px bg-background dark:bg-[#484848]/25", className)}
+    className={cn("-mx-1 h-px bg-zinc-200 dark:bg-[#2a2a2a]", className)}
     {...props}
   />
 ));
@@ -119,9 +119,9 @@ const CommandItem = React.forwardRef<
   <CommandPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-2 font-[family-name:var(--font-inter)] text-sm outline-none",
-      "data-[disabled=true]:pointer-events-none data-[disabled=true]:opacity-40",
-      "data-[selected=true]:bg-zinc-100 data-[selected=true]:text-zinc-900 dark:data-[selected=true]:bg-white/5 dark:data-[selected=true]:text-zinc-100",
+      "relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-2 font-[family-name:var(--font-inter)] text-sm text-zinc-900 outline-none dark:text-zinc-100",
+      "data-[disabled=true]:pointer-events-none data-[disabled=true]:text-zinc-400 data-[disabled=true]:opacity-40 dark:data-[disabled=true]:text-zinc-600",
+      "data-[selected=true]:bg-zinc-100 data-[selected=true]:text-zinc-900 dark:data-[selected=true]:bg-[#2a2a2a] dark:data-[selected=true]:text-zinc-100",
       className,
     )}
     {...props}

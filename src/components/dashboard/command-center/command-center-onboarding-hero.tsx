@@ -33,7 +33,7 @@ export function CommandCenterOnboardingHero() {
             <div className="mt-10 flex flex-wrap gap-4">
               <Link
                 href="/dashboard/import"
-                className="group flex items-center gap-3 bg-zinc-100 dark:bg-zinc-900 px-8 py-4 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                className="group flex items-center gap-3 bg-zinc-900 px-8 py-4 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 [&_svg]:text-white dark:[&_svg]:text-zinc-900"
               >
                 <Upload className="size-4" />
                 Import Portfolio
@@ -41,7 +41,7 @@ export function CommandCenterOnboardingHero() {
               </Link>
               <Link
                 href="/dashboard"
-                className="flex items-center gap-3 border border-zinc-200 px-8 py-4 text-xs font-bold uppercase tracking-widest text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-white dark:hover:bg-background dark:bg-[#242424]"
+                className="flex items-center gap-3 border border-zinc-200 bg-white px-8 py-4 text-xs font-bold uppercase tracking-widest text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:bg-transparent dark:text-zinc-100 dark:hover:bg-zinc-800"
               >
                 <MessageSquare className="size-4" />
                 Talk to Assistant

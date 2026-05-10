@@ -44,24 +44,25 @@ function LateRentArrearsRibbon({ row }: { row: ArrearsQueueRow }) {
     chase_pending: {
       label: "CHASE PENDING",
       className:
-        "border border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-600/40 dark:bg-amber-900/20 dark:text-amber-400",
+        "border border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/20 dark:text-amber-400",
       wrapWithApprovalsLink: true,
     },
     awaiting_agent: {
       label: "AWAITING AGENT",
       className:
-        "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-400",
+        "border border-zinc-200 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400",
       wrapWithApprovalsLink: false,
     },
     chased: {
       label: "CHASED",
       className:
-        "border border-green-200 bg-green-100 text-green-800 dark:border-emerald-800/40 dark:bg-[#152420] dark:text-[#9ad7c3]",
+        "border border-green-200 bg-green-100 text-green-800 dark:border-green-900/30 dark:bg-[#152420] dark:text-[#9ad7c3]",
       wrapWithApprovalsLink: false,
     },
     no_action: {
       label: "NO ACTION",
-      className: "bg-zinc-100 text-zinc-600 dark:bg-zinc-900 dark:text-zinc-500",
+      className:
+        "border border-zinc-200 bg-zinc-100 text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-500",
       wrapWithApprovalsLink: false,
     },
   };

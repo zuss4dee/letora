@@ -12,7 +12,7 @@ function SubmitButton() {
     <Button
       type="submit"
       disabled={pending}
-      className="w-full rounded-none bg-emerald-600 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-[#ffffff] hover:bg-emerald-700 disabled:opacity-50"
+      className="w-full rounded-none border border-transparent bg-green-600 py-3 text-[10px] font-bold uppercase tracking-[0.14em] text-white hover:bg-green-700 disabled:opacity-50 dark:border-[#9ad7c3]/20 dark:bg-[#152420] dark:text-[#9ad7c3] dark:hover:bg-[#1a2e29]"
     >
       {pending ? "Resolving…" : "Mark as resolved"}
     </Button>

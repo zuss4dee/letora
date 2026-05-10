@@ -666,7 +666,7 @@ export function MaintenanceWorkspaceClient({
                 {getAgentState(selected, pendingApprovals).label === "DRAFT READY" ? (
                   <Button
                     asChild
-                    className="bg-emerald-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-[#ffffff] hover:bg-emerald-700 transition-colors"
+                    className="border border-transparent bg-green-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-white hover:bg-green-700 dark:border-[#9ad7c3]/20 dark:bg-[#152420] dark:text-[#9ad7c3] dark:hover:bg-[#1a2e29]"
                   >
                     <Link href={`/dashboard/approvals?id=${getAgentState(selected, pendingApprovals).approvalId}`}>
                       Review & Approve Draft
@@ -675,7 +675,7 @@ export function MaintenanceWorkspaceClient({
                 ) : (
                   <Button
                     asChild
-                    className="bg-white py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-black hover:bg-zinc-200 transition-colors"
+                    className="border border-zinc-200 bg-white py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-zinc-900 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-800"
                   >
                     <Link href={`/dashboard/maintenance/${selected.id}#assign-contractor`}>
                       Update Status

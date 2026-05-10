@@ -58,7 +58,7 @@ export function ContractDetailActions({
         {st === "draft" ? (
           <Button
             type="button"
-            className="w-full bg-emerald-600 text-white hover:bg-emerald-700 dark:bg-emerald-500 dark:text-zinc-950"
+            className="w-full border border-transparent bg-green-600 text-white hover:bg-green-700 dark:border-[#9ad7c3]/20 dark:bg-[#152420] dark:text-[#9ad7c3] dark:hover:bg-[#1a2e29]"
             disabled={busy}
             onClick={() =>
               void run(() => updateContractStatus(contractId, "active"))
