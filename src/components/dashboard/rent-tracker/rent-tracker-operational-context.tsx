@@ -91,15 +91,15 @@ export function RentTrackerOperationalContextStrip({
     resolvedRentTrackerMode !== "all" ? RENT_TRACKER_MODE_OPERATOR_LABELS[resolvedRentTrackerMode] : "";
 
   return (
-    <div className="shrink-0 space-y-0 border-b border-[#282828] font-['Inter',system-ui,sans-serif]">
+    <div className="shrink-0 space-y-0 border-b border-zinc-200 font-['Inter',system-ui,sans-serif] dark:border-[#282828]">
       {unknownRentTrackerModeDropped ? (
-        <div role="status" className="flex flex-wrap items-start gap-2 bg-[#1a1612] px-4 py-3 md:px-6">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500/90" aria-hidden />
+        <div role="status" className="flex flex-wrap items-start gap-2 bg-amber-50 px-4 py-3 dark:bg-[#1a1612] md:px-6">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600/90 dark:text-amber-500/90" aria-hidden />
           <div className="min-w-0 space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-amber-950 dark:text-white">
               Rent filter not recognised
             </p>
-            <p className="font-mono text-[10px] leading-relaxed uppercase tracking-[0.06em] text-zinc-500">
+            <p className="font-mono text-[10px] leading-relaxed uppercase tracking-[0.06em] text-zinc-600 dark:text-zinc-500">
               The URL named a rental view we do not support — showing every scoped instalment while you stay oriented.
             </p>
           </div>
@@ -107,13 +107,13 @@ export function RentTrackerOperationalContextStrip({
       ) : null}
 
       {showActiveRentModeRibbon ? (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-[#101910] px-4 py-3 md:px-6">
-          <Filter className="size-3.5 shrink-0 text-[#afefdd]/80" aria-hidden />
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[#afefdd]">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-emerald-50 px-4 py-3 dark:bg-[#101910] md:px-6">
+          <Filter className="size-3.5 shrink-0 text-emerald-700/90 dark:text-[#afefdd]/80" aria-hidden />
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-emerald-900 dark:text-[#afefdd]">
             Active view · {modeOperatorLabel}
           </span>
           {rentTrackerModePausedForFocus ? (
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-amber-400/90">
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-amber-700/90 dark:text-amber-400/90">
               Instalment focus keeps a row outside this filter visible.
             </span>
           ) : null}
@@ -121,17 +121,17 @@ export function RentTrackerOperationalContextStrip({
       ) : null}
 
       {showQueueBacktrail ? (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-[#141414] px-4 py-3 md:px-6">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-zinc-100 px-4 py-3 dark:bg-[#141414] md:px-6">
           <span className="size-1.5 shrink-0 bg-[#ffb4ab]" aria-hidden />
           <Link
             href="/dashboard"
             aria-label="Back to Command Center"
-            className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[#e5e2e1] underline-offset-4 transition-colors hover:text-white hover:underline"
+            className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-800 underline-offset-4 transition-colors hover:text-zinc-950 hover:underline dark:text-[#e5e2e1] dark:hover:text-white"
           >
             ← Command Center
           </Link>
-          <span className="hidden h-3 w-px bg-[#333333] sm:block" aria-hidden />
-          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500">
+          <span className="hidden h-3 w-px bg-zinc-300 sm:block dark:bg-[#333333]" aria-hidden />
+          <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-600 dark:text-zinc-500">
             Rent operations / overdue case
           </span>
         </div>
@@ -142,20 +142,20 @@ export function RentTrackerOperationalContextStrip({
           role="status"
           className={cn(
             "flex flex-wrap items-start gap-2 px-4 py-3 md:px-6",
-            destructiveMismatch ? "bg-[#93000a]/15" : "bg-[#1a1612]",
+            destructiveMismatch ? "bg-red-100/90 dark:bg-[#93000a]/15" : "bg-amber-50 dark:bg-[#1a1612]",
           )}
         >
           <AlertTriangle
             className={cn(
               "mt-0.5 size-4 shrink-0",
-              destructiveMismatch ? "text-[#ffb4ab]" : "text-amber-500/90",
+              destructiveMismatch ? "text-red-600 dark:text-[#ffb4ab]" : "text-amber-600/90 dark:text-amber-500/90",
             )}
             aria-hidden
           />
           <div className="min-w-0 space-y-1">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white">{mismatchTitle}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-900 dark:text-white">{mismatchTitle}</p>
             {mismatchBody ? (
-              <p className="font-mono text-[10px] leading-relaxed uppercase tracking-[0.06em] text-zinc-500">
+              <p className="font-mono text-[10px] leading-relaxed uppercase tracking-[0.06em] text-zinc-600 dark:text-zinc-500">
                 {mismatchBody}
               </p>
             ) : null}

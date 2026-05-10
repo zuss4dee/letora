@@ -62,7 +62,7 @@ export async function CommandCenterArrearsQueue({ userId }: { userId: string }) 
         ) : null}
       </div>
 
-      <div className="border border-zinc-200 bg-white dark:border-[#333333] dark:bg-[#161616]">
+      <div className="border border-zinc-200 bg-white dark:border-[#2a2a2a] dark:bg-[#161616]">
         {rows.length === 0 ? (
           <div className="p-12 text-center">
             <p className="mb-1 text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-600">
@@ -90,7 +90,7 @@ export async function CommandCenterMaintenanceQueue({ userId }: { userId: string
         <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Maintenance Action Queue</h2>
       </div>
 
-      <div className="border border-zinc-200 bg-white dark:border-[#333333] dark:bg-[#161616]">
+      <div className="border border-zinc-200 bg-white dark:border-[#2a2a2a] dark:bg-[#161616]">
         {rows.length === 0 ? (
           <div className="p-12 text-center">
             <p className="mb-1 text-xs font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-600">No Maintenance Exceptions</p>
@@ -147,8 +147,8 @@ export async function CommandCenterMaintenanceQueue({ userId }: { userId: string
 export function CommandCenterQueueSkeleton() {
   return (
     <div className="animate-pulse space-y-4">
-      <div className="h-4 w-48 bg-zinc-800 rounded" />
-      <div className="h-64 rounded-sm border border-zinc-200 bg-white dark:border-[#333333] dark:bg-[#161616]" />
+      <div className="h-4 w-48 rounded bg-zinc-200 dark:bg-zinc-800" />
+      <div className="h-64 rounded-sm border border-zinc-200 bg-white dark:border-[#2a2a2a] dark:bg-[#161616]" />
     </div>
   );
 }

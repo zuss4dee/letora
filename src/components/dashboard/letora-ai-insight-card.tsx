@@ -6,7 +6,7 @@ export function LetoraAiInsightCard({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "border border-[#BD9952]/20 bg-[#1F2020]/40 p-8 backdrop-blur-md",
+        "border border-[#BD9952]/20 bg-zinc-50/90 p-8 backdrop-blur-md dark:bg-[#1F2020]/40",
         className,
       )}
     >

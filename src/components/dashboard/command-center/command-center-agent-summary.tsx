@@ -9,7 +9,7 @@ export function CommandCenterAgentSummarySkeleton() {
         {Array.from({ length: 4 }, (_, idx) => (
           <div
             key={`agent-summary-tile-${idx}`}
-            className="h-20 rounded-sm bg-zinc-100 dark:bg-zinc-900 md:border md:border-zinc-200 md:dark:border-[#333333]"
+            className="h-20 rounded-sm bg-zinc-100 md:border md:border-zinc-200 dark:bg-zinc-900 md:dark:border-[#2a2a2a]"
           />
         ))}
       </div>
@@ -30,7 +30,7 @@ export async function CommandCenterAgentSummary({ userId }: { userId: string }) 
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col border border-zinc-200 bg-white p-4 dark:border-[#333333] dark:bg-[#161616]">
+        <div className="flex flex-col border border-zinc-200 bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#161616]">
           <div className="flex items-center gap-2 mb-2">
             <Mail className="size-3 text-zinc-500" />
             <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Rent Drafts</span>
@@ -41,7 +41,7 @@ export async function CommandCenterAgentSummary({ userId }: { userId: string }) 
           </div>
         </div>
 
-        <div className="flex flex-col border border-zinc-200 bg-white p-4 dark:border-[#333333] dark:bg-[#161616]">
+        <div className="flex flex-col border border-zinc-200 bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#161616]">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="size-3 text-zinc-500" />
             <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Maint Drafts</span>
@@ -52,7 +52,7 @@ export async function CommandCenterAgentSummary({ userId }: { userId: string }) 
           </div>
         </div>
 
-        <div className="flex flex-col border border-zinc-200 bg-white p-4 dark:border-[#333333] dark:bg-[#161616]">
+        <div className="flex flex-col border border-zinc-200 bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#161616]">
           <div className="flex items-center gap-2 mb-2">
             <UserCheck className="size-3 text-zinc-500" />
             <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Total Tasks</span>
@@ -63,7 +63,7 @@ export async function CommandCenterAgentSummary({ userId }: { userId: string }) 
           </div>
         </div>
 
-        <div className="flex flex-col border border-zinc-200 bg-white p-4 dark:border-[#333333] dark:bg-[#161616]">
+        <div className="flex flex-col border border-zinc-200 bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#161616]">
           <div className="flex items-center gap-2 mb-2">
             <Activity className="size-3 text-zinc-500" aria-hidden />
             <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500">Agents running</span>

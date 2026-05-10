@@ -28,18 +28,18 @@ export function CommandCenterFailedImportBanner({
     <aside
       role="status"
       aria-live="polite"
-      className="relative mb-6 flex flex-col gap-3 rounded-md border border-red-200 bg-red-50/95 px-4 py-4 pr-11 sm:flex-row sm:items-center sm:justify-between sm:gap-6 dark:border-[#BB5551]/45 dark:bg-[#2a1514]/55"
+      className="relative mb-6 flex flex-col gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-4 pr-11 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:gap-6 dark:border-[#BB5551]/45 dark:bg-[#2a1514]/55 dark:shadow-none"
     >
       <button
         type="button"
         onClick={onDismiss}
-        className="absolute right-3 top-3 rounded border border-transparent p-1 text-zinc-500 transition-colors hover:border-red-200 hover:bg-black/10 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-[#BB5551]/35 dark:hover:bg-black/20 dark:hover:text-white"
+        className="absolute right-3 top-3 rounded border border-transparent p-1 text-zinc-500 transition-colors hover:border-red-200 hover:bg-red-100/60 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-[#BB5551]/35 dark:hover:bg-black/20 dark:hover:text-white"
         aria-label="Dismiss import notice"
       >
         <X className="size-4" aria-hidden />
       </button>
       <div className="min-w-0 flex-1">
-        <p className="font-['Inter',sans-serif] text-sm font-semibold text-red-950 dark:text-white">
+        <p className="font-['Inter',sans-serif] text-sm font-semibold text-red-900 dark:text-white">
           Recent import didn&apos;t finish cleanly
         </p>
         <p className="mt-1 text-[13px] leading-snug text-zinc-700 dark:text-zinc-400">

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 export function CommandCenterKpiGridSkeleton() {
   return (
-    <div className="mb-8 grid grid-cols-2 gap-px border border-zinc-200 bg-zinc-200 dark:border-[#333333] dark:bg-[#333333] md:grid-cols-12">
+    <div className="mb-8 grid grid-cols-2 gap-px border border-zinc-200 bg-zinc-200 dark:border-[#2a2a2a] dark:bg-[#2a2a2a] md:grid-cols-12">
       {Array.from({ length: 7 }).map((_, i) => (
         <div
           key={i}
@@ -15,8 +15,8 @@ export function CommandCenterKpiGridSkeleton() {
             i < 4 ? "md:col-span-3" : i < 6 ? "md:col-span-4" : "col-span-2 md:col-span-4",
           )}
         >
-          <div className="mb-2 h-2 w-24 animate-pulse rounded bg-zinc-700" />
-          <div className="h-8 w-16 animate-pulse rounded bg-zinc-700" />
+          <div className="mb-2 h-2 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
+          <div className="h-8 w-16 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />
         </div>
       ))}
     </div>
@@ -50,19 +50,19 @@ export function CommandCenterActionBar({ pendingApprovalsCount = 0 }: { pendingA
               ? `Open approvals — ${pendingApprovalsCount} pending`
               : "Open approvals"
           }
-          className="inline-flex border border-zinc-200 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-300 dark:hover:bg-[#161616]"
+          className="inline-flex border border-zinc-200 bg-transparent px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800/40"
         >
           Open Approvals
         </Link>
         <Link
           href="/dashboard/properties"
-          className="border border-zinc-200 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-300 dark:hover:bg-[#161616]"
+          className="inline-flex border border-zinc-200 bg-transparent px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800/40"
         >
           View Portfolio
         </Link>
         <Link
           href="/dashboard/import"
-          className="bg-white px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-black transition-colors hover:bg-zinc-200"
+          className="inline-flex border border-transparent bg-zinc-900 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
           Import Portfolio
         </Link>

@@ -46,6 +46,8 @@ export function RentTrackerCheckoutReturnBanner({ className }: { className?: str
       if (!rawStatus) return;
 
       const kind = classifyPaymentParam(rawStatus);
+      // One-shot hydration from window.location; must run after mount to read query + strip params.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- sync read/replaceState is intentional here
       setBanner({
         kind,
         sessionTail: tailSession(sessionId),
@@ -90,14 +92,18 @@ export function RentTrackerCheckoutReturnBanner({ className }: { className?: str
     <aside
       role="status"
       className={cn(
-        "shrink-0 border-b border-[#282828] px-4 py-3 font-['Inter',system-ui,sans-serif] md:px-6",
-        success ? "bg-[#152420]" : cancel ? "bg-[#161616]" : "bg-[#1a1612]",
+        "shrink-0 border-b px-4 py-3 font-['Inter',system-ui,sans-serif] md:px-6",
+        success
+          ? "border-emerald-200 bg-emerald-50 dark:border-[#282828] dark:bg-[#152420]"
+          : cancel
+            ? "border-zinc-200 bg-zinc-100 dark:border-[#282828] dark:bg-[#161616]"
+            : "border-amber-200 bg-amber-50 dark:border-[#282828] dark:bg-[#1a1612]",
         className,
       )}
     >
       <div className="flex flex-wrap items-start gap-2">
         {success ? (
-          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[#afefdd]" aria-hidden />
+          <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-700 dark:text-[#afefdd]" aria-hidden />
         ) : (
           <AlertTriangle
             className={cn(
@@ -111,16 +117,16 @@ export function RentTrackerCheckoutReturnBanner({ className }: { className?: str
           <p
             className={cn(
               "text-[11px] font-semibold uppercase tracking-[0.12em]",
-              success ? "text-[#afefdd]" : "text-white",
+              success ? "text-emerald-900 dark:text-[#afefdd]" : "text-zinc-900 dark:text-white",
             )}
           >
             {title}
           </p>
-          <p className="font-mono text-[10px] leading-relaxed uppercase tracking-[0.06em] text-zinc-400">
+          <p className="font-mono text-[10px] leading-relaxed uppercase tracking-[0.06em] text-zinc-600 dark:text-zinc-400">
             {body}
           </p>
           {metaChunks.length > 0 ? (
-            <p className="font-mono text-[9px] uppercase tracking-[0.08em] text-zinc-600">
+            <p className="font-mono text-[9px] uppercase tracking-[0.08em] text-zinc-600 dark:text-zinc-500">
               {metaChunks.join(" · ")}
             </p>
           ) : null}
