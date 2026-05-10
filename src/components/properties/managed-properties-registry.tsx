@@ -473,7 +473,7 @@ export function ManagedPropertiesRegistry({
                     <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 text-center">Operational Activity</h3>
                     <Link
                       href="/dashboard/activity"
-                      className="text-[9px] font-bold uppercase tracking-wider text-zinc-600 hover:text-zinc-300"
+                      className="text-[9px] font-bold uppercase tracking-wider text-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-300"
                     >
                       History
                     </Link>

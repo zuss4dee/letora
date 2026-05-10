@@ -572,7 +572,7 @@ export function RentTrackerRegistry({
                   </div>
                   <div>
                     <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Property</p>
-                    <p className="text-[11px] text-zinc-300">{selectedRow.propertyAddress}</p>
+                    <p className="text-[11px] text-zinc-700 dark:text-zinc-300">{selectedRow.propertyAddress}</p>
                   </div>
                 </div>
               </section>

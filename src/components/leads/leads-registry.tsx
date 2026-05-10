@@ -427,7 +427,7 @@ export function LeadsRegistry({
                           </div>
                         </td>
                         <td className="max-w-[240px] border-r border-border dark:border-[#282828] px-4 py-3">
-                          <div className="text-sm text-zinc-300">{line1}</div>
+                          <div className="text-sm text-zinc-700 dark:text-zinc-300">{line1}</div>
                           {line2 ? (
                             <div className="mt-0.5 text-[10px] text-zinc-500">
                               {line2}

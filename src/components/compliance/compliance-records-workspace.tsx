@@ -323,7 +323,7 @@ export function ComplianceRecordsWorkspace({
             <Button
               type="button"
               variant="outline"
-              className="border-zinc-600 bg-transparent text-zinc-200"
+              className="border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-600 dark:bg-transparent dark:text-zinc-200 dark:hover:bg-zinc-900/50"
               disabled={uploading}
               onClick={closeUpload}
             >

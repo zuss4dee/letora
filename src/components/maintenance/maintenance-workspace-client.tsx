@@ -652,7 +652,7 @@ export function MaintenanceWorkspaceClient({
                     {selected.contractorName && (
                       <div className="relative">
                         <div className="absolute -left-[21px] top-1 size-2 rounded-full bg-zinc-600" />
-                        <p className="text-[11px] font-bold text-zinc-300 uppercase">Contractor Logged</p>
+                        <p className="text-[11px] font-bold uppercase text-zinc-800 dark:text-zinc-300">Contractor Logged</p>
                         <p className="text-[10px] text-zinc-500">{selected.contractorName}</p>
                       </div>
                     )}
@@ -685,11 +685,9 @@ export function MaintenanceWorkspaceClient({
                 <Button
                   asChild
                   variant="outline"
-                    className="border-zinc-200 bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-400 dark:hover:bg-zinc-100 dark:bg-zinc-900 transition-colors"
+                  className="border border-zinc-300 bg-white py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-800 shadow-none hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-[#1e1e1e] dark:text-zinc-200 dark:hover:bg-[#2a2a2a] dark:hover:text-white [&_svg]:text-zinc-600 dark:[&_svg]:text-zinc-400"
                 >
-                  <Link href={`/dashboard/maintenance/${selected.id}`}>
-                    Open Full Case
-                  </Link>
+                  <Link href={`/dashboard/maintenance/${selected.id}`}>Open Full Case</Link>
                 </Button>
               </div>
             </div>

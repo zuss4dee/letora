@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars, @next/next/no-img-element -- legacy assistant embeds + avatar; prune separately */
+
 import {
   ArrowUpRight,
   ClipboardCheck,
@@ -8,28 +10,20 @@ import {
   Loader2,
   MessageSquare,
   MessageSquarePlus,
-  Send,
   ShieldCheck,
   Sparkles,
   Wrench,
-  X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
 import { getPendingCeoActionFromMessages } from "@/lib/assistant/pending-ceo-from-messages";
-import { AssistantConversationList } from "@/components/dashboard/assistant-conversation-list";
 import type { AssistantConversationListItem } from "@/lib/assistant-messages/store";
 import { stripNavigateActionTagsFromAssistantText, type PendingCEOAction } from "@/lib/agents/ceo/safety";
 import type { LetoraSuggestedAction } from "@/lib/agents/ceo/suggested-actions";
-import {
-  parseLeadQualifyEmbed,
-  type LeadQualifyEmbedPayloadV1,
-} from "@/lib/assistant/lead-qualify-embed";
+import type { LeadQualifyEmbedPayloadV1 } from "@/lib/assistant/lead-qualify-embed";
 import { cn } from "@/lib/utils";
 import {
   autonomousDelay,
@@ -205,7 +199,7 @@ function SuggestedActionChips({
             <Link
               key={a.id}
               href={a.href}
-              className="flex items-center gap-2 border border-border dark:border-[#282828] bg-background dark:bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
+              className="flex items-center gap-2 border border-zinc-300 bg-transparent px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-700 transition-colors hover:border-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-transparent dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
             >
               <ActionTypeIcon kind={visual.kind} />
               {a.label}
@@ -218,7 +212,7 @@ function SuggestedActionChips({
             key={a.id}
             type="button"
             onClick={() => onPickSuggestedMessage(a.message || a.label)}
-            className="flex items-center gap-2 border border-border dark:border-[#282828] bg-background dark:bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
+            className="flex items-center gap-2 border border-zinc-300 bg-transparent px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-700 transition-colors hover:border-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-transparent dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
           >
             <MessageSquare className="size-3" />
             {a.label}
@@ -281,7 +275,7 @@ function inferActionVisual(label: string, href?: string): ActionVisual {
 }
 
 function ActionTypeIcon({ kind }: { kind: ActionVisualKind }) {
-  const className = "size-3.5 shrink-0 text-muted-foreground";
+  const className = "size-3.5 shrink-0 text-zinc-600 dark:text-zinc-400";
   if (kind === "approvals") return <ClipboardCheck className={className} aria-hidden />;
   if (kind === "onboarding") return <Home className={className} aria-hidden />;
   if (kind === "tenancy") return <FileCheck2 className={className} aria-hidden />;
@@ -345,12 +339,14 @@ function parseStructuredSections(text: string): { intro: string; sections: Struc
 function StatusChipsRow({ chips }: { chips: StatusChip[] }) {
   if (chips.length === 0) return null;
   const toneClass: Record<StatusChipTone, string> = {
-    created: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
-    reused: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
-    drafted: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
-    pending: "border-amber-500/30 bg-amber-500/10 text-amber-200",
-    blocked: "border-red-500/30 bg-red-500/10 text-red-200",
-    sent: "border-emerald-500/30 bg-emerald-500/10 text-emerald-200",
+    created:
+      "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200",
+    reused: "border-zinc-200 bg-zinc-100 text-zinc-700 dark:border-zinc-500/30 dark:bg-zinc-500/10 dark:text-zinc-300",
+    drafted: "border-zinc-200 bg-zinc-100 text-zinc-700 dark:border-zinc-500/30 dark:bg-zinc-500/10 dark:text-zinc-300",
+    pending:
+      "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200",
+    blocked: "border-red-200 bg-red-50 text-red-800 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200",
+    sent: "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200",
   };
 
   return (
@@ -428,7 +424,7 @@ function NavigationButtons({ actions }: { actions: ActionTag[] }) {
           <Link
             key={`${idx}:${a.href}:${a.label}`}
             href={a.href}
-            className="flex items-center gap-2 border border-border dark:border-[#282828] bg-background dark:bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
+            className="flex items-center gap-2 border border-zinc-300 bg-transparent px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-700 transition-colors hover:border-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-700 dark:bg-transparent dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
           >
             <ActionTypeIcon kind={visual.kind} />
             {a.label}
@@ -490,7 +486,7 @@ function MessageBubble({
       </div>
 
       <div className="flex-1 pt-1 min-w-0">
-        <div className="mb-1.5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
+        <div className="mb-1.5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-500">
           <span>{isUser ? "User" : "Letora Assistant"}</span>
           <span>/</span>
           <span>{isTransitional ? "Thinking..." : "Now"}</span>
@@ -500,12 +496,12 @@ function MessageBubble({
         <div className={cn(
           "max-w-2xl border transition-opacity",
           isUser
-            ? "border-border dark:border-[#282828] bg-background dark:bg-[#161616] p-4 text-[13px] text-zinc-200"
-            : "border-transparent text-[13px] text-zinc-300"
+            ? "border-zinc-200 bg-white p-4 text-[13px] text-zinc-900 dark:border-[#282828] dark:bg-[#161616] dark:text-zinc-100"
+            : "border-transparent text-[13px] text-zinc-800 dark:text-zinc-300",
         )}>
           {role === "assistant" ? (
             <div className="space-y-4">
-              <div className="leading-relaxed whitespace-pre-wrap">
+              <div className="leading-relaxed whitespace-pre-wrap [&_li]:text-zinc-700 dark:[&_li]:text-zinc-300 [&_ul]:list-disc [&_ul]:pl-5 [&_strong]:text-zinc-900 dark:[&_strong]:text-zinc-200">
                 {parseActionTags(content).cleanText}
               </div>
               
@@ -680,11 +676,11 @@ export function AssistantChat({
   const [assistantStream, setAssistantStream] = useState<AssistantStreamState>({
     kind: "idle",
   });
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingCEOAction | null>(() =>
     getPendingCeoActionFromMessages(initialMessages),
   );
-  const [conversationListOpen, setConversationListOpen] = useState(false);
+  const [, setConversationListOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const starterFiredRef = useRef(false);
@@ -908,42 +904,15 @@ export function AssistantChat({
   const showEmptyPlaceholder =
     messages.length === 0 && !loading && assistantStream.kind === "idle";
 
-  const assistantWaitingForToken =
-    assistantStream.kind === "thinking" ||
-    (assistantStream.kind === "streaming" && assistantStream.text.length === 0);
   const assistantStreamVisible =
     assistantStream.kind === "streaming" && assistantStream.text.length > 0;
   const showAssistantStreamSection =
     assistantStream.kind === "thinking" || assistantStream.kind === "streaming";
 
-  const sidebar = (
-    <div className="flex h-full min-h-0 w-full flex-col border-r border-border bg-sidebar/30 dark:bg-[#0a0a0a]/80">
-      <div className="flex shrink-0 items-center gap-2 border-b border-border p-3">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="flex-1 rounded-full border-border bg-transparent font-headline text-xs font-medium text-foreground transition-colors duration-200 ease-out hover:bg-muted/90 dark:hover:bg-sidebar-accent"
-          onClick={() => createNewChat()}
-        >
-          <MessageSquarePlus className="mr-1.5 size-3.5" aria-hidden />
-          New chat
-        </Button>
-      </div>
-      <AssistantConversationList
-        className="min-h-0 flex-1 px-1"
-        conversations={conversations}
-        activeConversationId={activeConversationId}
-        variant="sidebar"
-        hrefBase={ASSISTANT_CHAT_HREF_BASE}
-      />
-    </div>
-  );
-
   return (
     <div className="absolute inset-0 flex overflow-hidden">
       {/* ── Center: Workspace ── */}
-      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-background dark:bg-[#0B0B0B]">
+      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-[#0B0B0B]">
         <div 
           ref={scrollRef}
           className="flex-1 overflow-y-auto p-6 custom-scrollbar"
@@ -951,13 +920,13 @@ export function AssistantChat({
           <div className="mx-auto w-full max-w-4xl space-y-8">
             {showEmptyPlaceholder ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="mb-4 flex size-12 items-center justify-center border border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0e0e0e]">
+                <div className="mb-4 flex size-12 items-center justify-center border border-zinc-200 bg-white dark:border-[#1f1f1f] dark:bg-[#0e0e0e]">
                   <Sparkles className="size-6 text-zinc-900 dark:text-white" />
                 </div>
                 <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-900 dark:text-white">
                   Letora AI Ready
                 </h2>
-                <p className="mt-2 text-[12px] text-[#555555]">
+                <p className="mt-2 text-[12px] text-zinc-600 dark:text-zinc-400">
                   Audit properties, check compliance, or draft communications.
                 </p>
               </div>
@@ -979,19 +948,19 @@ export function AssistantChat({
                       <Sparkles className="size-4" fill="currentColor" />
                     </div>
                     <div className="flex-1 pt-1">
-                      <div className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
+                      <div className="mb-1.5 font-mono text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-500">
                         Letora Assistant / Thinking...
                       </div>
                       <div className="max-w-2xl">
                         {assistantStreamVisible ? (
-                          <p className="text-[13px] leading-relaxed text-zinc-300 whitespace-pre-wrap">
+                          <p className="text-[13px] leading-relaxed whitespace-pre-wrap text-zinc-800 dark:text-zinc-300">
                             {assistantStream.text}
                           </p>
                         ) : (
                           <div className="flex gap-1.5 py-2">
-                            <div className="size-1 animate-pulse rounded-full bg-background dark:bg-[#333333]" />
-                            <div className="size-1 animate-pulse rounded-full bg-background dark:bg-[#333333] [animation-delay:200ms]" />
-                            <div className="size-1 animate-pulse rounded-full bg-background dark:bg-[#333333] [animation-delay:400ms]" />
+                            <div className="size-1 animate-pulse rounded-full bg-zinc-300 dark:bg-[#333333]" />
+                            <div className="size-1 animate-pulse rounded-full bg-zinc-300 dark:bg-[#333333] [animation-delay:200ms]" />
+                            <div className="size-1 animate-pulse rounded-full bg-zinc-300 dark:bg-[#333333] [animation-delay:400ms]" />
                           </div>
                         )}
                       </div>
@@ -1005,7 +974,7 @@ export function AssistantChat({
         </div>
 
         {/* ── Bottom Input ── */}
-        <div className="shrink-0 border-t border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0B0B0B] p-6">
+        <div className="shrink-0 border-t border-zinc-200 bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0B0B0B]">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -1013,19 +982,19 @@ export function AssistantChat({
             }}
             className="mx-auto w-full max-w-4xl"
           >
-            <div className="flex items-center border border-border dark:border-[#282828] bg-background dark:bg-[#1A1A1A] p-1.5 shadow-2xl">
+            <div className="flex items-center border border-zinc-200 bg-white p-1.5 shadow-2xl dark:border-[#333333] dark:bg-[#1a1a1a]">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={onKeyDown}
                 placeholder="Ask Letora..."
-                className="flex-1 bg-transparent px-4 py-3 text-[13px] text-zinc-200 placeholder-[#444748] outline-none"
+                className="flex-1 bg-transparent px-4 py-3 text-[13px] text-zinc-900 outline-none placeholder:text-zinc-400 disabled:opacity-60 dark:text-zinc-100 dark:placeholder:text-zinc-500"
                 disabled={loading}
               />
               <button
                 type="submit"
                 disabled={!canSend}
-                className="flex items-center gap-2 bg-white px-6 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#0B0B0B] transition-all hover:bg-zinc-200 disabled:opacity-50 active:scale-95"
+                className="flex items-center gap-2 border border-zinc-300 bg-transparent px-6 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
               >
                 {loading ? (
                   <Loader2 className="size-3.5 animate-spin" />
@@ -1037,8 +1006,8 @@ export function AssistantChat({
                 )}
               </button>
             </div>
-            <div className="mt-3 flex justify-center">
-              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[#333333]">
+            <div className="mt-3 flex justify-center border-t border-zinc-200 bg-zinc-100 px-4 py-2 dark:border-[#2a2a2a] dark:bg-[#161616]">
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-500">
                 Agent LX-Core v4.2 Active
               </span>
             </div>
@@ -1047,22 +1016,23 @@ export function AssistantChat({
       </main>
 
       {/* ── Right: History Sidebar ── */}
-      <aside className="relative flex w-72 shrink-0 flex-col border-l border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0E0E0E] min-h-0 h-full">
-        <div className="flex items-center justify-between border-b border-border dark:border-[#1f1f1f] px-4 py-3.5">
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#555555]">
+      <aside className="relative flex h-full min-h-0 w-72 shrink-0 flex-col border-l border-zinc-200 bg-zinc-50 dark:border-[#1f1f1f] dark:bg-[#111111]">
+        <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3.5 dark:border-[#1e1e1e]">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-500">
             Active Sessions
           </span>
           <button
+            type="button"
             onClick={() => createNewChat()}
-            className="text-[#555555] transition-colors hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white"
+            className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-[#1e1e1e] dark:hover:text-white"
             title="New Session"
           >
             <MessageSquarePlus className="size-4" />
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
-          <div className="space-y-px p-1">
+        <div className="flex-1 overflow-y-auto p-2 custom-scrollbar">
+          <div className="flex flex-col gap-1">
             {conversations.map((conv) => {
               const isActive = conv.id === activeConversationId;
               return (
@@ -1070,19 +1040,19 @@ export function AssistantChat({
                   key={conv.id}
                   href={`${ASSISTANT_CHAT_HREF_BASE}?c=${encodeURIComponent(conv.id)}`}
                   className={cn(
-                    "flex w-full flex-col border-l-2 p-3 text-left transition-colors",
+                    "flex w-full flex-col rounded-md border border-transparent p-3 text-left transition-colors",
                     isActive
-                      ? "border-white bg-background dark:bg-[#181818]"
-                      : "border-transparent hover:bg-background dark:bg-[#131313]"
+                      ? "bg-zinc-100 dark:bg-[#1e1e1e]"
+                      : "hover:bg-zinc-100 dark:hover:bg-[#1e1e1e]",
                   )}
                 >
                   <div className={cn(
                     "text-[11px] font-medium leading-tight",
-                    isActive ? "text-zinc-900 dark:text-white" : "text-[#888888]"
+                    isActive ? "text-zinc-800 dark:text-zinc-300" : "text-zinc-600 dark:text-zinc-400"
                   )}>
                     {conv.title || "New session"}
                   </div>
-                  <div className="mt-1 flex items-center justify-between font-mono text-[9px] uppercase text-[#444748]">
+                  <div className="mt-1 flex items-center justify-between font-mono text-[9px] uppercase text-zinc-400 dark:text-zinc-600">
                     <span>{conv.updated_at ? new Date(conv.updated_at).toLocaleDateString() : "Now"}</span>
                   </div>
                 </Link>
@@ -1091,8 +1061,8 @@ export function AssistantChat({
           </div>
         </div>
 
-        <div className="border-t border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0B0B0B] p-4">
-          <div className="flex items-center justify-between font-mono text-[9px] uppercase text-[#333333]">
+        <div className="border-t border-zinc-200 bg-zinc-100 p-4 dark:border-[#2a2a2a] dark:bg-[#161616]">
+          <div className="flex items-center justify-between font-mono text-[9px] uppercase text-zinc-500 dark:text-zinc-500">
             <span>Shard Ops Center</span>
             <div className="size-1.5 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
           </div>

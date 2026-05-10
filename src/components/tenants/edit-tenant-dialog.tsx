@@ -75,7 +75,11 @@ export function EditTenantDialog({ tenantId, initial, triggerLabel = "Edit tenan
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline">
+        <Button
+          type="button"
+          variant="outline"
+          className="border border-zinc-300 bg-white text-zinc-800 shadow-none hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-transparent dark:text-zinc-200 dark:hover:bg-[#2a2a2a] dark:hover:text-white [&_svg]:text-zinc-600 dark:[&_svg]:text-zinc-400"
+        >
           {triggerLabel}
         </Button>
       </DialogTrigger>
@@ -131,6 +135,7 @@ export function EditTenantDialog({ tenantId, initial, triggerLabel = "Edit tenan
               <div className={DIALOG_FIELD_CLASS}>
                 <Label htmlFor="et-rtr">Right to Rent</Label>
                 <Select
+                  // eslint-disable-next-line react-hooks/incompatible-library -- controlled select; RHF watch is intentional
                   value={form.watch("rightToRentStatus")}
                   onValueChange={(v) =>
                     form.setValue("rightToRentStatus", v as UpdateTenantInput["rightToRentStatus"], {
@@ -164,7 +169,7 @@ export function EditTenantDialog({ tenantId, initial, triggerLabel = "Edit tenan
 
           <div className={dialogFormFooterClass()}>
             <DialogClose asChild>
-              <Button type="button" variant="outline">
+              <Button type="button" variant="outline" className="border border-zinc-300 bg-white text-zinc-800 shadow-none hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-transparent dark:text-zinc-200 dark:hover:bg-[#2a2a2a] dark:hover:text-white [&_svg]:text-zinc-600 dark:[&_svg]:text-zinc-400">
                 Cancel
               </Button>
             </DialogClose>

@@ -116,7 +116,7 @@ export function ComplianceRecordsTabbedTable({
                 "border-b-2 px-4 py-3 text-[11px] uppercase tracking-widest transition-colors",
                 selected
                   ? "border-white font-bold text-zinc-900 dark:text-white"
-                  : "border-transparent font-semibold text-zinc-500 hover:text-zinc-300",
+                  : "border-transparent font-semibold text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300",
               )}
             >
               {label}
@@ -178,7 +178,7 @@ export function ComplianceRecordsTabbedTable({
                     <span className="text-[10px] text-zinc-500">{row.propertySub}</span>
                   </div>
                 </td>
-                <td className="px-4 py-3 font-mono text-[11px] text-zinc-300">{row.type}</td>
+                <td className="px-4 py-3 font-mono text-[11px] text-zinc-700 dark:text-zinc-300">{row.type}</td>
                 <td className="px-4 py-3">{statusPill(row.status)}</td>
                 <td
                   className={cn(

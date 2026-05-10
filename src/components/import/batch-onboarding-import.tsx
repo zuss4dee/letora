@@ -373,7 +373,7 @@ export function BatchOnboardingImport({
           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#f8cf83]">Retry mode</p>
           <p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-[#cfc9c4]">
             <span className="font-medium text-zinc-900 dark:text-white">Retry failed rows</span> uses only the lines that didn&apos;t save on batch{" "}
-            <span className="font-mono text-[11px] text-zinc-300">{retryFromBatchContext.slice(0, 8)}…</span> — edit below, run
+            <span className="font-mono text-[11px] text-zinc-700 dark:text-zinc-300">{retryFromBatchContext.slice(0, 8)}…</span> — edit below, run
             preview checks, then import. Letora matches what already exists, so successful rows aren&apos;t touched.
           </p>
           <p className="mt-2 max-w-2xl text-[11px] leading-relaxed text-zinc-500">

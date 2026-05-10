@@ -160,7 +160,7 @@ export function TenantsDashboardList({ tenants }: { tenants: TenantRow[] }) {
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-[2px] px-3 py-1 text-[11px] transition-colors",
                     selected
-                      ? "bg-zinc-200 dark:bg-zinc-800 font-semibold text-white dark:bg-zinc-800"
+                      ? "bg-zinc-200 font-semibold text-zinc-900 dark:bg-zinc-800 dark:text-white"
                       : "font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white",
                   )}
                 >
@@ -190,7 +190,7 @@ export function TenantsDashboardList({ tenants }: { tenants: TenantRow[] }) {
           <Button
             variant="outline"
             size="sm"
-            className="h-7 rounded-[2px] border-zinc-300 bg-white px-3 text-[11px] font-medium text-zinc-600 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-200 dark:bg-zinc-800"
+            className="h-7 rounded-[2px] border border-zinc-300 bg-white px-3 text-[11px] font-medium text-zinc-800 shadow-none hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-transparent dark:text-zinc-200 dark:hover:bg-[#2a2a2a] dark:hover:text-white [&_svg]:text-zinc-600 dark:[&_svg]:text-zinc-400"
             asChild
           >
             <Link href="/dashboard/tenancies" aria-label="Open tenancies workspace">

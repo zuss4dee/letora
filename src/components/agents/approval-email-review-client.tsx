@@ -128,7 +128,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
 
         <div className="space-y-2">
           <Label className="text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">To</Label>
-          <p className="rounded-md border border-white/[0.08] bg-background dark:bg-[#0f0e0d] px-3 py-2.5 font-mono text-[13px] text-zinc-300">
+          <p className="rounded-md border border-white/[0.08] bg-background px-3 py-2.5 font-mono text-[13px] text-zinc-700 dark:bg-[#0f0e0d] dark:text-zinc-300">
             {ctx.tenantEmail}
           </p>
         </div>
@@ -141,7 +141,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
             id="email-subject"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            className="border-white/[0.12] bg-background dark:bg-[#0f0e0d] text-[15px] text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-[#01696f]/40"
+            className="border-white/[0.12] bg-background text-[15px] text-zinc-900 placeholder:text-zinc-500 focus-visible:ring-[#01696f]/40 dark:bg-[#0f0e0d] dark:text-zinc-100 dark:placeholder:text-zinc-600"
           />
         </div>
 
@@ -155,8 +155,8 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
             onChange={(e) => setBody(e.target.value)}
             spellCheck
             className={cn(
-              "min-h-[400px] w-full flex-1 resize-y rounded-md border border-white/[0.12] bg-background dark:bg-[#0f0e0d] px-3 py-3 text-[15px] leading-[1.7] text-zinc-100 shadow-none outline-none",
-              "font-mono placeholder:text-zinc-600 focus-visible:ring-2 focus-visible:ring-[#01696f]/40",
+              "min-h-[400px] w-full flex-1 resize-y rounded-md border border-zinc-200 bg-background px-3 py-3 text-[15px] leading-[1.7] text-zinc-900 shadow-none outline-none dark:border-white/[0.12] dark:bg-[#0f0e0d] dark:text-zinc-100",
+              "font-mono placeholder:text-zinc-500 focus-visible:ring-2 focus-visible:ring-[#01696f]/40 dark:placeholder:text-zinc-600",
             )}
           />
           <p className="text-[11px] tabular-nums text-zinc-500">{words} words</p>
@@ -173,15 +173,15 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
             </div>
             <div>
               <dt className="text-[9px] font-bold uppercase tracking-wider text-zinc-600">Property</dt>
-              <dd className="mt-1 text-zinc-300">{ctx.propertyAddress}</dd>
+              <dd className="mt-1 text-zinc-700 dark:text-zinc-300">{ctx.propertyAddress}</dd>
             </div>
             <div>
               <dt className="text-[9px] font-bold uppercase tracking-wider text-zinc-600">Overdue</dt>
-              <dd className="mt-1 tabular-nums text-zinc-200">{pound}</dd>
+              <dd className="mt-1 tabular-nums text-zinc-900 dark:text-zinc-200">{pound}</dd>
             </div>
             <div>
               <dt className="text-[9px] font-bold uppercase tracking-wider text-zinc-600">Days late</dt>
-              <dd className="mt-1 tabular-nums text-zinc-200">{ctx.daysOverdue}</dd>
+              <dd className="mt-1 tabular-nums text-zinc-900 dark:text-zinc-200">{ctx.daysOverdue}</dd>
             </div>
             <div>
               <dt className="text-[9px] font-bold uppercase tracking-wider text-zinc-600">Due date</dt>
@@ -200,7 +200,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
           <div className="space-y-3 border-t border-white/[0.06] px-4 py-4">
             <div>
               <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-600">Subject</p>
-              <p className="mt-1 text-[12px] text-zinc-300">{originalSubject || "—"}</p>
+              <p className="mt-1 text-[12px] text-zinc-700 dark:text-zinc-300">{originalSubject || "—"}</p>
             </div>
             <div>
               <p className="text-[9px] font-bold uppercase tracking-wider text-zinc-600">Body</p>
@@ -224,7 +224,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
             type="button"
             variant="outline"
             disabled={busy !== "none"}
-            className="border-white/[0.12] bg-transparent py-5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-200 hover:bg-white/[0.04]"
+            className="border-zinc-300 bg-transparent py-5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-800 hover:bg-zinc-50 dark:border-white/[0.12] dark:text-zinc-200 dark:hover:bg-white/[0.04]"
             onClick={() => void runSaveDraft()}
           >
             {busy === "save" ? "Saving…" : "Save draft"}
@@ -242,7 +242,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
             type="button"
             variant="ghost"
             disabled={busy !== "none"}
-            className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:text-zinc-300"
+            className="text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
             asChild
           >
             <Link href="/dashboard/approvals">Back to approvals</Link>

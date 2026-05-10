@@ -179,6 +179,7 @@ export function OnboardingWizard({
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
     // submit* are stable enough per render; step + fields drive behavior
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- submit handlers intentionally omitted; keyed by step + fields
   }, [
     step,
     portfolioName,
@@ -516,7 +517,7 @@ export function OnboardingWizard({
                   <button
                     type="button"
                     onClick={back}
-                    className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-300"
+                    className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
                   >
                     Back
                   </button>
@@ -594,7 +595,7 @@ export function OnboardingWizard({
                       }}
                       className="mt-0.5 border-zinc-600 data-checked:border-white data-checked:bg-white data-checked:text-black"
                     />
-                    <label htmlFor="ob-no-agency" className="cursor-pointer font-headline text-sm font-light leading-snug text-zinc-300">
+                    <label htmlFor="ob-no-agency" className="cursor-pointer font-headline text-sm font-light leading-snug text-zinc-700 dark:text-zinc-300">
                       I don&apos;t have an agency or separate referencing contact
                       <span className="mt-1 block text-xs text-zinc-500">
                         You can add these later in Settings. Your landlord name is still required.
@@ -653,7 +654,7 @@ export function OnboardingWizard({
                   <button
                     type="button"
                     onClick={back}
-                    className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-300"
+                    className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
                   >
                     Back
                   </button>
@@ -807,7 +808,7 @@ export function OnboardingWizard({
                   <button
                     type="button"
                     onClick={back}
-                    className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-300"
+                    className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
                   >
                     Back
                   </button>
@@ -839,7 +840,7 @@ export function OnboardingWizard({
               type="button"
               onClick={() => void handleSkipOnboarding()}
               disabled={skipBusy || stepBusy}
-              className="font-headline text-[0.65rem] uppercase tracking-[0.2em] text-zinc-500 underline-offset-4 transition-colors hover:text-zinc-300 hover:underline disabled:opacity-40 disabled:hover:no-underline"
+              className="font-headline text-[0.65rem] uppercase tracking-[0.2em] text-zinc-500 underline-offset-4 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300 hover:underline disabled:opacity-40 disabled:hover:no-underline"
             >
               {skipBusy ? "Opening dashboard…" : "Skip for now — finish from the dashboard"}
             </button>

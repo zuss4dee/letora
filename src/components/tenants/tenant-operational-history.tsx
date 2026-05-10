@@ -51,13 +51,13 @@ export function TenantOperationalHistory({ activity }: TenantOperationalHistoryP
           <div
             className={cn(
               "absolute left-0 top-1.5 h-2 w-2 rounded-full",
-              entry.source === "landlord" ? "bg-white" : "bg-emerald-500",
+              entry.source === "landlord" ? "bg-zinc-400 dark:bg-white" : "bg-emerald-500",
               !entry.success && "bg-rose-500"
             )}
           />
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-zinc-200">
+              <span className="text-[11px] font-bold text-zinc-900 dark:text-zinc-200">
                 {entry.tool_name.replace(/_/g, " ").toUpperCase()}
               </span>
               <span className="text-[9px] font-medium uppercase tracking-tighter text-zinc-600">

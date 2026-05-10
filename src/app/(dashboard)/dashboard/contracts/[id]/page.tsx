@@ -101,7 +101,7 @@ export default async function ContractDetailPage({
           <div className="max-w-3xl space-y-3">
             <Link
               href="/dashboard/contracts"
-              className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-sm font-medium text-muted-foreground transition-colors hover:text-zinc-300"
+              className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-sm font-medium text-muted-foreground transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
             >
               <ArrowLeft className="size-4 shrink-0" aria-hidden />
               Contracts

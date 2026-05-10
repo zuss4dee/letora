@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect -- toast bridge after server action resolves */
+
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
@@ -54,7 +56,7 @@ export function AssignContractorForm({
   const showForm = !isResolved && (!hasContractor || editing);
 
   const inputTone =
-    "rounded-none border border-border dark:border-[#333333] bg-background dark:bg-[#0B0B0B] text-[13px] text-zinc-200 placeholder:text-zinc-600 focus-visible:border-zinc-600";
+    "rounded-none border border-border dark:border-[#333333] bg-background dark:bg-[#0B0B0B] text-[13px] text-zinc-900 placeholder:text-zinc-500 focus-visible:border-zinc-600 dark:text-zinc-200 dark:placeholder:text-zinc-600";
 
   return (
     <div className="border border-border dark:border-[#333333] bg-background dark:bg-[#161616]">
@@ -63,7 +65,7 @@ export function AssignContractorForm({
         <h3 className="mt-1 text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">Contractor on file</h3>
         <p className="mt-2 max-w-2xl text-[11px] leading-relaxed text-zinc-500">
           Saves who is handling this job in your workspace. It does{" "}
-          <span className="font-semibold text-zinc-300">not</span> email the contractor. Outbound sends use{" "}
+          <span className="font-semibold text-zinc-800 dark:text-zinc-300">not</span> email the contractor. Outbound sends use{" "}
           <Link
             href="/dashboard/approvals"
             className="font-semibold text-[#afefdd] underline-offset-4 hover:underline"
@@ -73,18 +75,18 @@ export function AssignContractorForm({
           .
         </p>
       </div>
-      <div className="space-y-4 px-5 py-5 text-[12px] text-zinc-300 md:px-6 md:pb-6">
+      <div className="space-y-4 px-5 py-5 text-[12px] text-zinc-700 md:px-6 md:pb-6 dark:text-zinc-300">
         {isResolved ? (
           <div className="space-y-2">
             <p>
               <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Name</span>
               <br />
-              <span className="text-[13px] text-zinc-200">{contractorName?.trim() || "—"}</span>
+              <span className="text-[13px] text-zinc-900 dark:text-zinc-200">{contractorName?.trim() || "—"}</span>
             </p>
             <p>
               <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Email</span>
               <br />
-              <span className="text-[13px] text-zinc-200">{contractorEmail?.trim() || "—"}</span>
+              <span className="text-[13px] text-zinc-900 dark:text-zinc-200">{contractorEmail?.trim() || "—"}</span>
             </p>
           </div>
         ) : hasContractor && !editing ? (
@@ -96,12 +98,12 @@ export function AssignContractorForm({
               <p>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Name</span>
                 <br />
-                <span className="text-[13px] text-zinc-200">{contractorName?.trim() || "—"}</span>
+                <span className="text-[13px] text-zinc-900 dark:text-zinc-200">{contractorName?.trim() || "—"}</span>
               </p>
               <p>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Email</span>
                 <br />
-                <span className="text-[13px] text-zinc-200">{contractorEmail?.trim() || "—"}</span>
+                <span className="text-[13px] text-zinc-900 dark:text-zinc-200">{contractorEmail?.trim() || "—"}</span>
               </p>
             </div>
             <Button

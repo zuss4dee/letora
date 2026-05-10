@@ -64,7 +64,7 @@ function TriageChip({ category }: { category: string | null }) {
     );
   }
   return (
-    <span className="border border-border dark:border-[#333333] bg-background dark:bg-[#141414] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-300">
+    <span className="border border-border dark:border-[#333333] bg-background dark:bg-[#141414] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-zinc-600 dark:text-zinc-300">
       {category || "triaged"}
     </span>
   );
@@ -81,7 +81,7 @@ function StatusStrip({ status }: { status: string | null }) {
           ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
           : s === "in_progress"
             ? "border-rose-500/25 bg-rose-950/30 text-[#ffb4ab]"
-            : "border-border dark:border-[#333333] bg-background dark:bg-[#141414] text-zinc-300",
+            : "border-border dark:border-[#333333] bg-background dark:bg-[#141414] text-zinc-800 dark:text-zinc-300",
       )}
     >
       {statusLabel(status)}
@@ -114,7 +114,7 @@ function Section({
           <p className="mt-2 max-w-2xl text-[11px] leading-relaxed text-zinc-500">{subtitle}</p>
         ) : null}
       </header>
-      <div className="space-y-4 px-5 py-5 text-[12px] leading-relaxed text-zinc-300 md:px-6">
+      <div className="space-y-4 px-5 py-5 text-[12px] leading-relaxed text-zinc-700 md:px-6 dark:text-zinc-300">
         {children}
       </div>
     </section>
@@ -131,7 +131,7 @@ function FieldRow({
   return (
     <div className="grid gap-1 sm:grid-cols-[8rem_minmax(0,1fr)] sm:gap-6">
       <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">{label}</p>
-      <div className="min-w-0 text-[13px] text-zinc-200">{value}</div>
+      <div className="min-w-0 text-[13px] text-zinc-900 dark:text-zinc-200">{value}</div>
     </div>
   );
 }
@@ -150,7 +150,7 @@ export function MaintenanceOperationalCaseFile({ detail }: { detail: Maintenance
   const canResolve = st === "open" || st === "in_progress" || !detail.status?.trim();
 
   return (
-    <div className="@container/main flex min-h-0 flex-1 flex-col bg-background dark:bg-[#0B0B0B] font-['Inter',system-ui,sans-serif] text-[#e5e2e1]">
+    <div className="@container/main flex min-h-0 flex-1 flex-col bg-background font-['Inter',system-ui,sans-serif] text-zinc-900 dark:bg-[#0B0B0B] dark:text-[#e5e2e1]">
       {/* Back trail */}
       <div className="shrink-0 border-b border-border dark:border-[#282828] bg-background dark:bg-[#141414] px-4 py-3 md:px-6">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -184,7 +184,7 @@ export function MaintenanceOperationalCaseFile({ detail }: { detail: Maintenance
               {detail.propertyId ? (
                 <Link
                   href={`/dashboard/properties/${detail.propertyId}`}
-                  className="border border-border dark:border-[#333333] bg-transparent px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-200"
+                  className="border border-border dark:border-[#333333] bg-transparent px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-200"
                 >
                   Property record
                 </Link>
@@ -192,7 +192,7 @@ export function MaintenanceOperationalCaseFile({ detail }: { detail: Maintenance
               {detail.tenantId ? (
                 <Link
                   href={`/dashboard/tenants/${detail.tenantId}`}
-                  className="border border-border dark:border-[#333333] bg-transparent px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-200"
+                  className="border border-border dark:border-[#333333] bg-transparent px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-zinc-500 transition-colors hover:border-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-200"
                 >
                   Tenant
                 </Link>
@@ -238,7 +238,7 @@ export function MaintenanceOperationalCaseFile({ detail }: { detail: Maintenance
             eyebrow="Incident"
             title="Issue description"
           >
-            <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-zinc-300">
+            <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-zinc-700 dark:text-zinc-300">
               {detail.description ?? "—"}
             </p>
           </Section>
@@ -323,14 +323,14 @@ export function MaintenanceOperationalCaseFile({ detail }: { detail: Maintenance
               {detail.updatedAt && detail.updatedAt !== detail.createdAt ? (
                 <li className="relative">
                   <span className="absolute -left-[25px] top-1 size-2 rounded-full bg-zinc-600" aria-hidden />
-                  <p className="text-[11px] font-bold text-zinc-200">Workspace update</p>
+                  <p className="text-[11px] font-bold text-zinc-900 dark:text-zinc-200">Workspace update</p>
                   <p className="mt-1">{fmtDt(detail.updatedAt)}</p>
                 </li>
               ) : null}
               {(detail.contractorName ?? "").trim() ? (
                 <li className="relative">
                   <span className="absolute -left-[25px] top-1 size-2 rounded-full bg-blue-400" aria-hidden />
-                  <p className="text-[11px] font-bold text-zinc-200">Contractor on file</p>
+                  <p className="text-[11px] font-bold text-zinc-900 dark:text-zinc-200">Contractor on file</p>
                   <p className="mt-2 text-[10px] normal-case lowercase text-zinc-400 first-letter:uppercase">
                     {(detail.contractorName ?? "").trim()}
                   </p>

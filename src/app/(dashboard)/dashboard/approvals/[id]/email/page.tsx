@@ -15,7 +15,7 @@ export default async function ApprovalEmailReviewPage({ params }: { params: Prom
         <div className="flex flex-wrap items-center gap-4">
           <Link
             href="/dashboard/approvals"
-            className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500 underline-offset-4 transition-colors hover:text-zinc-300 hover:underline"
+            className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500 underline-offset-4 transition-colors hover:text-zinc-700 hover:underline dark:hover:text-zinc-300"
           >
             ← Approvals
           </Link>

@@ -31,7 +31,7 @@ export function CommandCenterAiComposer() {
           }}
           className="mx-auto w-full"
         >
-          <div className="flex items-center border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-zinc-800 dark:bg-[#1a1a1a]">
+          <div className="flex items-center border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-[#333333] dark:bg-[#1a1a1a]">
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -48,7 +48,7 @@ export function CommandCenterAiComposer() {
             <button
               type="submit"
               disabled={busy || !text.trim()}
-              className="flex items-center gap-2 bg-zinc-900 px-6 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-zinc-700 disabled:opacity-50 active:scale-95 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200 [&_svg]:text-white dark:[&_svg]:text-zinc-900"
+              className="flex items-center gap-2 border border-zinc-300 bg-transparent px-6 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] dark:border-zinc-600 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 [&_svg]:text-zinc-600 dark:[&_svg]:text-zinc-400 [&_svg:hover]:text-inherit"
             >
               {busy ? (
                 <Loader2 className="size-3.5 animate-spin" />

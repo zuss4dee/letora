@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 
 import { useSidebarDynamicOptional } from "@/components/dashboard/sidebar-dynamic-context";
-import { getSidebarPlanStatusCompact } from "@/lib/billing/subscription-display";
+import { getPlanDisplayName, getSidebarPlanStatusCompact, subscriptionStatusLabel } from "@/lib/billing/subscription-display";
 import { getPendingApprovalsCount } from "@/lib/actions/agent-approvals";
 import { cn } from "@/lib/utils";
 import {
@@ -56,31 +56,46 @@ const operationsItemsBase: NavItem[] = [
 
 // Leads and other low-frequency items removed from main nav
 
+function subscriptionSidebarBadge(status: string | null | undefined): {
+  label: string;
+  pill: string;
+  dot: string;
+} {
+  const s = status?.toLowerCase() ?? "";
+  const label = subscriptionStatusLabel(status);
+  if (s === "active") {
+    return {
+      label,
+      pill: "border border-green-200 bg-green-100 text-green-700 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-400",
+      dot: "bg-green-500 dark:bg-green-400",
+    };
+  }
+  if (s === "trialing") {
+    return {
+      label,
+      pill: "border border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-400",
+      dot: "bg-amber-500 dark:bg-amber-400",
+    };
+  }
+  if (s === "past_due" || s === "unpaid") {
+    return {
+      label,
+      pill: "border border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-400",
+      dot: "bg-rose-500 dark:bg-rose-400",
+    };
+  }
+  return {
+    label,
+    pill: "border border-zinc-200 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400",
+    dot: "bg-zinc-400 dark:bg-zinc-500",
+  };
+}
+
 function isActivePath(pathname: string, url: string) {
   if (url === "/dashboard") {
     return pathname === "/dashboard" || pathname === "/dashboard/";
   }
   return pathname === url || pathname.startsWith(`${url}/`);
-}
-
-function planPresenceStyles(subscriptionStatus: string | null | undefined): {
-  dot: string;
-  ping?: string;
-} {
-  const st = subscriptionStatus?.toLowerCase() ?? "";
-  if (st === "active") {
-    return {
-      dot: "bg-background dark:bg-[#2dd4bf] shadow-[0_0_0_1px_rgb(45_212_191/0.35),0_0_14px_rgb(45_212_191/0.25)]",
-      ping: "bg-background dark:bg-[#2dd4bf]",
-    };
-  }
-  if (st === "trialing") return { dot: "bg-amber-400", ping: "bg-amber-300" };
-  if (st === "past_due") return { dot: "bg-orange-500" };
-  if (st === "inactive" || st === "canceled" || st === "cancelled" || st === "unpaid") {
-    return { dot: "bg-zinc-500" };
-  }
-  if (!st) return { dot: "bg-background dark:bg-[#6b6966]" };
-  return { dot: "bg-sky-500", ping: "bg-sky-400" };
 }
 
 /** Dense operational nav rows with tonal active treatment. */
@@ -310,7 +325,8 @@ export function AppSidebar({
     polarBillingLinked: polarBillingLinkedResolved,
   };
   const planStatusLine = getSidebarPlanStatusCompact(subFields);
-  const presence = planPresenceStyles(subscriptionStatusResolved);
+  const planName = getPlanDisplayName(subFields);
+  const statusBadge = subscriptionSidebarBadge(subscriptionStatusResolved);
 
   const mainNavItems: NavItem[] = [
     ...mainItemsStatic,
@@ -358,30 +374,34 @@ export function AppSidebar({
           </p>
         </Link>
 
-        <div className="mx-5 mt-4 rounded-md bg-zinc-100 px-3 py-2.5 dark:bg-zinc-900/50">
-          <p className="font-[family-name:var(--font-inter)] text-[0.56rem] font-semibold uppercase tracking-[0.14em] text-[#7f7569] dark:text-[#7d7a75]">
+        <div
+          className="mx-5 mb-4 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-[#2a2a2a] dark:bg-[#161616]"
+          title={planStatusLine}
+        >
+          <p className="mb-1 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
             Subscription
           </p>
-          <div
-            className="mt-2 flex min-w-0 items-start gap-2.5"
-            title={planStatusLine}
-            aria-label={`Plan status: ${planStatusLine}`}
-          >
-            <span className="relative mt-0.5 flex h-2.5 w-2.5 shrink-0" aria-hidden>
-              {presence.ping ? (
-                <span
-                  className={cn(
-                    "absolute inline-flex h-full w-full animate-ping rounded-full opacity-35",
-                    presence.ping,
-                  )}
-                />
-              ) : null}
-              <span className={cn("relative inline-flex h-2.5 w-2.5 rounded-full", presence.dot)} />
+          <div className="flex items-center justify-between gap-2">
+            <span className="min-w-0 truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              {planName}
             </span>
-            <p className="min-w-0 flex-1 font-[family-name:var(--font-inter)] text-[0.71rem] font-medium leading-snug text-[#3d3730] dark:text-[#cdccca]">
-              {planStatusLine}
-            </p>
+            <span
+              className={cn(
+                "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                statusBadge.pill,
+              )}
+            >
+              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", statusBadge.dot)} aria-hidden />
+              {statusBadge.label}
+            </span>
           </div>
+          <Link
+            href="/dashboard/billing"
+            onClick={closeMobileNav}
+            className="mt-2 flex w-full items-center justify-center rounded-md bg-zinc-900 px-3 py-1.5 text-center text-[11px] font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white/10 dark:text-zinc-200 dark:hover:bg-white/20"
+          >
+            Upgrade Plan
+          </Link>
         </div>
 
         <div className="px-5 pt-4">

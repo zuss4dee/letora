@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect -- clamp pagination when filtered count shrinks */
+
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, UserPlus } from "lucide-react";
@@ -303,7 +305,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
                       <td className="px-8 py-6 text-right">
                         <Link
                           href={`/dashboard/tenants/${row.id}`}
-                          className="font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-zinc-300"
+                          className="font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
                         >
                           Quick view
                         </Link>

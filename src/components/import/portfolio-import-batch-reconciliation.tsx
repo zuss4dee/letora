@@ -1,5 +1,7 @@
 "use client";
 
+/* eslint-disable react-hooks/set-state-in-effect, react-hooks/refs -- URL/hash queue sync mirrors batch review UX */
+
 import type { BatchImportDetailRow } from "@/lib/actions/batch-onboarding";
 import { ArrowLeft, ChevronDown } from "lucide-react";
 import Link from "next/link";
@@ -337,7 +339,7 @@ function ReviewQueueSection({
           onClick={goPrevInQueue}
           disabled={effectiveIndex <= 0}
           className={cn(
-            "rounded-sm border px-2 py-1.5 text-zinc-300 disabled:pointer-events-none disabled:opacity-30",
+            "rounded-sm border px-2 py-1.5 text-zinc-700 disabled:pointer-events-none disabled:opacity-30 dark:text-zinc-300",
             effectiveIndex > 0
               ? "border-zinc-600 hover:border-border dark:border-[#f8cf83]/50 hover:text-[#f8cf83]"
               : "border-zinc-800 text-zinc-600",
@@ -346,14 +348,14 @@ function ReviewQueueSection({
           Previous
         </button>
         <span className="text-zinc-500">
-          <span className="text-zinc-300">{effectiveIndex + 1}</span> / {queue.length}
+          <span className="text-zinc-900 dark:text-zinc-300">{effectiveIndex + 1}</span> / {queue.length}
         </span>
         <button
           type="button"
           onClick={goNextInQueue}
           disabled={effectiveIndex >= queue.length - 1}
           className={cn(
-            "rounded-sm border px-2 py-1.5 text-zinc-300 disabled:pointer-events-none disabled:opacity-30",
+            "rounded-sm border px-2 py-1.5 text-zinc-700 disabled:pointer-events-none disabled:opacity-30 dark:text-zinc-300",
             effectiveIndex < queue.length - 1
               ? "border-zinc-600 hover:border-border dark:border-[#f8cf83]/50 hover:text-[#f8cf83]"
               : "border-zinc-800 text-zinc-600",
@@ -468,10 +470,10 @@ function RowDetailsBody({ r }: { r: BatchImportDetailRow }) {
     <div className="space-y-2 border-t border-zinc-200 dark:border-[#282828] bg-background dark:bg-[#0d0d0d] px-3 py-3 font-mono text-[10px] leading-relaxed text-zinc-400">
       <p>
         <span className="text-zinc-500">Line {r.line}</span> ·{" "}
-        <span className="text-zinc-300">{r.propertyAddress || "—"}</span>
+        <span className="text-zinc-700 dark:text-zinc-300">{r.propertyAddress || "—"}</span>
       </p>
       {r.tenantFullName || r.tenantEmail ? (
-        <p className="text-zinc-300">
+        <p className="text-zinc-700 dark:text-zinc-300">
           {r.tenantFullName || "—"}
           {r.tenantEmail ? ` · ${r.tenantEmail}` : ""}
         </p>
@@ -927,7 +929,7 @@ export function PortfolioImportBatchReconciliation({
                     <td className="px-2 py-2 font-mono tabular-nums">{r.line}</td>
                     <td className="px-2 py-2">{r.outcome}</td>
                     <td className="px-2 py-2">{rowKindNorm(r) || "—"}</td>
-                    <td className="px-2 py-2 text-zinc-300">{r.propertyAddress || "—"}</td>
+                    <td className="px-2 py-2 text-zinc-700 dark:text-zinc-300">{r.propertyAddress || "—"}</td>
                     <td className="max-w-md px-2 py-2">
                       {[...r.previewErrors, ...r.previewWarnings, r.runtimeError, r.skipReason]
                         .filter(Boolean)

@@ -119,13 +119,13 @@ export function MaintenanceRelatedEmailsTable({
                     key={log.id}
                     className="border-b border-border dark:border-[#282828] hover:bg-background dark:bg-[#141414]/80"
                   >
-                    <TableCell className="align-top text-[12px] font-medium text-zinc-200">
+                    <TableCell className="align-top text-[12px] font-medium text-zinc-900 dark:text-zinc-200">
                       {log.to_email ?? "—"}
                       {log.to_name ? (
                         <span className="mt-0.5 block text-[11px] text-zinc-500">{log.to_name}</span>
                       ) : null}
                     </TableCell>
-                    <TableCell className="max-w-[280px] truncate align-top text-[12px] text-zinc-300">
+                    <TableCell className="max-w-[280px] truncate align-top text-[12px] text-zinc-700 dark:text-zinc-300">
                       {log.subject ?? "—"}
                     </TableCell>
                     <TableCell className="align-top">{emailStatusBadge(log.status)}</TableCell>
@@ -144,7 +144,7 @@ export function MaintenanceRelatedEmailsTable({
                             variant="outline"
                             size="sm"
                             onClick={() => void handleReviewClick(log.id)}
-                            className="rounded-none border-border dark:border-[#333333] bg-transparent text-[10px] font-bold uppercase tracking-wider text-zinc-300 hover:bg-background dark:bg-[#1a1a1a]"
+                            className="rounded-none border-border dark:border-[#333333] bg-transparent text-[10px] font-bold uppercase tracking-wider text-zinc-700 hover:bg-background dark:bg-[#1a1a1a] dark:text-zinc-300"
                           >
                             Review
                           </Button>
