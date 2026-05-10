@@ -4,7 +4,25 @@ import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
 import { type OnboardingStatus, parseOnboardingStatus } from "@/lib/onboarding/status";
-import { type UserSettingsInput, userSettingsSchema } from "@/lib/validations/user-settings";
+import {
+  aiChaseSettingsSchema,
+  appearanceSettingsSchema,
+  type AiChaseSettingsInput,
+  type AppearanceSettingsInput,
+  type ChaseTone,
+  type DigestDay,
+  emailTemplatesSettingsSchema,
+  notificationSettingsSchema,
+  organisationSettingsSchema,
+  profileSettingsSchema,
+  type EmailTemplatesSettingsInput,
+  type NotificationSettingsInput,
+  type OrganisationSettingsInput,
+  type ProfileSettingsInput,
+  type ThemePreference,
+  type UserSettingsInput,
+  userSettingsSchema,
+} from "@/lib/validations/user-settings";
 import { userFacingError } from "@/lib/user-facing-errors";
 
 /**
@@ -50,20 +68,161 @@ export type UserSettingsRow = UserSettingsInput & {
   subscriptionStatus?: string | null;
   subscriptionPeriodEnd?: string | null;
   subscriptionTrialEnd?: string | null;
+  /** Organisation panel */
+  orgName?: string;
+  orgLogoUrl?: string;
+  orgContactEmail?: string;
+  orgPhone?: string;
+  orgAddress?: string;
+  /** Profile panel */
+  firstName?: string;
+  lastName?: string;
+  avatarUrl?: string;
+  /** AI & chasing rules */
+  chaseTriggerDays?: number;
+  chaseMaxPerMonth?: number;
+  chaseMinGapDays?: number;
+  chaseAllowWeekends?: boolean;
+  chaseEscalationThreshold?: number;
+  chaseTone1?: ChaseTone;
+  chaseTone2?: ChaseTone;
+  chaseTone3?: ChaseTone;
+  chaseRequireApproval?: boolean;
+  chaseAiProactive?: boolean;
+  /** Email templates */
+  emailSenderName?: string;
+  emailReplyTo?: string;
+  emailChase1Subject?: string;
+  emailChase1Body?: string;
+  emailChase2Subject?: string;
+  emailChase2Body?: string;
+  emailChase3Subject?: string;
+  emailChase3Body?: string;
+  /** Notifications */
+  notifRentOverdue?: boolean;
+  notifRentOverdueDays?: number;
+  notifEscalation?: boolean;
+  notifApprovalReady?: boolean;
+  notifApprovalQueueThreshold?: number;
+  notifMaintenance?: boolean;
+  notifWeeklyDigest?: boolean;
+  notifDigestDay?: DigestDay;
+  notifDigestTime?: string;
+  /** Appearance */
+  themePreference?: ThemePreference;
 };
+
+const VALID_TONES: ReadonlyArray<ChaseTone> = ["friendly", "firm", "formal", "legal"];
+function parseTone(value: unknown, fallback: ChaseTone): ChaseTone {
+  return typeof value === "string" && (VALID_TONES as readonly string[]).includes(value)
+    ? (value as ChaseTone)
+    : fallback;
+}
+
+const VALID_DIGEST_DAYS: ReadonlyArray<DigestDay> = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
+function parseDigestDay(value: unknown): DigestDay {
+  return typeof value === "string" && (VALID_DIGEST_DAYS as readonly string[]).includes(value)
+    ? (value as DigestDay)
+    : "mon";
+}
+
+const VALID_THEMES: ReadonlyArray<ThemePreference> = ["light", "dark", "system"];
+function parseTheme(value: unknown): ThemePreference {
+  return typeof value === "string" && (VALID_THEMES as readonly string[]).includes(value)
+    ? (value as ThemePreference)
+    : "system";
+}
 
 export async function getUserSettings(userId: string): Promise<UserSettingsRow | null> {
   const supabase = await createClient();
 
-  const { data, error } = await supabase
+  /** Wide select intentionally typed `*` so we can read columns from the new
+   *  settings panel migration without being blocked by `supabase_types.ts` drift.
+   *  The `data` object is normalised manually below. */
+  const { data: rawData, error } = await supabase
     .from("user_settings")
-    .select(
-      "id,user_id,stripe_customer_id,stripe_connect_account_id,polar_customer_id,polar_subscription_id,business_name,landlord_name,contact_phone,contact_email,business_address,rent_chaser_tone,first_chase_days,email_signoff,include_payment_plan,email_from_name,auto_send_rent_chaser,auto_send_maintenance_updates,auto_send_onboarding_emails,auto_send_lead_updates,auto_send_referencing_emails,referencing_agency_name,referencing_agency_email,referencing_agency_notes,rent_chaser_instructions,min_lead_score,preferred_sources,disqualify_no_movein,lead_qualifier_criteria,onboarding_status,onboarding_primary_goal,onboarding_setup_reminder_dismissed_at,has_seen_tour,subscription_plan,subscription_status,subscription_period_end,subscription_trial_end",
-    )
+    .select("*")
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (error || !data) return null;
+  if (error || !rawData) return null;
+
+  type UserSettingsRowDb = {
+    id: string;
+    user_id: string;
+    stripe_customer_id?: string | null;
+    stripe_connect_account_id?: string | null;
+    polar_customer_id?: string | null;
+    polar_subscription_id?: string | null;
+    business_name?: string | null;
+    landlord_name?: string | null;
+    contact_phone?: string | null;
+    contact_email?: string | null;
+    business_address?: string | null;
+    rent_chaser_tone?: string | null;
+    first_chase_days?: number | null;
+    email_signoff?: string | null;
+    include_payment_plan?: boolean | null;
+    email_from_name?: string | null;
+    auto_send_rent_chaser?: boolean | null;
+    auto_send_maintenance_updates?: boolean | null;
+    auto_send_onboarding_emails?: boolean | null;
+    auto_send_lead_updates?: boolean | null;
+    auto_send_referencing_emails?: boolean | null;
+    referencing_agency_name?: string | null;
+    referencing_agency_email?: string | null;
+    referencing_agency_notes?: string | null;
+    rent_chaser_instructions?: string | null;
+    min_lead_score?: number | null;
+    preferred_sources?: string[] | null;
+    disqualify_no_movein?: boolean | null;
+    lead_qualifier_criteria?: string | null;
+    onboarding_status?: string | null;
+    onboarding_primary_goal?: string | null;
+    onboarding_setup_reminder_dismissed_at?: string | null;
+    has_seen_tour?: boolean | null;
+    subscription_plan?: string | null;
+    subscription_status?: string | null;
+    subscription_period_end?: string | null;
+    subscription_trial_end?: string | null;
+    org_name?: string | null;
+    org_logo_url?: string | null;
+    org_contact_email?: string | null;
+    org_phone?: string | null;
+    org_address?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+    avatar_url?: string | null;
+    chase_trigger_days?: number | null;
+    chase_max_per_month?: number | null;
+    chase_min_gap_days?: number | null;
+    chase_allow_weekends?: boolean | null;
+    chase_escalation_threshold?: number | null;
+    chase_tone_1?: string | null;
+    chase_tone_2?: string | null;
+    chase_tone_3?: string | null;
+    chase_require_approval?: boolean | null;
+    chase_ai_proactive?: boolean | null;
+    email_sender_name?: string | null;
+    email_reply_to?: string | null;
+    email_chase1_subject?: string | null;
+    email_chase1_body?: string | null;
+    email_chase2_subject?: string | null;
+    email_chase2_body?: string | null;
+    email_chase3_subject?: string | null;
+    email_chase3_body?: string | null;
+    notif_rent_overdue?: boolean | null;
+    notif_rent_overdue_days?: number | null;
+    notif_escalation?: boolean | null;
+    notif_approval_ready?: boolean | null;
+    notif_approval_queue_threshold?: number | null;
+    notif_maintenance?: boolean | null;
+    notif_weekly_digest?: boolean | null;
+    notif_digest_day?: string | null;
+    notif_digest_time?: string | null;
+    theme_preference?: string | null;
+  };
+  const data = rawData as unknown as UserSettingsRowDb;
 
   const rawTone = (data.rent_chaser_tone ?? "professional_firm") as string;
   /** Map legacy `friendly_reminder` to `friendly_polite` so the tone Select matches options. */
@@ -104,16 +263,56 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
     preferredSources: (data.preferred_sources ?? []) as UserSettingsInput["preferredSources"],
     disqualifyNoMovein: data.disqualify_no_movein ?? false,
     leadQualifierCriteria: data.lead_qualifier_criteria ?? "",
-    onboardingStatus: parseOnboardingStatus((data as { onboarding_status?: string | null }).onboarding_status),
-    onboardingPrimaryGoal: (data as { onboarding_primary_goal?: string | null }).onboarding_primary_goal ?? null,
-    hasSeenTour: Boolean((data as { has_seen_tour?: boolean | null }).has_seen_tour),
-    onboardingSetupReminderDismissedAt:
-      (data as { onboarding_setup_reminder_dismissed_at?: string | null }).onboarding_setup_reminder_dismissed_at ??
-      null,
-    subscriptionPlan: (data as { subscription_plan?: string | null }).subscription_plan ?? null,
-    subscriptionStatus: (data as { subscription_status?: string | null }).subscription_status ?? null,
-    subscriptionPeriodEnd: (data as { subscription_period_end?: string | null }).subscription_period_end ?? null,
-    subscriptionTrialEnd: (data as { subscription_trial_end?: string | null }).subscription_trial_end ?? null,
+    onboardingStatus: parseOnboardingStatus(data.onboarding_status),
+    onboardingPrimaryGoal: data.onboarding_primary_goal ?? null,
+    hasSeenTour: Boolean(data.has_seen_tour),
+    onboardingSetupReminderDismissedAt: data.onboarding_setup_reminder_dismissed_at ?? null,
+    subscriptionPlan: data.subscription_plan ?? null,
+    subscriptionStatus: data.subscription_status ?? null,
+    subscriptionPeriodEnd: data.subscription_period_end ?? null,
+    subscriptionTrialEnd: data.subscription_trial_end ?? null,
+    /* Organisation */
+    orgName: data.org_name ?? "",
+    orgLogoUrl: data.org_logo_url ?? "",
+    orgContactEmail: data.org_contact_email ?? "",
+    orgPhone: data.org_phone ?? "",
+    orgAddress: data.org_address ?? "",
+    /* Profile */
+    firstName: data.first_name ?? "",
+    lastName: data.last_name ?? "",
+    avatarUrl: data.avatar_url ?? "",
+    /* AI & chasing */
+    chaseTriggerDays: data.chase_trigger_days ?? 3,
+    chaseMaxPerMonth: data.chase_max_per_month ?? 3,
+    chaseMinGapDays: data.chase_min_gap_days ?? 5,
+    chaseAllowWeekends: Boolean(data.chase_allow_weekends ?? false),
+    chaseEscalationThreshold: data.chase_escalation_threshold ?? 3,
+    chaseTone1: parseTone(data.chase_tone_1, "friendly"),
+    chaseTone2: parseTone(data.chase_tone_2, "firm"),
+    chaseTone3: parseTone(data.chase_tone_3, "formal"),
+    chaseRequireApproval: Boolean(data.chase_require_approval ?? true),
+    chaseAiProactive: Boolean(data.chase_ai_proactive ?? true),
+    /* Email templates */
+    emailSenderName: data.email_sender_name ?? "",
+    emailReplyTo: data.email_reply_to ?? "",
+    emailChase1Subject: data.email_chase1_subject ?? "",
+    emailChase1Body: data.email_chase1_body ?? "",
+    emailChase2Subject: data.email_chase2_subject ?? "",
+    emailChase2Body: data.email_chase2_body ?? "",
+    emailChase3Subject: data.email_chase3_subject ?? "",
+    emailChase3Body: data.email_chase3_body ?? "",
+    /* Notifications */
+    notifRentOverdue: Boolean(data.notif_rent_overdue ?? true),
+    notifRentOverdueDays: data.notif_rent_overdue_days ?? 3,
+    notifEscalation: Boolean(data.notif_escalation ?? true),
+    notifApprovalReady: Boolean(data.notif_approval_ready ?? true),
+    notifApprovalQueueThreshold: data.notif_approval_queue_threshold ?? 5,
+    notifMaintenance: Boolean(data.notif_maintenance ?? true),
+    notifWeeklyDigest: Boolean(data.notif_weekly_digest ?? true),
+    notifDigestDay: parseDigestDay(data.notif_digest_day),
+    notifDigestTime: data.notif_digest_time ?? "08:00",
+    /* Appearance */
+    themePreference: parseTheme(data.theme_preference),
   };
 }
 
@@ -231,3 +430,160 @@ export async function saveSettings(formData: unknown) {
   return { ok: true as const };
 }
 
+/* -------------------------------------------------------------------------- */
+/* Section-scoped mutations used by the new tabbed settings panel.            */
+/* Each one upserts only the columns belonging to its section so independent  */
+/* tabs can save without overwriting one another's values.                    */
+/* -------------------------------------------------------------------------- */
+
+type SectionResult = { ok: true } | { ok: false; error: string };
+
+async function upsertSection(
+  patch: Record<string, unknown>,
+): Promise<SectionResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("user_settings")
+    .upsert(
+      { user_id: user.id, ...patch, updated_at: new Date().toISOString() },
+      { onConflict: "user_id" },
+    );
+
+  if (error)
+    return {
+      ok: false,
+      error: userFacingError(error.message, "We couldn't save your settings. Please try again."),
+    };
+
+  revalidatePath("/dashboard/settings");
+  return { ok: true };
+}
+
+export async function saveOrganisationSettings(input: OrganisationSettingsInput): Promise<SectionResult> {
+  const parsed = organisationSettingsSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid organisation settings.",
+    };
+  }
+  const v = parsed.data;
+  return upsertSection({
+    org_name: v.orgName?.trim() || null,
+    org_logo_url: v.orgLogoUrl?.trim() || null,
+    org_contact_email: v.orgContactEmail?.trim() || null,
+    org_phone: v.orgPhone?.trim() || null,
+    org_address: v.orgAddress?.trim() || null,
+    /** Mirror to legacy column so existing agent prompts that read `business_name` keep working. */
+    business_name: v.orgName?.trim() || null,
+  });
+}
+
+export async function saveProfileSettings(input: ProfileSettingsInput): Promise<SectionResult> {
+  const parsed = profileSettingsSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid profile settings.",
+    };
+  }
+  const v = parsed.data;
+  const fullName = [v.firstName?.trim(), v.lastName?.trim()].filter(Boolean).join(" ");
+  return upsertSection({
+    first_name: v.firstName?.trim() || null,
+    last_name: v.lastName?.trim() || null,
+    avatar_url: v.avatarUrl?.trim() || null,
+    /** Keep legacy landlord_name in sync so chase emails address the same person. */
+    landlord_name: fullName.length > 0 ? fullName : null,
+  });
+}
+
+export async function saveAiChaseSettings(input: AiChaseSettingsInput): Promise<SectionResult> {
+  const parsed = aiChaseSettingsSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid AI & chasing settings.",
+    };
+  }
+  const v = parsed.data;
+  return upsertSection({
+    chase_trigger_days: v.chaseTriggerDays,
+    chase_max_per_month: v.chaseMaxPerMonth,
+    chase_min_gap_days: v.chaseMinGapDays,
+    chase_allow_weekends: v.chaseAllowWeekends,
+    chase_escalation_threshold: v.chaseEscalationThreshold,
+    chase_tone_1: v.chaseTone1,
+    chase_tone_2: v.chaseTone2,
+    chase_tone_3: v.chaseTone3,
+    chase_require_approval: v.chaseRequireApproval,
+    chase_ai_proactive: v.chaseAiProactive,
+    /** Legacy column kept in sync for the existing rent-chaser pipeline. */
+    first_chase_days: v.chaseTriggerDays,
+  });
+}
+
+export async function saveEmailTemplatesSettings(
+  input: EmailTemplatesSettingsInput,
+): Promise<SectionResult> {
+  const parsed = emailTemplatesSettingsSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid email template settings.",
+    };
+  }
+  const v = parsed.data;
+  return upsertSection({
+    email_sender_name: v.emailSenderName?.trim() || null,
+    email_reply_to: v.emailReplyTo?.trim() || null,
+    email_chase1_subject: v.emailChase1Subject?.trim() || null,
+    email_chase1_body: v.emailChase1Body?.trim() || null,
+    email_chase2_subject: v.emailChase2Subject?.trim() || null,
+    email_chase2_body: v.emailChase2Body?.trim() || null,
+    email_chase3_subject: v.emailChase3Subject?.trim() || null,
+    email_chase3_body: v.emailChase3Body?.trim() || null,
+  });
+}
+
+export async function saveNotificationSettings(
+  input: NotificationSettingsInput,
+): Promise<SectionResult> {
+  const parsed = notificationSettingsSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid notification settings.",
+    };
+  }
+  const v = parsed.data;
+  return upsertSection({
+    notif_rent_overdue: v.notifRentOverdue,
+    notif_rent_overdue_days: v.notifRentOverdueDays,
+    notif_escalation: v.notifEscalation,
+    notif_approval_ready: v.notifApprovalReady,
+    notif_approval_queue_threshold: v.notifApprovalQueueThreshold,
+    notif_maintenance: v.notifMaintenance,
+    notif_weekly_digest: v.notifWeeklyDigest,
+    notif_digest_day: v.notifDigestDay,
+    notif_digest_time: v.notifDigestTime,
+  });
+}
+
+export async function saveAppearanceSettings(
+  input: AppearanceSettingsInput,
+): Promise<SectionResult> {
+  const parsed = appearanceSettingsSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid appearance settings.",
+    };
+  }
+  return upsertSection({ theme_preference: parsed.data.themePreference });
+}
