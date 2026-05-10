@@ -141,18 +141,23 @@ export function AgentRunsTable({ initialRuns, variant = "page" }: AgentRunsTable
       )}
     >
       {!embedded ? (
-        <h2 className="text-base font-semibold tracking-tight">Recent Agent Runs</h2>
+        <h2 className="text-base font-semibold tracking-tight text-zinc-900 dark:text-white">
+          Recent Agent Runs
+        </h2>
       ) : null}
       <Card className={cn(embedded && "border-border bg-card")}>
         <CardHeader className={cn("border-b", embedded && "border-border py-3")}>
-          <CardTitle
-            className={cn(
-              "text-sm font-medium text-muted-foreground",
-              embedded && "font-[family-name:var(--font-inter)] text-xs uppercase tracking-[0.08em] text-muted-foreground",
-            )}
-          >
-            History
-          </CardTitle>
+          {embedded ? (
+            <h2 className="flex items-center gap-2 font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white">
+              <span
+                className="size-1.5 shrink-0 bg-zinc-400 dark:bg-white"
+                aria-hidden
+              />
+              Recent Activity
+            </h2>
+          ) : (
+            <CardTitle className="text-sm font-medium text-muted-foreground">History</CardTitle>
+          )}
         </CardHeader>
         <CardContent className="pt-0">
           {initialRuns.length === 0 ? (

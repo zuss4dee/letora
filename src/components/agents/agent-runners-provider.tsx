@@ -12,7 +12,7 @@ import { updateLeadQualifiedStatus } from "@/lib/actions/leads";
 import { AgentRunsTable } from "@/components/agents/agent-runs-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -382,8 +382,8 @@ function AgentRunnersInner({
           side="right"
           className="flex w-full flex-col gap-0 overflow-hidden border-border bg-background p-0 sm:max-w-lg"
         >
-          <SheetHeader className="border-b border-[#484848]/20 px-6 py-5 text-left">
-            <SheetTitle className="font-headline text-lg font-light text-foreground">
+          <SheetHeader className="border-b border-border px-6 py-5 text-left">
+            <SheetTitle className="font-headline text-lg font-light text-zinc-900 dark:text-white">
               Agent activity log
             </SheetTitle>
             <SheetDescription className="font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
