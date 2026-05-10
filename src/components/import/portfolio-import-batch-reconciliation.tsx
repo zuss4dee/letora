@@ -75,7 +75,7 @@ function lineFromHash(queue: BatchReconciliationModel["needsReviewQueue"]): numb
 type ReviewQueueEntry = BatchReconciliationModel["needsReviewQueue"][number];
 
 const reviewedTaskButtonClass =
-  "inline-flex shrink-0 border border-zinc-600 bg-zinc-900 px-2 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-300 hover:border-[#afefdd]/40 hover:text-[#afefdd]";
+  "inline-flex shrink-0 border border-zinc-200 bg-zinc-100 px-2 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-800 hover:border-[#afefdd]/40 hover:text-emerald-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-[#afefdd]/40 dark:hover:text-[#afefdd]";
 
 function ReviewQueueRow({
   batchId,
@@ -110,24 +110,24 @@ function ReviewQueueRow({
   const primaryClass =
     "inline-flex border border-[#306f60]/50 bg-[#152420]/90 px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#afefdd] hover:border-[#afefdd]/50";
   const secondaryClass =
-    "inline-flex border border-[#333333] bg-[#161616] px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-200 hover:border-white";
+    "inline-flex border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-800 hover:border-zinc-400 dark:border-[#333333] dark:bg-[#161616] dark:text-zinc-200 dark:hover:border-white";
   const rowId = reviewRowDomId(row.line);
 
   if (!focused) {
     return (
       <div
         id={rowId}
-        className="scroll-mt-28 flex w-full items-stretch gap-2 border-b border-[#282828] px-2 py-2 last:border-b-0 sm:items-start sm:gap-3 sm:px-3 sm:py-2.5"
+        className="scroll-mt-28 flex w-full items-stretch gap-2 border-b border-zinc-200 dark:border-[#282828] px-2 py-2 last:border-b-0 sm:items-start sm:gap-3 sm:px-3 sm:py-2.5"
       >
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <button
             type="button"
-            className="flex w-full items-start gap-2 text-left hover:bg-[#1A1A1A]/80 sm:gap-3"
+            className="flex w-full items-start gap-2 text-left hover:bg-zinc-100 sm:gap-3 dark:hover:bg-[#1A1A1A]/80"
             onClick={onActivateRow}
           >
             <span className="font-mono text-[10px] tabular-nums text-zinc-500">{row.line}</span>
             <div className="min-w-0 flex-1 space-y-0.5">
-              <p className="truncate text-sm font-medium text-zinc-300">{humanRecordLabel(row)}</p>
+              <p className="truncate text-sm font-medium text-zinc-800 dark:text-zinc-300">{humanRecordLabel(row)}</p>
             </div>
             <ChevronDown className="mt-0.5 size-4 shrink-0 text-zinc-600" aria-hidden />
           </button>
@@ -149,12 +149,12 @@ function ReviewQueueRow({
   return (
     <div
       id={rowId}
-      className="scroll-mt-28 border-b border-[#282828] border-l-2 border-l-[#f8cf83]/60 bg-[#161616]/95 last:border-b-0"
+      className="scroll-mt-28 border-b border-zinc-200 dark:border-[#282828] border-l-2 border-l-[#f8cf83]/60 bg-amber-50/90 last:border-b-0 dark:bg-[#161616]/95"
     >
       <div className="space-y-3 px-3 py-3">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
           <span className="font-mono text-[11px] tabular-nums text-zinc-400">{row.line}</span>
-          <p className="min-w-0 flex-1 text-sm font-medium text-white">{humanRecordLabel(row)}</p>
+          <p className="min-w-0 flex-1 text-sm font-medium text-zinc-900 dark:text-white">{humanRecordLabel(row)}</p>
         </div>
         <ExpandableInstructionText
           text={reason}
@@ -181,7 +181,7 @@ function ReviewQueueRow({
 
         <button
           type="button"
-          className="flex w-full items-center justify-between gap-2 border border-[#282828] bg-[#0d0d0d]/80 px-2 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-500 hover:border-zinc-600 hover:text-zinc-300"
+          className="flex w-full items-center justify-between gap-2 border border-zinc-200 bg-zinc-50 px-2 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-600 hover:border-zinc-400 hover:text-zinc-800 dark:border-[#282828] dark:bg-[#0d0d0d]/80 dark:text-zinc-500 dark:hover:border-zinc-600 dark:hover:text-zinc-300"
           aria-expanded={detailsOpen}
           onClick={onToggleDetails}
         >
@@ -331,7 +331,7 @@ function ReviewQueueSection({
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#282828] bg-[#141414] px-3 py-2 font-mono text-[10px] uppercase tracking-widest">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 dark:border-[#282828] bg-[#141414] px-3 py-2 font-mono text-[10px] uppercase tracking-widest">
         <button
           type="button"
           onClick={goPrevInQueue}
@@ -386,7 +386,7 @@ function ReviewQueueSection({
 function ReviewedQueueCollapsible({ entries }: { entries: ReviewQueueEntry[] }) {
   if (entries.length === 0) return null;
   return (
-    <details className="group border-t border-[#282828] bg-[#141414]">
+    <details className="group border-t border-zinc-200 dark:border-[#282828] bg-[#141414]">
       <summary className="cursor-pointer list-none px-3 py-2.5 font-mono text-[10px] uppercase tracking-widest text-zinc-500 marker:content-none hover:bg-[#1A1A1A]/60 [&::-webkit-details-marker]:hidden">
         Reviewed ({entries.length})
       </summary>
@@ -465,7 +465,7 @@ function CompactRowPreview({ r }: { r: BatchImportDetailRow }) {
 
 function RowDetailsBody({ r }: { r: BatchImportDetailRow }) {
   return (
-    <div className="space-y-2 border-t border-[#282828] bg-[#0d0d0d] px-3 py-3 font-mono text-[10px] leading-relaxed text-zinc-400">
+    <div className="space-y-2 border-t border-zinc-200 dark:border-[#282828] bg-[#0d0d0d] px-3 py-3 font-mono text-[10px] leading-relaxed text-zinc-400">
       <p>
         <span className="text-zinc-500">Line {r.line}</span> ·{" "}
         <span className="text-zinc-300">{r.propertyAddress || "—"}</span>
@@ -500,7 +500,7 @@ function RowDetailsBody({ r }: { r: BatchImportDetailRow }) {
 /** Collapsed audit row — used for successful / vacant lists below the fold. */
 function AuditImportRowCard({ r }: { r: BatchImportDetailRow }) {
   return (
-    <details className="group border-b border-[#282828] last:border-b-0">
+    <details className="group border-b border-zinc-200 dark:border-[#282828] last:border-b-0">
       <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-3 py-3 marker:content-none hover:bg-[#1A1A1A]/80 [&::-webkit-details-marker]:hidden">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -520,7 +520,7 @@ function FailedRowCard({ r }: { r: BatchImportDetailRow }) {
   const reason = primaryAttentionReason(r);
 
   return (
-    <details className="group border-b border-[#282828] last:border-b-0">
+    <details className="group border-b border-zinc-200 dark:border-[#282828] last:border-b-0">
       <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-3 py-3 marker:content-none hover:bg-[#1A1A1A]/80 [&::-webkit-details-marker]:hidden">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-start gap-2">
@@ -529,7 +529,7 @@ function FailedRowCard({ r }: { r: BatchImportDetailRow }) {
               Not saved
             </span>
           </div>
-          <p className="text-sm font-medium text-white">{humanRecordLabel(r)}</p>
+          <p className="text-sm font-medium text-zinc-900 dark:text-white">{humanRecordLabel(r)}</p>
           <ExpandableInstructionText
             text={reason}
             className="text-[12px] leading-snug text-zinc-400"
@@ -665,60 +665,60 @@ export function PortfolioImportBatchReconciliation({
   const completedLabel = completedAt ? batchCompletedFormatter.format(new Date(completedAt)) : null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#131313] text-[#e5e2e1]">
-      <header className="border-b border-[#282828] bg-[#161616] px-6 py-4">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#f8f8f7] text-zinc-900 dark:bg-[#131313] dark:text-[#e5e2e1]">
+      <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-[#161616]">
         <Link
           href="/dashboard/import"
-          className="mb-3 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#888888] hover:text-white"
+          className="mb-3 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-zinc-500 transition-colors hover:text-zinc-900 dark:text-[#888888] dark:hover:text-white"
         >
           <ArrowLeft className="size-3" />
           Back to import
         </Link>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#555555]">Batch</p>
-        <h1 className="mt-1 text-xl font-bold uppercase tracking-tight text-white">Results</h1>
-        <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-[#555555]">{batchId}</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-[#555555]">Batch</p>
+        <h1 className="mt-1 text-xl font-bold uppercase tracking-tight text-zinc-900 dark:text-white">Results</h1>
+        <p className="mt-1 font-mono text-[10px] uppercase tracking-widest text-zinc-500 dark:text-[#555555]">{batchId}</p>
       </header>
 
       <div className="mx-auto w-full max-w-5xl space-y-10 px-6 py-8">
         <section className={cn("rounded-sm border px-5 py-6", bandClass)}>
-          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#888888]">Summary</p>
-          <h2 className="mt-2 text-lg font-bold text-white sm:text-xl">{headline}</h2>
-          <p className="mt-2 max-w-2xl text-[13px] leading-snug text-[#cfc9c4]">{sub}</p>
+          <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-[#888888]">Summary</p>
+          <h2 className="mt-2 text-lg font-bold text-zinc-900 sm:text-xl dark:text-white">{headline}</h2>
+          <p className="mt-2 max-w-2xl text-[13px] leading-snug text-zinc-700 dark:text-[#cfc9c4]">{sub}</p>
 
           <dl className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            <div className="rounded-sm bg-black/20 px-3 py-3">
-              <dt className="text-[9px] uppercase tracking-widest text-[#888888]">Saved cleanly</dt>
-              <dd className="mt-1 font-mono text-2xl font-semibold tabular-nums text-white">{cleanSuccessful.length}</dd>
+            <div className="rounded-sm bg-zinc-100/90 px-3 py-3 dark:bg-black/20">
+              <dt className="text-[9px] uppercase tracking-widest text-zinc-500 dark:text-[#888888]">Saved cleanly</dt>
+              <dd className="mt-1 font-mono text-2xl font-semibold tabular-nums text-zinc-900 dark:text-white">{cleanSuccessful.length}</dd>
             </div>
-            <div className="rounded-sm bg-black/20 px-3 py-3">
+            <div className="rounded-sm bg-zinc-100/90 px-3 py-3 dark:bg-black/20">
               <dt className="text-[9px] uppercase tracking-widest text-[#f8cf83]">Quick checks left</dt>
               <dd className="mt-1 font-mono text-2xl font-semibold tabular-nums text-[#f8cf83]">{pendingReviewCount}</dd>
             </div>
-            <div className="rounded-sm bg-black/20 px-3 py-3">
+            <div className="rounded-sm bg-zinc-100/90 px-3 py-3 dark:bg-black/20">
               <dt className="text-[9px] uppercase tracking-widest text-[#ee7d77]">Didn&apos;t save</dt>
               <dd className="mt-1 font-mono text-2xl font-semibold tabular-nums text-[#ee7d77]">{failedCount}</dd>
             </div>
-            <div className="rounded-sm bg-black/20 px-3 py-3">
-              <dt className="text-[9px] uppercase tracking-widest text-[#888888]">Properties</dt>
-              <dd className="mt-1 font-mono text-2xl font-semibold tabular-nums text-white">
+            <div className="rounded-sm bg-zinc-100/90 px-3 py-3 dark:bg-black/20">
+              <dt className="text-[9px] uppercase tracking-widest text-zinc-500 dark:text-[#888888]">Properties</dt>
+              <dd className="mt-1 font-mono text-2xl font-semibold tabular-nums text-zinc-900 dark:text-white">
                 {model.summary.propertiesCreated}
               </dd>
             </div>
-            <div className="rounded-sm bg-black/20 px-3 py-3">
-              <dt className="text-[9px] uppercase tracking-widest text-[#888888]">Tenants</dt>
-              <dd className="mt-1 font-mono text-2xl font-semibold tabular-nums text-white">
+            <div className="rounded-sm bg-zinc-100/90 px-3 py-3 dark:bg-black/20">
+              <dt className="text-[9px] uppercase tracking-widest text-zinc-500 dark:text-[#888888]">Tenants</dt>
+              <dd className="mt-1 font-mono text-2xl font-semibold tabular-nums text-zinc-900 dark:text-white">
                 {model.summary.tenantsCreated}
               </dd>
             </div>
-            <div className="rounded-sm bg-black/20 px-3 py-3">
-              <dt className="text-[9px] uppercase tracking-widest text-[#888888]">Tenancies</dt>
-              <dd className="mt-1 font-mono text-2xl font-semibold tabular-nums text-white">
+            <div className="rounded-sm bg-zinc-100/90 px-3 py-3 dark:bg-black/20">
+              <dt className="text-[9px] uppercase tracking-widest text-zinc-500 dark:text-[#888888]">Tenancies</dt>
+              <dd className="mt-1 font-mono text-2xl font-semibold tabular-nums text-zinc-900 dark:text-white">
                 {model.summary.tenanciesCreated}
               </dd>
             </div>
           </dl>
 
-          <div className="mt-4 flex flex-wrap gap-4 font-mono text-[10px] text-[#555555]">
+          <div className="mt-4 flex flex-wrap gap-4 font-mono text-[10px] text-zinc-500 dark:text-[#555555]">
             <span>Rows in file · {rowsTotal}</span>
             <span>Skipped · {skippedCount}</span>
             <span className="uppercase">DB · {dbStatus}</span>
@@ -731,13 +731,13 @@ export function PortfolioImportBatchReconciliation({
           ) : null}
 
           {completedLabel ? (
-            <p className="mt-4 font-mono text-[10px] text-[#555555]">Completed · {completedLabel}</p>
+            <p className="mt-4 font-mono text-[10px] text-zinc-500 dark:text-[#555555]">Completed · {completedLabel}</p>
           ) : null}
         </section>
 
         <section className="scroll-mt-24 space-y-4" aria-label="After import tasks" id="attention">
           {pendingReviewCount > 0 ? (
-            <div className="max-w-xl space-y-2 text-[13px] leading-snug text-[#cfc9c4]" id="batch-review-directive">
+            <div className="max-w-xl space-y-2 text-[13px] leading-snug text-zinc-700 dark:text-[#cfc9c4]" id="batch-review-directive">
               <p>Check this record.</p>
               <p>If it looks right, click Reviewed.</p>
               <p>If it looks wrong, open it and fix it.</p>
@@ -746,11 +746,11 @@ export function PortfolioImportBatchReconciliation({
 
           <div className="max-w-xl space-y-2 text-[12px] leading-relaxed text-zinc-500">
             <p>
-              <span className="font-medium text-zinc-300">Retry failed rows</span> opens the importer with only lines that didn&apos;t
+              <span className="font-medium text-zinc-800 dark:text-zinc-300">Retry failed rows</span> opens the importer with only lines that didn&apos;t
               save, using data from this batch — no spreadsheet upload.
             </p>
             <p>
-              <span className="font-medium text-zinc-300">Upload again</span> starts a{" "}
+              <span className="font-medium text-zinc-800 dark:text-zinc-300">Upload again</span> starts a{" "}
               <span className="text-zinc-400">new</span> full import when you paste or upload a file.
             </p>
             {failedCount > 0 && !retryFailedAvailable ? (
@@ -775,7 +775,7 @@ export function PortfolioImportBatchReconciliation({
               className={cn(
                 "inline-flex items-center justify-center gap-2 border px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest transition-colors",
                 failedCount === 0
-                  ? "pointer-events-none border-zinc-800 bg-zinc-900/40 text-zinc-600"
+                  ? "pointer-events-none border-zinc-200 bg-zinc-100 text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-600"
                   : "border-[#BB5551]/45 bg-[#2a1514]/50 text-[#ee7d77] hover:border-[#ee7d77]/50",
               )}
             >
@@ -796,7 +796,7 @@ export function PortfolioImportBatchReconciliation({
           ) : null}
 
           {needsReviewTotal > 0 ? (
-            <div id="attention-review" className="scroll-mt-24 overflow-hidden rounded-sm border border-[#f8cf83]/20 bg-[#161616]">
+            <div id="attention-review" className="scroll-mt-24 overflow-hidden rounded-sm border border-[#f8cf83]/20 bg-white dark:bg-[#161616]">
               <div className="border-b border-[#f8cf83]/15 bg-[#2a2210]/30 px-3 py-2.5">
                 <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#f8cf83]">Quick checks</h3>
               </div>
@@ -805,11 +805,11 @@ export function PortfolioImportBatchReconciliation({
             </div>
           ) : null}
 
-          <div id="attention-failed" className="scroll-mt-24 overflow-hidden rounded-sm border border-[#BB5551]/25 bg-[#161616]">
+          <div id="attention-failed" className="scroll-mt-24 overflow-hidden rounded-sm border border-[#BB5551]/25 bg-white dark:bg-[#161616]">
             <div className="border-b border-[#BB5551]/15 bg-[#2a1514]/30 px-3 py-2.5">
               <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#ee7d77]">Didn&apos;t save</h3>
             </div>
-            <p className="border-b border-[#282828] px-3 py-3 text-[13px] leading-snug text-zinc-400">
+            <p className="border-b border-zinc-200 dark:border-[#282828] px-3 py-3 text-[13px] leading-snug text-zinc-400">
               Failed rows were not imported. Fix the file and import again.
             </p>
             {model.failed.length === 0 ? (
@@ -825,7 +825,7 @@ export function PortfolioImportBatchReconciliation({
         </section>
 
         <section aria-label="From this upload">
-          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-white">Saved in Letora · this upload</h3>
+          <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Saved in Letora · this upload</h3>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <Link
               href={`/dashboard/properties?${batchQ}`}
@@ -833,7 +833,7 @@ export function PortfolioImportBatchReconciliation({
               className={cn(
                 "inline-flex items-center justify-center gap-2 border px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest transition-colors",
                 propDisabled
-                  ? "pointer-events-none border-zinc-800 bg-zinc-900/40 text-zinc-600"
+                  ? "pointer-events-none border-zinc-200 bg-zinc-100 text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-600"
                   : "border-[#306f60]/50 bg-[#152420] text-[#afefdd] hover:border-[#afefdd]/50",
               )}
             >
@@ -844,8 +844,8 @@ export function PortfolioImportBatchReconciliation({
               className={cn(
                 "inline-flex items-center justify-center gap-2 border px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest transition-colors",
                 tenDisabled
-                  ? "pointer-events-none border-zinc-800 bg-zinc-900/40 text-zinc-600"
-                  : "border-[#333333] bg-[#0B0B0B] text-zinc-200 hover:border-white hover:text-white",
+                  ? "pointer-events-none border-zinc-200 bg-zinc-100 text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-600"
+                  : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400 dark:border-[#333333] dark:bg-[#0B0B0B] dark:text-zinc-200 dark:hover:border-white dark:hover:text-white",
               )}
             >
               Tenants · this upload
@@ -855,8 +855,8 @@ export function PortfolioImportBatchReconciliation({
               className={cn(
                 "inline-flex items-center justify-center gap-2 border px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest transition-colors",
                 tencyDisabled
-                  ? "pointer-events-none border-zinc-800 bg-zinc-900/40 text-zinc-600"
-                  : "border-[#333333] bg-[#0B0B0B] text-zinc-200 hover:border-white hover:text-white",
+                  ? "pointer-events-none border-zinc-200 bg-zinc-100 text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-600"
+                  : "border-zinc-200 bg-white text-zinc-800 hover:border-zinc-400 dark:border-[#333333] dark:bg-[#0B0B0B] dark:text-zinc-200 dark:hover:border-white dark:hover:text-white",
               )}
             >
               Tenancies · this upload
@@ -881,14 +881,14 @@ export function PortfolioImportBatchReconciliation({
           </section>
         ) : null}
 
-        <details id="import-section-clean" className="group rounded-sm border border-[#282828] bg-[#161616]">
+        <details id="import-section-clean" className="group rounded-sm border border-zinc-200 dark:border-[#282828] bg-[#161616]">
           <summary className="cursor-pointer px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400 marker:content-none [&::-webkit-details-marker]:hidden">
             Clean saves &amp; vacant rows ({cleanSuccessful.length + model.vacantOrPropertyOnly.length})
           </summary>
-          <div className="space-y-6 border-t border-[#282828] px-4 py-5">
+          <div className="space-y-6 border-t border-zinc-200 dark:border-[#282828] px-4 py-5">
             <div>
               <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#888888]">No flags</h3>
-              <div className="overflow-hidden rounded-sm border border-[#282828] bg-[#0d0d0d]">
+              <div className="overflow-hidden rounded-sm border border-zinc-200 dark:border-[#282828] bg-[#0d0d0d]">
                 <RowListQuiet
                   rows={cleanSuccessful}
                   emptyLabel="None."
@@ -897,21 +897,21 @@ export function PortfolioImportBatchReconciliation({
             </div>
             <div>
               <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Vacant</h3>
-              <div className="overflow-hidden rounded-sm border border-[#282828] bg-[#0d0d0d]">
+              <div className="overflow-hidden rounded-sm border border-zinc-200 dark:border-[#282828] bg-[#0d0d0d]">
                 <RowListQuiet rows={model.vacantOrPropertyOnly} emptyLabel="None." />
               </div>
             </div>
           </div>
         </details>
 
-        <details className="group rounded-sm border border-[#282828] bg-[#161616] px-4 py-3">
+        <details className="group rounded-sm border border-zinc-200 dark:border-[#282828] bg-[#161616] px-4 py-3">
           <summary className="cursor-pointer font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400">
             Audit trail ({rawRows.length})
           </summary>
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[720px] border-collapse text-left text-[10px]">
               <thead>
-                <tr className="border-b border-[#282828] text-[9px] uppercase tracking-widest text-zinc-500">
+                <tr className="border-b border-zinc-200 dark:border-[#282828] text-[9px] uppercase tracking-widest text-zinc-500">
                   <th className="px-2 py-2">#</th>
                   <th className="px-2 py-2">Outcome</th>
                   <th className="px-2 py-2">Kind</th>
@@ -921,7 +921,7 @@ export function PortfolioImportBatchReconciliation({
               </thead>
               <tbody>
                 {rawRows.map((r) => (
-                  <tr key={r.rowIndex} className="border-b border-[#282828] align-top text-zinc-400">
+                  <tr key={r.rowIndex} className="border-b border-zinc-200 dark:border-[#282828] align-top text-zinc-400">
                     <td className="px-2 py-2 font-mono tabular-nums">{r.line}</td>
                     <td className="px-2 py-2">{r.outcome}</td>
                     <td className="px-2 py-2">{rowKindNorm(r) || "—"}</td>

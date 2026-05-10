@@ -305,16 +305,16 @@ export function BatchOnboardingImport({
     summary !== null && rows !== null && rows.length > 0;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[#131313] text-[#e5e2e1]">
+    <div className="flex min-h-0 flex-1 flex-col bg-[#f8f8f7] text-zinc-950 dark:bg-[#131313] dark:text-[#e5e2e1]">
       {/* ── Page Header ── */}
-      <header className="border-b border-[#282828] bg-[#161616] px-6 py-4">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#555555]">
+      <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-200 dark:border-[#282828] dark:bg-[#161616]">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-[#555555]">
           Import Console
         </p>
-        <h1 className="mt-1 text-xl font-bold uppercase tracking-tight text-white">
+        <h1 className="mt-1 text-xl font-bold uppercase tracking-tight text-zinc-900 dark:text-white">
           Portfolio Import
         </h1>
-        <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
+        <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-zinc-500 dark:text-[#555555]">
           Import Portfolio · Run agents at scale
         </p>
       </header>
@@ -439,14 +439,14 @@ export function BatchOnboardingImport({
           <div className="flex flex-col gap-px">
 
             {/* ── Step 01: Provide Portfolio ── */}
-            <section className="border-b border-[#282828]">
+            <section className="border-b border-zinc-200 dark:border-[#282828]">
               {/* Step header */}
-              <div className="flex items-center justify-between border-b border-[#282828] bg-[#1A1A1A] px-4 py-3">
+              <div className="flex items-center justify-between border-b border-zinc-200 dark:border-[#282828] bg-zinc-100 px-4 py-3 dark:bg-[#1A1A1A]">
                 <div className="flex items-center gap-3">
-                  <span className="bg-white px-1.5 py-0.5 font-mono text-[10px] font-black text-[#161616]">
+                  <span className="bg-white px-1.5 py-0.5 font-mono text-[10px] font-black text-[#161616] dark:bg-white">
                     01
                   </span>
-                  <h2 className="text-[11px] font-bold uppercase tracking-widest text-white">
+                  <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-900 dark:text-white">
                     Provide your portfolio
                   </h2>
                 </div>
@@ -462,7 +462,7 @@ export function BatchOnboardingImport({
                   <a
                     href="/templates/tenant-batch-template.csv"
                     download
-                    className="inline-flex items-center gap-1.5 border border-[#333333] bg-[#0B0B0B] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+                    className="inline-flex items-center gap-1.5 border border-zinc-200 bg-zinc-900 px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-200 transition-colors hover:border-zinc-400 hover:text-white dark:border-[#333333] dark:bg-[#0B0B0B] dark:text-[#888888]"
                   >
                     <Download className="size-3" />
                     Minimal template
@@ -471,7 +471,7 @@ export function BatchOnboardingImport({
               </div>
 
               {/* Upload + Paste grid */}
-              <div className="grid grid-cols-1 gap-px bg-[#282828] sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-px bg-zinc-200 sm:grid-cols-2 dark:bg-[#282828]">
                 {/* Drop zone */}
                 <label
                   htmlFor="batch-file"
@@ -481,26 +481,26 @@ export function BatchOnboardingImport({
                   className={cn(
                     "group flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-3 px-6 text-center transition-colors",
                     isDragging
-                      ? "border border-dashed border-white bg-[#1A1A1A]"
+                      ? "border border-dashed border-zinc-900 bg-zinc-100 dark:border-white dark:bg-[#1A1A1A]"
                       : file
                         ? "bg-[#152420]"
-                        : "bg-[#131313] hover:bg-[#1A1A1A]",
+                        : "bg-zinc-50 hover:bg-zinc-100 dark:bg-[#131313] dark:hover:bg-[#1A1A1A]",
                   )}
                 >
                   <Upload
                     className={cn(
                       "size-6 transition-colors",
                       isDragging
-                        ? "text-white"
+                        ? "text-zinc-900 dark:text-white"
                         : file
                           ? "text-[#afefdd]"
-                          : "text-[#444748] group-hover:text-[#888888]",
+                          : "text-zinc-400 group-hover:text-zinc-600 dark:text-[#444748] dark:group-hover:text-[#888888]",
                     )}
                   />
-                  <span className="text-[11px] font-medium text-white">
+                  <span className="text-[11px] font-medium text-zinc-900 dark:text-white">
                     {isDragging ? "Drop to upload" : file ? file.name : "Drop or choose a file"}
                   </span>
-                  <span className="font-mono text-[9px] uppercase tracking-widest text-[#444748]">
+                  <span className="font-mono text-[9px] uppercase tracking-widest text-zinc-500 dark:text-[#444748]">
                     {file && !isDragging ? `${(file.size / 1024).toFixed(1)} KB` : "CSV · TSV · TXT · DOCX · PDF"}
                   </span>
                   <input
@@ -518,15 +518,15 @@ export function BatchOnboardingImport({
                 </label>
 
                 {/* Paste CSV */}
-                <div className="flex flex-col gap-2 bg-[#131313] p-4">
+                <div className="flex flex-col gap-2 bg-white p-4 dark:bg-[#131313]">
                   <div className="flex items-center justify-between">
                     <label
                       htmlFor="batch-csv"
-                      className="text-[9px] font-bold uppercase tracking-widest text-[#555555]"
+                      className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 dark:text-[#555555]"
                     >
                       Or paste CSV
                     </label>
-                    <span className="font-mono text-[9px] text-[#444748]">
+                    <span className="font-mono text-[9px] text-zinc-400 dark:text-[#444748]">
                       detecting_headers...
                     </span>
                   </div>
@@ -539,14 +539,14 @@ export function BatchOnboardingImport({
                       if (e.target.value) setFile(null);
                       resetPreview();
                     }}
-                    className="min-h-[164px] flex-1 resize-none border border-[#282828] bg-[#0B0B0B] p-3 font-mono text-[11px] leading-relaxed text-[#c4c7c8] placeholder-[#333333] focus:border-white focus:outline-none"
+                    className="min-h-[164px] flex-1 resize-none border border-zinc-200 bg-white p-3 font-mono text-[11px] leading-relaxed text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none dark:border-[#282828] dark:bg-[#0B0B0B] dark:text-[#c4c7c8] dark:placeholder-[#333333] dark:focus:border-white"
                   />
                 </div>
               </div>
 
               {/* Footer bar */}
-              <div className="flex items-center justify-between border-t border-[#282828] bg-[#1A1A1A] px-4 py-3">
-                <div className="flex items-center gap-4 text-[9px] uppercase tracking-widest text-[#555555]">
+              <div className="flex items-center justify-between border-t border-zinc-200 dark:border-[#282828] bg-zinc-100 px-4 py-3 dark:bg-[#1A1A1A]">
+                <div className="flex items-center gap-4 text-[9px] uppercase tracking-widest text-zinc-500 dark:text-[#555555]">
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 className="size-3 text-[#afefdd]" />
                     UTF-8 Encoding
@@ -561,7 +561,7 @@ export function BatchOnboardingImport({
                     <button
                       type="button"
                       onClick={resetPreview}
-                      className="border border-[#333333] bg-[#0B0B0B] px-4 py-2 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+                      className="border border-zinc-200 bg-white px-4 py-2 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-600 transition-colors hover:border-zinc-400 hover:text-zinc-900 dark:border-[#333333] dark:bg-[#0B0B0B] dark:text-[#888888] dark:hover:text-white"
                     >
                       Reset
                     </button>
@@ -570,7 +570,7 @@ export function BatchOnboardingImport({
                     type="button"
                     onClick={onPreview}
                     disabled={isPreviewing || isImportPending}
-                    className="flex items-center gap-2 bg-white px-5 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-opacity hover:opacity-90 disabled:opacity-50"
+                    className="flex items-center gap-2 bg-zinc-900 px-5 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-opacity hover:opacity-90 disabled:opacity-50 dark:bg-white dark:text-[#161616]"
                   >
                     {isPreviewing ? (
                       <>
@@ -605,7 +605,7 @@ export function BatchOnboardingImport({
                       <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#f8cf83]">
                         Import in progress
                       </p>
-                      <p className="mt-2 text-[12px] leading-relaxed text-[#e5e2e1]">
+                      <p className="mt-2 text-[12px] leading-relaxed text-zinc-700 dark:text-[#e5e2e1]">
                         Writing properties, tenants, tenancies, and rent rows. Do not close this tab — you will be taken to
                         the batch result when finished.
                       </p>
@@ -677,23 +677,23 @@ export function BatchOnboardingImport({
             ) : null}
 
             {/* ── Or Use Chat ── */}
-            <section className="border-t border-[#282828] bg-[#0B0B0B] px-4 py-5">
+            <section className="border-t border-zinc-200 bg-white px-4 py-5 dark:border-[#282828] dark:bg-[#0B0B0B]">
               <div className="flex items-start gap-4">
-                <div className="flex size-8 shrink-0 items-center justify-center border border-[#333333] bg-[#1A1A1A]">
-                  <MessageSquare className="size-3.5 text-[#555555]" />
+                <div className="flex size-8 shrink-0 items-center justify-center border border-zinc-200 bg-zinc-100 dark:border-[#333333] dark:bg-[#1A1A1A]">
+                  <MessageSquare className="size-3.5 text-zinc-500 dark:text-[#555555]" />
                 </div>
                 <div>
-                  <p className="text-[9px] font-bold uppercase tracking-widest text-[#555555]">
+                  <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 dark:text-[#555555]">
                     Or use Chat
                   </p>
-                  <p className="mt-1 text-[11px] text-[#888888]">
+                  <p className="mt-1 text-[11px] text-zinc-600 dark:text-[#888888]">
                     Paste the same CSV into the assistant and say{" "}
-                    <span className="font-medium text-white">&ldquo;onboard these tenants&rdquo;</span>. The CEO agent
+                    <span className="font-medium text-zinc-900 dark:text-white">&ldquo;onboard these tenants&rdquo;</span>. The CEO agent
                     previews and onboards after you confirm.
                   </p>
                   <Link
                     href="/dashboard"
-                    className="mt-3 inline-block border-b border-[#444748] pb-0.5 font-mono text-[9px] uppercase tracking-widest text-[#888888] transition-all hover:border-white hover:text-white"
+                    className="mt-3 inline-block border-b border-zinc-400 pb-0.5 font-mono text-[9px] uppercase tracking-widest text-zinc-600 transition-all hover:border-zinc-900 hover:text-zinc-900 dark:border-[#444748] dark:text-[#888888] dark:hover:border-white dark:hover:text-white"
                   >
                     Open Assistant
                   </Link>
@@ -706,27 +706,27 @@ export function BatchOnboardingImport({
         {/* ── Right Sidebar: muted while preflight is active so editing stays focal ── */}
         <aside
           className={cn(
-            "hidden w-64 shrink-0 flex-col border-l lg:flex",
-            sidebarPreflightMuted ? "border-[#1d1d1d] bg-[#101010]" : "border-[#282828]",
+            "hidden w-64 shrink-0 flex-col border-l border-zinc-200 bg-zinc-50 lg:flex dark:border-[#282828] dark:bg-[#101010]",
+            sidebarPreflightMuted && "bg-zinc-100 dark:border-[#1d1d1d] dark:bg-[#101010]",
           )}
         >
           <details
             className={cn(
-              "group border-b [&_summary::-webkit-details-marker]:hidden [&[open]_summary_.past-import-chevron]:rotate-180",
-              sidebarPreflightMuted ? "border-[#1d1d1d] bg-[#121212]" : "border-[#282828] bg-[#1A1A1A]",
+              "group border-b border-zinc-200 bg-white [&_summary::-webkit-details-marker]:hidden [&[open]_summary_.past-import-chevron]:rotate-180 dark:border-[#282828] dark:bg-[#1A1A1A]",
+              sidebarPreflightMuted && "bg-zinc-50 dark:border-[#1d1d1d] dark:bg-[#121212]",
             )}
           >
             <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 [&::marker]:content-none [&::marker]:hidden">
               <div>
                 <h3 className={cn(
                   "text-[9px] font-bold uppercase tracking-widest",
-                  sidebarPreflightMuted ? "text-[#595959]" : "text-[#888888]",
+                  sidebarPreflightMuted ? "text-zinc-500 dark:text-[#595959]" : "text-zinc-600 dark:text-[#888888]",
                 )}>
                   Past imports
                 </h3>
                 <p className={cn(
                   "mt-0.5 font-mono text-[8px] uppercase tracking-wider",
-                  sidebarPreflightMuted ? "text-[#4a4a4a]" : "text-[#555555]",
+                  sidebarPreflightMuted ? "text-zinc-500 dark:text-[#4a4a4a]" : "text-zinc-500 dark:text-[#555555]",
                 )}>
                   Open when you need history
                 </p>
@@ -738,8 +738,8 @@ export function BatchOnboardingImport({
             </summary>
             <div
               className={cn(
-                "max-h-[32vh] overflow-y-auto border-t",
-                sidebarPreflightMuted ? "border-[#1d1d1d] bg-[#0f0f0f]" : "border-[#282828] bg-[#131313]",
+                "max-h-[32vh] overflow-y-auto border-t border-zinc-200 bg-zinc-50 dark:border-[#282828] dark:bg-[#131313]",
+                sidebarPreflightMuted && "bg-zinc-100 dark:border-[#1d1d1d] dark:bg-[#0f0f0f]",
               )}
             >
               {history.length === 0 ? (
@@ -755,9 +755,9 @@ export function BatchOnboardingImport({
                   </p>
                 </div>
               ) : (
-                <ul className="divide-y divide-[#282828]">
+                <ul className="divide-y divide-zinc-200 dark:divide-[#282828]">
                   {history.map((h) => (
-                    <li key={h.id} className="hover:bg-[#1A1A1A]">
+                    <li key={h.id} className="hover:bg-zinc-100 dark:hover:bg-[#1A1A1A]">
                       <Link
                         href={`/dashboard/import/batch/${h.id}`}
                         className="block px-4 py-3 focus-visible:outline focus-visible:outline-offset-[-2px] focus-visible:outline-[#afefdd]"
@@ -766,7 +766,7 @@ export function BatchOnboardingImport({
                           <div className="flex items-center gap-2">
                             <StatusIcon status={h.status} />
                             <div className="min-w-0">
-                              <p className="text-[11px] font-medium text-white">
+                              <p className="text-[11px] font-medium text-zinc-900 dark:text-white">
                                 {h.rowsSucceeded}/{h.rowsTotal} onboarded
                                 {h.rowsFailed > 0 ? ` · ${h.rowsFailed} failed` : ""}
                               </p>
@@ -797,8 +797,8 @@ export function BatchOnboardingImport({
           <details
             key={sidebarPreflightMuted ? "preflight-muted" : "pre-preview"}
             className={cn(
-              "border-t [&_summary::-webkit-details-marker]:hidden [&[open]_summary_.guide-chevron]:rotate-180",
-              sidebarPreflightMuted ? "border-[#1d1d1d] bg-[#101010]" : "border-[#282828] bg-[#1A1A1A]",
+              "border-t border-zinc-200 bg-white [&_summary::-webkit-details-marker]:hidden [&[open]_summary_.guide-chevron]:rotate-180 dark:border-[#282828] dark:bg-[#1A1A1A]",
+              sidebarPreflightMuted && "bg-zinc-50 dark:border-[#1d1d1d] dark:bg-[#101010]",
             )}
             {...({
               // DOM supports defaultOpen on <details>; current React typings omit it.
@@ -810,7 +810,7 @@ export function BatchOnboardingImport({
                 <p
                   className={cn(
                     "text-[9px] font-bold uppercase tracking-widest",
-                    sidebarPreflightMuted ? "text-[#505050]" : "text-[#555555]",
+                    sidebarPreflightMuted ? "text-zinc-500 dark:text-[#505050]" : "text-zinc-600 dark:text-[#555555]",
                   )}
                 >
                   Import guide
@@ -818,7 +818,7 @@ export function BatchOnboardingImport({
                 <p
                   className={cn(
                     "mt-0.5 font-mono text-[8px] uppercase tracking-wider leading-snug",
-                    sidebarPreflightMuted ? "text-[#474747]" : "text-[#444748]",
+                    sidebarPreflightMuted ? "text-zinc-500 dark:text-[#474747]" : "text-zinc-500 dark:text-[#444748]",
                   )}
                 >
                   Column hints · optional unless you paste a strange export
@@ -829,11 +829,11 @@ export function BatchOnboardingImport({
                 className="guide-chevron size-4 shrink-0 rotate-0 text-[#454545] transition-transform"
               />
             </summary>
-            <div className="border-t border-[#1f1f1f]/80 px-3 pb-3 pt-2">
+            <div className="border-t border-zinc-200 px-3 pb-3 pt-2 dark:border-[#1f1f1f]/80">
               <ul
                 className={cn(
                   "max-h-[min(34vh,280px)] space-y-1.5 overflow-y-auto pr-1",
-                  sidebarPreflightMuted ? "text-[#595959]" : "text-[#666666]",
+                  sidebarPreflightMuted ? "text-zinc-600 dark:text-[#595959]" : "text-zinc-700 dark:text-[#666666]",
                 )}
               >
                 {importGuideBullets.map((item) => (

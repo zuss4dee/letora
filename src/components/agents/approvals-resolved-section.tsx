@@ -19,7 +19,7 @@ export function ApprovalsResolvedSection({
 
   return (
     <section className={cn(className)}>
-      <ul className="divide-y divide-[#232323] border border-[#232323] bg-[#0e0e0e]">
+      <ul className="divide-y divide-zinc-200 border border-zinc-200 bg-white dark:divide-[#232323] dark:border-[#232323] dark:bg-[#0e0e0e]">
         {approvals.map((a) => {
           const targetLine = formatApprovalTargetLine(a.target_type, a.target_id);
           const decided = a.decided_at ?? a.executed_at ?? a.created_at;
@@ -31,10 +31,10 @@ export function ApprovalsResolvedSection({
           return (
             <li key={a.id} className="grid grid-cols-12 items-center gap-4 px-4 py-3">
               <div className="col-span-5 min-w-0">
-                <p className="truncate text-[12px] font-semibold text-zinc-100">
+                <p className="truncate text-[12px] font-semibold text-zinc-900 dark:text-zinc-100">
                   {a.title}
                 </p>
-                <p className="truncate text-[10px] uppercase tracking-tight text-zinc-500">
+                <p className="truncate text-[10px] uppercase tracking-tight text-zinc-600 dark:text-zinc-500">
                   {targetLine ?? "System"}
                 </p>
               </div>
@@ -52,19 +52,19 @@ export function ApprovalsResolvedSection({
                   {formatApprovalDecisionStatus(a.status)}
                 </span>
               </div>
-              <div className="col-span-3 text-[11px] text-zinc-500">
+              <div className="col-span-3 text-[11px] text-zinc-600 dark:text-zinc-500">
                 {formatApprovalActionType(a.action_type)}
               </div>
               <div className="col-span-2 flex justify-end gap-3">
                 <time
-                  className="text-right text-[10px] tabular-nums text-zinc-600"
+                  className="text-right text-[10px] tabular-nums text-zinc-500 dark:text-zinc-600"
                   dateTime={decided}
                 >
                   {formatApprovalAbsoluteTime(decided).split(',')[0]}
                 </time>
                 <ApprovalAuditSheetTrigger 
                   approval={a} 
-                  className="size-5 border-[#333333] p-0 text-[10px] text-zinc-400 hover:bg-zinc-900" 
+                  className="size-5 border-zinc-300 p-0 text-[10px] text-zinc-500 hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-400 dark:hover:bg-zinc-900" 
                 />
               </div>
               {isDenied && a.deny_reason && (

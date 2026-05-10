@@ -6,9 +6,9 @@ export function CommandCenterActivitySkeleton() {
     <div>
       <div className="mb-4 flex items-center gap-2">
         <span className="size-1.5 bg-zinc-300 dark:bg-zinc-600" />
-        <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-zinc-100">Recent Activity</h2>
+        <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Recent Activity</h2>
       </div>
-      <div className="animate-pulse border border-zinc-200 bg-white p-6 text-xs text-zinc-500 dark:border-[#2a2a2a] dark:bg-[#161616] dark:text-zinc-400">
+      <div className="animate-pulse border border-zinc-200 bg-white p-6 text-xs text-zinc-500 dark:border-[#2a2a2a] dark:bg-[#0B0B0B] dark:text-zinc-400">
         Loading…
       </div>
     </div>
@@ -20,11 +20,11 @@ export async function CommandCenterActivity({ userId }: { userId: string }) {
 
   return (
     <div>
-      <h2 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-zinc-100">
+      <h2 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white">
         <span className="size-1.5 shrink-0 bg-zinc-300 dark:bg-zinc-600" />
         Recent Activity
       </h2>
-      <div className="border border-zinc-200 bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#161616]">
+      <div className="border border-zinc-200 bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#0B0B0B]">
         <div className="space-y-4">
           {rows.length === 0 ? (
             <div className="py-8 text-center font-mono text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-500">

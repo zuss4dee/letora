@@ -39,10 +39,10 @@ export default async function PortfolioImportBatchPage({ params }: { params: Pro
     const msg = loaded.error;
     if (msg === "Batch not found." || msg === "Invalid batch id.") notFound();
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#131313] px-6 py-10 text-[#e5e2e1]">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#f8f8f7] px-6 py-10 text-zinc-950 dark:bg-[#131313] dark:text-[#e5e2e1]">
         <Link
           href="/dashboard/import"
-          className="mb-6 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#888888] hover:text-white"
+          className="mb-6 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-zinc-500 transition-colors hover:text-zinc-900 dark:text-[#888888] dark:hover:text-white"
         >
           <ArrowLeft className="size-3" />
           Back to import
@@ -67,19 +67,21 @@ export default async function PortfolioImportBatchPage({ params }: { params: Pro
   if (failed === 0 && succeeded > 0) {
     headline = "Import finished";
     sub = "Your changes are saved. Use quick checks below only if we flagged a row.";
-    bandClass = "border-[#afefdd]/30 bg-[#152420]";
+    bandClass =
+      "border-emerald-200/90 bg-emerald-50 dark:border-[#afefdd]/30 dark:bg-[#152420]";
   } else if (succeeded > 0 && failed > 0) {
     headline = "Some rows didn't save";
     sub = "Failed rows were not imported. Fix the file and import again.";
-    bandClass = "border-[#f8cf83]/35 bg-[#2a2210]";
+    bandClass =
+      "border-amber-200/90 bg-amber-50 dark:border-[#f8cf83]/35 dark:bg-[#2a2210]";
   } else if (succeeded === 0 && failed > 0) {
     headline = "Nothing was saved";
     sub = "Failed rows were not imported. Fix the file and import again.";
-    bandClass = "border-[#BB5551]/35 bg-[#2a1514]";
+    bandClass = "border-rose-200/90 bg-rose-50 dark:border-[#BB5551]/35 dark:bg-[#2a1514]";
   } else {
     headline = "Import finished";
     sub = "Skim the sections below if anything looks off.";
-    bandClass = "border-[#333333] bg-[#1A1A1A]";
+    bandClass = "border-zinc-200 bg-white dark:border-[#333333] dark:bg-[#1A1A1A]";
   }
 
   const model = reconcilePortfolioBatch(b.rows);

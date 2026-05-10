@@ -37,7 +37,7 @@ export function ApprovalsStaticShell() {
           <p className="pt-2">
             <Link
               href="/dashboard"
-              className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500 underline-offset-4 transition-colors hover:text-zinc-300 hover:underline"
+              className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-500 underline-offset-4 transition-colors hover:text-zinc-700 hover:underline dark:hover:text-zinc-300"
             >
               ← Command Center
             </Link>
