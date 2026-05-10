@@ -32,8 +32,6 @@ export function CommandCenterKpisPresentation({ kpiLoad }: { kpiLoad: CommandCen
 }
 
 export function CommandCenterActionBar({ pendingApprovalsCount = 0 }: { pendingApprovalsCount?: number }) {
-  const showApprovalDot = pendingApprovalsCount > 0;
-
   return (
     <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
@@ -52,15 +50,9 @@ export function CommandCenterActionBar({ pendingApprovalsCount = 0 }: { pendingA
               ? `Open approvals — ${pendingApprovalsCount} pending`
               : "Open approvals"
           }
-          className="relative inline-flex border border-zinc-200 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-300 dark:hover:bg-[#161616]"
+          className="inline-flex border border-zinc-200 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-300 dark:hover:bg-[#161616]"
         >
           Open Approvals
-          {showApprovalDot ? (
-            <span
-              className="pointer-events-none absolute right-1.5 top-1.5 size-2 shrink-0 rounded-full bg-red-500"
-              aria-hidden
-            />
-          ) : null}
         </Link>
         <Link
           href="/dashboard/properties"
