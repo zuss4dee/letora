@@ -52,7 +52,7 @@ export default async function DashboardPage({
   if (!requested) {
     if (!user?.id) redirect("/login");
     return (
-      <div className="relative flex min-h-0 flex-1 flex-col bg-[#0B0B0B]">
+      <div className="relative flex min-h-0 flex-1 flex-col bg-white dark:bg-[#0B0B0B]">
         <CommandCenterLandingView userId={user.id} />
       </div>
     );
