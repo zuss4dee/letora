@@ -37,12 +37,7 @@ export async function CommandCenterAgentSummary({ userId }: { userId: string }) 
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold tabular-nums text-zinc-900 dark:text-white">{s.rentChaseDrafts}</span>
-            <span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase text-zinc-600">
-              Pending
-              {s.rentChaseDrafts > 0 ? (
-                <span className="size-2.5 shrink-0 rounded-full bg-red-500" aria-hidden />
-              ) : null}
-            </span>
+            <span className="font-mono text-[9px] uppercase text-zinc-600">Pending</span>
           </div>
         </div>
 
@@ -53,12 +48,7 @@ export async function CommandCenterAgentSummary({ userId }: { userId: string }) 
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xl font-bold tabular-nums text-zinc-900 dark:text-white">{s.maintenanceDrafts}</span>
-            <span className="inline-flex items-center gap-1.5 font-mono text-[9px] uppercase text-zinc-600">
-              Pending
-              {s.maintenanceDrafts > 0 ? (
-                <span className="size-2.5 shrink-0 rounded-full bg-red-500" aria-hidden />
-              ) : null}
-            </span>
+            <span className="font-mono text-[9px] uppercase text-zinc-600">Pending</span>
           </div>
         </div>
 
