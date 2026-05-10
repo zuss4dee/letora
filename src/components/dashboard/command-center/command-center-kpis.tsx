@@ -12,6 +12,7 @@ export function CommandCenterKpiGridSkeleton() {
           key={i}
           className={cn(
             "flex min-h-[100px] flex-col bg-white p-4 dark:bg-[#161616]",
+            i === 6 ? "max-lg:col-span-2 lg:col-span-2" : null,
           )}
         >
           <div className="mb-2 h-2 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />

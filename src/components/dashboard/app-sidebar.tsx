@@ -13,7 +13,6 @@ import {
   Home,
   Key,
   LogOut,
-  PlusCircle,
   Settings,
   Upload,
   Users,
@@ -21,7 +20,7 @@ import {
 } from "lucide-react";
 
 import { useSidebarDynamicOptional } from "@/components/dashboard/sidebar-dynamic-context";
-import { getPlanDisplayName, getSidebarPlanStatusCompact, subscriptionStatusLabel } from "@/lib/billing/subscription-display";
+import { getSidebarPlanStatusCompact } from "@/lib/billing/subscription-display";
 import { getPendingApprovalsCount } from "@/lib/actions/agent-approvals";
 import { cn } from "@/lib/utils";
 import {
@@ -55,41 +54,6 @@ const operationsItemsBase: NavItem[] = [
 ];
 
 // Leads and other low-frequency items removed from main nav
-
-function subscriptionSidebarBadge(status: string | null | undefined): {
-  label: string;
-  pill: string;
-  dot: string;
-} {
-  const s = status?.toLowerCase() ?? "";
-  const label = subscriptionStatusLabel(status);
-  if (s === "active") {
-    return {
-      label,
-      pill: "border border-green-200 bg-green-100 text-green-700 dark:border-green-900/50 dark:bg-green-950/40 dark:text-green-400",
-      dot: "bg-green-500 dark:bg-green-400",
-    };
-  }
-  if (s === "trialing") {
-    return {
-      label,
-      pill: "border border-amber-200 bg-amber-100 text-amber-800 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-400",
-      dot: "bg-amber-500 dark:bg-amber-400",
-    };
-  }
-  if (s === "past_due" || s === "unpaid") {
-    return {
-      label,
-      pill: "border border-rose-200 bg-rose-100 text-rose-800 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-400",
-      dot: "bg-rose-500 dark:bg-rose-400",
-    };
-  }
-  return {
-    label,
-    pill: "border border-zinc-200 bg-zinc-100 text-zinc-700 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400",
-    dot: "bg-zinc-400 dark:bg-zinc-500",
-  };
-}
 
 function isActivePath(pathname: string, url: string) {
   if (url === "/dashboard") {
@@ -325,8 +289,7 @@ export function AppSidebar({
     polarBillingLinked: polarBillingLinkedResolved,
   };
   const planStatusLine = getSidebarPlanStatusCompact(subFields);
-  const planName = getPlanDisplayName(subFields);
-  const statusBadge = subscriptionSidebarBadge(subscriptionStatusResolved);
+  const isSubscriptionActive = subscriptionStatusResolved?.toLowerCase() === "active";
 
   const mainNavItems: NavItem[] = [
     ...mainItemsStatic,
@@ -354,64 +317,40 @@ export function AppSidebar({
         className,
       )}
     >
-      <SidebarHeader className="gap-0 px-0 pb-4 pt-6">
-        <Link
-          href="/dashboard"
-          prefetch={
-            pathname === "/dashboard" || pathname === "/dashboard/" ? false : undefined
-          }
-          onClick={closeMobileNav}
-          className="block touch-manipulation px-5 transition-opacity hover:opacity-90"
-        >
-          <p className="font-[family-name:var(--font-inter)] text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-[#857d73] dark:text-[#7d7974]">
-            Letora OS
-          </p>
-          <span className="mt-1 block font-headline text-[1.2rem] font-semibold tracking-[-0.03em] text-[#1f1d1b] dark:text-[#f5f4f2]">
-            Letora
-          </span>
-          <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.6rem] font-medium uppercase tracking-[0.11em] text-[#7f7569] dark:text-[#84817d]">
-            Operational panel
-          </p>
-        </Link>
-
-        <div
-          className="mx-5 mb-4 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-[#2a2a2a] dark:bg-[#161616]"
-          title={planStatusLine}
-        >
-          <p className="mb-1 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
-            Subscription
-          </p>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">Plan</p>
-                <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{planName}</p>
-              </div>
-              <div className="shrink-0 text-right">
-                <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">Status</p>
-                <span
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                    statusBadge.pill,
-                  )}
-                >
-                  <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", statusBadge.dot)} aria-hidden />
-                  {statusBadge.label}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="px-5 pt-4">
+      <SidebarHeader className="gap-0 px-0 pb-3 pt-6">
+        <div className="flex items-start justify-between gap-3 px-5">
           <Link
-            href="/dashboard/properties"
+            href="/dashboard"
+            prefetch={
+              pathname === "/dashboard" || pathname === "/dashboard/" ? false : undefined
+            }
             onClick={closeMobileNav}
-            className="flex touch-manipulation items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white py-2 font-[family-name:var(--font-inter)] text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+            className="min-w-0 flex-1 touch-manipulation transition-opacity hover:opacity-90"
           >
-            <PlusCircle className="size-4 shrink-0 stroke-[1.5]" aria-hidden />
-            Add to Portfolio
+            <p className="font-[family-name:var(--font-inter)] text-[0.56rem] font-semibold uppercase tracking-[0.16em] text-[#857d73] dark:text-[#7d7974]">
+              Letora OS
+            </p>
+            <span className="mt-1 block font-headline text-[1.2rem] font-semibold tracking-[-0.03em] text-[#1f1d1b] dark:text-[#f5f4f2]">
+              Letora
+            </span>
+            <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.6rem] font-medium uppercase tracking-[0.11em] text-[#7f7569] dark:text-[#84817d]">
+              Operational panel
+            </p>
           </Link>
+
+          {isSubscriptionActive ? (
+            <div className="shrink-0 pt-0.5" title={planStatusLine}>
+              <span className="inline-flex items-center gap-2" role="status" aria-label={planStatusLine}>
+                <span
+                  className="size-2 shrink-0 rounded-full bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.55)] dark:bg-green-400 dark:shadow-[0_0_10px_rgba(74,222,128,0.45)]"
+                  aria-hidden
+                />
+                <span className="font-[family-name:var(--font-inter)] text-[11px] font-semibold text-green-700 dark:text-green-400">
+                  Active
+                </span>
+              </span>
+            </div>
+          ) : null}
         </div>
       </SidebarHeader>
 

@@ -208,7 +208,10 @@ export function CommandCenterKpiGridClient({
             href={rentTrackerHref("collected_last_month")}
             tileAriaLabel="Open rent tracker: collected last month"
           />
-          <KpiMaintenanceTile kpis={kpis} />
+          <KpiMaintenanceTile
+            kpis={kpis}
+            cellClassName="max-lg:col-span-2 lg:col-span-2"
+          />
         </div>
       </div>
     </TooltipProvider>
