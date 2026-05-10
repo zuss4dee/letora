@@ -14,7 +14,7 @@ const baseUrl = () => process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
 export async function GET(req: NextRequest) {
   const gate = platformCheckoutGate();
   if (gate.ok === false) {
-    return NextResponse.redirect(`${baseUrl()}/pricing?checkout=unavailable`, 303);
+    return NextResponse.redirect(`${baseUrl()}/dashboard/billing?checkout=unavailable`, 303);
   }
 
   try {
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.redirect(
-        `${baseUrl()}/login?next=${encodeURIComponent("/pricing")}`,
+        `${baseUrl()}/login?next=${encodeURIComponent("/dashboard/billing")}`,
         303,
       );
     }
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
     const planRaw = searchParams.get("plan")?.trim();
 
     if (!priceId || !planRaw || !(planRaw in PLANS)) {
-      return NextResponse.redirect(`${baseUrl()}/pricing?checkout=invalid`, 303);
+      return NextResponse.redirect(`${baseUrl()}/dashboard/billing?checkout=invalid`, 303);
     }
 
     const planKey = planRaw as PlanKey;
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
 
     if ("error" in result) {
       return NextResponse.redirect(
-        `${baseUrl()}/pricing?checkout=error&reason=${encodeURIComponent(result.error.slice(0, 80))}`,
+        `${baseUrl()}/dashboard/billing?checkout=error&reason=${encodeURIComponent(result.error.slice(0, 80))}`,
         303,
       );
     }
@@ -64,7 +64,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(result.url, 303);
   } catch (error) {
     console.error("Checkout GET error:", error);
-    return NextResponse.redirect(`${baseUrl()}/pricing?checkout=error`, 303);
+    return NextResponse.redirect(`${baseUrl()}/dashboard/billing?checkout=error`, 303);
   }
 }
 

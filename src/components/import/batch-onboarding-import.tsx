@@ -625,7 +625,7 @@ export function BatchOnboardingImport({
                         <>
                           <p className="mt-2 text-[11px] leading-relaxed text-[#e8c8c5]">
                             Your latest preview snapshot can be saved with “Save and finish later” in step 02. Restore from
-                            the banner at the top of this page after upgrading, or paste and run Preview Rows again.
+                            the banner at the top of this page after you subscribe, or paste and run Preview Rows again.
                           </p>
                           <div className="mt-4 flex max-w-xl flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-3">
                             <div className="sm:min-w-[220px] sm:flex-1 [&_button]:min-h-[44px] [&_button]:text-xs">
@@ -634,7 +634,7 @@ export function BatchOnboardingImport({
                                 highlighted
                                 checkoutReturnTarget="import"
                               >
-                                Upgrade plan
+                                Subscribe · monthly
                               </PricingPlanSubscribeButton>
                             </div>
                             <Link
@@ -646,9 +646,9 @@ export function BatchOnboardingImport({
                             </Link>
                           </div>
                           <p className="mt-3 text-[10px] leading-relaxed text-[#c49a97]">
-                            Upgrade plan opens Monthly checkout (billing via Polar) for the current subscriber offering, then
-                            returns you here when payment completes. Open Billing for invoices, renewal dates, or to review
-                            monthly vs yearly.
+                            Subscribing opens Polar checkout for Letora Starter (monthly billing by default). Use Billing
+                            after checkout for invoices and renewal dates. You can switch to yearly billing there if
+                            available.
                           </p>
                         </>
                       ) : null}

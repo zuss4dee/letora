@@ -1,14 +1,17 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+
 import type { UserSettingsRow } from "@/lib/actions/user-settings";
-import { getPlanDisplayName } from "@/lib/billing/subscription-display";
 import {
-  FREE_WORKSPACE_PROPERTY_CAP,
-  getMaxPropertiesForUser,
-  isPayingPlatformSubscription,
-} from "@/lib/plan-limits";
-import { cn } from "@/lib/utils";
+  formatSubscriptionDate,
+  getPlanDisplayName,
+  getSubscriptionAmountLine,
+  subscriptionStatusLabel,
+} from "@/lib/billing/subscription-display";
+import { BillingPlanOptions } from "@/components/billing/billing-plan-options";
+import { ManageBillingButton } from "@/components/settings/manage-billing-button";
+import { isPayingPlatformSubscription } from "@/lib/plan-limits";
 
 export type WorkspaceOperationalStats = {
   propertyCount: number;
@@ -16,258 +19,122 @@ export type WorkspaceOperationalStats = {
   tenancyCount: number | null;
 };
 
-const EMPTY_OPERATIONAL_STATS: WorkspaceOperationalStats = {
-  propertyCount: 0,
-  tenancyCount: null,
-};
-
-function normalizeOperationalStats(
-  raw: WorkspaceOperationalStats | null | undefined,
-): { stats: WorkspaceOperationalStats; inferredMissing: boolean } {
-  if (raw == null || typeof raw !== "object" || Array.isArray(raw)) {
-    return { stats: EMPTY_OPERATIONAL_STATS, inferredMissing: true };
-  }
-  const propertyCountRaw = (raw as { propertyCount?: unknown }).propertyCount;
-  const propertyCount =
-    typeof propertyCountRaw === "number" && Number.isFinite(propertyCountRaw)
-      ? Math.max(0, propertyCountRaw)
-      : 0;
-  const tc = (raw as { tenancyCount?: unknown }).tenancyCount;
-  const tenancyCount =
-    tc === undefined || tc === null
-      ? null
-      : typeof tc === "number" && Number.isFinite(tc)
-        ? Math.max(0, tc)
-        : null;
-
-  return { stats: { propertyCount, tenancyCount }, inferredMissing: false };
-}
-
 type Props = {
   settings: Partial<UserSettingsRow> | null;
-  /** When omitted (or malformed), defaults to `{ propertyCount: 0, tenancyCount: null }` so the billing UI never crashes. */
+  /** Retained for future use; single-plan billing does not surface usage caps here. */
   operationalStats?: WorkspaceOperationalStats | null;
 };
 
-export function WorkspaceBillingView({ settings, operationalStats }: Props) {
-  const { stats: normalizedStats, inferredMissing } = normalizeOperationalStats(operationalStats);
+export function WorkspaceBillingView({ settings }: Props) {
   const router = useRouter();
 
-  const status = settings?.subscriptionStatus?.toLowerCase() || "inactive";
   const polarBillingLinked = Boolean(
     settings?.polarCustomerId?.trim() || settings?.polarSubscriptionId?.trim(),
   );
   const stripeLinked = Boolean(settings?.stripeCustomerId?.trim());
 
-  const planLabel = getPlanDisplayName({
+  const subFields = {
     subscriptionPlan: settings?.subscriptionPlan,
     subscriptionStatus: settings?.subscriptionStatus,
     subscriptionPeriodEnd: settings?.subscriptionPeriodEnd,
     subscriptionTrialEnd: settings?.subscriptionTrialEnd,
     polarBillingLinked,
-  });
+  };
 
-  const renewalDate = settings?.subscriptionPeriodEnd
-    ? new Date(settings?.subscriptionPeriodEnd).toLocaleDateString("en-GB", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "N/A";
-
+  const planLabel = getPlanDisplayName(subFields);
   const paying = isPayingPlatformSubscription(settings?.subscriptionStatus);
+  const statusLabel = subscriptionStatusLabel(settings?.subscriptionStatus);
+  const nextBill = formatSubscriptionDate(settings?.subscriptionPeriodEnd);
+  const amountLine =
+    getSubscriptionAmountLine(settings?.subscriptionPlan ?? null) ??
+    (paying ? "Amount syncs after checkout — open subscription management below." : null);
 
-  const billingPrimary = polarBillingLinked
-    ? "Polar"
-    : stripeLinked
-      ? "Stripe"
-      : paying
-        ? "Connected"
-        : "Not connected";
-  const billingDetail = polarBillingLinked
-    ? "Monthly or yearly Letora subscription checkout"
-    : stripeLinked
-      ? "Legacy subscriber billing (customer portal)"
-      : "Link a plan from Pricing to activate checkout";
-
-  const maxProps = getMaxPropertiesForUser({
-    subscription_plan: settings?.subscriptionPlan ?? null,
-    subscription_status: settings?.subscriptionStatus ?? null,
-  });
-
-  const portfolioCapLabel = maxProps === -1 ? "Unlimited" : String(FREE_WORKSPACE_PROPERTY_CAP);
-  const portfolioUsageLabel =
-    maxProps === -1
-      ? `${normalizedStats.propertyCount.toLocaleString()} / Unlimited`
-      : `${normalizedStats.propertyCount} / ${FREE_WORKSPACE_PROPERTY_CAP}`;
-
-  const portfolioFillPct =
-    maxProps === -1 ? 100 : Math.min(100, Math.round((normalizedStats.propertyCount / maxProps) * 100));
-
-  const tenancyUsageLabel =
-    normalizedStats.tenancyCount === null
-      ? "— / Unlimited"
-      : `${normalizedStats.tenancyCount.toLocaleString()} / Unlimited`;
+  const portalProvider = polarBillingLinked ? "polar" : stripeLinked ? "stripe" : null;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-12 pb-24">
-      {/* 01. HEADER */}
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-800/50 bg-background dark:bg-[#0b0b0b]/80 py-6 backdrop-blur-md">
+    <div className="mx-auto max-w-2xl space-y-10 pb-24">
+      <header className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-200 pb-8 dark:border-zinc-800">
         <div className="space-y-1">
-          <h1 className="text-[16px] font-black italic tracking-tight text-zinc-900 dark:text-white uppercase">
-            Financial Operations
+          <h1 className="text-xl font-semibold tracking-tight text-zinc-900 md:text-2xl dark:text-zinc-100">
+            Billing
           </h1>
-          <div className="flex items-center gap-2">
-            <span className="size-1.5 animate-pulse rounded-full bg-emerald-500" />
-            <p className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase">
-              Subscription Ledger
-            </p>
-          </div>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            Letora Starter — subscribe through Polar when you&apos;re ready.
+          </p>
         </div>
         <button
           type="button"
           onClick={() => router.push("/dashboard/settings")}
-          className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase transition-colors hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white"
+          className="text-sm font-medium text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-200"
         >
-          Back to Settings
+          Settings
         </button>
       </header>
 
-      {/* 02. PLAN SUMMARY GRID */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-[16px] text-zinc-600">receipt_long</span>
-          <h2 className="text-[11px] font-black tracking-[0.2em] text-zinc-400 uppercase">Active Subscription</h2>
-        </div>
-
-        <div className="grid grid-cols-12 gap-px overflow-hidden border border-zinc-800/50 bg-zinc-200 dark:bg-zinc-800">
-          <div className="col-span-12 space-y-6 bg-background dark:bg-[#111111] p-8 md:col-span-8">
-            <div className="flex items-start justify-between">
-              <div className="space-y-2">
-                <p className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Letora plan</p>
-                <p className="text-[24px] font-black italic tracking-tight text-zinc-900 dark:text-white uppercase">{planLabel}</p>
-                {paying && polarBillingLinked ? (
-                  <p className="text-[10px] font-bold tracking-tight text-zinc-500 uppercase">
-                    Polar · same limits as app enforcement
-                  </p>
-                ) : null}
-              </div>
-              <div className="space-y-2 text-right">
-                <p className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Current Status</p>
-                <div className="flex items-center justify-end gap-2">
-                  <span
-                    className={cn(
-                      "size-2 rounded-full",
-                      status === "active" ? "bg-emerald-500 shadow-[0_0_8px_#10b981]" : "bg-zinc-700",
-                    )}
-                  />
-                  <p className="text-[14px] font-black text-zinc-900 dark:text-white uppercase">{status}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-12 border-t border-zinc-800/50 pt-8">
-              <div className="space-y-1">
-                <p className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Next Invoice Date</p>
-                <p className="text-[13px] font-bold text-zinc-900 dark:text-white">{renewalDate}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Billing rails</p>
-                <p className="text-[13px] font-bold text-zinc-900 dark:text-white uppercase">{billingPrimary}</p>
-                <p className="text-[10px] leading-snug text-zinc-500">{billingDetail}</p>
-              </div>
-            </div>
+      <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-[#161616]">
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">Subscription</h2>
+        <dl className="mt-6 space-y-5">
+          <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-8">
+            <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Current plan
+            </dt>
+            <dd className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{planLabel}</dd>
           </div>
-
-          <div className="col-span-12 flex flex-col justify-between border-l border-zinc-800/50 bg-background dark:bg-[#141414] p-8 md:col-span-4">
-            <div className="space-y-4">
-              <p className="text-[10px] leading-relaxed font-bold tracking-tighter text-zinc-500 uppercase">
-                Manage cards, invoices, and renewals in Polar or the Stripe customer portal for legacy accounts.
-              </p>
-            </div>
-            <div className="space-y-2 pt-8">
-              <button
-                type="button"
-                className="w-full bg-white py-3 text-[10px] font-black tracking-widest text-black uppercase transition-all hover:bg-zinc-200"
-              >
-                Access Billing Portal
-              </button>
-              <button
-                type="button"
-                className="w-full border border-zinc-800 bg-transparent py-3 text-[10px] font-black tracking-widest text-zinc-500 uppercase transition-all hover:border-white hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white"
-              >
-                Download Latest Invoice
-              </button>
-            </div>
+          <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-8">
+            <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Status
+            </dt>
+            <dd className="flex items-center gap-2 text-sm font-medium text-zinc-900 dark:text-zinc-100">
+              {settings?.subscriptionStatus?.toLowerCase() === "active" ? (
+                <span className="size-2 shrink-0 rounded-full bg-emerald-500" aria-hidden />
+              ) : null}
+              {statusLabel}
+            </dd>
           </div>
+          <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-8">
+            <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Next billing date
+            </dt>
+            <dd className="text-sm font-medium text-zinc-900 tabular-nums dark:text-zinc-100">
+              {nextBill ?? "—"}
+            </dd>
+          </div>
+          <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-8">
+            <dt className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              Amount
+            </dt>
+            <dd className="text-sm font-medium text-zinc-900 tabular-nums dark:text-zinc-100">{amountLine ?? "—"}</dd>
+          </div>
+        </dl>
+
+        <div className="mt-8 border-t border-zinc-100 pt-6 dark:border-zinc-800">
+          {portalProvider ? (
+            <ManageBillingButton provider={portalProvider} />
+          ) : paying ? (
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
+              Subscription data is still linking. Refresh in a moment or sign in again after checkout.
+            </p>
+          ) : null}
         </div>
       </section>
 
-      {/* 03. USAGE — matches getMaxPropertiesForUser / import guardrails */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-[16px] text-zinc-600">monitoring</span>
-          <h2 className="text-[11px] font-black tracking-[0.2em] text-zinc-400 uppercase">Operational Capacity</h2>
-        </div>
-        {inferredMissing ? (
-          <p className="rounded border border-amber-900/40 bg-amber-950/30 px-3 py-2 text-[10px] leading-relaxed text-amber-200/90">
-            Usage counts were not provided to this view (showing 0 until data loads). Refresh if this persists after
-            navigation.
+      {!paying && !portalProvider ? (
+        <section className="space-y-4">
+          <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">Subscribe to Starter</h2>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">
+            Choose monthly or yearly billing. You’ll return here when checkout completes.
           </p>
-        ) : null}
-        <div className="grid grid-cols-1 gap-12 border border-zinc-800/50 bg-background dark:bg-[#111111] p-8 md:grid-cols-3">
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Portfolio units</p>
-              <p className="text-[11px] font-bold whitespace-nowrap text-zinc-900 dark:text-white">{portfolioUsageLabel}</p>
-            </div>
-            <p className="text-[10px] leading-relaxed text-zinc-500">
-              {maxProps === -1
-                ? "Subscribed workspaces include unlimited properties."
-                : `Free workspace includes up to ${portfolioCapLabel} properties (same cap as portfolio import).`}
-            </p>
-            <div className="h-1 w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
-              <div
-                className={cn("h-full transition-[width]", maxProps === -1 ? "bg-emerald-500/90" : "bg-white")}
-                style={{ width: `${portfolioFillPct}%` }}
-              />
-            </div>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Active tenancies</p>
-              <p className="text-[11px] font-bold whitespace-nowrap text-zinc-900 dark:text-white">{tenancyUsageLabel}</p>
-            </div>
-            <p className="text-[10px] leading-relaxed text-zinc-500">Not limited by the property cap on any plan.</p>
-            <div className="h-1 w-full bg-emerald-500/20">
-              <div className="h-full w-full bg-emerald-500/40" />
-            </div>
-          </div>
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <p className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Agent automations</p>
-              <p className="text-[11px] font-bold text-zinc-900 dark:text-white">{paying ? "Full access" : "Upgrade to unlock"}</p>
-            </div>
-            <p className="text-[10px] leading-relaxed text-zinc-500">
-              {paying ? "Agents follow your subscription status in the app." : "Subscribe to run the full agent surface."}
-            </p>
-            <div className="h-1 bg-emerald-500/20" />
-          </div>
-        </div>
-      </section>
+          <BillingPlanOptions checkoutReturnTarget="billing" />
+        </section>
+      ) : null}
 
-      {/* 04. HISTORY */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-[16px] text-zinc-600">history</span>
-          <h2 className="text-[11px] font-black tracking-[0.2em] text-zinc-400 uppercase">Transaction History</h2>
-        </div>
-        <div className="space-y-2 border border-dashed border-zinc-800/50 bg-background dark:bg-[#111111] p-8 text-center">
-          <p className="text-[11px] font-bold text-zinc-600 uppercase">Archive synchronization in progress</p>
-          <p className="text-[9px] tracking-tighter text-zinc-700 uppercase">
-            Detailed line-item history is available in your primary billing portal.
-          </p>
-        </div>
+      <section className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 p-6 dark:border-zinc-700 dark:bg-zinc-900/40">
+        <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">Invoices &amp; payments</h2>
+        <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+          Receipts and billing history appear in your{" "}
+          {polarBillingLinked ? "Polar" : stripeLinked ? "Stripe customer" : "billing"} portal. Use Manage Subscription
+          above to open it.
+        </p>
       </section>
     </div>
   );

@@ -1,7 +1,6 @@
 /**
  * Canonical subscription packaging for Letora.
- * Letora now uses a simple two-tier model: Monthly or Yearly.
- * Legacy plans (Starter, Pro, Portfolio) are kept for Stripe backward compatibility.
+ * Public product is **Starter**, billed monthly or yearly via Polar; legacy Stripe tiers remain for existing subscribers.
  */
 
 export const PLANS = {
@@ -87,7 +86,7 @@ export const PLANS = {
 
 export type PlanKey = keyof typeof PLANS;
 
-/** Stable order for pricing UI and upgrade paths. Only shows new active plans. */
+/** Stable order for checkout buttons (billing cycle), not separate product tiers. */
 export const PLAN_ORDER: readonly PlanKey[] = ["monthly", "yearly"] as const;
 
 /** All plans including legacy ones. */

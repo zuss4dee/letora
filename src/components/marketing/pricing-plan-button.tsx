@@ -15,7 +15,7 @@ type Props = {
   planKey: PlanKey;
   highlighted?: boolean;
   children: ReactNode;
-  /** Where Stripe should send the user after pay / cancel (Billing page vs marketing Pricing). */
+  /** Where checkout returns the user after pay / cancel (Billing, onboarding, import, or dashboard). */
   checkoutReturnTarget?: CheckoutReturnTarget;
 };
 
@@ -46,7 +46,7 @@ export function PricingPlanSubscribeButton({
         return;
       }
 
-      // Monthly and Yearly are Polar plans. Legacy plans (starter/pro/landlord_pro) use Stripe.
+      // Monthly / Yearly Polar checkouts · legacy Stripe tiers use Stripe checkout.
       const isPolarPlan = planKey === "monthly" || planKey === "yearly";
 
       if (isPolarPlan) {

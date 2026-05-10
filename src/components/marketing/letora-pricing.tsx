@@ -1,66 +1,15 @@
 import Link from "next/link";
 import { ArrowUpRight, Check } from "lucide-react";
 
-import { PricingPlanLinkCta, PricingPlanSubscribeButton } from "@/components/marketing/pricing-plan-button";
+import { PricingPlanSubscribeButton } from "@/components/marketing/pricing-plan-button";
 import { cn } from "@/lib/utils";
-import { PLAN_ORDER, PLANS as STRIPE_PLANS, type PlanKey } from "@/lib/stripe-plans";
+import { PLANS as STRIPE_PLANS, PLAN_ORDER } from "@/lib/stripe-plans";
 
-type MarketingTier = {
-  key: PlanKey | "enterprise";
-  name: string;
-  tagline: string;
-  price: string;
-  priceSuffix: string;
-  footnote?: string;
-  badge?: string;
-  features: readonly string[];
-  cta: string;
-  /** Enterprise only — Stripe tiers use checkout button */
-  href?: string;
-  highlighted?: boolean;
-};
-
-function buildStripeTiers(): MarketingTier[] {
-  return PLAN_ORDER.map((key) => {
-    const p = STRIPE_PLANS[key];
-    const cta = "Start 24h Free Trial";
-    const badge = (p as any).badge;
-    const priceSuffix = key === "yearly" ? "/ year" : "/ month";
-    
-    return {
-      key,
-      name: p.name,
-      tagline: p.tagline,
-      price: `£${p.price}`,
-      priceSuffix,
-      badge,
-      features: p.features,
-      cta,
-      highlighted: p.highlighted,
-    };
-  });
-}
-
-const ENTERPRISE_TIER: Omit<MarketingTier, "key"> = {
-  name: "Enterprise",
-  tagline: "Procurement, security reviews, and bespoke rollout",
-  price: "Custom",
-  priceSuffix: "",
-  footnote: "Minimums and annual agreements typical. We scope SLAs and integrations with your team.",
-  features: [
-    "Volume pricing and MSAs",
-    "Security questionnaire and data handling alignment",
-    "Custom integrations and onboarding",
-    "Named success contact",
-    "Uptime and support terms to match your needs",
-  ],
-  cta: "Talk to sales",
-  href: "/signup?intent=enterprise",
-};
+const STARTER_FEATURES = STRIPE_PLANS.monthly.features;
 
 export function LetoraPricingSection() {
-  const stripeTiers = buildStripeTiers();
-  const allTiers: MarketingTier[] = [...stripeTiers, { key: "enterprise" as const, ...ENTERPRISE_TIER }];
+  const monthly = STRIPE_PLANS.monthly;
+  const yearly = STRIPE_PLANS.yearly;
 
   return (
     <section
@@ -77,11 +26,11 @@ export function LetoraPricingSection() {
             id="pricing-heading"
             className="mt-4 font-headline text-4xl font-bold tracking-[-0.04em] text-foreground md:text-5xl lg:text-6xl"
           >
-            Plans that scale with your portfolio
+            One plan · Starter
           </h2>
           <p className="mx-auto mt-5 max-w-xl font-[family-name:var(--font-inter)] text-base font-light leading-relaxed text-foreground md:text-lg">
-            Select the billing cycle that fits your operations. Self-serve plans bill in
-            GBP through our secure partner. Prices exclude VAT where applicable.
+            Pay monthly or yearly (save on annual billing). GBP via our payments partner — prices exclude VAT where
+            applicable.
           </p>
           <p className="mt-6 font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
             <Link
@@ -94,95 +43,93 @@ export function LetoraPricingSection() {
           </p>
         </div>
 
-        <div
-          id="pricing-plans"
-          className="mt-16 grid min-w-0 scroll-mt-28 grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3"
-        >
-          {allTiers.map((plan) => (
-            <article
-              key={plan.key}
-              className={cn(
-                "flex h-full min-w-0 flex-col rounded-2xl border p-6 shadow-[0_24px_64px_rgba(0,0,0,0.35)] md:p-7",
-                plan.highlighted
-                  ? "border-emerald-500/30 bg-[linear-gradient(180deg,rgba(27,27,27,0.98)_0%,rgba(19,19,19,0.99)_100%)] ring-1 ring-emerald-500/15"
-                  : "border-zinc-800 bg-background dark:bg-[#161616]/90",
-              )}
-            >
-              <div className="space-y-2">
-                <div className="flex min-h-[1.5rem] items-center">
-                  {plan.badge ? (
-                    <span className="inline-flex w-fit rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 py-0.5 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-[0.14em] text-emerald-500">
-                      {plan.badge}
-                    </span>
-                  ) : null}
-                </div>
-                <h3 className="font-headline text-xl font-semibold tracking-[-0.03em] text-foreground">{plan.name}</h3>
-                <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-foreground">
-                  {plan.tagline}
+        <div className="mx-auto mt-16 max-w-lg">
+          <article
+            className={cn(
+              "flex h-full min-w-0 flex-col rounded-2xl border p-8 shadow-[0_24px_64px_rgba(0,0,0,0.35)]",
+              "border-emerald-500/30 bg-[linear-gradient(180deg,rgba(27,27,27,0.98)_0%,rgba(19,19,19,0.99)_100%)] ring-1 ring-emerald-500/15 md:p-10",
+            )}
+          >
+            <div className="space-y-2 text-center">
+              <h3 className="font-headline text-2xl font-semibold tracking-[-0.03em] text-foreground">Starter</h3>
+              <p className="font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-foreground">
+                {monthly.tagline}
+              </p>
+            </div>
+
+            <ul className="mt-8 flex flex-col gap-3">
+              {STARTER_FEATURES.map((f) => (
+                <li
+                  key={f}
+                  className="flex gap-3 font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-foreground"
+                >
+                  <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
+                    <Check className="size-3" strokeWidth={2.5} aria-hidden />
+                  </span>
+                  <span>{f}</span>
+                </li>
+              ))}
+            </ul>
+
+            <div className="mt-10 flex flex-col gap-4 border-t border-border dark:border-[#4F4632]/15 pt-8">
+              <div className="rounded-lg border border-border/60 bg-background/60 p-4 dark:border-[#4F4632]/20">
+                <p className="font-headline text-2xl font-bold tabular-nums text-foreground">
+                  £{monthly.price}
+                  <span className="font-[family-name:var(--font-inter)] text-base font-medium text-muted-foreground">
+                    {" "}
+                    / month
+                  </span>
                 </p>
+                <div className="mt-4">
+                  <PricingPlanSubscribeButton planKey={PLAN_ORDER[0]} highlighted>
+                    Start 24h free trial · Monthly
+                  </PricingPlanSubscribeButton>
+                </div>
               </div>
-
-              <ul className="mt-6 flex flex-1 flex-col gap-3">
-                {plan.features.map((f) => (
-                  <li
-                    key={f}
-                    className="flex gap-3 font-[family-name:var(--font-inter)] text-sm font-light leading-snug text-foreground"
-                  >
-                    <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-500">
-                      <Check className="size-3" strokeWidth={2.5} aria-hidden />
-                    </span>
-                    <span>{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              <div className="mt-5 min-h-[2.75rem]">
-                {plan.footnote ? (
-                  <p className="font-[family-name:var(--font-inter)] text-xs italic leading-relaxed text-muted-foreground">
-                    {plan.footnote}
+              <div className="rounded-lg border border-border/60 bg-background/60 p-4 dark:border-[#4F4632]/20">
+                <p className="font-headline text-2xl font-bold tabular-nums text-foreground">
+                  £{yearly.price}
+                  <span className="font-[family-name:var(--font-inter)] text-base font-medium text-muted-foreground">
+                    {" "}
+                    / year
+                  </span>
+                </p>
+                {(yearly as { badge?: string }).badge ? (
+                  <p className="mt-2 font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
+                    {(yearly as { badge?: string }).badge}
                   </p>
                 ) : null}
+                <div className="mt-4">
+                  <PricingPlanSubscribeButton planKey={PLAN_ORDER[1]} highlighted={false}>
+                    Start 24h free trial · Yearly
+                  </PricingPlanSubscribeButton>
+                </div>
               </div>
+              <p className="font-[family-name:var(--font-inter)] text-xs leading-snug text-muted-foreground">
+                Card required for trial. Cancel before it ends if you don’t want to be charged.
+              </p>
+            </div>
 
-              <div className="mt-auto border-t border-border dark:border-[#4F4632]/15 pt-6">
-                <div className="flex flex-wrap items-baseline gap-1.5">
-                  <span className="font-headline text-3xl font-bold tabular-nums tracking-tight text-foreground">
-                    {plan.price}
-                  </span>
-                  {plan.priceSuffix ? (
-                    <span className="font-[family-name:var(--font-inter)] text-sm font-medium text-muted-foreground">
-                      {plan.priceSuffix}
-                    </span>
-                  ) : null}
-                </div>
-                <div className="mt-5">
-                  {plan.key === "enterprise" ? (
-                    <PricingPlanLinkCta href={plan.href ?? "/signup?intent=enterprise"} highlighted={plan.highlighted}>
-                      {plan.cta}
-                    </PricingPlanLinkCta>
-                  ) : (
-                    <div className="space-y-2">
-                      <PricingPlanSubscribeButton planKey={plan.key} highlighted={plan.highlighted}>
-                        {plan.cta}
-                      </PricingPlanSubscribeButton>
-                      <p className="font-[family-name:var(--font-inter)] text-xs leading-snug text-muted-foreground">
-                        Card required. Cancel anytime before trial ends to avoid charges.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </article>
-          ))}
+            <div className="mt-8 border-t border-border dark:border-[#4F4632]/15 pt-8 text-center">
+              <p className="font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
+                Need procurement, security review, or a bespoke rollout?{" "}
+                <Link
+                  href="/signup?intent=enterprise"
+                  className="font-medium text-emerald-500 underline-offset-4 hover:underline"
+                >
+                  Talk to sales
+                </Link>
+              </p>
+            </div>
+          </article>
         </div>
 
         <p className="mx-auto mt-12 max-w-2xl text-center font-[family-name:var(--font-inter)] text-xs leading-relaxed text-[#6b6a69]">
-          Need to change plan or payment method after signup? Open{" "}
+          Manage payment method and invoices anytime in{" "}
           <Link href="/dashboard/billing" className="text-muted-foreground underline-offset-4 hover:underline">
             Billing
           </Link>{" "}
-          in the dashboard while signed in. Enterprise buyers can start from signup and we will follow up on larger
-          requirements.
+          while signed in.
         </p>
       </div>
     </section>

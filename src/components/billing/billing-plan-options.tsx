@@ -6,7 +6,7 @@ import type { CheckoutReturnTarget } from "@/lib/stripe/checkout-return-target";
 import { PLAN_ORDER, PLANS } from "@/lib/stripe-plans";
 
 /**
- * In-app subscribe — Monthly or Yearly via Polar Checkout.
+ * Letora Starter — choose monthly or yearly Polar checkout.
  */
 export function BillingPlanOptions({
   checkoutReturnTarget = "billing",

@@ -7,7 +7,14 @@ import { Button } from "@/components/ui/button";
 /**
  * Opens Stripe Customer Portal (POST /api/stripe/create-portal). Used on the Billing page (`/dashboard/billing`).
  */
-export function ManageBillingButton({ provider = "stripe" }: { provider?: "stripe" | "polar" }) {
+export function ManageBillingButton({
+  provider = "stripe",
+  label,
+}: {
+  provider?: "stripe" | "polar";
+  /** Defaults: “Manage Subscription” (Polar) or “Manage Subscription” (Stripe). */
+  label?: string;
+}) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +51,7 @@ export function ManageBillingButton({ provider = "stripe" }: { provider?: "strip
         onClick={() => void onClick()}
         className="rounded-md border-border bg-card font-[family-name:var(--font-inter)] text-xs font-semibold uppercase tracking-[0.12em] text-foreground shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800/50 hover:text-white"
       >
-        {pending ? "Opening…" : `Manage billing on ${provider === "polar" ? "Polar" : "Stripe"}`}
+        {pending ? "Opening…" : (label ?? "Manage Subscription")}
       </Button>
       {error ? (
         <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground" role="status">

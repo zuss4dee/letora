@@ -12,5 +12,5 @@ export function checkoutCancelPath(target: CheckoutReturnTarget): string {
   if (target === "billing") return "/dashboard/billing?checkout=cancelled";
   if (target === "onboarding") return "/onboarding?checkout=cancelled";
   if (target === "import") return "/dashboard/import?checkout=cancelled";
-  return "/pricing?cancelled=true";
+  return "/dashboard/billing?checkout=cancelled";
 }

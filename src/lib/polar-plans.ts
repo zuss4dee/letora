@@ -1,8 +1,7 @@
 import { PLANS, type PlanKey } from "./stripe-plans";
 
 /**
- * Mapping of Polar.sh Product IDs to Letora PlanKeys.
- * Letora now uses a two-tier model: Monthly or Yearly.
+ * Mapping of Polar.sh Product IDs to billing intervals under the Starter product (monthly vs yearly checkout).
  */
 export const POLAR_PLANS: Record<PlanKey, { productId: string; priceId: string }> = {
   monthly: {

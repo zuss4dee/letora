@@ -17,7 +17,8 @@ type Props = {
   userId: string;
 };
 
-export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props) {
+export function WorkspaceSettingsForm({ initialValues, metadata, userId: _userId }: Props) {
+  void _userId;
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -46,7 +47,7 @@ export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props
       }
       toast.success("Settings saved successfully.");
       router.refresh();
-    } catch (err) {
+    } catch {
       toast.error("An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
@@ -118,7 +119,7 @@ export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props
           <div className="col-span-12 md:col-span-6 bg-background dark:bg-[#111111] p-6 flex items-center justify-between">
             <div className="space-y-4">
               <div className="space-y-1">
-                <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Active Tier</p>
+                <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Plan</p>
                 <p className="text-[13px] font-black text-zinc-900 dark:text-white uppercase">{tierLabel}</p>
               </div>
             </div>

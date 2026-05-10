@@ -307,8 +307,8 @@ export function AddPropertyDialog({
                 <p>{submitError}</p>
                 {submitError.includes("property limit") ? (
                   <p className="mt-2 font-[family-name:var(--font-inter)] text-xs font-medium">
-                    <Link href="/pricing?limit=properties" className="text-foreground underline-offset-4 hover:text-zinc-400 hover:underline">
-                      View plans and upgrade
+                    <Link href="/dashboard/billing" className="text-foreground underline-offset-4 hover:text-zinc-400 hover:underline">
+                      Open Billing to subscribe
                     </Link>
                   </p>
                 ) : null}

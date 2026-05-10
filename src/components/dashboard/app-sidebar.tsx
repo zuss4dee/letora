@@ -381,27 +381,26 @@ export function AppSidebar({
           <p className="mb-1 font-[family-name:var(--font-inter)] text-[10px] font-semibold uppercase tracking-widest text-zinc-400 dark:text-zinc-600">
             Subscription
           </p>
-          <div className="flex items-center justify-between gap-2">
-            <span className="min-w-0 truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
-              {planName}
-            </span>
-            <span
-              className={cn(
-                "inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                statusBadge.pill,
-              )}
-            >
-              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", statusBadge.dot)} aria-hidden />
-              {statusBadge.label}
-            </span>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">Plan</p>
+                <p className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{planName}</p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">Status</p>
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                    statusBadge.pill,
+                  )}
+                >
+                  <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", statusBadge.dot)} aria-hidden />
+                  {statusBadge.label}
+                </span>
+              </div>
+            </div>
           </div>
-          <Link
-            href="/dashboard/billing"
-            onClick={closeMobileNav}
-            className="mt-2 flex w-full items-center justify-center rounded-md bg-zinc-900 px-3 py-1.5 text-center text-[11px] font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-white/10 dark:text-zinc-200 dark:hover:bg-white/20"
-          >
-            Upgrade Plan
-          </Link>
         </div>
 
         <div className="px-5 pt-4">

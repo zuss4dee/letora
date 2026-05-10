@@ -1,6 +1,9 @@
 import { isPayingPlatformSubscription, planDisplayToKey } from "@/lib/plan-limits";
 import { PLANS } from "@/lib/stripe-plans";
 
+/** Single public product name — billing cycle (monthly/yearly) is metadata, not a separate “plan tier”. */
+export const LETORA_PRODUCT_PLAN_NAME = "Starter";
+
 export type SubscriptionFields = {
   subscriptionPlan: string | null | undefined;
   subscriptionStatus: string | null | undefined;
@@ -11,36 +14,33 @@ export type SubscriptionFields = {
 };
 
 /**
- * Canonical plan label aligned with entitlement + naming model:
- * - Free workspace → never "Starter".
- * - Paying Polar with stale SKU text → "Letora subscription" until webhook rewrites Monthly/Yearly.
- * - Paying Stripe-legacy subscribers → preserve catalog names until migrated.
+ * Canonical plan label for dashboards: one product (Starter), with free vs paying states only.
  */
 export function getPlanDisplayName(fields: SubscriptionFields): string {
   const paying = isPayingPlatformSubscription(fields.subscriptionStatus);
-  const name = fields.subscriptionPlan?.trim() ?? "";
-  const key = planDisplayToKey(name || null);
-
   if (!paying) {
     return "Free workspace";
   }
+  return LETORA_PRODUCT_PLAN_NAME;
+}
 
-  if (key === "monthly") return PLANS.monthly.name;
-  if (key === "yearly") return PLANS.yearly.name;
-  if (name === PLANS.monthly.name || name === PLANS.yearly.name) return name;
-
-  if (fields.polarBillingLinked) {
-    if (!name || key === "starter" || key === "pro" || key === null) {
-      return "Letora subscription";
-    }
-    return name;
+/** Price line for an active subscription (GBP), from stored `subscription_plan` / legacy labels. */
+export function getSubscriptionAmountLine(subscriptionPlan: string | null | undefined): string | null {
+  const key = planDisplayToKey(subscriptionPlan?.trim() ?? null);
+  if (key === "monthly") {
+    return `£${PLANS.monthly.price} / month`;
   }
-
+  if (key === "yearly") {
+    return `£${PLANS.yearly.price} / year`;
+  }
   if (key && key in PLANS) {
-    return PLANS[key].name;
+    const p = PLANS[key];
+    if (key === "yearly") {
+      return `£${p.price} / year`;
+    }
+    return `£${p.price} / month`;
   }
-
-  return name.length > 0 ? name : "Paid plan";
+  return null;
 }
 
 export function subscriptionStatusLabel(status: string | null | undefined): string {
