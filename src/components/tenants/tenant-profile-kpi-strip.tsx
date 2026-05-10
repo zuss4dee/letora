@@ -49,12 +49,12 @@ export function TenantProfileKpiStrip({ stats }: TenantProfileKpiStripProps) {
   ];
 
   return (
-    <div className="grid shrink-0 grid-cols-2 border-b border-[#232323] bg-[#0B0B0B] sm:grid-cols-5">
+    <div className="grid shrink-0 grid-cols-2 border-b border-zinc-200/70 bg-zinc-50 dark:border-[#232323] dark:bg-[#0B0B0B] sm:grid-cols-5">
       {items.map((item, i) => (
         <div
           key={i}
           className={cn(
-            "flex flex-col border-r border-[#232323] p-4 last:border-r-0",
+            "flex flex-col border-r border-zinc-200/70 p-4 last:border-r-0 dark:border-r-[#232323]",
             i >= 4 && "hidden sm:flex",
             i === 1 && "border-r-0 sm:border-r"
           )}
@@ -65,9 +65,9 @@ export function TenantProfileKpiStrip({ stats }: TenantProfileKpiStripProps) {
           <span
             className={cn(
               "text-[15px] font-bold tabular-nums uppercase tracking-tight",
-              item.tone === "emerald" ? "text-emerald-400" :
-              item.tone === "rose" ? "text-rose-400" :
-              item.tone === "amber" ? "text-amber-400" : "text-white"
+              item.tone === "emerald" ? "text-emerald-700 dark:text-emerald-400" :
+              item.tone === "rose" ? "text-rose-600 dark:text-rose-400" :
+              item.tone === "amber" ? "text-amber-600 dark:text-amber-400" : "text-zinc-900 dark:text-white"
             )}
           >
             {item.value}

@@ -7,16 +7,13 @@ import { toast } from "sonner";
 
 import { approveAgentApproval, denyAgentApproval } from "@/lib/actions/agent-approvals";
 import {
-  formatApprovalAbsoluteTime,
   formatApprovalActionType,
   formatApprovalAgentType,
-  formatApprovalRelativeTime,
   formatApprovalShortRelativeAge,
   formatApprovalTargetLine,
   isApprovalPendingStale,
 } from "@/components/dashboard/approval-display";
 import { ApprovalAuditSheetTrigger } from "@/components/agents/approval-audit-sheet";
-import { MVP_TERMS } from "@/components/dashboard/workspace-terminology";
 import type { AgentApprovalRow } from "@/lib/approvals/types";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -33,6 +30,7 @@ export function ApprovalsPendingInteractive({
   focusApprovalId?: string;
 }) {
   const router = useRouter();
+  void emphasizeQueueAge;
   const [busyId, setBusyId] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(() => {
     const first = approvals[0]?.id ?? null;
@@ -110,10 +108,10 @@ export function ApprovalsPendingInteractive({
   );
 
   return (
-    <div className="flex min-h-[600px] flex-1 border border-[#232323] bg-[#0e0e0e]">
+    <div className="flex min-h-[600px] flex-1 border border-zinc-200/90 bg-zinc-50 dark:border-[#232323] dark:bg-[#0e0e0e]">
       {/* Queue List */}
-      <div className="flex min-w-0 flex-1 flex-col border-r border-[#232323]">
-        <div className="sticky top-0 z-10 grid grid-cols-12 border-b border-[#232323] bg-[#111111] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
+      <div className="flex min-w-0 flex-1 flex-col border-r border-zinc-200/90 dark:border-[#232323]">
+        <div className="sticky top-0 z-10 grid grid-cols-12 border-b border-zinc-200/90 bg-zinc-100 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 dark:border-[#232323] dark:bg-[#111111]">
           <div className="col-span-5">Case / Context</div>
           <div className="col-span-3">Action Type</div>
           <div className="col-span-2">Agent</div>
@@ -131,17 +129,17 @@ export function ApprovalsPendingInteractive({
                 key={approval.id}
                 onClick={() => setSelectedId(approval.id)}
                 className={cn(
-                  "grid w-full grid-cols-12 items-center px-3 py-3 text-left transition-colors hover:bg-[#1b1b1b]",
-                  isSelected ? "bg-[#1a1a1a]" : "bg-transparent border-b border-[#232323]/50"
+                  "grid w-full grid-cols-12 items-center px-3 py-3 text-left transition-colors hover:bg-zinc-100 dark:hover:bg-[#1b1b1b]",
+                  isSelected ? "bg-zinc-100 dark:bg-[#1a1a1a]" : "bg-transparent border-b border-zinc-200/70 dark:border-[#232323]/50"
                 )}
               >
                 <div className="col-span-5 flex items-center gap-3 pr-4">
                   <div className={cn(
                     "size-1.5 shrink-0 rounded-full",
-                    isStale ? "bg-rose-400" : isSelected ? "bg-white" : "bg-zinc-700"
+                    isStale ? "bg-rose-400" : isSelected ? "bg-zinc-900 dark:bg-white" : "bg-zinc-400 dark:bg-zinc-700"
                   )} />
                   <div className="min-w-0">
-                    <p className="truncate text-[12px] font-semibold text-white">
+                    <p className="truncate text-[12px] font-semibold text-zinc-900 dark:text-white">
                       {approval.title}
                     </p>
                     <p className="truncate text-[10px] text-zinc-500 uppercase tracking-tight">
@@ -173,19 +171,19 @@ export function ApprovalsPendingInteractive({
       </div>
 
       {/* Decision Inspector */}
-      <aside className="flex w-[420px] shrink-0 flex-col bg-[#111111]">
+      <aside className="flex w-[420px] shrink-0 flex-col bg-white dark:bg-[#111111]">
         {selectedApproval ? (
           <>
-            <div className="shrink-0 border-b border-[#232323] p-6">
+            <div className="shrink-0 border-b border-zinc-200/90 p-6 dark:border-[#232323]">
               <p className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Decision Inspector</p>
-              <h2 className="text-xl font-bold leading-tight text-white mb-6">
+              <h2 className="text-xl font-bold leading-tight text-zinc-900 dark:text-white mb-6">
                 {selectedApproval.title}
               </h2>
               
               {/* Proposed Action Summary Block */}
-              <div className="border border-[#2f2f2f] bg-[#161616] p-4">
+              <div className="border border-zinc-200/90 bg-zinc-50 p-4 dark:border-[#2f2f2f] dark:bg-[#161616]">
                 <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Proposed Action</p>
-                <p className="text-[13px] font-medium text-white leading-relaxed">
+                <p className="text-[13px] font-medium text-zinc-900 leading-relaxed dark:text-white">
                   {selectedApproval.summary ?? "Execution of the requested operational task."}
                 </p>
               </div>
@@ -196,12 +194,12 @@ export function ApprovalsPendingInteractive({
               {!!(selectedApproval.payload.emailBody || selectedApproval.payload.emailSubject) && (
                 <section>
                   <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Communication Draft</h3>
-                  <div className="border border-[#232323] bg-[#0B0B0B] p-4 font-mono text-[11px]">
-                    <div className="mb-3 border-b border-[#232323] pb-3">
-                      <span className="text-zinc-600 uppercase mr-2">Subject:</span>
-                      <span className="text-zinc-300">{(selectedApproval.payload.emailSubject as string) ?? "—"}</span>
+                  <div className="border border-zinc-200/90 bg-white p-4 font-mono text-[11px] dark:border-[#232323] dark:bg-[#0B0B0B]">
+                    <div className="mb-3 border-b border-zinc-200/90 pb-3 dark:border-[#232323]">
+                      <span className="text-zinc-600 dark:text-zinc-600 uppercase mr-2">Subject:</span>
+                      <span className="text-zinc-800 dark:text-zinc-300">{(selectedApproval.payload.emailSubject as string) ?? "—"}</span>
                     </div>
-                    <div className="whitespace-pre-wrap leading-relaxed text-zinc-400">
+                    <div className="whitespace-pre-wrap leading-relaxed text-zinc-600 dark:text-zinc-400">
                       {(selectedApproval.payload.emailBody as string) ?? "No message body drafted."}
                     </div>
                   </div>
@@ -215,11 +213,11 @@ export function ApprovalsPendingInteractive({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Category</p>
-                      <p className="text-[11px] font-medium text-white">{(selectedApproval.payload.category as string) ?? "—"}</p>
+                      <p className="text-[11px] font-medium text-zinc-900 dark:text-white">{(selectedApproval.payload.category as string) ?? "—"}</p>
                     </div>
                     <div>
                       <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Priority</p>
-                      <p className="text-[11px] font-medium text-white">{(selectedApproval.payload.priority as string) ?? "—"}</p>
+                      <p className="text-[11px] font-medium text-zinc-900 dark:text-white">{(selectedApproval.payload.priority as string) ?? "—"}</p>
                     </div>
                   </div>
                 </section>
@@ -232,19 +230,19 @@ export function ApprovalsPendingInteractive({
                   {!!selectedApproval.payload.tenantId && (
                     <Link
                       href={`/dashboard/tenants/${selectedApproval.payload.tenantId as string}`}
-                      className="flex items-center justify-between border border-[#232323] px-3 py-2 text-[11px] text-zinc-400 hover:bg-[#1b1b1b] transition-colors"
+                      className="flex items-center justify-between border border-zinc-200/90 px-3 py-2 text-[11px] text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-[#232323] dark:text-zinc-400 dark:hover:bg-[#1b1b1b]"
                     >
                       <span>Tenant Record</span>
-                      <span className="text-white font-bold">VIEW</span>
+                      <span className="font-bold text-zinc-900 dark:text-white">VIEW</span>
                     </Link>
                   )}
                   {!!selectedApproval.payload.propertyId && (
                     <Link
                       href={`/dashboard/properties/${selectedApproval.payload.propertyId as string}`}
-                      className="flex items-center justify-between border border-[#232323] px-3 py-2 text-[11px] text-zinc-400 hover:bg-[#1b1b1b] transition-colors"
+                      className="flex items-center justify-between border border-zinc-200/90 px-3 py-2 text-[11px] text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-[#232323] dark:text-zinc-400 dark:hover:bg-[#1b1b1b]"
                     >
                       <span>Property Record</span>
-                      <span className="text-white font-bold">VIEW</span>
+                      <span className="font-bold text-zinc-900 dark:text-white">VIEW</span>
                     </Link>
                   )}
                 </div>
@@ -260,7 +258,7 @@ export function ApprovalsPendingInteractive({
             </div>
 
             {/* Decision Actions */}
-            <div className="shrink-0 border-t border-[#232323] bg-[#0B0B0B] p-6">
+            <div className="shrink-0 border-t border-zinc-200/90 bg-zinc-50 p-6 dark:border-[#232323] dark:bg-[#0B0B0B]">
               <div className="grid grid-cols-1 gap-2">
                 {selectedApproval.action_type === "send_rent_chase_email" ? (
                   <Button
@@ -286,14 +284,14 @@ export function ApprovalsPendingInteractive({
                     type="button"
                     disabled={busyId === selectedApproval.id}
                     variant="outline"
-                    className="border-[#333333] bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white hover:bg-rose-900/20 hover:text-rose-400 hover:border-rose-900/50 transition-colors"
+                    className="border-zinc-300 bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-800 transition-colors hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 dark:border-[#333333] dark:text-white dark:hover:bg-rose-900/20 dark:hover:text-rose-400 dark:hover:border-rose-900/50"
                     onClick={() => void runDeny(selectedApproval.id)}
                   >
                     Reject
                   </Button>
                   <ApprovalAuditSheetTrigger
                     approval={selectedApproval}
-                    className="border-[#333333] bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400 hover:bg-zinc-900 transition-colors"
+                    className="border-zinc-300 bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-400 dark:hover:bg-zinc-900"
                   />
                 </div>
               </div>

@@ -287,7 +287,7 @@ export default async function RentTrackerPage({
   return (
     <>
       <DashboardPollRefresh />
-      <div className="@container/main flex min-h-0 flex-1 flex-col bg-[#0B0B0B] font-['Inter',system-ui,sans-serif] text-[#e5e2e1]">
+      <div className="@container/main flex min-h-0 flex-1 flex-col bg-[#f8f8f7] font-['Inter',system-ui,sans-serif] text-zinc-950 dark:bg-[#0B0B0B] dark:text-[#e5e2e1]">
         <Suspense fallback={<RentTrackerLoadingShell todayIso={todayIso} />}>
           <RentTrackerAsyncSection
             userId={userId}
@@ -405,8 +405,8 @@ async function RentTrackerAsyncSection({
         suppressRentTrackerModeRibbon={suppressRentTrackerModeRibbon}
       />
       {propertyId ? (
-        <div className="shrink-0 border-b border-[#282828] bg-[#141414] px-4 py-2 md:px-6">
-          <PropertyPortfolioBackLink propertyId={propertyId} className="text-[#868686] hover:text-zinc-400" />
+        <div className="shrink-0 border-b border-zinc-200/80 bg-white px-4 py-2 dark:border-[#282828] dark:bg-[#141414] md:px-6">
+          <PropertyPortfolioBackLink propertyId={propertyId} className="text-zinc-600 hover:text-zinc-800 dark:text-[#868686] dark:hover:text-zinc-400" />
         </div>
       ) : null}
 
@@ -428,30 +428,30 @@ async function RentTrackerAsyncSection({
 
 function RentTrackerLoadingShell({ todayIso }: { todayIso: string }) {
   return (
-    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-[#0B0B0B] font-['Inter',system-ui,sans-serif] text-[#e6e3e1]">
-      <div className="border-b border-[#282828] bg-[#141414] px-4 py-5 md:px-6">
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#868686]">
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-[#f8f8f7] font-['Inter',system-ui,sans-serif] text-zinc-950 dark:bg-[#0B0B0B] dark:text-[#e6e3e1]">
+      <div className="border-b border-zinc-200/80 bg-white px-4 py-5 dark:border-[#282828] dark:bg-[#141414] md:px-6">
+        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 dark:text-[#868686]">
           Rent tracker / {todayIso}
         </p>
-        <h1 className="mt-2 text-xl font-semibold tracking-tight text-white">Rent operations</h1>
+        <h1 className="mt-2 text-xl font-semibold tracking-tight text-zinc-900 dark:text-white">Rent operations</h1>
       </div>
 
-      <div className="grid grid-cols-2 gap-px border-b border-[#282828] bg-[#282828] sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-px border-b border-zinc-200 bg-zinc-200 sm:grid-cols-3 lg:grid-cols-5 dark:border-[#282828] dark:bg-[#282828]">
         {["Expected", "Collected", "Outstanding", "Arrears", "Next"].map((label) => (
-          <div key={label} className="bg-[#161616] px-4 py-3">
-            <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[#6f6f6f]">{label}</p>
-            <div className="mt-2 h-7 w-28 animate-pulse rounded-sm bg-[#242424]" />
+          <div key={label} className="bg-white px-4 py-3 dark:bg-[#161616]">
+            <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-zinc-500 dark:text-[#6f6f6f]">{label}</p>
+            <div className="mt-2 h-7 w-28 animate-pulse rounded-sm bg-zinc-200 dark:bg-[#242424]" />
           </div>
         ))}
       </div>
 
-      <div className="flex-1 bg-[#0B0B0B] p-4 md:p-6">
-        <div className="mb-4 h-10 animate-pulse rounded-sm border border-[#333333] bg-[#161616]" />
-        <div className="overflow-hidden border border-[#333333] bg-[#161616]">
+      <div className="flex-1 bg-[#f8f8f7] p-4 dark:bg-[#0B0B0B] md:p-6">
+        <div className="mb-4 h-10 animate-pulse rounded-sm border border-zinc-200 bg-white dark:border-[#333333] dark:bg-[#161616]" />
+        <div className="overflow-hidden border border-zinc-200 bg-white dark:border-[#333333] dark:bg-[#161616]">
           {Array.from({ length: 7 }).map((_, index) => (
             <div
               key={index}
-              className="h-12 animate-pulse border-b border-[#282828] bg-[#161616] last:border-b-0"
+              className="h-12 animate-pulse border-b border-zinc-200 bg-zinc-50 last:border-b-0 dark:border-[#282828] dark:bg-[#161616]"
             />
           ))}
         </div>

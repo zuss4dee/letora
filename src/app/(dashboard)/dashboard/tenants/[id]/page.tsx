@@ -59,13 +59,13 @@ function toTenantFormInput(t: {
 
 function TenantDetailSkeleton() {
   return (
-    <div className="flex flex-1 flex-col bg-[#0B0B0B]">
-      <div className="h-20 border-b border-[#232323] bg-[#0e0e0e]" />
-      <div className="h-16 border-b border-[#232323] bg-[#0B0B0B]" />
+    <div className="flex flex-1 flex-col bg-zinc-100 dark:bg-[#0B0B0B]">
+      <div className="h-20 border-b border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#0e0e0e]" />
+      <div className="h-16 border-b border-zinc-200/80 bg-zinc-100 dark:border-[#232323] dark:bg-[#0B0B0B]" />
       <div className="flex-1 p-6">
         <div className="grid grid-cols-12 gap-6">
-          <div className="col-span-12 h-64 animate-pulse rounded-md bg-[#161616] lg:col-span-8" />
-          <div className="col-span-12 h-64 animate-pulse rounded-md bg-[#161616] lg:col-span-4" />
+          <div className="col-span-12 h-64 animate-pulse rounded-md bg-zinc-200/80 dark:bg-[#161616] lg:col-span-8" />
+          <div className="col-span-12 h-64 animate-pulse rounded-md bg-zinc-200/80 dark:bg-[#161616] lg:col-span-4" />
         </div>
       </div>
     </div>
@@ -100,19 +100,19 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
         }`;
 
   return (
-    <div className="flex flex-1 flex-col bg-[#0B0B0B]">
+    <div className="flex flex-1 flex-col bg-zinc-100 dark:bg-[#0B0B0B]">
       {/* CASE HEADER */}
-      <header className="flex shrink-0 items-center justify-between border-b border-[#232323] bg-[#0e0e0e] px-6 py-5">
+      <header className="flex shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white px-6 py-5 dark:border-[#232323] dark:bg-[#0e0e0e]">
         <div className="flex items-center gap-5">
           <Link
             href="/dashboard/tenants"
-            className="group flex h-8 w-8 items-center justify-center border border-[#232323] transition-colors hover:border-zinc-500"
+            className="group flex h-8 w-8 items-center justify-center border border-zinc-200/80 transition-colors hover:border-zinc-400 dark:border-[#232323] dark:hover:border-zinc-500"
           >
-            <ArrowLeft className="size-4 text-zinc-500 group-hover:text-white" />
+            <ArrowLeft className="size-4 text-zinc-500 group-hover:text-zinc-900 dark:group-hover:text-white" />
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-[18px] font-bold tracking-tight text-white uppercase">
+              <h1 className="text-[18px] font-bold tracking-tight text-zinc-900 uppercase dark:text-white">
                 {tenant.fullName}
               </h1>
               {tenant.rightToRentStatus === "verified" && (
@@ -121,7 +121,7 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
             </div>
             <div className="flex items-center gap-2 text-[11px] text-zinc-500">
               <span>{tenant.email}</span>
-              <span className="text-zinc-700">•</span>
+              <span className="text-zinc-400 dark:text-zinc-700">•</span>
               <span>{tenant.phone}</span>
             </div>
           </div>
@@ -150,18 +150,18 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
           <div className="col-span-12 space-y-6 lg:col-span-8">
             
             {/* ACTIVE TENANCY CONTEXT */}
-            <section className="border border-[#232323] bg-[#0e0e0e]">
-              <div className="flex items-center justify-between border-b border-[#232323] px-5 py-3">
+            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#0e0e0e]">
+              <div className="flex items-center justify-between border-b border-zinc-200/80 px-5 py-3 dark:border-[#232323]">
                 <div className="flex items-center gap-2">
                   <Key className="size-3.5 text-zinc-500" />
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
                     Active Tenancy Context
                   </h3>
                 </div>
                 {activeTenancy && (
                   <Link
                     href={`/dashboard/tenancies/${activeTenancy.id}`}
-                    className="text-[9px] font-bold uppercase tracking-wider text-emerald-500 hover:text-emerald-400"
+                    className="text-[9px] font-bold uppercase tracking-wider text-emerald-600 hover:text-emerald-700 dark:text-emerald-500 dark:hover:text-emerald-400"
                   >
                     Manage Tenancy
                   </Link>
@@ -172,58 +172,58 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
                 {activeTenancy ? (
                   <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
                     <div>
-                      <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-600">Property</p>
-                      <Link href={`/dashboard/properties/${activeTenancy.propertyId}`} className="text-[12px] font-bold text-zinc-200 hover:text-white underline-offset-4 hover:underline">
+                      <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">Property</p>
+                      <Link href={`/dashboard/properties/${activeTenancy.propertyId}`} className="text-[12px] font-bold text-zinc-900 underline-offset-4 hover:text-zinc-700 hover:underline dark:text-zinc-200 dark:hover:text-white">
                         {activeTenancy.propertyAddress}
                       </Link>
                     </div>
                     <div>
-                      <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-600">Start Date</p>
-                      <p className="text-[12px] font-bold text-zinc-200">{activeTenancy.startDate ?? "—"}</p>
+                      <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">Start Date</p>
+                      <p className="text-[12px] font-bold text-zinc-800 dark:text-zinc-200">{activeTenancy.startDate ?? "—"}</p>
                     </div>
                     <div>
-                      <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-600">End Date</p>
-                      <p className="text-[12px] font-bold text-zinc-200">{activeTenancy.endDate ?? "Rolling"}</p>
+                      <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">End Date</p>
+                      <p className="text-[12px] font-bold text-zinc-800 dark:text-zinc-200">{activeTenancy.endDate ?? "Rolling"}</p>
                     </div>
                     <div>
-                      <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-600">Monthly Rent</p>
-                      <p className="text-[12px] font-bold text-white">
+                      <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">Monthly Rent</p>
+                      <p className="text-[12px] font-bold text-zinc-900 dark:text-white">
                         {activeTenancy.monthlyRent != null ? formatCurrency(activeTenancy.monthlyRent) : "—"}
                       </p>
                     </div>
                   </div>
                 ) : (
                   <div className="py-2 text-center">
-                    <p className="text-[11px] text-zinc-600 uppercase tracking-widest">No active tenancy found</p>
+                    <p className="text-[11px] text-zinc-500 uppercase tracking-widest dark:text-zinc-600">No active tenancy found</p>
                   </div>
                 )}
               </div>
             </section>
 
             {/* RENT & ARREARS HUB */}
-            <section className="border border-[#232323] bg-[#0e0e0e]">
-              <div className="flex items-center justify-between border-b border-[#232323] px-5 py-3">
+            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#0e0e0e]">
+              <div className="flex items-center justify-between border-b border-zinc-200/80 px-5 py-3 dark:border-[#232323]">
                 <div className="flex items-center gap-2">
                   <CircleDollarSign className="size-3.5 text-zinc-500" />
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
                     Financial Health & Arrears
                   </h3>
                 </div>
                 <Link
                   href={`/dashboard/rent-tracker?tenantId=${tenant.id}`}
-                  className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-300"
+                  className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
                 >
                   Full Rent History
                 </Link>
               </div>
               
-              <div className="grid grid-cols-1 divide-[#232323] md:grid-cols-2 md:divide-x">
+              <div className="grid grid-cols-1 divide-zinc-200/80 md:grid-cols-2 md:divide-x dark:divide-[#232323]">
                 <div className="p-6">
                   <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-zinc-500">Current Balance</p>
                   <p
                     className={cn(
                       "text-[32px] font-bold tabular-nums tracking-tighter",
-                      rent.status === "overdue" ? "text-rose-400" : "text-emerald-400"
+                      rent.status === "overdue" ? "text-rose-600 dark:text-rose-400" : "text-emerald-700 dark:text-emerald-400"
                     )}
                   >
                     {formatCurrency(rent.arrearsGbp)}
@@ -236,27 +236,27 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
                         : "Account is currently in good standing"}
                   </p>
                 </div>
-                <div className="bg-[#0B0B0B] p-6 flex flex-col justify-center">
+                <div className="bg-zinc-50 p-6 flex flex-col justify-center dark:bg-[#0B0B0B]">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between gap-4">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Last Payment</span>
-                      <span className="text-right text-[11px] font-bold text-zinc-300">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-600">Last Payment</span>
+                      <span className="text-right text-[11px] font-bold text-zinc-800 dark:text-zinc-300">
                         {lastPaidSummary != null ? lastPaidSummary : (
-                          <span className="font-medium text-zinc-600">No data</span>
+                          <span className="font-medium text-zinc-500 dark:text-zinc-600">No data</span>
                         )}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Payment Status</span>
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-600">Payment Status</span>
                       <span
                         className={cn(
                           "text-[10px] font-bold uppercase px-2 py-0.5 border",
                           rent.status === "overdue" &&
-                            "border-rose-900/50 text-rose-500 bg-rose-500/5",
+                            "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/50 dark:text-rose-500 dark:bg-rose-500/5",
                           rent.status === "pending" &&
-                            "border-amber-900/50 text-amber-500 bg-amber-500/5",
+                            "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/50 dark:text-amber-500 dark:bg-amber-500/5",
                           rent.status === "paid" &&
-                            "border-emerald-900/50 text-emerald-500 bg-emerald-500/5"
+                            "border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/50 dark:text-emerald-500 dark:bg-emerald-500/5"
                         )}
                       >
                         {rent.status === "overdue"
@@ -272,25 +272,25 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
             </section>
 
             {/* MAINTENANCE OVERVIEW */}
-            <section className="border border-[#232323] bg-[#0e0e0e]">
-              <div className="flex items-center justify-between border-b border-[#232323] px-5 py-3">
+            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#0e0e0e]">
+              <div className="flex items-center justify-between border-b border-zinc-200/80 px-5 py-3 dark:border-[#232323]">
                 <div className="flex items-center gap-2">
                   <Wrench className="size-3.5 text-zinc-500" />
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
                     Maintenance Participation
                   </h3>
                 </div>
                 <Link
                   href={`/dashboard/maintenance?tenantId=${tenant.id}`}
-                  className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-300"
+                  className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300"
                 >
                   View All Issues
                 </Link>
               </div>
               <div className="p-6">
-                <div className="flex items-center justify-between rounded-md border border-[#232323] bg-[#0B0B0B] p-4">
+                <div className="flex items-center justify-between rounded-md border border-zinc-200/80 bg-zinc-50 p-4 dark:border-[#232323] dark:bg-[#0B0B0B]">
                   <div>
-                    <p className="text-[13px] font-bold text-zinc-100">
+                    <p className="text-[13px] font-bold text-zinc-900 dark:text-zinc-100">
                       {maintenance.openCount} Open Maintenance {maintenance.openCount === 1 ? "Issue" : "Issues"}
                     </p>
                     <p className="mt-1 text-[11px] text-zinc-500">
@@ -299,7 +299,7 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
                   </div>
                   <Link
                     href={`/dashboard/maintenance?tenantId=${tenant.id}`}
-                    className="flex h-8 w-8 items-center justify-center border border-[#232323] transition-colors hover:border-zinc-600"
+                    className="flex h-8 w-8 items-center justify-center border border-zinc-200/80 transition-colors hover:border-zinc-400 dark:border-[#232323] dark:hover:border-zinc-600"
                   >
                     <ArrowRight className="size-3.5 text-zinc-500" />
                   </Link>
@@ -313,46 +313,46 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
           <div className="col-span-12 space-y-6 lg:col-span-4">
             
             {/* IDENTITY METADATA */}
-            <section className="border border-[#232323] bg-[#0e0e0e]">
-              <div className="flex items-center gap-2 border-b border-[#232323] px-5 py-3">
+            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#0e0e0e]">
+              <div className="flex items-center gap-2 border-b border-zinc-200/80 px-5 py-3 dark:border-[#232323]">
                 <User className="size-3.5 text-zinc-500" />
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
                   Identity Metadata
                 </h3>
               </div>
               <div className="space-y-5 p-5">
                 <div>
-                  <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-600">Date of Birth</p>
-                  <p className="text-[12px] font-bold text-zinc-300">{tenant.dateOfBirth ?? "—"}</p>
+                  <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">Date of Birth</p>
+                  <p className="text-[12px] font-bold text-zinc-800 dark:text-zinc-300">{tenant.dateOfBirth ?? "—"}</p>
                 </div>
                 <div>
-                  <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-600">Right to Rent</p>
+                  <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">Right to Rent</p>
                   <p className={cn(
                     "text-[10px] font-bold uppercase",
-                    tenant.rightToRentStatus === "verified" ? "text-emerald-500" : "text-amber-500"
+                    tenant.rightToRentStatus === "verified" ? "text-emerald-600 dark:text-emerald-500" : "text-amber-600 dark:text-amber-500"
                   )}>
                     {tenant.rightToRentStatus ?? "PENDING"}
                   </p>
                 </div>
                 <div>
-                  <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-600">System Reference</p>
-                  <p className="font-mono text-[10px] text-zinc-600">{tenant.id}</p>
+                  <p className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-600">System Reference</p>
+                  <p className="font-mono text-[10px] text-zinc-500 dark:text-zinc-600">{tenant.id}</p>
                 </div>
               </div>
             </section>
 
             {/* OPERATIONAL HISTORY LOG */}
-            <section className="border border-[#232323] bg-[#0e0e0e]">
-              <div className="flex items-center justify-between border-b border-[#232323] px-5 py-3">
+            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#0e0e0e]">
+              <div className="flex items-center justify-between border-b border-zinc-200/80 px-5 py-3 dark:border-[#232323]">
                 <div className="flex items-center gap-2">
                   <History className="size-3.5 text-zinc-500" />
-                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
                     Operational History
                   </h3>
                 </div>
                 <Link
                   href="/dashboard/activity"
-                  className="text-[9px] font-bold uppercase tracking-wider text-zinc-600 hover:text-zinc-400"
+                  className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-400"
                 >
                   Full Log
                 </Link>
@@ -380,7 +380,7 @@ export default async function TenantDetailPage({
   const batchReviewReturnHref = parseSafeBatchReviewReturnFromSearchParams(sp);
 
   return (
-    <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-[#0B0B0B] text-zinc-950 dark:text-zinc-100">
+    <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
       {batchReviewReturnHref ? <BatchReviewReturnBanner href={batchReviewReturnHref} /> : null}
       <Suspense fallback={<TenantDetailSkeleton />}>
         <TenantDetailContent params={params} />

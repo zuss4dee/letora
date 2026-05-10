@@ -139,13 +139,13 @@ async function MaintenanceWorkspaceSection({
 function MaintenanceWorkspaceFallback() {
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-      <div className="h-10 shrink-0 border-b border-[#282828] bg-[#0B0B0B] px-4" />
+      <div className="h-10 shrink-0 border-b border-zinc-200/80 bg-white px-4 dark:border-[#282828] dark:bg-[#0B0B0B]" />
       <main className="flex min-h-0 flex-1">
-        <section className="flex min-w-0 flex-1 flex-col bg-[#1A1A1A]">
-          <div className="h-16 shrink-0 border-b border-[#282828] p-4" />
+        <section className="flex min-w-0 flex-1 flex-col bg-zinc-50 dark:bg-[#1A1A1A]">
+          <div className="h-16 shrink-0 border-b border-zinc-200/80 p-4 dark:border-[#282828]" />
           <div className="space-y-2 p-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-10 animate-pulse rounded-[2px] bg-[#242424]" />
+              <div key={i} className="h-10 animate-pulse rounded-[2px] bg-zinc-200/90 dark:bg-[#242424]" />
             ))}
           </div>
         </section>
@@ -174,21 +174,21 @@ export default async function MaintenancePage({
     <div className="flex min-h-0 flex-1 flex-col">
       <DashboardPollRefresh />
       {focusIssueId || tenantId ? (
-        <div className="shrink-0 border-b border-[#282828] bg-[#141414] px-4 py-2.5 font-['Inter',system-ui,sans-serif] md:px-6">
+        <div className="shrink-0 border-b border-zinc-200/80 bg-zinc-100 px-4 py-2.5 font-['Inter',system-ui,sans-serif] text-zinc-700 dark:border-[#282828] dark:bg-[#141414] dark:text-[#e5e2e1] md:px-6">
           <Link
             href="/dashboard"
-            className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-[#e5e2e1] underline-offset-4 transition-colors hover:text-white hover:underline"
+            className="font-mono text-[10px] font-bold uppercase tracking-[0.14em] text-zinc-600 underline-offset-4 transition-colors hover:text-zinc-900 hover:underline dark:text-[#e5e2e1] dark:hover:text-white"
           >
             ← Command Center
           </Link>
-          <span className="ml-4 font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-600">
+          <span className="ml-4 font-mono text-[10px] uppercase tracking-[0.12em] text-zinc-500 dark:text-zinc-600">
             Maintenance / triage context
           </span>
         </div>
       ) : null}
       {propertyId ? (
-        <div className="shrink-0 border-b border-[#282828] bg-[#0B0B0B] px-4 py-2">
-          <Suspense fallback={<div className="h-4 w-44 animate-pulse rounded bg-[#242424]" />}>
+        <div className="shrink-0 border-b border-zinc-200/80 bg-white px-4 py-2 dark:border-[#282828] dark:bg-[#0B0B0B]">
+          <Suspense fallback={<div className="h-4 w-44 animate-pulse rounded bg-zinc-200 dark:bg-[#242424]" />}>
             <PropertyPortfolioBackLink propertyId={propertyId} />
           </Suspense>
         </div>

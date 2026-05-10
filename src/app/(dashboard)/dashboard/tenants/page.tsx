@@ -96,7 +96,7 @@ export default async function TenantsPage({
 
   return (
     <div className="flex min-h-[calc(100vh-2.5rem)] flex-col bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
-      <section className="flex min-h-0 flex-1 flex-col border-y border-zinc-200/70 bg-[#161616] dark:border-zinc-800 dark:bg-[#1A1A1A]">
+      <section className="flex min-h-0 flex-1 flex-col border-y border-zinc-200/70 bg-white dark:border-zinc-800 dark:bg-[#1A1A1A]">
         {propertyId ? (
           <div className="shrink-0 border-b border-zinc-200/70 bg-zinc-50 px-4 py-2 dark:border-zinc-800 dark:bg-[#141414]">
             <Suspense fallback={<div className="h-4 w-44 animate-pulse rounded bg-zinc-200/80 dark:bg-zinc-800/80" />}>

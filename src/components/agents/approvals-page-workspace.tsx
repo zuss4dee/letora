@@ -60,8 +60,8 @@ function ActionFilterChips({
             className={cn(
               "border px-2 py-1 text-[9px] font-bold uppercase tracking-wider transition-colors",
               active
-                ? "border-white/20 bg-white/10 text-white"
-                : "border-[#232323] bg-transparent text-zinc-500 hover:text-zinc-300",
+                ? "border-zinc-900/25 bg-zinc-900/10 text-zinc-900 dark:border-white/20 dark:bg-white/10 dark:text-white"
+                : "border-zinc-200/90 bg-transparent text-zinc-600 hover:text-zinc-900 dark:border-[#232323] dark:text-zinc-500 dark:hover:text-zinc-300",
             )}
           >
             {f.label}
@@ -115,11 +115,11 @@ export function ApprovalsPageWorkspace({
       >
         <TabsList
           variant="line"
-          className="h-auto w-full justify-start gap-0 rounded-none border-b border-[#232323] bg-transparent p-0 sm:w-auto sm:gap-8"
+          className="h-auto w-full justify-start gap-0 rounded-none border-b border-zinc-200/90 bg-transparent p-0 dark:border-[#232323] sm:w-auto sm:gap-8"
         >
           <TabsTrigger
             value="queue"
-            className="rounded-none px-0 pb-4 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-white data-[state=active]:text-white"
+            className="rounded-none px-0 pb-4 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-zinc-900 data-[state=active]:text-zinc-900 dark:after:bg-white dark:data-[state=active]:text-white"
           >
             Queue
             {pending.length > 0 ? (
@@ -128,7 +128,7 @@ export function ApprovalsPageWorkspace({
           </TabsTrigger>
           <TabsTrigger
             value="decisions"
-            className="rounded-none px-0 pb-4 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-white data-[state=active]:text-white"
+            className="rounded-none px-0 pb-4 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-zinc-900 data-[state=active]:text-zinc-900 dark:after:bg-white dark:data-[state=active]:text-white"
           >
             History
             {resolved.length > 0 ? (
@@ -139,11 +139,11 @@ export function ApprovalsPageWorkspace({
 
         <TabsContent value="queue" className="mt-0 space-y-4 outline-none">
           {pending.length === 0 ? (
-            <section className="border border-white/[0.1] bg-[#121212] p-5">
+            <section className="border border-zinc-200/90 bg-white p-5 dark:border-white/[0.1] dark:bg-[#121212]">
               <p className="font-[family-name:var(--font-inter)] text-[0.66rem] font-semibold uppercase tracking-[0.15em] text-zinc-500">
                 Queue state
               </p>
-              <p className="mt-2 font-[family-name:var(--font-inter)] text-sm font-medium text-zinc-100">
+              <p className="mt-2 font-[family-name:var(--font-inter)] text-sm font-medium text-zinc-900 dark:text-zinc-100">
                 No {MVP_TERMS.pendingApprovals.toLowerCase()} in queue
               </p>
               <p className="mt-1 max-w-3xl font-[family-name:var(--font-inter)] text-[0.78rem] leading-relaxed text-zinc-400">
@@ -153,7 +153,7 @@ export function ApprovalsPageWorkspace({
             </section>
           ) : (
             <>
-              <div className="flex flex-col gap-3 border border-[#232323] bg-[#111111] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 border border-zinc-200/90 bg-zinc-50 px-4 py-3 dark:border-[#232323] dark:bg-[#111111] sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                     Queue Filter
@@ -168,8 +168,8 @@ export function ApprovalsPageWorkspace({
                 />
               </div>
               {filteredPending.length === 0 ? (
-                <section className="border border-dashed border-white/[0.12] bg-[#111111] p-5">
-                  <p className="font-[family-name:var(--font-inter)] text-sm text-zinc-300">
+                <section className="border border-dashed border-zinc-300 bg-zinc-50 p-5 dark:border-white/[0.12] dark:bg-[#111111]">
+                  <p className="font-[family-name:var(--font-inter)] text-sm text-zinc-700 dark:text-zinc-300">
                     No {MVP_TERMS.pendingApproval.toLowerCase()} for the selected filter.
                   </p>
                   <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.72rem] text-zinc-500">
@@ -189,15 +189,15 @@ export function ApprovalsPageWorkspace({
 
         <TabsContent value="decisions" className="mt-0 space-y-4 outline-none">
           {resolved.length === 0 ? (
-            <section className="border border-dashed border-white/[0.12] bg-[#111111] p-5">
-              <p className="font-[family-name:var(--font-inter)] text-sm text-zinc-300">No recent decisions yet.</p>
+            <section className="border border-dashed border-zinc-300 bg-zinc-50 p-5 dark:border-white/[0.12] dark:bg-[#111111]">
+              <p className="font-[family-name:var(--font-inter)] text-sm text-zinc-700 dark:text-zinc-300">No recent decisions yet.</p>
               <p className="mt-1 font-[family-name:var(--font-inter)] text-[0.72rem] text-zinc-500">
                 Approved and denied decisions will appear here for audit review.
               </p>
             </section>
           ) : (
             <>
-              <div className="flex flex-col gap-2 border border-[#232323] bg-[#111111] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-2 border border-zinc-200/90 bg-zinc-50 px-4 py-3 dark:border-[#232323] dark:bg-[#111111] sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
                   Decision History
                 </p>
@@ -210,8 +210,8 @@ export function ApprovalsPageWorkspace({
                 />
               </div>
               {filteredResolved.length === 0 ? (
-                <section className="border border-dashed border-white/[0.12] bg-[#111111] p-5">
-                  <p className="font-[family-name:var(--font-inter)] text-sm text-zinc-300">
+                <section className="border border-dashed border-zinc-300 bg-zinc-50 p-5 dark:border-white/[0.12] dark:bg-[#111111]">
+                  <p className="font-[family-name:var(--font-inter)] text-sm text-zinc-700 dark:text-zinc-300">
                     No decisions for the selected filter.
                   </p>
                 </section>

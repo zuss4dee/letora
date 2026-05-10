@@ -32,7 +32,6 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
-import Link from "next/link";
 
 import { WorkspaceSettingsForm } from "@/components/settings/workspace-settings-form";
 import { mergeSettingsWithAuthHints } from "@/lib/auth/profile-hints";
@@ -69,10 +68,10 @@ const defaultValues: UserSettingsInput = {
 function SettingsSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="h-64 animate-pulse bg-obsidian-surface-low rounded-lg" />
+      <div className="h-64 animate-pulse rounded-lg bg-zinc-200/90 dark:bg-obsidian-surface-low" />
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="h-48 animate-pulse bg-obsidian-surface-low rounded-lg" />
-        <div className="h-48 animate-pulse bg-obsidian-surface-low rounded-lg" />
+        <div className="h-48 animate-pulse rounded-lg bg-zinc-200/90 dark:bg-obsidian-surface-low" />
+        <div className="h-48 animate-pulse rounded-lg bg-zinc-200/90 dark:bg-obsidian-surface-low" />
       </div>
     </div>
   );
@@ -108,7 +107,7 @@ async function SettingsAsyncSection() {
 
 export default function SettingsPage() {
   return (
-    <div className="@container/main relative flex flex-1 flex-col overflow-hidden bg-[#0b0b0b] text-white">
+    <div className="@container/main relative flex flex-1 flex-col overflow-hidden bg-[#f8f8f7] text-zinc-950 dark:bg-[#0b0b0b] dark:text-zinc-100">
       <div className="relative flex h-full min-h-0 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-0 lg:px-12">
           <div className="mx-auto w-full max-w-6xl">

@@ -47,7 +47,7 @@ async function TenanciesDataSection({ importBatchId }: { importBatchId?: string 
       ])
     : [[], [], [], [], null];
 
-  let list = scopedTenancyRows(tenancies, batchFilter ?? null);
+  const list = scopedTenancyRows(tenancies, batchFilter ?? null);
 
   const scope =
     userId && importBatchId && batchFilter?.ok
@@ -101,22 +101,22 @@ async function TenanciesDataSection({ importBatchId }: { importBatchId?: string 
 
 function TenanciesPageFallback() {
   return (
-    <div className="flex min-h-0 flex-1 bg-[#0e0e0e]">
-      <div className="flex min-w-0 flex-1 flex-col border-r border-[#232323]">
-        <div className="h-11 border-b border-[#232323] bg-[#111111]" />
+    <div className="flex min-h-0 flex-1 bg-zinc-100 dark:bg-[#0e0e0e]">
+      <div className="flex min-w-0 flex-1 flex-col border-r border-zinc-200/80 dark:border-[#232323]">
+        <div className="h-11 border-b border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#111111]" />
         <div className="min-h-0 flex-1 p-3">
           <div className="space-y-2">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="h-10 animate-pulse rounded-[2px] bg-[#1a1a1a]" />
+              <div key={i} className="h-10 animate-pulse rounded-[2px] bg-zinc-200/80 dark:bg-[#1a1a1a]" />
             ))}
           </div>
         </div>
       </div>
-      <aside className="hidden w-80 border-l border-[#232323] bg-[#111111] lg:block">
-        <div className="h-24 border-b border-[#232323]" />
+      <aside className="hidden w-80 border-l border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#111111] lg:block">
+        <div className="h-24 border-b border-zinc-200/80 dark:border-[#232323]" />
         <div className="space-y-3 p-4">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-12 animate-pulse rounded-[2px] bg-[#1a1a1a]" />
+            <div key={i} className="h-12 animate-pulse rounded-[2px] bg-zinc-200/80 dark:bg-[#1a1a1a]" />
           ))}
         </div>
       </aside>
@@ -140,11 +140,11 @@ export default async function TenanciesPage({
   const importBatchId = parseImportBatchParam(sp);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[#0B0B0B] p-4 lg:p-8">
+    <div className="flex min-h-0 flex-1 flex-col bg-[#f8f8f7] p-4 text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100 lg:p-8">
       {/* A. Page Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="font-['Inter',sans-serif] text-xl font-semibold tracking-tight text-white md:text-2xl">
+          <h1 className="font-['Inter',sans-serif] text-xl font-semibold tracking-tight text-zinc-900 md:text-2xl dark:text-white">
             Tenancies
           </h1>
           <p className="mt-1 font-mono text-[10px] uppercase tracking-wide text-zinc-500">
@@ -154,13 +154,13 @@ export default async function TenanciesPage({
         <div className="flex flex-wrap gap-2">
           <Link
             href="/dashboard/tenants"
-            className="border border-[#333333] px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-300 transition-colors hover:bg-[#161616]"
+            className="border border-zinc-300 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:bg-transparent dark:text-zinc-300 dark:hover:bg-[#161616]"
           >
             View Tenants
           </Link>
           <Link
             href="/dashboard/properties"
-            className="border border-[#333333] px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-300 transition-colors hover:bg-[#161616]"
+            className="border border-zinc-300 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:bg-transparent dark:text-zinc-300 dark:hover:bg-[#161616]"
           >
             View Portfolio
           </Link>

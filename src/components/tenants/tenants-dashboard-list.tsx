@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { AlertTriangle, CheckCircle2, ClipboardList, Filter, Hourglass, Key, Plus } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Filter, Hourglass, Key, Plus } from "lucide-react";
 
 import { AddTenantDialog } from "@/components/tenants/add-tenant-dialog";
 import { Button } from "@/components/ui/button";
@@ -255,7 +255,7 @@ export function TenantsDashboardList({ tenants }: { tenants: TenantRow[] }) {
               <th className="w-8 px-4 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                 <input
                   type="checkbox"
-                  className="h-3.5 w-3.5 rounded-none border-zinc-400 bg-transparent text-white focus:ring-0 dark:border-zinc-700"
+                  className="h-3.5 w-3.5 rounded-none border-zinc-400 bg-transparent text-zinc-900 focus:ring-0 dark:border-zinc-700 dark:text-white"
                   aria-label="Select all tenants"
                 />
               </th>
@@ -298,7 +298,7 @@ export function TenantsDashboardList({ tenants }: { tenants: TenantRow[] }) {
                   <td className="px-4 py-0">
                     <input
                       type="checkbox"
-                      className="h-3.5 w-3.5 rounded-none border-zinc-400 bg-transparent text-white focus:ring-0 dark:border-zinc-700"
+                      className="h-3.5 w-3.5 rounded-none border-zinc-400 bg-transparent text-zinc-900 focus:ring-0 dark:border-zinc-700 dark:text-white"
                       aria-label={`Select ${name}`}
                     />
                   </td>

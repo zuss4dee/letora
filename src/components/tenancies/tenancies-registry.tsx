@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars -- tenancy registry scaffold: unused imports/helpers for upcoming column tooling */
 import { propertyInspectorActivityBarClass } from "@/app/(dashboard)/dashboard/properties/property-inspector-activity-display";
 import {
   formatTenancyInspectorWhen,
@@ -303,45 +304,45 @@ export function TenanciesRegistry({
   const rtr = selected ? rightToRentLabel(selected.tenantRightToRentStatus) : { label: "PENDING", passed: false };
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col text-[#e5e2e1]">
+    <div className="flex min-h-0 flex-1 flex-col text-zinc-900 dark:text-[#e5e2e1]">
       {/* B. Top Summary Row */}
-      <div className="mb-8 grid grid-cols-1 gap-px border border-[#333333] bg-[#333333] sm:grid-cols-2 lg:grid-cols-4">
-        <div className="flex flex-col bg-[#161616] p-4">
+      <div className="mb-8 grid grid-cols-1 gap-px border border-zinc-200/90 bg-zinc-200/90 sm:grid-cols-2 lg:grid-cols-4 dark:border-[#333333] dark:bg-[#333333]">
+        <div className="flex flex-col bg-white p-4 dark:bg-[#161616]">
           <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Active Tenancies</span>
-          <span className="text-xl font-bold text-white tabular-nums">{activeCount}</span>
+          <span className="text-xl font-bold tabular-nums text-zinc-900 dark:text-white">{activeCount}</span>
         </div>
-        <div className="flex flex-col bg-[#161616] p-4">
+        <div className="flex flex-col bg-white p-4 dark:bg-[#161616]">
           <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Ending Soon</span>
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold text-white tabular-nums">{endingSoonCount}</span>
+            <span className="text-xl font-bold tabular-nums text-zinc-900 dark:text-white">{endingSoonCount}</span>
             {endingSoonCount > 0 && (
-              <span className="bg-[#93000a] px-1 py-0.5 text-[8px] font-bold uppercase text-[#ffdad6]">
+              <span className="bg-red-100 px-1 py-0.5 text-[8px] font-bold uppercase text-red-900 dark:bg-[#93000a] dark:text-[#ffdad6]">
                 Review Required
               </span>
             )}
           </div>
         </div>
-        <div className="flex flex-col bg-[#161616] p-4">
+        <div className="flex flex-col bg-white p-4 dark:bg-[#161616]">
           <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Vacant Units</span>
-          <span className={cn("text-xl font-bold tabular-nums", vacantCount > 0 ? "text-amber-400" : "text-white")}>
+          <span className={cn("text-xl font-bold tabular-nums", vacantCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-zinc-900 dark:text-white")}>
             {vacantCount}
           </span>
         </div>
-        <div className="flex flex-col bg-[#161616] p-4">
+        <div className="flex flex-col bg-white p-4 dark:bg-[#161616]">
           <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Monthly Yield (Live)</span>
-          <span className="text-xl font-bold text-[#afefdd] tabular-nums">{gbp.format(monthlyRentExpected)}</span>
+          <span className="text-xl font-bold tabular-nums text-emerald-700 dark:text-[#afefdd]">{gbp.format(monthlyRentExpected)}</span>
         </div>
       </div>
 
-      <div className="flex min-h-0 min-w-0 flex-1 bg-[#0e0e0e]">
+      <div className="flex min-h-0 min-w-0 flex-1 bg-zinc-50 dark:bg-[#0e0e0e]">
         <div
           className={cn(
-            "flex min-h-0 min-w-0 flex-1 flex-col",
-            inspectorOpen && "border-r border-[#232323]",
+            "flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-transparent",
+            inspectorOpen && "border-r border-zinc-200/80 dark:border-[#232323]",
           )}
         >
           {/* List Toolbar */}
-          <div className="flex items-center justify-between border-b border-[#232323] px-3 py-2">
+          <div className="flex items-center justify-between border-b border-zinc-200/80 px-3 py-2 dark:border-[#232323]">
             <div className="flex items-center gap-1 text-[11px]">
               {[
                 { id: "all", label: "All" },
@@ -356,8 +357,8 @@ export function TenanciesRegistry({
                   className={cn(
                     "h-7 border px-3 text-[11px] font-medium transition-colors",
                     filter === item.id
-                      ? "border-[#3a3a3a] bg-[#1d1d1d] text-[#f2f2f2]"
-                      : "border-transparent text-[#737373] hover:bg-[#1a1a1a] hover:text-[#c4c7c8]",
+                      ? "border-zinc-300 bg-zinc-200 text-zinc-900 dark:border-[#3a3a3a] dark:bg-[#1d1d1d] dark:text-[#f2f2f2]"
+                      : "border-transparent text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-[#737373] dark:hover:bg-[#1a1a1a] dark:hover:text-[#c4c7c8]",
                   )}
                 >
                   {item.label}
@@ -369,18 +370,18 @@ export function TenanciesRegistry({
                 className={cn(
                   "flex h-7 items-center border px-3 text-[11px] font-medium transition-colors",
                   filter === "overdue"
-                    ? "border-[#3a3a3a] bg-[#1d1d1d] text-[#ffb4ab]"
-                    : "border-transparent text-[#ff8c8c] hover:bg-[#1a1a1a]",
+                    ? "border-zinc-300 bg-zinc-200 text-red-700 dark:border-[#3a3a3a] dark:bg-[#1d1d1d] dark:text-[#ffb4ab]"
+                    : "border-transparent text-red-600 hover:bg-red-50 dark:text-[#ff8c8c] dark:hover:bg-[#1a1a1a]",
                 )}
               >
-                <span className="mr-2 size-1.5 rounded-full bg-[#ffb4ab]" />
+                <span className="mr-2 size-1.5 rounded-full bg-red-400 dark:bg-[#ffb4ab]" />
                 Arrears
               </button>
             </div>
-            <div className="flex items-center gap-4 text-[11px] text-[#7a7a7a]">
+            <div className="flex items-center gap-4 text-[11px] text-zinc-500 dark:text-[#7a7a7a]">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button type="button" className="hover:text-[#c4c7c8]">
+                  <button type="button" className="hover:text-zinc-800 dark:hover:text-[#c4c7c8]">
                     Sort: {sortKeyTriggerLabel(sortKey)}
                   </button>
                 </DropdownMenuTrigger>
@@ -403,8 +404,8 @@ export function TenanciesRegistry({
           {/* C. Main Tenancies List/Table */}
           <div className="min-h-0 flex-1 overflow-auto">
             <table className="w-full border-collapse text-left">
-              <thead className="sticky top-0 z-10 bg-[#111111] text-[10px] uppercase tracking-[0.08em] text-[#6f6f6f]">
-                <tr className="border-b border-[#232323]">
+              <thead className="sticky top-0 z-10 bg-zinc-100 text-[10px] uppercase tracking-[0.08em] text-zinc-500 dark:bg-[#111111] dark:text-[#6f6f6f]">
+                <tr className="border-b border-zinc-200/80 dark:border-[#232323]">
                   <th className="px-3 py-2.5 font-medium">Occupant</th>
                   <th className="px-3 py-2.5 font-medium">Property</th>
                   <th className="px-3 py-2.5 font-medium">Rent</th>
@@ -416,7 +417,7 @@ export function TenanciesRegistry({
               <tbody className="text-[12px]">
                 {filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-3 py-12 text-center text-[12px] text-[#7b7b7b]">
+                    <td colSpan={6} className="px-3 py-12 text-center text-[12px] text-zinc-500 dark:text-[#7b7b7b]">
                       No active tenancy records match this filter.
                     </td>
                   </tr>
@@ -433,28 +434,28 @@ export function TenanciesRegistry({
                         key={row.id}
                         onClick={() => setSelectedTenancyId(row.id)}
                         className={cn(
-                          "group cursor-pointer border-b border-[#232323] transition-colors hover:bg-[#1b1b1b]",
-                          isSelected && "bg-[#1a1a1a]",
+                          "group cursor-pointer border-b border-zinc-200/80 transition-colors hover:bg-zinc-100 dark:border-[#232323] dark:hover:bg-[#1b1b1b]",
+                          isSelected && "bg-zinc-100 dark:bg-[#1a1a1a]",
                         )}
                       >
                         <td className="px-3 py-3">
                           <div className="flex items-center gap-2.5">
-                            <div className="flex size-6 items-center justify-center border border-[#353535] bg-[#202020] text-[10px] text-[#d0d0d0]">
+                            <div className="flex size-6 items-center justify-center border border-zinc-300 bg-zinc-100 text-[10px] text-zinc-700 dark:border-[#353535] dark:bg-[#202020] dark:text-[#d0d0d0]">
                               {initials(row.tenantFullName)}
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate text-[12px] font-semibold text-[#f0f0f0] group-hover:text-white">
+                              <p className="truncate text-[12px] font-semibold text-zinc-900 group-hover:text-zinc-950 dark:text-[#f0f0f0] dark:group-hover:text-white">
                                 {row.tenantFullName ?? "Unknown Occupant"}
                               </p>
-                              <p className="truncate text-[10px] text-[#707070]">{tenancyRef(row.id)}</p>
+                              <p className="truncate text-[10px] text-zinc-500 dark:text-[#707070]">{tenancyRef(row.id)}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="px-3 py-3 text-[#d5d5d5]">
+                        <td className="px-3 py-3 text-zinc-700 dark:text-[#d5d5d5]">
                           <p className="truncate text-[12px]">{address.line1}</p>
-                          <p className="truncate text-[10px] text-[#737373]">{address.line2}</p>
+                          <p className="truncate text-[10px] text-zinc-500 dark:text-[#737373]">{address.line2}</p>
                         </td>
-                        <td className="px-3 py-3 font-mono text-[12px] font-medium text-[#ebebeb]">
+                        <td className="px-3 py-3 font-mono text-[12px] font-medium text-zinc-900 dark:text-[#ebebeb]">
                           {gbp.format(row.monthlyRent ?? 0)}
                         </td>
                         <td className="px-3 py-3">
@@ -470,7 +471,7 @@ export function TenanciesRegistry({
                             {rowStatus}
                           </span>
                         </td>
-                        <td className="px-3 py-3 text-[11px] text-[#7f7f7f]">
+                        <td className="px-3 py-3 text-[11px] text-zinc-600 dark:text-[#7f7f7f]">
                           <div className="flex flex-col">
                             <span>{fmtShortDate(row.startDate)}</span>
                             <span className="text-[9px] opacity-60">to {fmtShortDate(row.endDate)}</span>
@@ -479,18 +480,18 @@ export function TenanciesRegistry({
                         <td className="px-3 py-3 font-mono text-[12px]">
                           {payment.ui === "arrears" ? (
                             <div className="flex items-center gap-1.5">
-                              <span className="size-1.5 rounded-full bg-[#ffb4ab]" />
-                              <span className="font-bold text-[#ffb4ab]">{gbp.format(payment.arrears)} OWED</span>
+                              <span className="size-1.5 rounded-full bg-red-400 dark:bg-[#ffb4ab]" />
+                              <span className="font-bold text-red-700 dark:text-[#ffb4ab]">{gbp.format(payment.arrears)} OWED</span>
                             </div>
                           ) : payment.ui === "paid" ? (
                             <div className="flex items-center gap-1.5">
-                              <span className="size-1.5 rounded-full bg-[#5ab875]" />
-                              <span className="text-[#5ab875]">COLLECTED</span>
+                              <span className="size-1.5 rounded-full bg-emerald-600 dark:bg-[#5ab875]" />
+                              <span className="text-emerald-700 dark:text-[#5ab875]">COLLECTED</span>
                             </div>
                           ) : (
                             <div className="flex items-center gap-1.5">
-                              <span className="size-1.5 rounded-full bg-[#707070]" />
-                              <span className="text-[#707070]">DUE: {gbp.format(paymentDue)}</span>
+                              <span className="size-1.5 rounded-full bg-zinc-400 dark:bg-[#707070]" />
+                              <span className="text-zinc-600 dark:text-[#707070]">DUE: {gbp.format(paymentDue)}</span>
                             </div>
                           )}
                         </td>
@@ -505,15 +506,15 @@ export function TenanciesRegistry({
 
         {/* E. Actionability / Inspector Aside */}
         {inspectorOpen && (
-          <aside className="hidden h-full min-h-0 w-[340px] shrink-0 flex-col overflow-hidden border-l border-[#232323] bg-[#111111] lg:flex">
-              <div className="shrink-0 border-b border-[#232323] p-6">
+          <aside className="hidden h-full min-h-0 w-[340px] shrink-0 flex-col overflow-hidden border-l border-zinc-200/80 bg-zinc-50 dark:border-[#232323] dark:bg-[#111111] lg:flex">
+              <div className="shrink-0 border-b border-zinc-200/80 p-6 dark:border-[#232323]">
                 <div className="mb-4 flex items-center justify-between gap-2">
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-[#6f6f6f]">Operational Inspector</p>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-[#6f6f6f]">Operational Inspector</p>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="size-6 shrink-0 text-[#8a8a8a] hover:bg-[#1a1a1a] hover:text-[#e8e8e8]"
+                    className="size-6 shrink-0 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-900 dark:text-[#8a8a8a] dark:hover:bg-[#1a1a1a] dark:hover:text-[#e8e8e8]"
                     aria-label="Close panel"
                     onClick={() => setSelectedTenancyId(null)}
                   >
@@ -521,11 +522,11 @@ export function TenanciesRegistry({
                   </Button>
                 </div>
                 <div className="mb-6 flex items-center gap-4">
-                  <div className="flex size-12 items-center justify-center border border-[#363636] bg-[#212121] text-[14px] font-bold text-[#e2e2e2]">
+                  <div className="flex size-12 items-center justify-center border border-zinc-300 bg-zinc-100 text-[14px] font-bold text-zinc-900 dark:border-[#363636] dark:bg-[#212121] dark:text-[#e2e2e2]">
                     {initials(selected.tenantFullName)}
                   </div>
                   <div className="min-w-0">
-                    <h2 className="truncate text-xl font-bold text-white">
+                    <h2 className="truncate text-xl font-bold text-zinc-900 dark:text-white">
                       {selected.tenantFullName ?? "Unknown Occupant"}
                     </h2>
                     <p className="truncate font-mono text-[10px] uppercase tracking-wide text-zinc-500">
@@ -538,13 +539,13 @@ export function TenanciesRegistry({
                 <div className="grid grid-cols-2 gap-2">
                   <Link
                     href={`/dashboard/tenants/${selected.tenantId}`}
-                    className="border border-[#2f2f2f] bg-[#161616] py-2 text-center text-[10px] font-bold uppercase tracking-[0.08em] text-white hover:bg-[#202020] transition-colors"
+                    className="border border-zinc-300 bg-zinc-100 py-2 text-center text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-900 transition-colors hover:bg-zinc-200 dark:border-[#2f2f2f] dark:bg-[#161616] dark:text-white dark:hover:bg-[#202020]"
                   >
                     Tenant Profile
                   </Link>
                   <Link
                     href={`/dashboard/properties/${selected.propertyId}`}
-                    className="border border-[#2f2f2f] bg-[#161616] py-2 text-center text-[10px] font-bold uppercase tracking-[0.08em] text-white hover:bg-[#202020] transition-colors"
+                    className="border border-zinc-300 bg-zinc-100 py-2 text-center text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-900 transition-colors hover:bg-zinc-200 dark:border-[#2f2f2f] dark:bg-[#161616] dark:text-white dark:hover:bg-[#202020]"
                   >
                     Property
                   </Link>
@@ -560,14 +561,14 @@ export function TenanciesRegistry({
                   <div className="grid grid-cols-2 gap-x-6 gap-y-6">
                     <div>
                       <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Status</p>
-                      <p className="text-xs font-bold text-white uppercase">{selected.status}</p>
+                      <p className="text-xs font-bold uppercase text-zinc-900 dark:text-white">{selected.status}</p>
                     </div>
                     <div>
                       <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Rent State</p>
                       <p className={cn(
                         "text-xs font-bold uppercase",
-                        selectedPayment?.ui === "arrears" ? "text-[#ffb4ab]" : 
-                        selectedPayment?.ui === "paid" ? "text-[#5ab875]" : "text-white"
+                        selectedPayment?.ui === "arrears" ? "text-red-600 dark:text-[#ffb4ab]" :
+                        selectedPayment?.ui === "paid" ? "text-emerald-700 dark:text-[#5ab875]" : "text-zinc-900 dark:text-white"
                       )}>
                         {selectedPayment?.ui === "arrears" ? "Arrears" : 
                          selectedPayment?.ui === "paid" ? "Collected" : "Due"}
@@ -575,13 +576,13 @@ export function TenanciesRegistry({
                     </div>
                     <div>
                       <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Monthly Rent</p>
-                      <p className="font-mono text-xs font-bold text-[#afefdd]">
+                      <p className="font-mono text-xs font-bold text-emerald-700 dark:text-[#afefdd]">
                         {gbp.format(selected.monthlyRent ?? 0)}
                       </p>
                     </div>
                     <div>
                       <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Expiry</p>
-                      <p className="font-mono text-xs font-medium text-white">
+                      <p className="font-mono text-xs font-medium text-zinc-900 dark:text-white">
                         {fmtInspectorDate(selected.endDate)}
                       </p>
                     </div>
@@ -589,7 +590,7 @@ export function TenanciesRegistry({
                 </section>
 
                 {/* 2. Secondary Context (Collapsed by default or simplified) */}
-                <section className="border-t border-[#232323] pt-6">
+                <section className="border-t border-zinc-200/80 pt-6 dark:border-[#232323]">
                   <div className="grid grid-cols-2 gap-x-6 gap-y-4">
                     <div>
                       <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Commencement</p>
@@ -607,7 +608,7 @@ export function TenanciesRegistry({
                 </section>
 
                 {/* 3. Recent Activity Log (Noise reduced) */}
-                <section className="border-t border-[#232323] pt-6">
+                <section className="border-t border-zinc-200/80 pt-6 dark:border-[#232323]">
                   <div className="mb-4 flex items-center justify-between gap-2">
                     <h3 className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">
                       Recent History
@@ -629,7 +630,7 @@ export function TenanciesRegistry({
                           />
                           <div className="min-w-0 flex flex-col gap-0.5">
                             <span className="text-zinc-600">{formatTenancyInspectorWhen(entry.at)}</span>
-                            <span className="truncate text-zinc-300">{entry.title}</span>
+                            <span className="truncate text-zinc-700 dark:text-zinc-300">{entry.title}</span>
                           </div>
                         </div>
                       ))}
@@ -639,11 +640,11 @@ export function TenanciesRegistry({
               </div>
 
               {/* Bottom Sticky Actions (Action Priority) */}
-              <div className="shrink-0 border-t border-[#232323] bg-[#0B0B0B] p-6">
+              <div className="shrink-0 border-t border-zinc-200/80 bg-white p-6 dark:border-[#232323] dark:bg-[#0B0B0B]">
                 <div className="grid grid-cols-1 gap-2">
                   <Link
                     href={`/dashboard/tenancies/${selected.id}`}
-                    className="flex items-center justify-center bg-white py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-black hover:bg-zinc-200 transition-colors"
+                    className="flex items-center justify-center bg-zinc-900 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                   >
                     Open Full Case File
                   </Link>
@@ -656,7 +657,7 @@ export function TenanciesRegistry({
                         : selected.monthlyRent ?? 0
                     }
                     triggerLabel="Log Payment Action"
-                    triggerClassName="w-full border border-[#333333] bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white hover:bg-zinc-900 transition-colors"
+                    triggerClassName="w-full border border-zinc-300 bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-800 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-white dark:hover:bg-zinc-900"
                   />
                   
                   {/* Demoted Metadata Edit */}

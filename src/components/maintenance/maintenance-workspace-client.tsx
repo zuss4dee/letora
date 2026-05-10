@@ -1,5 +1,6 @@
 "use client";
 
+/* eslint-disable @typescript-eslint/no-unused-vars -- legacy ops shell: unused icons/helpers reserved for future controls */
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -82,15 +83,15 @@ function matchesPriorityFilter(row: MaintenanceRequestRow, f: PriorityFilter): b
 function statusChip(status: string | null) {
   const s = normalizeStatus(status);
   if (s === "in_progress") {
-    return "bg-red-500/15 border-red-500/25 text-red-300";
+    return "border border-red-200 bg-red-50 text-red-800 dark:bg-red-500/15 dark:border-red-500/25 dark:text-red-300";
   }
   if (s === "scheduled") {
-    return "bg-zinc-700/50 border-zinc-600 text-zinc-300";
+    return "border border-zinc-300 bg-zinc-100 text-zinc-700 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-zinc-300";
   }
   if (s === "resolved") {
-    return "bg-emerald-500/15 border-emerald-500/25 text-emerald-300";
+    return "border border-emerald-200 bg-emerald-50 text-emerald-800 dark:bg-emerald-500/15 dark:border-emerald-500/25 dark:text-emerald-300";
   }
-  return "bg-zinc-700/50 border-zinc-600 text-zinc-300";
+  return "border border-zinc-300 bg-zinc-100 text-zinc-700 dark:bg-zinc-700/50 dark:border-zinc-600 dark:text-zinc-300";
 }
 
 function statusLabel(status: string | null) {
@@ -245,6 +246,7 @@ export function MaintenanceWorkspaceClient({
     return out;
   }, [rows, statusFilter, priorityFilter, search, sortMode, deeplinkIssueId]);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- sync list selection to URL deeplink and filtered roster */
   useEffect(() => {
     const id = deeplinkIssueId?.trim();
     if (!id) return;
@@ -252,6 +254,7 @@ export function MaintenanceWorkspaceClient({
     setSelectedId(id);
     setInspectorTab("insights");
   }, [deeplinkIssueId, rows]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useLayoutEffect(() => {
     const id = deeplinkIssueId?.trim();
@@ -264,6 +267,7 @@ export function MaintenanceWorkspaceClient({
     });
   }, [deeplinkIssueId, selectedId, filteredSorted]);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- clear selection when row drops out of filtered list */
   useEffect(() => {
     if (!selectedId) return;
     const pin = deeplinkIssueId?.trim();
@@ -274,6 +278,7 @@ export function MaintenanceWorkspaceClient({
       setSelectedId(null);
     }
   }, [selectedId, filteredSorted, deeplinkIssueId, rows]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const selected =
     selectedId != null
@@ -322,14 +327,14 @@ export function MaintenanceWorkspaceClient({
       {tenantScopeMissing ? (
         <div
           role="status"
-          className="flex shrink-0 items-start gap-2 border-b border-[#382f22] bg-[#1a1612] px-6 py-3 text-left"
+          className="flex shrink-0 items-start gap-2 border-b border-amber-200/90 bg-amber-50 px-6 py-3 text-left dark:border-[#382f22] dark:bg-[#1a1612]"
         >
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-amber-500/90" aria-hidden />
           <div className="min-w-0 space-y-1">
-            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-100/90">
+            <span className="font-mono text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-100/90">
               Tenant
             </span>
-            <p className="font-mono text-[10px] leading-relaxed uppercase tracking-[0.04em] text-zinc-500">
+            <p className="font-mono text-[10px] leading-relaxed uppercase tracking-[0.04em] text-zinc-600 dark:text-zinc-500">
               No tenancy on your account matches this tenant id. Showing every maintenance issue you can
               access here (respecting property scope when set).
             </p>
@@ -339,39 +344,39 @@ export function MaintenanceWorkspaceClient({
       {tenantScopeRosterFallback ? (
         <div
           role="status"
-          className="flex shrink-0 items-start gap-2 border-b border-[#382f22] bg-[#1a1612] px-6 py-3 text-left"
+          className="flex shrink-0 items-start gap-2 border-b border-amber-200/90 bg-amber-50 px-6 py-3 text-left dark:border-[#382f22] dark:bg-[#1a1612]"
         >
           <span className="mt-0.5 font-mono text-[10px] font-bold uppercase tracking-wider text-amber-400/90">
             Scope
           </span>
-          <p className="font-mono text-[10px] leading-relaxed uppercase tracking-[0.04em] text-zinc-500">
+          <p className="font-mono text-[10px] leading-relaxed uppercase tracking-[0.04em] text-zinc-600 dark:text-zinc-500">
             Tenant filter matched no issues — widened to every issue for this property (or your portfolio
             when no property is set).
           </p>
         </div>
       ) : null}
-      <div className="flex shrink-0 items-center justify-between border-b border-[#232323] bg-[#0e0e0e] px-6 py-4">
+      <div className="flex shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white px-6 py-4 dark:border-[#232323] dark:bg-[#0e0e0e]">
         <div>
-          <h1 className="text-[16px] font-bold tracking-tight text-white uppercase">Maintenance Center</h1>
+          <h1 className="text-[16px] font-bold tracking-tight text-zinc-900 uppercase dark:text-white">Maintenance Center</h1>
           <p className="text-[11px] text-zinc-500">Operational Issue Triage & Contractor Coordination</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="relative w-64">
-            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-600" />
+            <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500 dark:text-zinc-600" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-full border border-[#232323] bg-[#080808] pl-8 pr-3 text-[11px] text-zinc-300 placeholder-zinc-600 focus:border-zinc-700 focus:outline-none transition-colors"
+              className="h-8 w-full border border-zinc-200/90 bg-white pl-8 pr-3 text-[11px] text-zinc-900 placeholder-zinc-400 transition-colors focus:border-zinc-400 focus:outline-none dark:border-[#232323] dark:bg-[#080808] dark:text-zinc-300 dark:placeholder-zinc-600 dark:focus:border-zinc-700"
               placeholder="Search issues, properties..."
             />
           </div>
-          <Button className="h-8 rounded-none bg-white px-4 text-[10px] font-bold uppercase tracking-widest text-black hover:bg-zinc-200">
+          <Button className="h-8 rounded-none bg-zinc-900 px-4 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
             Log Issue
           </Button>
         </div>
       </div>
 
-      <div className="grid shrink-0 grid-cols-4 border-b border-[#232323] bg-[#0B0B0B]">
+      <div className="grid shrink-0 grid-cols-4 border-b border-zinc-200/80 bg-zinc-50 dark:border-[#232323] dark:bg-[#0B0B0B]">
         {[
           {
             label: "Open Issues",
@@ -391,13 +396,13 @@ export function MaintenanceWorkspaceClient({
           },
         ].map((stat, i) => (
           <div key={i} className={cn(
-            "flex flex-col border-r border-[#232323] p-4 last:border-r-0",
+            "flex flex-col border-r border-zinc-200/80 p-4 last:border-r-0 dark:border-r-[#232323]",
           )}>
             <span className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500">{stat.label}</span>
             <span className={cn(
               "text-xl font-bold tabular-nums",
-              stat.tone === 'rose' && stat.value > 0 ? "text-rose-400" : 
-              stat.tone === 'emerald' && stat.value > 0 ? "text-emerald-400" : "text-white"
+              stat.tone === 'rose' && stat.value > 0 ? "text-rose-600 dark:text-rose-400" : 
+              stat.tone === 'emerald' && stat.value > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-900 dark:text-white"
             )}>
               {stat.value}
             </span>
@@ -408,11 +413,11 @@ export function MaintenanceWorkspaceClient({
       <main className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
         <section
           className={cn(
-            "flex min-h-0 min-w-0 flex-1 flex-col bg-[#1A1A1A]",
-            inspectorOpen && "border-r border-[#282828]",
+            "flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-[#1A1A1A]",
+            inspectorOpen && "border-r border-zinc-200/80 dark:border-[#282828]",
           )}
         >
-          <div className="flex shrink-0 items-center justify-between border-b border-[#232323] bg-[#111111] px-4 py-3">
+          <div className="flex shrink-0 items-center justify-between border-b border-zinc-200/80 bg-zinc-50 px-4 py-3 dark:border-[#232323] dark:bg-[#111111]">
             <div className="flex items-center gap-3">
               <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">Filter Status</span>
               <div className="flex gap-1">
@@ -422,7 +427,7 @@ export function MaintenanceWorkspaceClient({
                     onClick={() => setStatusFilter(f)}
                     className={cn(
                       "border px-2 py-1 text-[9px] font-bold uppercase tracking-wider transition-colors",
-                      statusFilter === f ? "border-white/20 bg-white/10 text-white" : "border-[#232323] bg-transparent text-zinc-500 hover:text-zinc-300"
+                      statusFilter === f ? "border-zinc-900/25 bg-zinc-900/10 text-zinc-900 dark:border-white/20 dark:bg-white/10 dark:text-white" : "border-zinc-200/90 bg-transparent text-zinc-600 hover:text-zinc-900 dark:border-[#232323] dark:text-zinc-500 dark:hover:text-zinc-300"
                     )}
                   >
                     {f.replace('_', ' ')}
@@ -432,11 +437,11 @@ export function MaintenanceWorkspaceClient({
             </div>
             <div className="flex items-center gap-4">
               <Select value={sortMode} onValueChange={(v) => setSortMode(v as SortMode)}>
-                <SelectTrigger className="h-auto w-auto gap-1.5 border-none bg-transparent p-0 text-[10px] font-bold uppercase tracking-wider text-zinc-500 hover:text-white focus:ring-0">
+                <SelectTrigger className="h-auto w-auto gap-1.5 border-none bg-transparent p-0 text-[10px] font-bold uppercase tracking-wider text-zinc-600 hover:text-zinc-900 focus:ring-0 dark:text-zinc-500 dark:hover:text-white">
                   <span className="text-zinc-600">Sort:</span>
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="border-[#232323] bg-[#1A1A1A] text-zinc-100">
+                <SelectContent className="border-zinc-200 bg-white text-zinc-900 dark:border-[#232323] dark:bg-[#1A1A1A] dark:text-zinc-100">
                   <SelectItem value="newest">Newest first</SelectItem>
                   <SelectItem value="oldest">Oldest first</SelectItem>
                   <SelectItem value="priority">Priority</SelectItem>
@@ -446,13 +451,13 @@ export function MaintenanceWorkspaceClient({
           </div>
 
           <div className="min-h-0 flex-1 overflow-auto">
-            <div className="sticky top-0 z-10 grid grid-cols-12 border-b border-[#232323] bg-[#111111] px-4 py-2 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+            <div className="sticky top-0 z-10 grid grid-cols-12 border-b border-zinc-200/80 bg-zinc-50 px-4 py-2 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500 dark:border-[#232323] dark:bg-[#111111]">
               <div className="col-span-5">Issue & Property</div>
               <div className="col-span-2">Priority</div>
               <div className="col-span-3">Agent State</div>
               <div className="col-span-2 text-right">Age</div>
             </div>
-            <div className="divide-y divide-[#232323]">
+            <div className="divide-y divide-zinc-200/80 dark:divide-[#232323]">
               {filteredSorted.map((row) => {
                 const tone = toPriorityTone(row.priority);
                 const isSelected = selectedId === row.id;
@@ -477,13 +482,13 @@ export function MaintenanceWorkspaceClient({
                       }
                     }}
                     className={cn(
-                      "grid cursor-pointer grid-cols-12 items-center gap-4 px-4 py-4 transition-colors hover:bg-[#161616]",
-                      isSelected ? "bg-[#111111] shadow-[inset_2px_0_0_0_#ffffff]" : "bg-transparent"
+                      "grid cursor-pointer grid-cols-12 items-center gap-4 px-4 py-4 transition-colors hover:bg-zinc-100 dark:hover:bg-[#161616]",
+                      isSelected ? "bg-zinc-100 shadow-[inset_2px_0_0_0_#18181b] dark:bg-[#111111] dark:shadow-[inset_2px_0_0_0_#ffffff]" : "bg-transparent"
                     )}
                   >
                     <div className="col-span-5 min-w-0">
                       <div className="flex items-baseline gap-2">
-                        <span className="text-[12px] font-semibold text-zinc-100">{shortAddress(row.propertyAddress)}</span>
+                        <span className="text-[12px] font-semibold text-zinc-900 dark:text-zinc-100">{shortAddress(row.propertyAddress)}</span>
                         <span className="text-[10px] text-zinc-500 truncate">· {row.tenantFullName}</span>
                       </div>
                       <div className="mt-1 truncate text-[11px] text-zinc-400">
@@ -506,7 +511,7 @@ export function MaintenanceWorkspaceClient({
                         "inline-block border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider",
                         agentState.tone === 'emerald' ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" :
                         agentState.tone === 'blue' ? "border-blue-500/30 bg-blue-500/10 text-blue-400" :
-                        "border-[#333333] text-zinc-500"
+                        "border-zinc-200 text-zinc-600 dark:border-[#333333] dark:text-zinc-500"
                       )}>
                         {agentState.label}
                       </span>
@@ -529,26 +534,26 @@ export function MaintenanceWorkspaceClient({
         </section>
 
         {inspectorOpen && selected ? (
-          <aside className="flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden border-l border-[#232323] bg-[#0e0e0e]">
-            <header className="flex shrink-0 items-center justify-between border-b border-[#232323] p-6">
+          <aside className="flex h-full min-h-0 w-80 shrink-0 flex-col overflow-hidden border-l border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#0e0e0e]">
+            <header className="flex shrink-0 items-center justify-between border-b border-zinc-200/80 p-6 dark:border-[#232323]">
               <div>
                 <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">
                   Operational Detail
                 </p>
-                <h2 className="text-lg font-bold tracking-tight text-white uppercase">
+                <h2 className="text-lg font-bold tracking-tight text-zinc-900 uppercase dark:text-white">
                   ISSUE #{selected.id.slice(0, 4)}
                 </h2>
               </div>
               <button
                 type="button"
-                className="text-zinc-500 transition-colors hover:text-white"
+                className="text-zinc-500 transition-colors hover:text-zinc-900 dark:hover:text-white"
                 onClick={() => setSelectedId(null)}
               >
                 <X className="size-4" />
               </button>
             </header>
 
-            <nav className="flex shrink-0 border-b border-[#232323] px-6" role="tablist">
+            <nav className="flex shrink-0 border-b border-zinc-200/80 px-6 dark:border-[#232323]" role="tablist">
               {(
                 [
                   ["insights", "Triage"],
@@ -566,8 +571,8 @@ export function MaintenanceWorkspaceClient({
                     className={cn(
                       "pb-4 pt-6 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors relative",
                       isActive
-                        ? "text-white after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-white"
-                        : "text-zinc-500 hover:text-zinc-200",
+                        ? "text-zinc-900 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-zinc-900 dark:text-white dark:after:bg-white"
+                        : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200",
                     )}
                   >
                     {label}
@@ -581,7 +586,7 @@ export function MaintenanceWorkspaceClient({
                 <>
                   <section>
                     <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Issue Summary</h3>
-                    <div className="border border-[#232323] bg-[#0B0B0B] p-4 text-[12px] leading-relaxed text-zinc-300">
+                    <div className="border border-zinc-200/80 bg-zinc-50 p-4 text-[12px] leading-relaxed text-zinc-700 dark:border-[#232323] dark:bg-[#0B0B0B] dark:text-zinc-300">
                       {selected.description}
                     </div>
                   </section>
@@ -611,24 +616,24 @@ export function MaintenanceWorkspaceClient({
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Category</p>
-                        <p className="text-[11px] font-medium text-white">{assetGroupFromRow(selected)}</p>
+                        <p className="text-[11px] font-medium text-zinc-900 dark:text-white">{assetGroupFromRow(selected)}</p>
                       </div>
                       <div>
                         <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Priority</p>
-                        <p className="text-[11px] font-medium text-white">{selected.priority ?? "—"}</p>
+                        <p className="text-[11px] font-medium text-zinc-900 dark:text-white">{selected.priority ?? "—"}</p>
                       </div>
                     </div>
                     <div>
                       <p className="mb-1 text-[9px] uppercase tracking-wider text-zinc-600">Contractor Assigned</p>
-                      <p className="text-[11px] font-medium text-white">{selected.contractorName ?? "None Assigned"}</p>
+                      <p className="text-[11px] font-medium text-zinc-900 dark:text-white">{selected.contractorName ?? "None Assigned"}</p>
                     </div>
                     {selected.propertyId && (
                       <Link
                         href={`/dashboard/properties/${selected.propertyId}`}
-                        className="flex items-center justify-between border border-[#232323] px-3 py-2 text-[11px] text-zinc-400 hover:bg-[#1b1b1b] transition-colors"
+                        className="flex items-center justify-between border border-zinc-200/90 px-3 py-2 text-[11px] text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-[#232323] dark:text-zinc-400 dark:hover:bg-[#1b1b1b]"
                       >
                         <span>View Property Record</span>
-                        <span className="text-white font-bold">VIEW</span>
+                        <span className="font-bold text-zinc-900 dark:text-white">VIEW</span>
                       </Link>
                     )}
                   </div>
@@ -638,10 +643,10 @@ export function MaintenanceWorkspaceClient({
               {inspectorTab === "activity" && (
                 <section>
                   <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">History</h3>
-                  <div className="relative space-y-6 border-l border-[#232323] pl-4 ml-1">
+                  <div className="relative space-y-6 border-l border-zinc-200 pl-4 ml-1 dark:border-[#232323]">
                     <div className="relative">
-                      <div className="absolute -left-[21px] top-1 size-2 rounded-full bg-white" />
-                      <p className="text-[11px] font-bold text-white uppercase">Issue Reported</p>
+                      <div className="absolute -left-[21px] top-1 size-2 rounded-full bg-zinc-900 dark:bg-white" />
+                      <p className="text-[11px] font-bold text-zinc-900 uppercase dark:text-white">Issue Reported</p>
                       <p className="text-[10px] text-zinc-500">{fmtDateTime(selected.createdAt)}</p>
                     </div>
                     {selected.contractorName && (
@@ -656,7 +661,7 @@ export function MaintenanceWorkspaceClient({
               )}
             </div>
 
-            <div className="shrink-0 border-t border-[#232323] bg-[#0B0B0B] p-6">
+            <div className="shrink-0 border-t border-zinc-200/80 bg-zinc-50 p-6 dark:border-[#232323] dark:bg-[#0B0B0B]">
               <div className="grid grid-cols-1 gap-2">
                 {getAgentState(selected, pendingApprovals).label === "DRAFT READY" ? (
                   <Button
@@ -680,7 +685,7 @@ export function MaintenanceWorkspaceClient({
                 <Button
                   asChild
                   variant="outline"
-                  className="border-[#333333] bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-400 hover:bg-zinc-900 transition-colors"
+                    className="border-zinc-200 bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-400 dark:hover:bg-zinc-900 transition-colors"
                 >
                   <Link href={`/dashboard/maintenance/${selected.id}`}>
                     Open Full Case
