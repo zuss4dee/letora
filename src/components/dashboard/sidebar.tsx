@@ -70,7 +70,7 @@ export function Sidebar() {
               href={item.href}
               className={cn(
                 "group flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-900/60 dark:hover:text-zinc-100",
+                "text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-100 dark:bg-zinc-900/60 dark:hover:text-zinc-100",
                 isActive &&
                   "bg-indigo-50 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300 dark:hover:bg-indigo-500/10 dark:hover:text-indigo-300",
               )}
@@ -96,7 +96,7 @@ export function Sidebar() {
           type="button"
           variant="outline"
           onClick={onLogout}
-          className="mt-4 w-full justify-start gap-2 border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900/60 dark:hover:text-zinc-50"
+          className="mt-4 w-full justify-start gap-2 border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-100 dark:bg-zinc-900/60 dark:hover:text-zinc-50"
         >
           <LogOut className="h-4 w-4" />
           Log out

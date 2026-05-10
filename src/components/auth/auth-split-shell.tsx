@@ -7,7 +7,7 @@ export const authInputClassName =
   "h-11 rounded-md border border-border bg-background px-4 text-foreground shadow-none placeholder:text-muted-foreground/35 transition-colors focus-visible:border-zinc-500 focus-visible:ring-1 focus-visible:ring-zinc-500/25 dark:border-[rgb(72_72_72_/0.28)] dark:bg-[#0e0e0e]/85 dark:placeholder:text-zinc-500/45 dark:focus-visible:border-white dark:focus-visible:ring-white/20";
 
 export const authPrimaryButtonClassName =
-  "h-11 w-full rounded-md bg-zinc-900 text-[13px] font-medium text-white shadow-none transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200";
+  "h-11 w-full rounded-md bg-zinc-100 dark:bg-zinc-900 text-[13px] font-medium text-white shadow-none transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200";
 
 /**
  * Split card: form + editorial aside (hidden on small screens).

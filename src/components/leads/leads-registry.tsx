@@ -48,7 +48,7 @@ function sourcePresentation(source: string | null): { label: string; dot: string
   if (s.includes("social")) return { label: source ?? "Source", dot: "bg-fuchsia-400/60" };
   if (s === "other" || !source?.trim())
     return { label: source?.trim() || "Direct", dot: "bg-zinc-500/60" };
-  return { label: source ?? "Direct", dot: "bg-[#767575]/80" };
+  return { label: source ?? "Direct", dot: "bg-background dark:bg-[#767575]/80" };
 }
 
 function pipelinePill(status: string): { label: string; className: string } {
@@ -57,12 +57,12 @@ function pipelinePill(status: string): { label: string; className: string } {
     new: {
       label: "NEW",
       className:
-        "border border-[#afefdd]/25 bg-[#1a2e28]/80 text-[#afefdd]",
+        "border border-border dark:border-[#afefdd]/25 bg-background dark:bg-[#1a2e28]/80 text-[#afefdd]",
     },
     contacted: {
       label: "CONTACTED",
       className:
-        "border border-[#484848]/30 bg-[#474646]/40 text-[#d2d0cf]",
+        "border border-border dark:border-[#484848]/30 bg-background dark:bg-[#474646]/40 text-[#d2d0cf]",
     },
     viewing: {
       label: "VIEWING SCHEDULED",
@@ -72,7 +72,7 @@ function pipelinePill(status: string): { label: string; className: string } {
     applied: {
       label: "REFERENCING",
       className:
-        "border border-[#306f60]/30 bg-[#206153]/20 text-[#afefdd]",
+        "border border-border dark:border-[#306f60]/30 bg-background dark:bg-[#206153]/20 text-[#afefdd]",
     },
     approved: {
       label: "APPROVED",
@@ -81,13 +81,13 @@ function pipelinePill(status: string): { label: string; className: string } {
     },
     rejected: {
       label: "REJECTED",
-      className: "border border-[#BB5551]/30 bg-[#7f2927]/20 text-[#ee7d77]",
+      className: "border border-border dark:border-[#BB5551]/30 bg-background dark:bg-[#7f2927]/20 text-[#ee7d77]",
     },
   };
   return (
     map[s] ?? {
       label: status.replace(/_/g, " ").toUpperCase(),
-      className: "border border-[#484848]/30 bg-[#474646]/30 text-muted-foreground",
+      className: "border border-border dark:border-[#484848]/30 bg-background dark:bg-[#474646]/30 text-muted-foreground",
     }
   );
 }
@@ -97,15 +97,15 @@ function qualificationPill(status: string): { label: string; className: string }
   const map: Record<string, { label: string; className: string }> = {
     qualified: {
       label: "Vetted",
-      className: "border border-[#2d434d] bg-[#1a2a2e] text-[#38bdf8]",
+      className: "border border-border dark:border-[#2d434d] bg-background dark:bg-[#1a2a2e] text-[#38bdf8]",
     },
     disqualified: {
       label: "Disqualified",
-      className: "border border-[#4d2d2d] bg-[#2e1a1a] text-[#f87171]",
+      className: "border border-border dark:border-[#4d2d2d] bg-background dark:bg-[#2e1a1a] text-[#f87171]",
     },
     pending: {
       label: "Reviewing",
-      className: "border border-[#4d452d] bg-[#2e2a1a] text-[#eab308]",
+      className: "border border-border dark:border-[#4d452d] bg-background dark:bg-[#2e2a1a] text-[#eab308]",
     },
   };
   return map[s] ?? map.pending;
@@ -210,14 +210,14 @@ export function LeadsRegistry({
   const displayTo = Math.min(start + PAGE_SIZE, total);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[#131313] text-[#e5e2e1]">
-      <header className="border-b border-[#282828] bg-[#161616] px-4 py-3 sm:px-6">
+    <div className="flex min-h-0 flex-1 flex-col bg-background dark:bg-[#131313] text-[#e5e2e1]">
+      <header className="border-b border-border dark:border-[#282828] bg-background dark:bg-[#161616] px-4 py-3 sm:px-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
               LeadOps Console
             </p>
-            <h1 className="mt-1 text-xl font-semibold tracking-tight text-zinc-100 sm:text-2xl">
+            <h1 className="mt-1 text-xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 sm:text-2xl">
               Lead Management
             </h1>
           </div>
@@ -226,7 +226,7 @@ export function LeadsRegistry({
             trigger={
               <button
                 type="button"
-                className="inline-flex h-8 items-center gap-2 border border-[#333333] bg-[#1a1a1a] px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-200 transition-colors hover:bg-[#242424]"
+                className="inline-flex h-8 items-center gap-2 border border-border dark:border-[#333333] bg-background dark:bg-[#1a1a1a] px-3 text-[11px] font-semibold uppercase tracking-widest text-zinc-200 transition-colors hover:bg-background dark:bg-[#242424]"
               >
                 <Plus className="size-3.5" strokeWidth={2} aria-hidden />
                 Add lead
@@ -236,26 +236,26 @@ export function LeadsRegistry({
         </div>
       </header>
 
-      <section className="grid grid-cols-2 gap-px border-b border-[#282828] bg-[#282828] md:grid-cols-4">
-        <div className="bg-[#161616] px-4 py-3 sm:px-6">
+      <section className="grid grid-cols-2 gap-px border-b border-border dark:border-[#282828] bg-background dark:bg-[#282828] md:grid-cols-4">
+        <div className="bg-background dark:bg-[#161616] px-4 py-3 sm:px-6">
           <p className="text-[10px] uppercase tracking-widest text-zinc-500">Total leads</p>
-          <p className="mt-1 font-mono text-lg text-zinc-100">{stats.total}</p>
+          <p className="mt-1 font-mono text-lg text-zinc-900 dark:text-zinc-100">{stats.total}</p>
         </div>
-        <div className="bg-[#161616] px-4 py-3 sm:px-6">
+        <div className="bg-background dark:bg-[#161616] px-4 py-3 sm:px-6">
           <p className="text-[10px] uppercase tracking-widest text-zinc-500">New</p>
-          <p className="mt-1 font-mono text-lg text-zinc-100">{stats.newCount}</p>
+          <p className="mt-1 font-mono text-lg text-zinc-900 dark:text-zinc-100">{stats.newCount}</p>
         </div>
-        <div className="bg-[#161616] px-4 py-3 sm:px-6">
+        <div className="bg-background dark:bg-[#161616] px-4 py-3 sm:px-6">
           <p className="text-[10px] uppercase tracking-widest text-zinc-500">Qualified</p>
           <p className="mt-1 font-mono text-lg text-[#38bdf8]">{stats.qualifiedCount}</p>
         </div>
-        <div className="bg-[#161616] px-4 py-3 sm:px-6">
+        <div className="bg-background dark:bg-[#161616] px-4 py-3 sm:px-6">
           <p className="text-[10px] uppercase tracking-widest text-zinc-500">Viewings</p>
           <p className="mt-1 font-mono text-lg text-amber-500">{stats.viewingCount}</p>
         </div>
       </section>
 
-      <div className="border-b border-[#282828] bg-[#161616] px-4 py-2 sm:px-6">
+      <div className="border-b border-border dark:border-[#282828] bg-background dark:bg-[#161616] px-4 py-2 sm:px-6">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative w-full max-w-xl">
             <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
@@ -267,7 +267,7 @@ export function LeadsRegistry({
                 setPage(1);
               }}
               placeholder="Search leads, properties, email, source..."
-              className="h-8 w-full border border-[#333333] bg-[#0b0b0b] pl-9 pr-3 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-100 focus:outline-none"
+              className="h-8 w-full border border-border dark:border-[#333333] bg-background dark:bg-[#0b0b0b] pl-9 pr-3 text-xs text-zinc-200 placeholder:text-zinc-600 focus:border-zinc-100 focus:outline-none"
               aria-label="Search leads"
             />
           </div>
@@ -276,8 +276,8 @@ export function LeadsRegistry({
               type="button"
               onClick={() => setShowFilters((v) => !v)}
               className={cn(
-                "inline-flex h-7 items-center gap-1 border border-[#333333] bg-[#1a1a1a] px-2 text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-100",
-                showFilters && "text-zinc-100",
+                "inline-flex h-7 items-center gap-1 border border-border dark:border-[#333333] bg-background dark:bg-[#1a1a1a] px-2 text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-100",
+                showFilters && "text-zinc-900 dark:text-zinc-100",
               )}
               aria-label="Toggle filters"
               aria-pressed={showFilters}
@@ -288,7 +288,7 @@ export function LeadsRegistry({
             <button
               type="button"
               onClick={() => downloadCsv(filtered)}
-              className="inline-flex h-7 items-center gap-1 border border-[#333333] bg-[#1a1a1a] px-2 text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-100"
+              className="inline-flex h-7 items-center gap-1 border border-border dark:border-[#333333] bg-background dark:bg-[#1a1a1a] px-2 text-[10px] uppercase tracking-widest text-zinc-400 transition-colors hover:text-zinc-100"
               aria-label="Export CSV"
             >
               <Download className="size-3.5" strokeWidth={1.5} />
@@ -308,8 +308,8 @@ export function LeadsRegistry({
               className={cn(
                 "h-7 px-2.5 text-[10px] font-semibold uppercase tracking-widest transition-colors",
                 statusTab === t.id
-                  ? "border-b-2 border-zinc-100 bg-[#242424] text-zinc-100"
-                  : "text-zinc-500 hover:bg-[#242424] hover:text-zinc-300",
+                  ? "border-b-2 border-zinc-100 bg-background dark:bg-[#242424] text-zinc-100"
+                  : "text-zinc-500 hover:bg-background dark:bg-[#242424] hover:text-zinc-300",
               )}
             >
               {t.label}
@@ -319,7 +319,7 @@ export function LeadsRegistry({
       </div>
 
       {showFilters ? (
-        <div className="border-b border-[#282828] bg-[#131313] px-4 py-2 text-[11px] text-zinc-500 sm:px-6">
+        <div className="border-b border-border dark:border-[#282828] bg-background dark:bg-[#131313] px-4 py-2 text-[11px] text-zinc-500 sm:px-6">
           Filter by status tabs and search terms; lead actions remain available via row menu.
         </div>
       ) : null}
@@ -334,14 +334,14 @@ export function LeadsRegistry({
               const { line1, line2 } = splitPropertyAddress(lead.propertyAddress);
               const pill = pipelinePill(lead.status);
               return (
-                <li key={`m-${lead.id}`} className="border border-[#282828] bg-[#161616] p-4">
+                <li key={`m-${lead.id}`} className="border border-border dark:border-[#282828] bg-background dark:bg-[#161616] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex size-8 shrink-0 items-center justify-center border border-[#333333] bg-[#242424] text-[10px] font-bold text-zinc-100">
+                      <div className="flex size-8 shrink-0 items-center justify-center border border-border dark:border-[#333333] bg-background dark:bg-[#242424] text-[10px] font-bold text-zinc-100">
                         {initials(lead.name)}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium text-zinc-100">{lead.name}</p>
+                        <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">{lead.name}</p>
                         <p className="truncate text-[11px] text-zinc-500">
                           {line1}
                           {line2 ? ` · ${line2}` : ""}
@@ -357,7 +357,7 @@ export function LeadsRegistry({
                       {pill.label}
                     </span>
                   </div>
-                  <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#282828] pt-3">
+                  <div className="mt-3 flex items-center justify-between gap-3 border-t border-border dark:border-[#282828] pt-3">
                     <p className="text-[10px] uppercase tracking-widest text-zinc-500">
                       {formatDateAdded(lead.createdAt)}
                     </p>
@@ -378,13 +378,13 @@ export function LeadsRegistry({
           <div className="min-h-0 flex-1 overflow-auto">
             <table className="w-full min-w-[1100px] border-collapse text-left">
               <thead>
-                <tr className="sticky top-0 z-10 border-b border-[#282828] bg-[#161616] text-[10px] uppercase tracking-widest text-zinc-500">
-                  <th className="border-r border-[#282828] px-4 py-2 font-medium">Lead name</th>
-                  <th className="border-r border-[#282828] px-4 py-2 font-medium">Property</th>
-                  <th className="border-r border-[#282828] px-4 py-2 font-medium">Stage</th>
-                  <th className="border-r border-[#282828] px-4 py-2 font-medium">Source</th>
-                  <th className="border-r border-[#282828] px-4 py-2 font-medium">Qualification</th>
-                  <th className="border-r border-[#282828] px-4 py-2 font-medium">
+                <tr className="sticky top-0 z-10 border-b border-border dark:border-[#282828] bg-background dark:bg-[#161616] text-[10px] uppercase tracking-widest text-zinc-500">
+                  <th className="border-r border-border dark:border-[#282828] px-4 py-2 font-medium">Lead name</th>
+                  <th className="border-r border-border dark:border-[#282828] px-4 py-2 font-medium">Property</th>
+                  <th className="border-r border-border dark:border-[#282828] px-4 py-2 font-medium">Stage</th>
+                  <th className="border-r border-border dark:border-[#282828] px-4 py-2 font-medium">Source</th>
+                  <th className="border-r border-border dark:border-[#282828] px-4 py-2 font-medium">Qualification</th>
+                  <th className="border-r border-border dark:border-[#282828] px-4 py-2 font-medium">
                     Response status
                   </th>
                   <th className="px-4 py-2 text-right font-medium">Actions</th>
@@ -409,15 +409,15 @@ export function LeadsRegistry({
                     return (
                       <tr
                         key={lead.id}
-                        className="group border-b border-[#282828] transition-colors hover:bg-[#242424]"
+                        className="group border-b border-border dark:border-[#282828] transition-colors hover:bg-background dark:bg-[#242424]"
                       >
-                        <td className="border-r border-[#282828] px-4 py-3">
+                        <td className="border-r border-border dark:border-[#282828] px-4 py-3">
                           <div className="flex items-center gap-3">
-                            <div className="flex size-8 shrink-0 items-center justify-center border border-[#333333] bg-[#1a1a1a] text-[10px] font-bold text-zinc-100">
+                            <div className="flex size-8 shrink-0 items-center justify-center border border-border dark:border-[#333333] bg-background dark:bg-[#1a1a1a] text-[10px] font-bold text-zinc-100">
                               {initials(lead.name)}
                             </div>
                             <div>
-                              <div className="text-sm font-semibold tracking-tight text-zinc-100">
+                              <div className="text-sm font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
                                 {lead.name}
                               </div>
                               <div className="mt-0.5 text-[10px] text-zinc-500">
@@ -426,7 +426,7 @@ export function LeadsRegistry({
                             </div>
                           </div>
                         </td>
-                        <td className="max-w-[240px] border-r border-[#282828] px-4 py-3">
+                        <td className="max-w-[240px] border-r border-border dark:border-[#282828] px-4 py-3">
                           <div className="text-sm text-zinc-300">{line1}</div>
                           {line2 ? (
                             <div className="mt-0.5 text-[10px] text-zinc-500">
@@ -434,7 +434,7 @@ export function LeadsRegistry({
                             </div>
                           ) : null}
                         </td>
-                        <td className="border-r border-[#282828] px-4 py-3">
+                        <td className="border-r border-border dark:border-[#282828] px-4 py-3">
                           <span
                             className={cn(
                               "inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest",
@@ -444,13 +444,13 @@ export function LeadsRegistry({
                             {pill.label}
                           </span>
                         </td>
-                        <td className="border-r border-[#282828] px-4 py-3">
+                        <td className="border-r border-border dark:border-[#282828] px-4 py-3">
                           <div className="inline-flex items-center gap-2 px-2 py-0.5 text-[10px] uppercase tracking-widest text-zinc-400">
                             <span className={cn("size-1.5 rounded-full", src.dot)} aria-hidden />
                             {src.label}
                           </div>
                         </td>
-                        <td className="border-r border-[#282828] px-4 py-3">
+                        <td className="border-r border-border dark:border-[#282828] px-4 py-3">
                           <span
                             className={cn(
                               "inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-widest",
@@ -460,7 +460,7 @@ export function LeadsRegistry({
                             {qualification.label}
                           </span>
                         </td>
-                        <td className="whitespace-nowrap border-r border-[#282828] px-4 py-3">
+                        <td className="whitespace-nowrap border-r border-border dark:border-[#282828] px-4 py-3">
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-[11px] text-zinc-500">{formatDateAdded(lead.createdAt)}</span>
                             <span className="text-[11px] italic text-zinc-500">
@@ -488,7 +488,7 @@ export function LeadsRegistry({
             </table>
           </div>
 
-          <div className="flex flex-col gap-4 border-t border-[#282828] bg-[#161616] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <div className="flex flex-col gap-4 border-t border-border dark:border-[#282828] bg-background dark:bg-[#161616] px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p className="text-[10px] uppercase tracking-widest text-zinc-500">
               Showing {displayFrom}–{displayTo} of {total} leads
             </p>
@@ -498,11 +498,11 @@ export function LeadsRegistry({
                 aria-label="Previous page"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="text-zinc-500 transition hover:text-zinc-100 disabled:opacity-30"
+                className="text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100 disabled:opacity-30"
               >
                 <ChevronLeft className="size-5" />
               </button>
-              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-100">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-900 dark:text-zinc-100">
                 {safePage}
               </span>
               <button
@@ -510,7 +510,7 @@ export function LeadsRegistry({
                 aria-label="Next page"
                 disabled={safePage >= pageCount}
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="text-zinc-500 transition hover:text-zinc-100 disabled:opacity-30"
+                className="text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-100 disabled:opacity-30"
               >
                 <ChevronRight className="size-5" />
               </button>
@@ -525,7 +525,7 @@ export function LeadsRegistry({
               aria-label="Previous page"
               disabled={safePage <= 1}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
-              className="border border-[#333333] bg-[#1a1a1a] p-2 text-zinc-500 transition hover:text-zinc-100 disabled:opacity-30"
+              className="border border-border dark:border-[#333333] bg-background dark:bg-[#1a1a1a] p-2 text-zinc-500 transition hover:text-zinc-100 disabled:opacity-30"
             >
               <ChevronLeft className="size-4" />
             </button>
@@ -537,7 +537,7 @@ export function LeadsRegistry({
               aria-label="Next page"
               disabled={safePage >= pageCount}
               onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-              className="border border-[#333333] bg-[#1a1a1a] p-2 text-zinc-500 transition hover:text-zinc-100 disabled:opacity-30"
+              className="border border-border dark:border-[#333333] bg-background dark:bg-[#1a1a1a] p-2 text-zinc-500 transition hover:text-zinc-100 disabled:opacity-30"
             >
               <ChevronRight className="size-4" />
             </button>

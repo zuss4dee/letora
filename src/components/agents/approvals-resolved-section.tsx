@@ -44,9 +44,9 @@ export function ApprovalsResolvedSection({
                     "inline-block border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider",
                     isExecuted && "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",
                     isApprovedInFlight && "border-amber-500/35 bg-amber-500/10 text-amber-400",
-                    isExpired && "border-zinc-600 bg-zinc-800/50 text-zinc-400",
+                    isExpired && "border-zinc-600 bg-zinc-200 dark:bg-zinc-800/50 text-zinc-400",
                     isDenied && "border-rose-500/30 bg-rose-500/10 text-rose-400",
-                    !isExecuted && !isApprovedInFlight && !isExpired && !isDenied && "border-[#333333] bg-transparent text-zinc-500",
+                    !isExecuted && !isApprovedInFlight && !isExpired && !isDenied && "border-border dark:border-[#333333] bg-transparent text-zinc-500",
                   )}
                 >
                   {formatApprovalDecisionStatus(a.status)}
@@ -64,7 +64,7 @@ export function ApprovalsResolvedSection({
                 </time>
                 <ApprovalAuditSheetTrigger 
                   approval={a} 
-                  className="size-5 border-zinc-300 p-0 text-[10px] text-zinc-500 hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-400 dark:hover:bg-zinc-900" 
+                  className="size-5 border-zinc-300 p-0 text-[10px] text-zinc-500 hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-400 dark:hover:bg-zinc-100 dark:bg-zinc-900" 
                 />
               </div>
               {isDenied && a.deny_reason && (

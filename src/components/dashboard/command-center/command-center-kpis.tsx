@@ -50,19 +50,19 @@ export function CommandCenterActionBar({ pendingApprovalsCount = 0 }: { pendingA
               ? `Open approvals — ${pendingApprovalsCount} pending`
               : "Open approvals"
           }
-          className="inline-flex border border-zinc-200 bg-transparent px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800/40"
+          className="inline-flex border border-zinc-200 bg-transparent px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-200 dark:bg-zinc-800/40"
         >
           Open Approvals
         </Link>
         <Link
           href="/dashboard/properties"
-          className="inline-flex border border-zinc-200 bg-transparent px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800/40"
+          className="inline-flex border border-zinc-200 bg-transparent px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-200 dark:bg-zinc-800/40"
         >
           View Portfolio
         </Link>
         <Link
           href="/dashboard/import"
-          className="inline-flex border border-transparent bg-zinc-900 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+          className="inline-flex border border-transparent bg-zinc-100 dark:bg-zinc-900 px-4 py-1.5 text-xs font-bold uppercase tracking-wide text-white transition-colors hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
           Import Portfolio
         </Link>

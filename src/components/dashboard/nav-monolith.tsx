@@ -34,8 +34,8 @@ export function NavMonolith() {
             className={cn(
               "flex items-center gap-3 rounded-[2px] px-3 py-2 text-[0.6875rem] font-semibold uppercase tracking-wider transition-colors duration-150",
               isActive
-                ? "bg-white/[0.04] text-white"
-                : "text-neutral-500 hover:bg-white/[0.02] hover:text-white",
+                ? "bg-white/[0.04] text-zinc-900 dark:text-white"
+                : "text-neutral-500 hover:bg-white/[0.02] hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white",
             )}
           >
             <Icon className="size-5 shrink-0" aria-hidden />

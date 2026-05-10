@@ -6,8 +6,8 @@ export function CommandCenterOnboardingHero() {
     <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-700">
       <div className="relative overflow-hidden border border-zinc-200 bg-white p-8 dark:border-[#2a2a2a] dark:bg-[#161616] md:p-12">
         {/* Subtle background decoration */}
-        <div className="absolute -right-20 -top-20 size-80 rounded-full bg-zinc-900/[0.04] blur-3xl dark:bg-white/[0.02]" />
-        <div className="absolute -bottom-20 -left-20 size-60 rounded-full bg-zinc-900/[0.03] blur-3xl dark:bg-white/[0.01]" />
+        <div className="absolute -right-20 -top-20 size-80 rounded-full bg-zinc-100 dark:bg-zinc-900/[0.04] blur-3xl dark:bg-white/[0.02]" />
+        <div className="absolute -bottom-20 -left-20 size-60 rounded-full bg-zinc-100 dark:bg-zinc-900/[0.03] blur-3xl dark:bg-white/[0.01]" />
 
         <div className="relative grid grid-cols-1 gap-12 lg:grid-cols-12">
           <div className="lg:col-span-7">
@@ -33,7 +33,7 @@ export function CommandCenterOnboardingHero() {
             <div className="mt-10 flex flex-wrap gap-4">
               <Link
                 href="/dashboard/import"
-                className="group flex items-center gap-3 bg-zinc-900 px-8 py-4 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+                className="group flex items-center gap-3 bg-zinc-100 dark:bg-zinc-900 px-8 py-4 text-xs font-bold uppercase tracking-widest text-white transition-all hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
               >
                 <Upload className="size-4" />
                 Import Portfolio
@@ -41,7 +41,7 @@ export function CommandCenterOnboardingHero() {
               </Link>
               <Link
                 href="/dashboard"
-                className="flex items-center gap-3 border border-zinc-200 px-8 py-4 text-xs font-bold uppercase tracking-widest text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-white dark:hover:bg-[#242424]"
+                className="flex items-center gap-3 border border-zinc-200 px-8 py-4 text-xs font-bold uppercase tracking-widest text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-white dark:hover:bg-background dark:bg-[#242424]"
               >
                 <MessageSquare className="size-4" />
                 Talk to Assistant

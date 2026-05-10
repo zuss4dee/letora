@@ -23,7 +23,7 @@ export function SiteHeader() {
             type="button"
             variant="ghost"
             size="icon"
-            className="h-8 w-8 rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-900/60 dark:hover:text-zinc-50"
+            className="h-8 w-8 rounded-md border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-300 dark:hover:bg-zinc-100 dark:bg-zinc-900/60 dark:hover:text-zinc-50"
             aria-label="Notifications"
           >
             <Bell className="h-4 w-4" />

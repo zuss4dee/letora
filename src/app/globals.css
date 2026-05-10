@@ -44,19 +44,19 @@
   --color-card: var(--card);
   --color-placeholder-foreground: var(--placeholder-foreground);
 
-  /* Obsidian Operational — DESIGN.md tokens */
-  --color-obsidian-surface: #131313;
-  --color-obsidian-surface-dim: #131313;
-  --color-obsidian-surface-bright: #3a3939;
-  --color-obsidian-surface-lowest: #0e0e0e;
-  --color-obsidian-surface-low: #1c1b1b;
-  --color-obsidian-surface-container: #201f1f;
-  --color-obsidian-surface-high: #2a2a2a;
-  --color-obsidian-surface-highest: #353534;
-  --color-obsidian-on-surface: #e5e2e1;
-  --color-obsidian-on-surface-variant: #c4c7c8;
-  --color-obsidian-outline: #8e9192;
-  --color-obsidian-outline-variant: #444748;
+  /* Obsidian operational ramp — wired to semantic vars below (Light / Dark) */
+  --color-obsidian-surface: var(--obsidian-surface);
+  --color-obsidian-surface-dim: var(--obsidian-surface-dim);
+  --color-obsidian-surface-bright: var(--obsidian-surface-bright);
+  --color-obsidian-surface-lowest: var(--obsidian-surface-lowest);
+  --color-obsidian-surface-low: var(--obsidian-surface-low);
+  --color-obsidian-surface-container: var(--obsidian-surface-container);
+  --color-obsidian-surface-high: var(--obsidian-surface-high);
+  --color-obsidian-surface-highest: var(--obsidian-surface-highest);
+  --color-obsidian-on-surface: var(--obsidian-on-surface);
+  --color-obsidian-on-surface-variant: var(--obsidian-on-surface-variant);
+  --color-obsidian-outline: var(--obsidian-outline);
+  --color-obsidian-outline-variant: var(--obsidian-outline-variant);
 
   --font-size-label-sm: 11px;
   --font-size-label-md: 12px;
@@ -112,6 +112,20 @@
   --sidebar-ring: oklch(0.708 0 0);
   /* Input placeholders: grey, distinct from body text */
   --placeholder-foreground: oklch(0.44 0 0);
+
+  /* Obsidian operational ramp — light (cool zinc, matches shadcn surfaces) */
+  --obsidian-surface: oklch(0.967 0.002 286);
+  --obsidian-surface-dim: oklch(0.955 0.002 286);
+  --obsidian-surface-bright: oklch(0.88 0.006 286);
+  --obsidian-surface-lowest: oklch(0.985 0.001 286);
+  --obsidian-surface-low: oklch(0.94 0.003 286);
+  --obsidian-surface-container: oklch(0.93 0.004 286);
+  --obsidian-surface-high: oklch(0.9 0.005 286);
+  --obsidian-surface-highest: oklch(0.86 0.006 286);
+  --obsidian-on-surface: oklch(0.18 0.01 286);
+  --obsidian-on-surface-variant: oklch(0.42 0.02 286);
+  --obsidian-outline: oklch(0.62 0.02 286);
+  --obsidian-outline-variant: oklch(0.78 0.01 286);
 }
 
 .dark {
@@ -152,6 +166,20 @@
   --radius: 0.125rem;
   /* Placeholders stay clearly grey (not near white like body copy) */
   --placeholder-foreground: #8f8f8f;
+
+  /* Obsidian operational ramp — dark (Nocturnal Architect) */
+  --obsidian-surface: #131313;
+  --obsidian-surface-dim: #131313;
+  --obsidian-surface-bright: #3a3939;
+  --obsidian-surface-lowest: #0e0e0e;
+  --obsidian-surface-low: #1c1b1b;
+  --obsidian-surface-container: #201f1f;
+  --obsidian-surface-high: #2a2a2a;
+  --obsidian-surface-highest: #353534;
+  --obsidian-on-surface: #e5e2e1;
+  --obsidian-on-surface-variant: #c4c7c8;
+  --obsidian-outline: #8e9192;
+  --obsidian-outline-variant: #444748;
 }
 
 /* Left rail — DESIGN.md (Nocturnal Architect): 220px narrow nav, glass, warm #0f0e0d */

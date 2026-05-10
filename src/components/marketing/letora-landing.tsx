@@ -43,10 +43,10 @@ function JewelryButton({
 
 export function LetoraLanding() {
   return (
-    <div className="dark min-h-screen overflow-x-hidden bg-[#0B0B0B] text-foreground selection:bg-white/10 selection:text-white">
+    <div className="dark min-h-screen overflow-x-hidden bg-background dark:bg-[#0B0B0B] text-foreground selection:bg-white/10 selection:text-white">
       <a
         href="#main"
-        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-[#FFEABB] focus:px-4 focus:py-2 focus:text-[#3e2e00]"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-background dark:bg-[#FFEABB] focus:px-4 focus:py-2 focus:text-[#3e2e00]"
       >
         Skip to content
       </a>
@@ -93,7 +93,7 @@ export function LetoraLanding() {
         {/* Lead Intelligence */}
         <section
           id="lead-intelligence"
-          className="scroll-mt-24 bg-[#1b1b1b] px-6 py-24 md:px-12 lg:px-24 lg:py-32"
+          className="scroll-mt-24 bg-background dark:bg-[#1b1b1b] px-6 py-24 md:px-12 lg:px-24 lg:py-32"
         >
           <div className="mx-auto grid max-w-screen-2xl grid-cols-1 items-center gap-16 lg:grid-cols-2 lg:gap-20">
             <div className="z-10 space-y-8">
@@ -110,7 +110,7 @@ export function LetoraLanding() {
                 your team spends time on tenancies that convert, not on noise.
               </p>
               <div className="flex items-center gap-4 pt-2">
-                <span className="h-px w-12 bg-[#4F4632]/40" aria-hidden />
+                <span className="h-px w-12 bg-background dark:bg-[#4F4632]/40" aria-hidden />
                 <Link
                   href="/signup"
                   className="inline-flex items-center gap-2 font-[family-name:var(--font-inter)] text-sm font-semibold uppercase tracking-widest text-emerald-500 transition-transform hover:translate-x-1"
@@ -136,7 +136,7 @@ export function LetoraLanding() {
         {/* Rent chasing */}
         <section
           id="rent-chasing"
-          className="scroll-mt-24 bg-[#131313] px-6 py-24 md:px-12 lg:px-24 lg:py-32"
+          className="scroll-mt-24 bg-background dark:bg-[#131313] px-6 py-24 md:px-12 lg:px-24 lg:py-32"
         >
           <div className="mx-auto flex max-w-screen-2xl flex-col items-center gap-16 lg:flex-row-reverse lg:gap-16">
             <div className="space-y-8 text-right lg:w-1/2">
@@ -156,22 +156,22 @@ export function LetoraLanding() {
               </div>
             </div>
             <div className="relative w-full lg:w-1/2">
-              <div className="absolute -left-8 top-0 h-64 w-64 rounded-full bg-[#FFEABB]/5 blur-3xl" aria-hidden />
-              <div className="relative z-20 mx-auto max-w-lg translate-y-0 rounded-2xl border border-[#4F4632]/15 bg-[rgba(53,53,53,0.35)] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl lg:ml-0 lg:translate-y-10">
+              <div className="absolute -left-8 top-0 h-64 w-64 rounded-full bg-background dark:bg-[#FFEABB]/5 blur-3xl" aria-hidden />
+              <div className="relative z-20 mx-auto max-w-lg translate-y-0 rounded-2xl border border-border dark:border-[#4F4632]/15 bg-[rgba(53,53,53,0.35)] p-8 shadow-[0_24px_80px_rgba(0,0,0,0.5)] backdrop-blur-xl lg:ml-0 lg:translate-y-10">
                 <div className="mb-8 flex items-center justify-between">
                   <div className="flex gap-2">
                     <div className="size-2 rounded-full bg-red-400/40" />
-                    <div className="size-2 rounded-full bg-[#FFEABB]/40" />
-                    <div className="size-2 rounded-full bg-[#c5c5d8]/40" />
+                    <div className="size-2 rounded-full bg-background dark:bg-[#FFEABB]/40" />
+                    <div className="size-2 rounded-full bg-background dark:bg-[#c5c5d8]/40" />
                   </div>
                   <span className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest opacity-40">
                     System active
                   </span>
                 </div>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between rounded-lg bg-[#1b1b1b] p-4">
+                  <div className="flex items-center justify-between rounded-lg bg-background dark:bg-[#1b1b1b] p-4">
                     <div className="flex items-center gap-4">
-                      <div className="flex size-10 items-center justify-center rounded-full bg-[#FFEABB]/10">
+                      <div className="flex size-10 items-center justify-center rounded-full bg-background dark:bg-[#FFEABB]/10">
                         <span className="text-sm text-[#FFEABB]">£</span>
                       </div>
                       <div>
@@ -181,13 +181,13 @@ export function LetoraLanding() {
                         </div>
                       </div>
                     </div>
-                    <span className="rounded bg-[#FFEABB]/20 px-2 py-1 font-[family-name:var(--font-inter)] text-[10px] text-[#FFEABB]">
+                    <span className="rounded bg-background dark:bg-[#FFEABB]/20 px-2 py-1 font-[family-name:var(--font-inter)] text-[10px] text-[#FFEABB]">
                       Queued
                     </span>
                   </div>
-                  <div className="flex items-center justify-between rounded-lg border border-[#4F4632]/10 bg-[#1b1b1b]/60 p-4 opacity-70">
+                  <div className="flex items-center justify-between rounded-lg border border-border dark:border-[#4F4632]/10 bg-background dark:bg-[#1b1b1b]/60 p-4 opacity-70">
                     <div className="flex items-center gap-4">
-                      <div className="flex size-10 items-center justify-center rounded-full bg-[#c5c5d8]/10">
+                      <div className="flex size-10 items-center justify-center rounded-full bg-background dark:bg-[#c5c5d8]/10">
                         <span className="text-xs text-[#c5c5d8]">✓</span>
                       </div>
                       <div>
@@ -197,7 +197,7 @@ export function LetoraLanding() {
                         </div>
                       </div>
                     </div>
-                    <span className="rounded border border-[#4F4632]/30 px-2 py-1 font-[family-name:var(--font-inter)] text-[10px]">
+                    <span className="rounded border border-border dark:border-[#4F4632]/30 px-2 py-1 font-[family-name:var(--font-inter)] text-[10px]">
                       Clear
                     </span>
                   </div>
@@ -210,7 +210,7 @@ export function LetoraLanding() {
         {/* AI Operations + stats */}
         <section
           id="ai-operations"
-          className="scroll-mt-24 bg-[#0e0e0e] px-6 py-24 md:px-12 lg:px-24 lg:py-32"
+          className="scroll-mt-24 bg-background dark:bg-[#0e0e0e] px-6 py-24 md:px-12 lg:px-24 lg:py-32"
         >
           <div className="mx-auto max-w-4xl space-y-16 text-center">
             <div className="space-y-6">
@@ -230,7 +230,7 @@ export function LetoraLanding() {
 
             <div className="group relative cursor-default">
               <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-[#FFEABB]/20 to-[#c5c5d8]/20 opacity-25 blur transition duration-700 group-hover:opacity-45" />
-              <div className="relative overflow-hidden rounded-2xl border border-[#4F4632]/10">
+              <div className="relative overflow-hidden rounded-2xl border border-border dark:border-[#4F4632]/10">
                 <div className="relative aspect-video w-full">
                   <Image
                     src={IMG_GLOBE}
@@ -240,7 +240,7 @@ export function LetoraLanding() {
                     sizes="(max-width: 896px) 100vw, 896px"
                   />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="flex items-center gap-3 rounded-full border border-white/10 bg-[#1A1A1A]/50 px-6 py-3 backdrop-blur-md">
+                    <div className="flex items-center gap-3 rounded-full border border-white/10 bg-background dark:bg-[#1A1A1A]/50 px-6 py-3 backdrop-blur-md">
                       <span className="size-2 animate-pulse rounded-full bg-emerald-500" />
                       <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-[0.25em] text-emerald-500">
                         Live sync
@@ -294,7 +294,7 @@ export function LetoraLanding() {
         <LetoraPricingSection />
 
         {/* Footer */}
-        <footer className="flex flex-col items-center justify-between gap-10 border-t border-[#4F4632]/10 bg-[#131313] px-6 py-16 md:flex-row md:px-12 lg:px-24">
+        <footer className="flex flex-col items-center justify-between gap-10 border-t border-border dark:border-[#4F4632]/10 bg-background dark:bg-[#131313] px-6 py-16 md:flex-row md:px-12 lg:px-24">
           <div className="flex flex-col items-center gap-2 md:items-start">
             <span className="font-headline text-xl font-semibold tracking-[-0.04em] text-foreground">Letora</span>
             <p className="font-[family-name:var(--font-inter)] text-[10px] font-light uppercase tracking-[0.2em] text-muted-foreground">
@@ -316,7 +316,7 @@ export function LetoraLanding() {
             <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-widest text-[#FFEABB]">
               London
             </span>
-            <span className="size-1 rounded-full bg-[#4F4632]" aria-hidden />
+            <span className="size-1 rounded-full bg-background dark:bg-[#4F4632]" aria-hidden />
             <span className="font-[family-name:var(--font-inter)] text-xs font-bold uppercase tracking-widest text-[#FFEABB]">
               San Francisco
             </span>

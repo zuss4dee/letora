@@ -39,7 +39,7 @@ function emailStatusBadge(status: string | null) {
       className={cn(
         "inline-flex border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider",
         s === "skipped"
-          ? "border-zinc-600 bg-[#141414] text-zinc-400"
+          ? "border-zinc-600 bg-background dark:bg-[#141414] text-zinc-400"
           : "border-amber-800/40 bg-amber-950/30 text-amber-300",
       )}
     >
@@ -49,7 +49,7 @@ function emailStatusBadge(status: string | null) {
 }
 
 const headClass =
-  "h-10 border-b border-[#282828] bg-[#0B0B0B] text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500";
+  "h-10 border-b border-border dark:border-[#282828] bg-background dark:bg-[#0B0B0B] text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500";
 
 export function MaintenanceRelatedEmailsTable({
   emailLogs,
@@ -117,7 +117,7 @@ export function MaintenanceRelatedEmailsTable({
                 return (
                   <TableRow
                     key={log.id}
-                    className="border-b border-[#282828] hover:bg-[#141414]/80"
+                    className="border-b border-border dark:border-[#282828] hover:bg-background dark:bg-[#141414]/80"
                   >
                     <TableCell className="align-top text-[12px] font-medium text-zinc-200">
                       {log.to_email ?? "—"}
@@ -144,7 +144,7 @@ export function MaintenanceRelatedEmailsTable({
                             variant="outline"
                             size="sm"
                             onClick={() => void handleReviewClick(log.id)}
-                            className="rounded-none border-[#333333] bg-transparent text-[10px] font-bold uppercase tracking-wider text-zinc-300 hover:bg-[#1a1a1a]"
+                            className="rounded-none border-border dark:border-[#333333] bg-transparent text-[10px] font-bold uppercase tracking-wider text-zinc-300 hover:bg-background dark:bg-[#1a1a1a]"
                           >
                             Review
                           </Button>

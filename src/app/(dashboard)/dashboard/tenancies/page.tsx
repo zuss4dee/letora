@@ -140,7 +140,7 @@ export default async function TenanciesPage({
   const importBatchId = parseImportBatchParam(sp);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[#f8f8f7] p-4 text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100 lg:p-8">
+    <div className="flex min-h-0 flex-1 flex-col bg-background dark:bg-[#f8f8f7] p-4 text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100 lg:p-8">
       {/* A. Page Header */}
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -154,13 +154,13 @@ export default async function TenanciesPage({
         <div className="flex flex-wrap gap-2">
           <Link
             href="/dashboard/tenants"
-            className="border border-zinc-300 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:bg-transparent dark:text-zinc-300 dark:hover:bg-[#161616]"
+            className="border border-zinc-300 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:bg-transparent dark:text-zinc-300 dark:hover:bg-background dark:bg-[#161616]"
           >
             View Tenants
           </Link>
           <Link
             href="/dashboard/properties"
-            className="border border-zinc-300 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:bg-transparent dark:text-zinc-300 dark:hover:bg-[#161616]"
+            className="border border-zinc-300 bg-white px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:bg-transparent dark:text-zinc-300 dark:hover:bg-background dark:bg-[#161616]"
           >
             View Portfolio
           </Link>

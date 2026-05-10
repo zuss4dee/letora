@@ -305,7 +305,7 @@ export function BatchOnboardingImport({
     summary !== null && rows !== null && rows.length > 0;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[#f8f8f7] text-zinc-950 dark:bg-[#131313] dark:text-[#e5e2e1]">
+    <div className="flex min-h-0 flex-1 flex-col bg-background dark:bg-[#f8f8f7] text-zinc-950 dark:bg-[#131313] dark:text-[#e5e2e1]">
       {/* ── Page Header ── */}
       <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-200 dark:border-[#282828] dark:bg-[#161616]">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-[#555555]">
@@ -320,7 +320,7 @@ export function BatchOnboardingImport({
       </header>
 
       {checkoutFlash ? (
-        <div className="flex items-start justify-between gap-3 border-b border-[#306f60]/35 bg-[#152420]/80 px-6 py-3">
+        <div className="flex items-start justify-between gap-3 border-b border-border dark:border-[#306f60]/35 bg-background dark:bg-[#152420]/80 px-6 py-3">
           <div className="min-w-0">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#afefdd]">
               {checkoutFlash === "success" ? "Billing update received" : "Checkout cancelled"}
@@ -335,7 +335,7 @@ export function BatchOnboardingImport({
           </div>
           <button
             type="button"
-            className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+            className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white"
             aria-label="Dismiss billing notice"
             onClick={() => setCheckoutFlash(null)}
           >
@@ -345,21 +345,21 @@ export function BatchOnboardingImport({
       ) : null}
 
       {isRetryBatchHydrating ? (
-        <div className="flex items-center gap-3 border-b border-[#f8cf83]/25 bg-[#2a2210]/45 px-6 py-3">
+        <div className="flex items-center gap-3 border-b border-border dark:border-[#f8cf83]/25 bg-background dark:bg-[#2a2210]/45 px-6 py-3">
           <Loader2 className="size-4 shrink-0 animate-spin text-[#f8cf83]" aria-hidden />
           <p className="text-[12px] leading-snug text-[#e5e2e1]">Loading failed rows from that import into the preflight editor…</p>
         </div>
       ) : null}
 
       {retryBatchLoadError ? (
-        <div className="flex items-start justify-between gap-3 border-b border-[#BB5551]/40 bg-[#2a1514]/60 px-6 py-3">
+        <div className="flex items-start justify-between gap-3 border-b border-border dark:border-[#BB5551]/40 bg-background dark:bg-[#2a1514]/60 px-6 py-3">
           <div className="min-w-0">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#ee7d77]">Could not open retry</p>
             <p className="mt-1 text-[12px] leading-relaxed text-zinc-400">{retryBatchLoadError}</p>
           </div>
           <button
             type="button"
-            className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+            className="shrink-0 font-mono text-[10px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white"
             aria-label="Dismiss retry error"
             onClick={() => setRetryBatchLoadError(null)}
           >
@@ -369,10 +369,10 @@ export function BatchOnboardingImport({
       ) : null}
 
       {retryFromBatchContext && !isRetryBatchHydrating ? (
-        <div className="border-b border-[#f8cf83]/25 bg-[#2a2210]/35 px-6 py-3">
+        <div className="border-b border-border dark:border-[#f8cf83]/25 bg-background dark:bg-[#2a2210]/35 px-6 py-3">
           <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#f8cf83]">Retry mode</p>
           <p className="mt-2 max-w-2xl text-[12px] leading-relaxed text-[#cfc9c4]">
-            <span className="font-medium text-white">Retry failed rows</span> uses only the lines that didn&apos;t save on batch{" "}
+            <span className="font-medium text-zinc-900 dark:text-white">Retry failed rows</span> uses only the lines that didn&apos;t save on batch{" "}
             <span className="font-mono text-[11px] text-zinc-300">{retryFromBatchContext.slice(0, 8)}…</span> — edit below, run
             preview checks, then import. Letora matches what already exists, so successful rows aren&apos;t touched.
           </p>
@@ -381,7 +381,7 @@ export function BatchOnboardingImport({
           </p>
           <Link
             href={`/dashboard/import/batch/${encodeURIComponent(retryFromBatchContext)}`}
-            className="mt-3 inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+            className="mt-3 inline-flex items-center gap-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white"
           >
             Back to batch results
           </Link>
@@ -389,7 +389,7 @@ export function BatchOnboardingImport({
       ) : null}
 
       {hasStoredImportDraft ? (
-        <div className="flex flex-col gap-2 border-b border-[#306f60]/25 bg-[#1a2824]/70 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 border-b border-border dark:border-[#306f60]/25 bg-background dark:bg-[#1a2824]/70 px-6 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
             <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#afefdd]">
               Saved preview in this browser
@@ -401,7 +401,7 @@ export function BatchOnboardingImport({
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="inline-flex items-center gap-2 border border-[#afefdd]/40 bg-[#afefdd] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-colors hover:bg-white"
+              className="inline-flex items-center gap-2 border border-border dark:border-[#afefdd]/40 bg-background dark:bg-[#afefdd] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-colors hover:bg-white"
               onClick={() => {
                 const d = loadPortfolioImportDraft();
                 if (!d?.rows?.length) {
@@ -421,7 +421,7 @@ export function BatchOnboardingImport({
             </button>
             <button
               type="button"
-              className="inline-flex items-center gap-2 border border-[#333333] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#bbbbbb] transition-colors hover:border-white hover:text-white"
+              className="inline-flex items-center gap-2 border border-border dark:border-[#333333] px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#bbbbbb] transition-colors hover:border-white hover:text-white"
               onClick={() => {
                 clearPortfolioImportDraft();
                 setHasStoredImportDraft(false);
@@ -454,7 +454,7 @@ export function BatchOnboardingImport({
                   <a
                     href="/templates/portfolio-import-sample.csv"
                     download
-                    className="inline-flex items-center gap-1.5 border border-[#afefdd]/30 bg-[#152420] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#afefdd] transition-colors hover:border-[#afefdd]/50"
+                    className="inline-flex items-center gap-1.5 border border-border dark:border-[#afefdd]/30 bg-background dark:bg-[#152420] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#afefdd] transition-colors hover:border-border dark:border-[#afefdd]/50"
                   >
                     <Download className="size-3" />
                     Sample CSV
@@ -462,7 +462,7 @@ export function BatchOnboardingImport({
                   <a
                     href="/templates/tenant-batch-template.csv"
                     download
-                    className="inline-flex items-center gap-1.5 border border-zinc-200 bg-zinc-900 px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-200 transition-colors hover:border-zinc-400 hover:text-white dark:border-[#333333] dark:bg-[#0B0B0B] dark:text-[#888888]"
+                    className="inline-flex items-center gap-1.5 border border-zinc-200 bg-zinc-100 dark:bg-zinc-900 px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-200 transition-colors hover:border-zinc-400 hover:text-white dark:border-[#333333] dark:bg-[#0B0B0B] dark:text-[#888888]"
                   >
                     <Download className="size-3" />
                     Minimal template
@@ -483,8 +483,8 @@ export function BatchOnboardingImport({
                     isDragging
                       ? "border border-dashed border-zinc-900 bg-zinc-100 dark:border-white dark:bg-[#1A1A1A]"
                       : file
-                        ? "bg-[#152420]"
-                        : "bg-zinc-50 hover:bg-zinc-100 dark:bg-[#131313] dark:hover:bg-[#1A1A1A]",
+                        ? "bg-background dark:bg-[#152420]"
+                        : "bg-zinc-50 hover:bg-zinc-100 dark:bg-[#131313] dark:hover:bg-background dark:bg-[#1A1A1A]",
                   )}
                 >
                   <Upload
@@ -570,7 +570,7 @@ export function BatchOnboardingImport({
                     type="button"
                     onClick={onPreview}
                     disabled={isPreviewing || isImportPending}
-                    className="flex items-center gap-2 bg-zinc-900 px-5 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-opacity hover:opacity-90 disabled:opacity-50 dark:bg-white dark:text-[#161616]"
+                    className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 px-5 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-opacity hover:opacity-90 disabled:opacity-50 dark:bg-white dark:text-[#161616]"
                   >
                     {isPreviewing ? (
                       <>
@@ -589,7 +589,7 @@ export function BatchOnboardingImport({
 
               {/* Error bar */}
               {error ? (
-                <div className="flex items-start gap-2 border-t border-[#BB5551]/30 bg-[#7f2927]/10 px-4 py-3">
+                <div className="flex items-start gap-2 border-t border-border dark:border-[#BB5551]/30 bg-background dark:bg-[#7f2927]/10 px-4 py-3">
                   <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-[#ee7d77]" />
                   <span className="text-[11px] text-[#ee7d77]">{error}</span>
                 </div>
@@ -599,7 +599,7 @@ export function BatchOnboardingImport({
             {summary && rows ? (
               <>
                 {isImportPending ? (
-                  <div className="flex items-start gap-3 border-b border-[#f8cf83]/25 bg-[#2a2210]/90 px-4 py-4">
+                  <div className="flex items-start gap-3 border-b border-border dark:border-[#f8cf83]/25 bg-background dark:bg-[#2a2210]/90 px-4 py-4">
                     <Loader2 className="mt-0.5 size-5 shrink-0 animate-spin text-[#f8cf83]" aria-hidden />
                     <div>
                       <p className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#f8cf83]">
@@ -614,7 +614,7 @@ export function BatchOnboardingImport({
                 ) : null}
 
                 {importError ? (
-                  <div className="flex items-start gap-3 border-b border-[#BB5551]/35 bg-[#7f2927]/15 px-4 py-3">
+                  <div className="flex items-start gap-3 border-b border-border dark:border-[#BB5551]/35 bg-background dark:bg-[#7f2927]/15 px-4 py-3">
                     <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-[#ee7d77]" aria-hidden />
                     <div className="min-w-0 flex-1">
                       <p className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#ee7d77]">
@@ -639,7 +639,7 @@ export function BatchOnboardingImport({
                             </div>
                             <Link
                               href="/dashboard/billing"
-                              className="inline-flex shrink-0 items-center justify-center gap-2 border border-[#5c2d2a]/50 bg-[#1a1212] px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-[#ffb3ad] transition-colors hover:border-[#ee7d77]/50 hover:text-white"
+                              className="inline-flex shrink-0 items-center justify-center gap-2 border border-border dark:border-[#5c2d2a]/50 bg-background dark:bg-[#1a1212] px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-[#ffb3ad] transition-colors hover:border-border dark:border-[#ee7d77]/50 hover:text-white"
                             >
                               Open billing
                               <ChevronRight className="size-3.5" aria-hidden />
@@ -744,7 +744,7 @@ export function BatchOnboardingImport({
             >
               {history.length === 0 ? (
                 <div className="flex flex-col gap-3 px-6 py-8 opacity-50">
-                  <div className="flex size-10 items-center justify-center border border-[#333333]">
+                  <div className="flex size-10 items-center justify-center border border-border dark:border-[#333333]">
                     <Upload className="size-4 text-[#555555]" />
                   </div>
                   <p className="text-center font-mono text-[9px] uppercase tracking-widest text-[#555555]">
@@ -757,7 +757,7 @@ export function BatchOnboardingImport({
               ) : (
                 <ul className="divide-y divide-zinc-200 dark:divide-[#282828]">
                   {history.map((h) => (
-                    <li key={h.id} className="hover:bg-zinc-100 dark:hover:bg-[#1A1A1A]">
+                    <li key={h.id} className="hover:bg-zinc-100 dark:hover:bg-background dark:bg-[#1A1A1A]">
                       <Link
                         href={`/dashboard/import/batch/${h.id}`}
                         className="block px-4 py-3 focus-visible:outline focus-visible:outline-offset-[-2px] focus-visible:outline-[#afefdd]"
@@ -841,7 +841,7 @@ export function BatchOnboardingImport({
                     <span
                       className={cn(
                         "mt-1.5 size-1 shrink-0 rounded-full",
-                        sidebarPreflightMuted ? "bg-[#333333]" : "bg-[#444444]",
+                        sidebarPreflightMuted ? "bg-background dark:bg-[#333333]" : "bg-background dark:bg-[#444444]",
                       )}
                       aria-hidden
                     />

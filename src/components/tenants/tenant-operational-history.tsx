@@ -36,7 +36,7 @@ interface TenantOperationalHistoryProps {
 export function TenantOperationalHistory({ activity }: TenantOperationalHistoryProps) {
   if (activity.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center border border-dashed border-[#232323] py-12 text-center">
+      <div className="flex flex-col items-center justify-center border border-dashed border-border dark:border-[#232323] py-12 text-center">
         <p className="text-[10px] uppercase tracking-widest text-zinc-600">
           No operational history found
         </p>

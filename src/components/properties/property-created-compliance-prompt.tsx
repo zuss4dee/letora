@@ -30,7 +30,7 @@ export function PropertyCreatedCompliancePrompt({
 }: PropertyCreatedCompliancePromptProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md gap-0 overflow-hidden border-[#BD9952]/25 bg-card p-0 font-headline shadow-[0_28px_56px_-32px_rgba(0,0,0,0.55)] sm:max-w-md">
+      <DialogContent className="max-w-md gap-0 overflow-hidden border-border dark:border-[#BD9952]/25 bg-card p-0 font-headline shadow-[0_28px_56px_-32px_rgba(0,0,0,0.55)] sm:max-w-md">
         <div
           className="h-[3px] w-full bg-gradient-to-r from-[#BD9952] via-[#BD9952]/50 to-transparent"
           aria-hidden
@@ -45,7 +45,7 @@ export function PropertyCreatedCompliancePrompt({
           />
           <DialogHeader className="relative space-y-4 text-left">
             <div className="flex items-start gap-4">
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-full border border-[#BD9952]/40 bg-[#BD9952]/10 text-[#BD9952]">
+              <div className="flex size-12 shrink-0 items-center justify-center rounded-full border border-border dark:border-[#BD9952]/40 bg-background dark:bg-[#BD9952]/10 text-[#BD9952]">
                 <ShieldCheck className="size-6" strokeWidth={1.25} aria-hidden />
               </div>
               <div className="min-w-0 space-y-3 pt-0.5">
@@ -81,7 +81,7 @@ export function PropertyCreatedCompliancePrompt({
             </Button>
             <Button
               type="button"
-              className="font-headline rounded-full border border-[#BD9952]/45 bg-[#BD9952]/12 px-6 text-foreground shadow-sm transition hover:border-[#BD9952]/70 hover:bg-[#BD9952]/20"
+              className="font-headline rounded-full border border-border dark:border-[#BD9952]/45 bg-background dark:bg-[#BD9952]/12 px-6 text-foreground shadow-sm transition hover:border-border dark:border-[#BD9952]/70 hover:bg-background dark:bg-[#BD9952]/20"
               onClick={onUploadNow}
             >
               Upload Now

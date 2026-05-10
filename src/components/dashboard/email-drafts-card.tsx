@@ -70,7 +70,7 @@ export function EmailDraftsCard({
       <Card
         className={className}
       >
-        <CardHeader className={className ? "border-b border-[#484848]/15" : "border-b"}>
+        <CardHeader className={className ? "border-b border-border dark:border-[#484848]/15" : "border-b"}>
           <CardTitle className={className ? "font-headline text-foreground" : undefined}>
             Pending Email Drafts
           </CardTitle>
@@ -123,7 +123,7 @@ export function EmailDraftsCard({
                         <Button
                           type="button"
                           size="sm"
-                          className="bg-zinc-950 text-white hover:bg-zinc-900 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-800"
+                          className="bg-zinc-50 dark:bg-zinc-950 text-white hover:bg-zinc-100 dark:bg-zinc-900 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-200 dark:bg-zinc-800"
                           disabled={sendingId === row.id}
                           onClick={() => void handleSendNow(row.id)}
                         >

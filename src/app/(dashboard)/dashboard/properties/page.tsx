@@ -90,7 +90,7 @@ export default async function PropertiesPage({
   const importBatchId = parseImportBatchParam(sp);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
+    <div className="flex min-h-0 flex-1 flex-col bg-background dark:bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
       <Suspense fallback={<div className="p-6 text-sm text-zinc-500 dark:text-zinc-400">Loading properties…</div>}>
         <PropertiesPortfolioContent
           userId={user.id}

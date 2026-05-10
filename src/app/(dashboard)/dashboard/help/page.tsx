@@ -32,7 +32,7 @@ export default async function DashboardHelpPage() {
 
         <section className="max-w-xl rounded-xl border border-border bg-card p-6 shadow-sm ring-1 ring-border/60 dark:bg-card/80">
           <div className="flex items-start gap-4">
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-zinc-800/50 ring-1 ring-zinc-700">
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-zinc-200 dark:bg-zinc-800/50 ring-1 ring-zinc-700">
               <Mail className="size-5 text-zinc-400" aria-hidden />
             </div>
             <div className="min-w-0 space-y-2">

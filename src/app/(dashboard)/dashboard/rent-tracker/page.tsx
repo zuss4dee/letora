@@ -287,7 +287,7 @@ export default async function RentTrackerPage({
   return (
     <>
       <DashboardPollRefresh />
-      <div className="@container/main flex min-h-0 flex-1 flex-col bg-[#f8f8f7] font-['Inter',system-ui,sans-serif] text-zinc-950 dark:bg-[#0B0B0B] dark:text-[#e5e2e1]">
+      <div className="@container/main flex min-h-0 flex-1 flex-col bg-background dark:bg-[#f8f8f7] font-['Inter',system-ui,sans-serif] text-zinc-950 dark:bg-[#0B0B0B] dark:text-[#e5e2e1]">
         <Suspense fallback={<RentTrackerLoadingShell todayIso={todayIso} />}>
           <RentTrackerAsyncSection
             userId={userId}
@@ -428,7 +428,7 @@ async function RentTrackerAsyncSection({
 
 function RentTrackerLoadingShell({ todayIso }: { todayIso: string }) {
   return (
-    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-[#f8f8f7] font-['Inter',system-ui,sans-serif] text-zinc-950 dark:bg-[#0B0B0B] dark:text-[#e6e3e1]">
+    <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto bg-background dark:bg-[#f8f8f7] font-['Inter',system-ui,sans-serif] text-zinc-950 dark:bg-[#0B0B0B] dark:text-[#e6e3e1]">
       <div className="border-b border-zinc-200/80 bg-white px-4 py-5 dark:border-[#282828] dark:bg-[#141414] md:px-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500 dark:text-[#868686]">
           Rent tracker / {todayIso}
@@ -445,7 +445,7 @@ function RentTrackerLoadingShell({ todayIso }: { todayIso: string }) {
         ))}
       </div>
 
-      <div className="flex-1 bg-[#f8f8f7] p-4 dark:bg-[#0B0B0B] md:p-6">
+      <div className="flex-1 bg-background dark:bg-[#f8f8f7] p-4 dark:bg-[#0B0B0B] md:p-6">
         <div className="mb-4 h-10 animate-pulse rounded-sm border border-zinc-200 bg-white dark:border-[#333333] dark:bg-[#161616]" />
         <div className="overflow-hidden border border-zinc-200 bg-white dark:border-[#333333] dark:bg-[#161616]">
           {Array.from({ length: 7 }).map((_, index) => (

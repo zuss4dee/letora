@@ -152,7 +152,7 @@ export function AddTenancyDialog({
               </CardHeader>
               <CardContent className="space-y-4 pt-4">
                 <div className="flex flex-wrap gap-2">
-                  <Button type="button" asChild className="bg-indigo-600 text-white hover:bg-indigo-700">
+                  <Button type="button" asChild className="bg-indigo-600 text-[#ffffff] hover:bg-indigo-700">
                     <Link href="/dashboard/approvals">Open Approvals</Link>
                   </Button>
                   <DialogClose asChild>

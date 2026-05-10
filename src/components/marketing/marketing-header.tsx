@@ -59,7 +59,7 @@ export function MarketingHeader() {
   const isHome = pathname === "/";
 
   return (
-    <header className="fixed left-0 top-0 z-50 w-full min-w-0 border-b border-[#4F4632]/10 bg-[#131313]/80 pt-[env(safe-area-inset-top,0px)] backdrop-blur-xl supports-[backdrop-filter]:bg-[#131313]/70">
+    <header className="fixed left-0 top-0 z-50 w-full min-w-0 border-b border-border dark:border-[#4F4632]/10 bg-background dark:bg-[#131313]/80 pt-[env(safe-area-inset-top,0px)] backdrop-blur-xl supports-[backdrop-filter]:bg-background dark:bg-[#131313]/70">
       <nav
         className="mx-auto flex h-[3.75rem] max-w-[100vw] items-center justify-between gap-2 px-4 sm:h-16 sm:gap-3 sm:px-6 md:px-8 lg:px-16 xl:px-24"
         aria-label="Primary"
@@ -74,7 +74,7 @@ export function MarketingHeader() {
             unoptimized
           />
           <span className="flex min-w-0 flex-col text-left">
-            <span className="font-headline text-[1.125rem] font-semibold tracking-[-0.04em] text-foreground transition-colors group-hover:text-white sm:text-xl">
+            <span className="font-headline text-[1.125rem] font-semibold tracking-[-0.04em] text-foreground transition-colors group-hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white sm:text-xl">
               Letora
             </span>
             <span className="mt-0.5 hidden font-[family-name:var(--font-inter)] text-[0.55rem] font-medium uppercase tracking-[0.28em] text-muted-foreground sm:block">
@@ -126,7 +126,7 @@ export function MarketingHeader() {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-11 w-11 shrink-0 rounded-xl border border-[#4F4632]/30 bg-[#1a1a1a]/80 text-foreground hover:bg-[#252525] hover:text-white"
+                  className="h-11 w-11 shrink-0 rounded-xl border border-border dark:border-[#4F4632]/30 bg-background dark:bg-[#1a1a1a]/80 text-foreground hover:bg-background dark:bg-[#252525] hover:text-white"
                   aria-label="Open menu"
                 >
                   <Menu className="size-[1.35rem]" strokeWidth={1.75} />
@@ -135,10 +135,10 @@ export function MarketingHeader() {
               <SheetContent
                 side="right"
                 showCloseButton
-                className="flex w-[min(100vw,20rem)] flex-col border-l border-[#4F4632]/25 bg-[#131313] p-0 text-foreground shadow-2xl sm:max-w-sm"
-                overlayClassName="bg-black/55 backdrop-blur-[3px]"
+                className="flex w-[min(100vw,20rem)] flex-col border-l border-border dark:border-[#4F4632]/25 bg-background dark:bg-[#131313] p-0 text-foreground shadow-2xl sm:max-w-sm"
+                overlayClassName="bg-zinc-950 dark:bg-black/55 backdrop-blur-[3px]"
               >
-                <SheetHeader className="border-b border-[#4F4632]/15 px-5 py-5 text-left">
+                <SheetHeader className="border-b border-border dark:border-[#4F4632]/15 px-5 py-5 text-left">
                   <SheetTitle className="font-headline text-lg font-semibold tracking-[-0.03em] text-foreground">
                     Menu
                   </SheetTitle>
@@ -151,18 +151,18 @@ export function MarketingHeader() {
                     <SheetClose asChild key={item.label + item.hash}>
                       <a
                         href={navHref(item.hash, pathname)}
-                        className="rounded-xl px-4 py-3.5 font-[family-name:var(--font-inter)] text-[0.9375rem] font-medium tracking-tight text-foreground transition-colors active:bg-[#1f1f1f]"
+                        className="rounded-xl px-4 py-3.5 font-[family-name:var(--font-inter)] text-[0.9375rem] font-medium tracking-tight text-foreground transition-colors active:bg-background dark:bg-[#1f1f1f]"
                       >
                         {item.label}
                       </a>
                     </SheetClose>
                   ))}
                 </nav>
-                <div className="border-t border-[#4F4632]/15 p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
+                <div className="border-t border-border dark:border-[#4F4632]/15 p-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))]">
                   <SheetClose asChild>
                     <Link
                       href="/login"
-                      className="mb-3 flex min-h-11 items-center justify-center rounded-xl border border-[#4F4632]/35 py-2.5 font-[family-name:var(--font-inter)] text-sm font-semibold text-[#FFEABB]"
+                      className="mb-3 flex min-h-11 items-center justify-center rounded-xl border border-border dark:border-[#4F4632]/35 py-2.5 font-[family-name:var(--font-inter)] text-sm font-semibold text-[#FFEABB]"
                     >
                       Log in
                     </Link>

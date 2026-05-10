@@ -14,14 +14,14 @@ export const metadata: Metadata = {
 
 export default function PricingPage() {
   return (
-    <div className="dark min-h-screen bg-[#131313] text-foreground">
+    <div className="dark min-h-screen bg-background dark:bg-[#131313] text-foreground">
       <MarketingHeader />
       <div
         className="h-[calc(3.75rem+env(safe-area-inset-top,0px))] shrink-0 sm:h-[calc(4rem+env(safe-area-inset-top,0px))]"
         aria-hidden
       />
       <LetoraPricingSection />
-      <footer className="border-t border-[#4F4632]/10 px-6 py-10 text-center md:px-12 lg:px-24">
+      <footer className="border-t border-border dark:border-[#4F4632]/10 px-6 py-10 text-center md:px-12 lg:px-24">
         <Link
           href="/"
           className="font-[family-name:var(--font-inter)] text-sm font-medium text-muted-foreground transition-colors hover:text-[#FFEABB]"

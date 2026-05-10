@@ -345,7 +345,7 @@ export function AgentsClient() {
                 type="button"
                 onClick={onRunRentChaser}
                 disabled={isRentRunning}
-                className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+                className="bg-zinc-100 dark:bg-zinc-900 text-white hover:bg-zinc-200 dark:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
               >
                 {isRentRunning ? (
                   <>
@@ -380,7 +380,7 @@ export function AgentsClient() {
                 type="button"
                 onClick={onRunLeadQualifier}
                 disabled={isLeadRunning}
-                className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+                className="bg-zinc-100 dark:bg-zinc-900 text-white hover:bg-zinc-200 dark:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
               >
                 {isLeadRunning ? (
                   <>
@@ -415,7 +415,7 @@ export function AgentsClient() {
                 type="button"
                 onClick={openContractPicker}
                 disabled={isContractRunning}
-                className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+                className="bg-zinc-100 dark:bg-zinc-900 text-white hover:bg-zinc-200 dark:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
               >
                 {isContractRunning ? (
                   <>
@@ -573,7 +573,7 @@ export function AgentsClient() {
               type="button"
               disabled={applyingLeads || leadResults.length === 0}
               onClick={() => void onApplyAllLeads()}
-              className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+              className="bg-zinc-100 dark:bg-zinc-900 text-white hover:bg-zinc-200 dark:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
             >
               {applyingLeads ? (
                 <>
@@ -632,7 +632,7 @@ export function AgentsClient() {
               type="button"
               disabled={!selectedContractId}
               onClick={() => void onGenerateContract()}
-              className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+              className="bg-zinc-100 dark:bg-zinc-900 text-white hover:bg-zinc-200 dark:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
             >
               Generate
             </Button>
@@ -684,7 +684,7 @@ export function AgentsClient() {
                   type="button"
                   disabled={savedContract}
                   onClick={() => void onSaveContractToDb()}
-                  className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+                  className="bg-zinc-100 dark:bg-zinc-900 text-white hover:bg-zinc-200 dark:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
                 >
                   {savedContract ? "Saved ✓" : "Save to contract"}
                 </Button>

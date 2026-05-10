@@ -38,7 +38,7 @@ export function WelcomeEmailTemplate({
       <Section className="my-6 text-center">
         <Button
           href={onboardingUrl}
-          className="bg-[#1a1a2e] text-white px-8 py-3 rounded-md font-medium no-underline"
+          className="bg-background dark:bg-[#1a1a2e] text-white px-8 py-3 rounded-md font-medium no-underline"
         >
           Complete Onboarding
         </Button>

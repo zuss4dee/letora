@@ -245,7 +245,7 @@ export function ReferencingPanel({
               {events.map((ev) => (
                 <li
                   key={ev.id}
-                  className="rounded-[2px] border border-zinc-200/70 bg-zinc-100/35 px-4 py-3 transition-colors hover:bg-zinc-100/55 dark:border-zinc-800 dark:bg-zinc-900/20 dark:hover:bg-zinc-900/35"
+                  className="rounded-[2px] border border-zinc-200/70 bg-zinc-100/35 px-4 py-3 transition-colors hover:bg-zinc-100/55 dark:border-zinc-800 dark:bg-zinc-900/20 dark:hover:bg-zinc-100 dark:bg-zinc-900/35"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="font-[family-name:var(--font-inter)] text-[13px] font-medium capitalize text-zinc-900 dark:text-zinc-100">

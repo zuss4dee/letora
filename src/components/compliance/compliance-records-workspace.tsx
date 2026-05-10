@@ -173,7 +173,7 @@ export function ComplianceRecordsWorkspace({
 
   return (
     <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="grid grid-cols-4 border-b border-zinc-800 bg-[#0B0B0B]">
+      <div className="grid grid-cols-4 border-b border-zinc-800 bg-background dark:bg-[#0B0B0B]">
         <div className="border-r border-zinc-800 p-4">
           <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">
             Missing Certificates
@@ -193,7 +193,7 @@ export function ComplianceRecordsWorkspace({
         <div className="border-r border-zinc-800 p-4">
           <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-zinc-500">Total Compliance</p>
           <div className="flex items-end gap-2">
-            <span className="text-3xl font-bold leading-none text-white">{compliancePct}%</span>
+            <span className="text-3xl font-bold leading-none text-zinc-900 dark:text-white">{compliancePct}%</span>
             <span className="mb-1 text-[10px] font-bold text-emerald-500">+0.4%</span>
           </div>
         </div>
@@ -221,9 +221,9 @@ export function ComplianceRecordsWorkspace({
           if (!open) closeUpload();
         }}
       >
-        <DialogContent className="max-w-md border-zinc-800 bg-[#1A1A1A] text-zinc-100">
+        <DialogContent className="max-w-md border-zinc-800 bg-background dark:bg-[#1A1A1A] text-zinc-100">
           <DialogHeader>
-            <DialogTitle className="text-base font-bold text-white">Upload certificate</DialogTitle>
+            <DialogTitle className="text-base font-bold text-zinc-900 dark:text-white">Upload certificate</DialogTitle>
             <DialogDescription className="text-sm text-zinc-400">
               Choose the property and certificate type, then attach a PDF. Gas safety only appears for properties with
               gas supply.
@@ -249,13 +249,13 @@ export function ComplianceRecordsWorkspace({
               >
                 <SelectTrigger
                   id="compliance-upload-property"
-                  className="border-zinc-700 bg-[#0B0B0B] text-zinc-100"
+                  className="border-zinc-700 bg-background dark:bg-[#0B0B0B] text-zinc-100"
                 >
                   <SelectValue placeholder="Select property" />
                 </SelectTrigger>
-                <SelectContent className="border-zinc-700 bg-[#1A1A1A] text-zinc-100">
+                <SelectContent className="border-zinc-700 bg-background dark:bg-[#1A1A1A] text-zinc-100">
                   {properties.map((p) => (
-                    <SelectItem key={p.id} value={p.id} className="focus:bg-zinc-800">
+                    <SelectItem key={p.id} value={p.id} className="focus:bg-zinc-200 dark:bg-zinc-800">
                       {propertyLabel(p)}
                     </SelectItem>
                   ))}
@@ -276,13 +276,13 @@ export function ComplianceRecordsWorkspace({
               >
                 <SelectTrigger
                   id="compliance-upload-type"
-                  className="border-zinc-700 bg-[#0B0B0B] text-zinc-100"
+                  className="border-zinc-700 bg-background dark:bg-[#0B0B0B] text-zinc-100"
                 >
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="border-zinc-700 bg-[#1A1A1A] text-zinc-100">
+                <SelectContent className="border-zinc-700 bg-background dark:bg-[#1A1A1A] text-zinc-100">
                   {typeOptions.map((t) => (
-                    <SelectItem key={t} value={t} className="focus:bg-zinc-800">
+                    <SelectItem key={t} value={t} className="focus:bg-zinc-200 dark:bg-zinc-800">
                       {displayCertificateLabel(t)}
                     </SelectItem>
                   ))}
@@ -301,7 +301,7 @@ export function ComplianceRecordsWorkspace({
                   setUploadDraft((d) => ({ ...d, documentLabel: e.target.value.slice(0, 200) }))
                 }
                 placeholder="e.g. EPC 2026 – engineer copy"
-                className="border-zinc-700 bg-[#0B0B0B] text-zinc-100 placeholder:text-zinc-600"
+                className="border-zinc-700 bg-background dark:bg-[#0B0B0B] text-zinc-100 placeholder:text-zinc-600"
                 autoComplete="off"
               />
             </div>

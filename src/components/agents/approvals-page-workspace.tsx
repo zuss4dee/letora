@@ -60,7 +60,7 @@ function ActionFilterChips({
             className={cn(
               "border px-2 py-1 text-[9px] font-bold uppercase tracking-wider transition-colors",
               active
-                ? "border-zinc-900/25 bg-zinc-900/10 text-zinc-900 dark:border-white/20 dark:bg-white/10 dark:text-white"
+                ? "border-zinc-900/25 bg-zinc-100 dark:bg-zinc-900/10 text-zinc-900 dark:border-white/20 dark:bg-white/10 dark:text-white"
                 : "border-zinc-200/90 bg-transparent text-zinc-600 hover:text-zinc-900 dark:border-[#232323] dark:text-zinc-500 dark:hover:text-zinc-300",
             )}
           >
@@ -119,7 +119,7 @@ export function ApprovalsPageWorkspace({
         >
           <TabsTrigger
             value="queue"
-            className="rounded-none px-0 pb-4 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-zinc-900 data-[state=active]:text-zinc-900 dark:after:bg-white dark:data-[state=active]:text-white"
+            className="rounded-none px-0 pb-4 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-zinc-100 dark:bg-zinc-900 data-[state=active]:text-zinc-900 dark:after:bg-white dark:data-[state=active]:text-white"
           >
             Queue
             {pending.length > 0 ? (
@@ -128,7 +128,7 @@ export function ApprovalsPageWorkspace({
           </TabsTrigger>
           <TabsTrigger
             value="decisions"
-            className="rounded-none px-0 pb-4 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-zinc-900 data-[state=active]:text-zinc-900 dark:after:bg-white dark:data-[state=active]:text-white"
+            className="rounded-none px-0 pb-4 text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 after:bottom-0 after:h-[2px] after:bg-zinc-100 dark:bg-zinc-900 data-[state=active]:text-zinc-900 dark:after:bg-white dark:data-[state=active]:text-white"
           >
             History
             {resolved.length > 0 ? (

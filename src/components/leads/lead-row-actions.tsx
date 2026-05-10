@@ -171,7 +171,7 @@ export function LeadRowActions({
             type="button"
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-[#1F2020]"
+            className="h-8 w-8 text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-background dark:bg-[#1F2020]"
             disabled={isPending}
             aria-label="Lead actions"
           >

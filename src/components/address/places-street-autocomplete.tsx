@@ -235,7 +235,7 @@ export function PlacesStreetAutocomplete({
         <ul
           id={listboxId}
           role="listbox"
-          className="absolute z-[200] mt-1 max-h-60 w-full overflow-auto rounded-md border border-zinc-700 bg-zinc-950 py-1 shadow-xl dark:border-border dark:bg-popover"
+          className="absolute z-[200] mt-1 max-h-60 w-full overflow-auto rounded-md border border-zinc-700 bg-zinc-50 dark:bg-zinc-950 py-1 shadow-xl dark:border-border dark:bg-popover"
         >
           {predictions.map((pred, i) => (
             <li
@@ -244,7 +244,7 @@ export function PlacesStreetAutocomplete({
               aria-selected={i === highlight}
               className={cn(
                 "cursor-pointer px-3 py-2 text-sm text-zinc-200 dark:text-popover-foreground",
-                i === highlight ? "bg-zinc-800 dark:bg-accent" : "hover:bg-zinc-900 dark:hover:bg-accent/80",
+                i === highlight ? "bg-zinc-200 dark:bg-zinc-800 dark:bg-accent" : "hover:bg-zinc-100 dark:bg-zinc-900 dark:hover:bg-accent/80",
               )}
               onMouseEnter={() => setHighlight(i)}
               onMouseDown={(ev) => ev.preventDefault()}

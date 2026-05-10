@@ -33,7 +33,7 @@ export function CommandCenterFailedImportBanner({
       <button
         type="button"
         onClick={onDismiss}
-        className="absolute right-3 top-3 rounded border border-transparent p-1 text-zinc-500 transition-colors hover:border-red-200 hover:bg-red-100/60 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-[#BB5551]/35 dark:hover:bg-black/20 dark:hover:text-white"
+        className="absolute right-3 top-3 rounded border border-transparent p-1 text-zinc-500 transition-colors hover:border-red-200 hover:bg-red-100/60 hover:text-zinc-900 dark:text-zinc-400 dark:hover:border-border dark:border-[#BB5551]/35 dark:hover:bg-zinc-950 dark:bg-black/20 dark:hover:text-white"
         aria-label="Dismiss import notice"
       >
         <X className="size-4" aria-hidden />
@@ -52,7 +52,7 @@ export function CommandCenterFailedImportBanner({
       <div className="flex shrink-0 flex-col gap-2 sm:items-end">
         <Link
           href={href}
-          className="inline-flex items-center justify-center border border-red-700/25 bg-white px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-red-800 transition-colors hover:border-red-800 dark:border-[#ee7d77]/50 dark:bg-[#3a1614]/80 dark:text-[#fec8c5] dark:hover:border-[#ee7d77]"
+          className="inline-flex items-center justify-center border border-red-700/25 bg-white px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-red-800 transition-colors hover:border-red-800 dark:border-[#ee7d77]/50 dark:bg-[#3a1614]/80 dark:text-[#fec8c5] dark:hover:border-border dark:border-[#ee7d77]"
         >
           Fix failed rows
         </Link>

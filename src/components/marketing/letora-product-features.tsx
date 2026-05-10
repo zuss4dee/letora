@@ -41,7 +41,7 @@ export function LetoraProductFeaturesSection() {
   return (
     <section
       id="features"
-      className="scroll-mt-24 border-t border-[#4F4632]/10 bg-[#0e0e0e] px-6 py-24 md:px-12 lg:px-24 lg:py-32"
+      className="scroll-mt-24 border-t border-border dark:border-[#4F4632]/10 bg-background dark:bg-[#0e0e0e] px-6 py-24 md:px-12 lg:px-24 lg:py-32"
       aria-labelledby="features-heading"
     >
       <div className="mx-auto max-w-screen-2xl">
@@ -94,7 +94,7 @@ export function LetoraProductFeaturesSection() {
 
                 <div
                   className={cn(
-                    "group relative min-w-0 overflow-hidden rounded-2xl border border-[#4F4632]/20 bg-[#131313] shadow-[0_32px_80px_rgba(0,0,0,0.45)] ring-1 ring-white/[0.04] transition-shadow duration-500 hover:shadow-[0_40px_96px_rgba(0,0,0,0.55)]",
+                    "group relative min-w-0 overflow-hidden rounded-2xl border border-border dark:border-[#4F4632]/20 bg-background dark:bg-[#131313] shadow-[0_32px_80px_rgba(0,0,0,0.45)] ring-1 ring-white/[0.04] transition-shadow duration-500 hover:shadow-[0_40px_96px_rgba(0,0,0,0.55)]",
                     copyOnLeft ? "lg:col-start-2 lg:row-start-1" : "lg:col-start-1 lg:row-start-1",
                   )}
                 >

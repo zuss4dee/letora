@@ -112,9 +112,9 @@ export function WorkspaceBillingView({ settings, operationalStats }: Props) {
   return (
     <div className="mx-auto max-w-6xl space-y-12 pb-24">
       {/* 01. HEADER */}
-      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-800/50 bg-[#0b0b0b]/80 py-6 backdrop-blur-md">
+      <header className="sticky top-0 z-20 flex items-center justify-between border-b border-zinc-800/50 bg-background dark:bg-[#0b0b0b]/80 py-6 backdrop-blur-md">
         <div className="space-y-1">
-          <h1 className="text-[16px] font-black italic tracking-tight text-white uppercase">
+          <h1 className="text-[16px] font-black italic tracking-tight text-zinc-900 dark:text-white uppercase">
             Financial Operations
           </h1>
           <div className="flex items-center gap-2">
@@ -127,7 +127,7 @@ export function WorkspaceBillingView({ settings, operationalStats }: Props) {
         <button
           type="button"
           onClick={() => router.push("/dashboard/settings")}
-          className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase transition-colors hover:text-white"
+          className="text-[10px] font-bold tracking-widest text-zinc-500 uppercase transition-colors hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white"
         >
           Back to Settings
         </button>
@@ -140,12 +140,12 @@ export function WorkspaceBillingView({ settings, operationalStats }: Props) {
           <h2 className="text-[11px] font-black tracking-[0.2em] text-zinc-400 uppercase">Active Subscription</h2>
         </div>
 
-        <div className="grid grid-cols-12 gap-px overflow-hidden border border-zinc-800/50 bg-zinc-800">
-          <div className="col-span-12 space-y-6 bg-[#111111] p-8 md:col-span-8">
+        <div className="grid grid-cols-12 gap-px overflow-hidden border border-zinc-800/50 bg-zinc-200 dark:bg-zinc-800">
+          <div className="col-span-12 space-y-6 bg-background dark:bg-[#111111] p-8 md:col-span-8">
             <div className="flex items-start justify-between">
               <div className="space-y-2">
                 <p className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Letora plan</p>
-                <p className="text-[24px] font-black italic tracking-tight text-white uppercase">{planLabel}</p>
+                <p className="text-[24px] font-black italic tracking-tight text-zinc-900 dark:text-white uppercase">{planLabel}</p>
                 {paying && polarBillingLinked ? (
                   <p className="text-[10px] font-bold tracking-tight text-zinc-500 uppercase">
                     Polar · same limits as app enforcement
@@ -161,7 +161,7 @@ export function WorkspaceBillingView({ settings, operationalStats }: Props) {
                       status === "active" ? "bg-emerald-500 shadow-[0_0_8px_#10b981]" : "bg-zinc-700",
                     )}
                   />
-                  <p className="text-[14px] font-black text-white uppercase">{status}</p>
+                  <p className="text-[14px] font-black text-zinc-900 dark:text-white uppercase">{status}</p>
                 </div>
               </div>
             </div>
@@ -169,17 +169,17 @@ export function WorkspaceBillingView({ settings, operationalStats }: Props) {
             <div className="grid grid-cols-2 gap-12 border-t border-zinc-800/50 pt-8">
               <div className="space-y-1">
                 <p className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Next Invoice Date</p>
-                <p className="text-[13px] font-bold text-white">{renewalDate}</p>
+                <p className="text-[13px] font-bold text-zinc-900 dark:text-white">{renewalDate}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Billing rails</p>
-                <p className="text-[13px] font-bold text-white uppercase">{billingPrimary}</p>
+                <p className="text-[13px] font-bold text-zinc-900 dark:text-white uppercase">{billingPrimary}</p>
                 <p className="text-[10px] leading-snug text-zinc-500">{billingDetail}</p>
               </div>
             </div>
           </div>
 
-          <div className="col-span-12 flex flex-col justify-between border-l border-zinc-800/50 bg-[#141414] p-8 md:col-span-4">
+          <div className="col-span-12 flex flex-col justify-between border-l border-zinc-800/50 bg-background dark:bg-[#141414] p-8 md:col-span-4">
             <div className="space-y-4">
               <p className="text-[10px] leading-relaxed font-bold tracking-tighter text-zinc-500 uppercase">
                 Manage cards, invoices, and renewals in Polar or the Stripe customer portal for legacy accounts.
@@ -194,7 +194,7 @@ export function WorkspaceBillingView({ settings, operationalStats }: Props) {
               </button>
               <button
                 type="button"
-                className="w-full border border-zinc-800 bg-transparent py-3 text-[10px] font-black tracking-widest text-zinc-500 uppercase transition-all hover:border-white hover:text-white"
+                className="w-full border border-zinc-800 bg-transparent py-3 text-[10px] font-black tracking-widest text-zinc-500 uppercase transition-all hover:border-white hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white"
               >
                 Download Latest Invoice
               </button>
@@ -215,18 +215,18 @@ export function WorkspaceBillingView({ settings, operationalStats }: Props) {
             navigation.
           </p>
         ) : null}
-        <div className="grid grid-cols-1 gap-12 border border-zinc-800/50 bg-[#111111] p-8 md:grid-cols-3">
+        <div className="grid grid-cols-1 gap-12 border border-zinc-800/50 bg-background dark:bg-[#111111] p-8 md:grid-cols-3">
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <p className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Portfolio units</p>
-              <p className="text-[11px] font-bold whitespace-nowrap text-white">{portfolioUsageLabel}</p>
+              <p className="text-[11px] font-bold whitespace-nowrap text-zinc-900 dark:text-white">{portfolioUsageLabel}</p>
             </div>
             <p className="text-[10px] leading-relaxed text-zinc-500">
               {maxProps === -1
                 ? "Subscribed workspaces include unlimited properties."
                 : `Free workspace includes up to ${portfolioCapLabel} properties (same cap as portfolio import).`}
             </p>
-            <div className="h-1 w-full overflow-hidden bg-zinc-900">
+            <div className="h-1 w-full overflow-hidden bg-zinc-100 dark:bg-zinc-900">
               <div
                 className={cn("h-full transition-[width]", maxProps === -1 ? "bg-emerald-500/90" : "bg-white")}
                 style={{ width: `${portfolioFillPct}%` }}
@@ -236,7 +236,7 @@ export function WorkspaceBillingView({ settings, operationalStats }: Props) {
           <div className="space-y-3">
             <div className="flex items-center justify-between gap-2">
               <p className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Active tenancies</p>
-              <p className="text-[11px] font-bold whitespace-nowrap text-white">{tenancyUsageLabel}</p>
+              <p className="text-[11px] font-bold whitespace-nowrap text-zinc-900 dark:text-white">{tenancyUsageLabel}</p>
             </div>
             <p className="text-[10px] leading-relaxed text-zinc-500">Not limited by the property cap on any plan.</p>
             <div className="h-1 w-full bg-emerald-500/20">
@@ -246,7 +246,7 @@ export function WorkspaceBillingView({ settings, operationalStats }: Props) {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-[9px] font-black tracking-widest text-zinc-500 uppercase">Agent automations</p>
-              <p className="text-[11px] font-bold text-white">{paying ? "Full access" : "Upgrade to unlock"}</p>
+              <p className="text-[11px] font-bold text-zinc-900 dark:text-white">{paying ? "Full access" : "Upgrade to unlock"}</p>
             </div>
             <p className="text-[10px] leading-relaxed text-zinc-500">
               {paying ? "Agents follow your subscription status in the app." : "Subscribe to run the full agent surface."}
@@ -262,7 +262,7 @@ export function WorkspaceBillingView({ settings, operationalStats }: Props) {
           <span className="material-symbols-outlined text-[16px] text-zinc-600">history</span>
           <h2 className="text-[11px] font-black tracking-[0.2em] text-zinc-400 uppercase">Transaction History</h2>
         </div>
-        <div className="space-y-2 border border-dashed border-zinc-800/50 bg-[#111111] p-8 text-center">
+        <div className="space-y-2 border border-dashed border-zinc-800/50 bg-background dark:bg-[#111111] p-8 text-center">
           <p className="text-[11px] font-bold text-zinc-600 uppercase">Archive synchronization in progress</p>
           <p className="text-[9px] tracking-tighter text-zinc-700 uppercase">
             Detailed line-item history is available in your primary billing portal.

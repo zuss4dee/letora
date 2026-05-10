@@ -118,7 +118,7 @@ export function ComplianceOnboardingModal({
                     size="sm"
                     variant="outline"
                     disabled={busy}
-                    className="rounded-full border-zinc-300 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                    className="rounded-full border-zinc-300 text-xs hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-200 dark:bg-zinc-800"
                     onClick={() => fileRefs.current[rk]?.click()}
                   >
                     {busy ? (

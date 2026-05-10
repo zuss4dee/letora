@@ -129,14 +129,14 @@ export function ApprovalsPendingInteractive({
                 key={approval.id}
                 onClick={() => setSelectedId(approval.id)}
                 className={cn(
-                  "grid w-full grid-cols-12 items-center px-3 py-3 text-left transition-colors hover:bg-zinc-100 dark:hover:bg-[#1b1b1b]",
+                  "grid w-full grid-cols-12 items-center px-3 py-3 text-left transition-colors hover:bg-zinc-100 dark:hover:bg-background dark:bg-[#1b1b1b]",
                   isSelected ? "bg-zinc-100 dark:bg-[#1a1a1a]" : "bg-transparent border-b border-zinc-200/70 dark:border-[#232323]/50"
                 )}
               >
                 <div className="col-span-5 flex items-center gap-3 pr-4">
                   <div className={cn(
                     "size-1.5 shrink-0 rounded-full",
-                    isStale ? "bg-rose-400" : isSelected ? "bg-zinc-900 dark:bg-white" : "bg-zinc-400 dark:bg-zinc-700"
+                    isStale ? "bg-rose-400" : isSelected ? "bg-zinc-100 dark:bg-zinc-900 dark:bg-white" : "bg-zinc-400 dark:bg-zinc-700"
                   )} />
                   <div className="min-w-0">
                     <p className="truncate text-[12px] font-semibold text-zinc-900 dark:text-white">
@@ -230,7 +230,7 @@ export function ApprovalsPendingInteractive({
                   {!!selectedApproval.payload.tenantId && (
                     <Link
                       href={`/dashboard/tenants/${selectedApproval.payload.tenantId as string}`}
-                      className="flex items-center justify-between border border-zinc-200/90 px-3 py-2 text-[11px] text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-[#232323] dark:text-zinc-400 dark:hover:bg-[#1b1b1b]"
+                      className="flex items-center justify-between border border-zinc-200/90 px-3 py-2 text-[11px] text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-[#232323] dark:text-zinc-400 dark:hover:bg-background dark:bg-[#1b1b1b]"
                     >
                       <span>Tenant Record</span>
                       <span className="font-bold text-zinc-900 dark:text-white">VIEW</span>
@@ -239,7 +239,7 @@ export function ApprovalsPendingInteractive({
                   {!!selectedApproval.payload.propertyId && (
                     <Link
                       href={`/dashboard/properties/${selectedApproval.payload.propertyId as string}`}
-                      className="flex items-center justify-between border border-zinc-200/90 px-3 py-2 text-[11px] text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-[#232323] dark:text-zinc-400 dark:hover:bg-[#1b1b1b]"
+                      className="flex items-center justify-between border border-zinc-200/90 px-3 py-2 text-[11px] text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-[#232323] dark:text-zinc-400 dark:hover:bg-background dark:bg-[#1b1b1b]"
                     >
                       <span>Property Record</span>
                       <span className="font-bold text-zinc-900 dark:text-white">VIEW</span>
@@ -274,7 +274,7 @@ export function ApprovalsPendingInteractive({
                 <Button
                   type="button"
                   disabled={busyId === selectedApproval.id}
-                  className="bg-emerald-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-white hover:bg-emerald-700 transition-colors"
+                  className="bg-emerald-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-[#ffffff] hover:bg-emerald-700 transition-colors"
                   onClick={() => void runApprove(selectedApproval.id)}
                 >
                   {busyId === selectedApproval.id ? "Processing..." : "Approve & Execute Action"}
@@ -291,7 +291,7 @@ export function ApprovalsPendingInteractive({
                   </Button>
                   <ApprovalAuditSheetTrigger
                     approval={selectedApproval}
-                    className="border-zinc-300 bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-400 dark:hover:bg-zinc-900"
+                    className="border-zinc-300 bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-400 dark:hover:bg-zinc-100 dark:bg-zinc-900"
                   />
                 </div>
               </div>

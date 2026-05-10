@@ -205,7 +205,7 @@ function SuggestedActionChips({
             <Link
               key={a.id}
               href={a.href}
-              className="flex items-center gap-2 border border-[#282828] bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
+              className="flex items-center gap-2 border border-border dark:border-[#282828] bg-background dark:bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
             >
               <ActionTypeIcon kind={visual.kind} />
               {a.label}
@@ -218,7 +218,7 @@ function SuggestedActionChips({
             key={a.id}
             type="button"
             onClick={() => onPickSuggestedMessage(a.message || a.label)}
-            className="flex items-center gap-2 border border-[#282828] bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
+            className="flex items-center gap-2 border border-border dark:border-[#282828] bg-background dark:bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
           >
             <MessageSquare className="size-3" />
             {a.label}
@@ -428,7 +428,7 @@ function NavigationButtons({ actions }: { actions: ActionTag[] }) {
           <Link
             key={`${idx}:${a.href}:${a.label}`}
             href={a.href}
-            className="flex items-center gap-2 border border-[#282828] bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
+            className="flex items-center gap-2 border border-border dark:border-[#282828] bg-background dark:bg-[#161616] px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-400 transition-colors hover:border-white hover:text-white"
           >
             <ActionTypeIcon kind={visual.kind} />
             {a.label}
@@ -476,7 +476,7 @@ function MessageBubble({
       {/* Avatar */}
       <div className={cn(
         "size-8 shrink-0 rounded-sm overflow-hidden flex items-center justify-center",
-        isUser ? "bg-zinc-800" : "bg-white text-[#0B0B0B]"
+        isUser ? "bg-zinc-200 dark:bg-zinc-800" : "bg-white text-[#0B0B0B]"
       )}>
         {isUser ? (
           <img
@@ -500,7 +500,7 @@ function MessageBubble({
         <div className={cn(
           "max-w-2xl border transition-opacity",
           isUser
-            ? "border-[#282828] bg-[#161616] p-4 text-[13px] text-zinc-200"
+            ? "border-border dark:border-[#282828] bg-background dark:bg-[#161616] p-4 text-[13px] text-zinc-200"
             : "border-transparent text-[13px] text-zinc-300"
         )}>
           {role === "assistant" ? (
@@ -943,7 +943,7 @@ export function AssistantChat({
   return (
     <div className="absolute inset-0 flex overflow-hidden">
       {/* ── Center: Workspace ── */}
-      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-[#0B0B0B]">
+      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-background dark:bg-[#0B0B0B]">
         <div 
           ref={scrollRef}
           className="flex-1 overflow-y-auto p-6 custom-scrollbar"
@@ -951,10 +951,10 @@ export function AssistantChat({
           <div className="mx-auto w-full max-w-4xl space-y-8">
             {showEmptyPlaceholder ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="mb-4 flex size-12 items-center justify-center border border-[#1f1f1f] bg-[#0e0e0e]">
-                  <Sparkles className="size-6 text-white" />
+                <div className="mb-4 flex size-12 items-center justify-center border border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0e0e0e]">
+                  <Sparkles className="size-6 text-zinc-900 dark:text-white" />
                 </div>
-                <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-white">
+                <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-900 dark:text-white">
                   Letora AI Ready
                 </h2>
                 <p className="mt-2 text-[12px] text-[#555555]">
@@ -989,9 +989,9 @@ export function AssistantChat({
                           </p>
                         ) : (
                           <div className="flex gap-1.5 py-2">
-                            <div className="size-1 animate-pulse rounded-full bg-[#333333]" />
-                            <div className="size-1 animate-pulse rounded-full bg-[#333333] [animation-delay:200ms]" />
-                            <div className="size-1 animate-pulse rounded-full bg-[#333333] [animation-delay:400ms]" />
+                            <div className="size-1 animate-pulse rounded-full bg-background dark:bg-[#333333]" />
+                            <div className="size-1 animate-pulse rounded-full bg-background dark:bg-[#333333] [animation-delay:200ms]" />
+                            <div className="size-1 animate-pulse rounded-full bg-background dark:bg-[#333333] [animation-delay:400ms]" />
                           </div>
                         )}
                       </div>
@@ -1005,7 +1005,7 @@ export function AssistantChat({
         </div>
 
         {/* ── Bottom Input ── */}
-        <div className="shrink-0 border-t border-[#1f1f1f] bg-[#0B0B0B] p-6">
+        <div className="shrink-0 border-t border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0B0B0B] p-6">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -1013,7 +1013,7 @@ export function AssistantChat({
             }}
             className="mx-auto w-full max-w-4xl"
           >
-            <div className="flex items-center border border-[#282828] bg-[#1A1A1A] p-1.5 shadow-2xl">
+            <div className="flex items-center border border-border dark:border-[#282828] bg-background dark:bg-[#1A1A1A] p-1.5 shadow-2xl">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
@@ -1047,14 +1047,14 @@ export function AssistantChat({
       </main>
 
       {/* ── Right: History Sidebar ── */}
-      <aside className="relative flex w-72 shrink-0 flex-col border-l border-[#1f1f1f] bg-[#0E0E0E] min-h-0 h-full">
-        <div className="flex items-center justify-between border-b border-[#1f1f1f] px-4 py-3.5">
+      <aside className="relative flex w-72 shrink-0 flex-col border-l border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0E0E0E] min-h-0 h-full">
+        <div className="flex items-center justify-between border-b border-border dark:border-[#1f1f1f] px-4 py-3.5">
           <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-[#555555]">
             Active Sessions
           </span>
           <button
             onClick={() => createNewChat()}
-            className="text-[#555555] transition-colors hover:text-white"
+            className="text-[#555555] transition-colors hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white"
             title="New Session"
           >
             <MessageSquarePlus className="size-4" />
@@ -1072,13 +1072,13 @@ export function AssistantChat({
                   className={cn(
                     "flex w-full flex-col border-l-2 p-3 text-left transition-colors",
                     isActive
-                      ? "border-white bg-[#181818]"
-                      : "border-transparent hover:bg-[#131313]"
+                      ? "border-white bg-background dark:bg-[#181818]"
+                      : "border-transparent hover:bg-background dark:bg-[#131313]"
                   )}
                 >
                   <div className={cn(
                     "text-[11px] font-medium leading-tight",
-                    isActive ? "text-white" : "text-[#888888]"
+                    isActive ? "text-zinc-900 dark:text-white" : "text-[#888888]"
                   )}>
                     {conv.title || "New session"}
                   </div>
@@ -1091,7 +1091,7 @@ export function AssistantChat({
           </div>
         </div>
 
-        <div className="border-t border-[#1f1f1f] bg-[#0B0B0B] p-4">
+        <div className="border-t border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0B0B0B] p-4">
           <div className="flex items-center justify-between font-mono text-[9px] uppercase text-[#333333]">
             <span>Shard Ops Center</span>
             <div className="size-1.5 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />

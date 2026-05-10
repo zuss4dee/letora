@@ -67,22 +67,26 @@ export function priorityLabel(p: ReviewPriority): { label: string; className: st
     case "fix_now":
       return {
         label: "Fix now",
-        className: "border-[#BB5551]/45 bg-[#2a1514]/80 text-[#ee7d77]",
+        className:
+          "border-border dark:border-[#BB5551]/45 bg-muted dark:bg-[#2a1514]/80 text-[#ee7d77]",
       };
     case "check_soon":
       return {
         label: "Check soon",
-        className: "border-[#f8cf83]/35 bg-[#2a2210]/75 text-[#f8cf83]",
+        className:
+          "border-border dark:border-[#f8cf83]/35 bg-muted dark:bg-[#2a2210]/75 text-[#f8cf83]",
       };
     case "informational":
       return {
         label: "Informational",
-        className: "border-zinc-600/50 bg-zinc-900/70 text-zinc-400",
+        className:
+          "border-zinc-200 dark:border-zinc-600/50 bg-zinc-100 dark:bg-zinc-900/70 text-zinc-600 dark:text-zinc-400",
       };
     default:
       return {
         label: p,
-        className: "border-zinc-700 bg-zinc-900 text-zinc-500",
+        className:
+          "border-zinc-200 dark:border-zinc-700 bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-500",
       };
   }
 }

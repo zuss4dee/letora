@@ -109,7 +109,7 @@ function PropertyDetailSkeleton() {
         <div className="h-8 w-28 shrink-0 animate-pulse rounded-[2px] bg-zinc-200/90 dark:bg-zinc-800/80 md:mt-2" />
       </div>
       <div className="flex flex-1 flex-col gap-px bg-zinc-200/70 dark:bg-zinc-800">
-        <div className="bg-[#f8f8f7] p-4 dark:bg-[#1A1A1A] md:p-6">
+        <div className="bg-background dark:bg-[#f8f8f7] p-4 dark:bg-[#1A1A1A] md:p-6">
           <div className="mb-4 flex justify-between gap-3">
             <div className="h-3 w-24 animate-pulse rounded-[2px] bg-zinc-200/90 dark:bg-zinc-800/80" />
             <div className="h-5 w-20 animate-pulse rounded-[2px] bg-zinc-200/90 dark:bg-zinc-800/80" />
@@ -120,7 +120,7 @@ function PropertyDetailSkeleton() {
             <div className="h-4 w-24 animate-pulse rounded-[2px] bg-zinc-200/80 dark:bg-zinc-800/60" />
           </div>
         </div>
-        <div className="min-h-[200px] flex-1 bg-[#f8f8f7] dark:bg-[#1A1A1A]">
+        <div className="min-h-[200px] flex-1 bg-background dark:bg-[#f8f8f7] dark:bg-[#1A1A1A]">
           <div className="space-y-2 p-4 md:p-6">
             <div className="h-3 w-24 animate-pulse rounded-[2px] bg-zinc-200/90 dark:bg-zinc-800/80" />
             {Array.from({ length: 5 }).map((_, i) => (
@@ -187,7 +187,7 @@ async function PropertyDetailContent({ params }: { params: Promise<{ id: string 
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col gap-px bg-zinc-200/70 dark:bg-zinc-800">
-          <section className="bg-[#f8f8f7] dark:bg-[#1A1A1A]">
+          <section className="bg-background dark:bg-[#f8f8f7] dark:bg-[#1A1A1A]">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/70 px-4 py-3 dark:border-zinc-800 md:px-6">
               <h2 className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                 Details
@@ -231,7 +231,7 @@ async function PropertyDetailContent({ params }: { params: Promise<{ id: string 
             </div>
           </section>
 
-          <section className="flex min-h-0 flex-1 flex-col bg-[#f8f8f7] dark:bg-[#1A1A1A]">
+          <section className="flex min-h-0 flex-1 flex-col bg-background dark:bg-[#f8f8f7] dark:bg-[#1A1A1A]">
             <div className="border-b border-zinc-200/70 px-4 py-3 dark:border-zinc-800 md:px-6">
               <h2 className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                 Tenancies
@@ -268,7 +268,7 @@ async function PropertyDetailContent({ params }: { params: Promise<{ id: string 
                       <tr
                         key={t.id}
                         className={cn(
-                          "h-10 border-b border-zinc-200/60 transition-colors hover:bg-zinc-100/80 dark:border-zinc-800 dark:hover:bg-zinc-800/35",
+                          "h-10 border-b border-zinc-200/60 transition-colors hover:bg-zinc-100/80 dark:border-zinc-800 dark:hover:bg-zinc-200 dark:bg-zinc-800/35",
                           idx === 0 && "bg-zinc-100/50 dark:bg-zinc-800/25",
                         )}
                       >
@@ -313,7 +313,7 @@ export default async function PropertyDetailPage({
   const batchReviewReturnHref = parseSafeBatchReviewReturnFromSearchParams(sp);
 
   return (
-    <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
+    <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-background dark:bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
       {batchReviewReturnHref ? <BatchReviewReturnBanner href={batchReviewReturnHref} /> : null}
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-y border-zinc-200/70 bg-white dark:border-zinc-800 dark:bg-[#1A1A1A]">
         <Suspense fallback={<PropertyDetailSkeleton />}>

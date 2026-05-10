@@ -169,16 +169,16 @@ export function EmailsSentRegistry({
   ];
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-[#0B0B0B] text-[#e5e2e1]">
+    <div className="flex min-h-0 flex-1 flex-col bg-background dark:bg-[#0B0B0B] text-[#e5e2e1]">
 
       {/* ── Page header ── */}
-      <header className="border-b border-[#1f1f1f] bg-[#0B0B0B] px-6 py-4">
+      <header className="border-b border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0B0B0B] px-6 py-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#555555]">
               Communications Hub
             </p>
-            <h1 className="mt-1 text-xl font-bold uppercase tracking-tight text-white">
+            <h1 className="mt-1 text-xl font-bold uppercase tracking-tight text-zinc-900 dark:text-white">
               Emails
             </h1>
             <p className="mt-0.5 font-mono text-[10px] uppercase tracking-widest text-[#555555]">
@@ -195,14 +195,14 @@ export function EmailsSentRegistry({
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setPage(1); }}
                 placeholder="Search communications..."
-                className="h-8 w-64 border border-[#282828] bg-[#0a0a0a] pl-8 pr-3 font-mono text-[10px] text-[#c4c7c8] placeholder-[#444748] focus:border-white focus:outline-none"
+                className="h-8 w-64 border border-border dark:border-[#282828] bg-background dark:bg-[#0a0a0a] pl-8 pr-3 font-mono text-[10px] text-[#c4c7c8] placeholder-[#444748] focus:border-white focus:outline-none"
                 aria-label="Search emails"
               />
             </div>
             <button
               type="button"
               onClick={() => downloadCsv(filtered)}
-              className="inline-flex h-8 items-center gap-1.5 border border-[#282828] bg-[#0a0a0a] px-3 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
+              className="inline-flex h-8 items-center gap-1.5 border border-border dark:border-[#282828] bg-background dark:bg-[#0a0a0a] px-3 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] transition-colors hover:text-white"
             >
               <Download className="size-3" />
               Export
@@ -217,11 +217,11 @@ export function EmailsSentRegistry({
         {/* ── Left: Communications Table ── */}
         <section className={cn(
           "flex min-h-0 flex-col overflow-hidden transition-all",
-          inspectorOpen && selected ? "flex-1 border-r border-[#1f1f1f]" : "w-full flex-1"
+          inspectorOpen && selected ? "flex-1 border-r border-border dark:border-[#1f1f1f]" : "w-full flex-1"
         )}>
 
           {/* Tab bar */}
-          <div className="flex items-center justify-between border-b border-[#1f1f1f] bg-[#0B0B0B] px-6">
+          <div className="flex items-center justify-between border-b border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0B0B0B] px-6">
             <div className="flex h-11 items-center gap-6">
               {TABS.map((t) => (
                 <button
@@ -231,7 +231,7 @@ export function EmailsSentRegistry({
                   className={cn(
                     "flex h-full items-center gap-1.5 border-b-[1.5px] font-mono text-[10px] font-bold uppercase tracking-widest transition-colors",
                     tab === t.id
-                      ? "border-white text-white"
+                      ? "border-white text-zinc-900 dark:text-white"
                       : "border-transparent text-[#555555] hover:text-[#c4c7c8]",
                   )}
                 >
@@ -239,7 +239,7 @@ export function EmailsSentRegistry({
                   {t.badge !== undefined && (
                     <span className={cn(
                       "rounded-sm border px-1 py-px text-[8px] font-bold tabular-nums",
-                      tab === t.id ? "border-[#333333] bg-[#1a1a1a] text-[#888888]" : "border-[#1f1f1f] bg-[#0e0e0e] text-[#444748]"
+                      tab === t.id ? "border-border dark:border-[#333333] bg-background dark:bg-[#1a1a1a] text-[#888888]" : "border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0e0e0e] text-[#444748]"
                     )}>
                       {t.badge}
                     </span>
@@ -253,12 +253,12 @@ export function EmailsSentRegistry({
                   className={cn(
                     "flex h-full items-center gap-1.5 border-b-[1.5px] font-mono text-[10px] font-bold uppercase tracking-widest transition-colors",
                     statusFilter === "draft"
-                      ? "border-white text-white"
+                      ? "border-white text-zinc-900 dark:text-white"
                       : "border-transparent text-[#555555] hover:text-[#c4c7c8]",
                   )}
                 >
                   Drafts
-                  <span className="rounded-sm border border-[#1f1f1f] bg-[#0e0e0e] px-1 py-px text-[8px] font-bold tabular-nums text-[#444748]">
+                  <span className="rounded-sm border border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0e0e0e] px-1 py-px text-[8px] font-bold tabular-nums text-[#444748]">
                     {draftCount}
                   </span>
                 </button>
@@ -270,12 +270,12 @@ export function EmailsSentRegistry({
                   className={cn(
                     "flex h-full items-center gap-1.5 border-b-[1.5px] font-mono text-[10px] font-bold uppercase tracking-widest transition-colors",
                     statusFilter === "bounced"
-                      ? "border-white text-white"
+                      ? "border-white text-zinc-900 dark:text-white"
                       : "border-transparent text-[#555555] hover:text-[#c4c7c8]",
                   )}
                 >
                   Failed
-                  <span className="rounded-sm border border-[#BB5551]/30 bg-[#7f2927]/10 px-1 py-px text-[8px] font-bold tabular-nums text-[#ee7d77]">
+                  <span className="rounded-sm border border-border dark:border-[#BB5551]/30 bg-background dark:bg-[#7f2927]/10 px-1 py-px text-[8px] font-bold tabular-nums text-[#ee7d77]">
                     {failedCount}
                   </span>
                 </button>
@@ -288,7 +288,7 @@ export function EmailsSentRegistry({
               <select
                 value={statusFilter}
                 onChange={(e) => { setStatusFilter(e.target.value as StatusFilter); setPage(1); }}
-                className="h-7 border border-[#282828] bg-[#0a0a0a] px-2 font-mono text-[9px] uppercase tracking-wider text-[#888888] focus:outline-none"
+                className="h-7 border border-border dark:border-[#282828] bg-background dark:bg-[#0a0a0a] px-2 font-mono text-[9px] uppercase tracking-wider text-[#888888] focus:outline-none"
               >
                 <option value="all">All status</option>
                 <option value="draft">Draft</option>
@@ -303,7 +303,7 @@ export function EmailsSentRegistry({
           <div className="min-h-0 flex-1 overflow-auto">
             <table className="w-full table-fixed border-collapse text-left">
               <thead>
-                <tr className="sticky top-0 z-10 border-b border-[#1f1f1f] bg-[#0B0B0B]">
+                <tr className="sticky top-0 z-10 border-b border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0B0B0B]">
                   <th className="w-[22%] py-2.5 pl-6 pr-4 font-mono text-[9px] font-bold uppercase tracking-widest text-[#555555]">Recipient</th>
                   <th className="w-[30%] px-4 py-2.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#555555]">Subject</th>
                   <th className="w-[13%] px-4 py-2.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#555555]">Type</th>
@@ -330,18 +330,18 @@ export function EmailsSentRegistry({
                         className={cn(
                           "cursor-pointer transition-colors",
                           isSelected && inspectorOpen
-                            ? "border-l-2 border-white bg-[#181818]"
+                            ? "border-l-2 border-white bg-background dark:bg-[#181818]"
                             : row.uiStatus === "bounced"
-                              ? "border-l-2 border-transparent bg-red-950/[0.04] hover:bg-[#1a1a1a]"
+                              ? "border-l-2 border-transparent bg-red-950/[0.04] hover:bg-background dark:bg-[#1a1a1a]"
                               : row.uiStatus === "draft"
-                                ? "border-l-2 border-transparent bg-yellow-950/[0.03] hover:bg-[#131313]"
-                                : "border-l-2 border-transparent hover:bg-[#131313]",
+                                ? "border-l-2 border-transparent bg-yellow-950/[0.03] hover:bg-background dark:bg-[#131313]"
+                                : "border-l-2 border-transparent hover:bg-background dark:bg-[#131313]",
                         )}
                       >
                         <td className="py-3 pl-5 pr-4 font-mono text-[11px]">
                           {row.isTenantRecipient ? (
                             <div className="min-w-0">
-                              <div className={cn("truncate text-[11px] font-semibold", isSelected ? "text-white" : "text-[#c4c7c8]")}>
+                              <div className={cn("truncate text-[11px] font-semibold", isSelected ? "text-zinc-900 dark:text-white" : "text-[#c4c7c8]")}>
                                 {row.recipientName}
                               </div>
                               <div className="truncate text-[10px] text-[#555555]">{row.recipientEmail}</div>
@@ -356,7 +356,7 @@ export function EmailsSentRegistry({
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <span className="inline-block border border-[#282828] bg-[#0e0e0e] px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-[#555555]">
+                          <span className="inline-block border border-border dark:border-[#282828] bg-background dark:bg-[#0e0e0e] px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-[#555555]">
                             {getTypeBadge(row)}
                           </span>
                         </td>
@@ -375,7 +375,7 @@ export function EmailsSentRegistry({
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between border-t border-[#1f1f1f] bg-[#0B0B0B] px-6 py-2">
+          <div className="flex items-center justify-between border-t border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0B0B0B] px-6 py-2">
             <span className="font-mono text-[9px] uppercase tracking-widest text-[#444748]">
               Page {safePage} / {pageCount}
             </span>
@@ -385,7 +385,7 @@ export function EmailsSentRegistry({
                 aria-label="Previous page"
                 disabled={safePage <= 1}
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
-                className="flex size-6 items-center justify-center border border-[#282828] text-[#555555] transition-colors hover:text-white disabled:opacity-30"
+                className="flex size-6 items-center justify-center border border-border dark:border-[#282828] text-[#555555] transition-colors hover:text-white disabled:opacity-30"
               >
                 <ChevronLeft className="size-3.5" />
               </button>
@@ -394,7 +394,7 @@ export function EmailsSentRegistry({
                 aria-label="Next page"
                 disabled={safePage >= pageCount}
                 onClick={() => setPage((p) => Math.min(pageCount, p + 1))}
-                className="flex size-6 items-center justify-center border border-[#282828] text-[#555555] transition-colors hover:text-white disabled:opacity-30"
+                className="flex size-6 items-center justify-center border border-border dark:border-[#282828] text-[#555555] transition-colors hover:text-white disabled:opacity-30"
               >
                 <ChevronRight className="size-3.5" />
               </button>
@@ -404,10 +404,10 @@ export function EmailsSentRegistry({
 
         {/* ── Right: Inspector Panel (conditional) ── */}
         {inspectorOpen && selected && (
-        <aside className="flex w-80 shrink-0 flex-col border-l border-[#1f1f1f] bg-[#0B0B0B]">
+        <aside className="flex w-80 shrink-0 flex-col border-l border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0B0B0B]">
 
           {/* Inspector header */}
-          <div className="border-b border-[#1f1f1f] bg-[#0e0e0e] px-5 pb-4 pt-5">
+          <div className="border-b border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0e0e0e] px-5 pb-4 pt-5">
             <div className="mb-4 flex items-center justify-between">
               <span className="font-mono text-[9px] font-extrabold uppercase tracking-[0.2em] text-[#444748]">
                 Communication Detail
@@ -415,7 +415,7 @@ export function EmailsSentRegistry({
               <button
                 type="button"
                 onClick={closeInspector}
-                className="text-[#444748] transition-colors hover:text-white"
+                className="text-[#444748] transition-colors hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white"
                 aria-label="Close inspector"
               >
                 <X className="size-4" />
@@ -423,7 +423,7 @@ export function EmailsSentRegistry({
             </div>
             {selected ? (
               <>
-                <h2 className="text-[13px] font-bold leading-snug text-white">
+                <h2 className="text-[13px] font-bold leading-snug text-zinc-900 dark:text-white">
                   {selected.subject}
                 </h2>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -438,7 +438,7 @@ export function EmailsSentRegistry({
 
           {/* Inspector tabs */}
           {selected && (
-            <div className="flex border-b border-[#1f1f1f] px-5">
+            <div className="flex border-b border-border dark:border-[#1f1f1f] px-5">
               {["Overview", "Activity", "Files"].map((t) => (
                 <button
                   key={t}
@@ -446,7 +446,7 @@ export function EmailsSentRegistry({
                   className={cn(
                     "py-2.5 pr-4 font-mono text-[9px] font-bold uppercase tracking-widest transition-colors",
                     t === "Overview"
-                      ? "border-b border-white text-white"
+                      ? "border-b border-white text-zinc-900 dark:text-white"
                       : "text-[#444748] hover:text-[#888888]"
                   )}
                 >
@@ -470,10 +470,10 @@ export function EmailsSentRegistry({
                     <EmailDraftViewButton
                       subject={selected.subject}
                       body={selected.body}
-                      buttonClassName="inline-flex items-center gap-1 border-0 bg-transparent px-0 py-0 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] hover:text-white transition-colors"
+                      buttonClassName="inline-flex items-center gap-1 border-0 bg-transparent px-0 py-0 font-mono text-[9px] font-bold uppercase tracking-widest text-[#888888] hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white transition-colors"
                     />
                   </div>
-                  <div className="border border-[#1f1f1f] bg-[#0e0e0e] p-4">
+                  <div className="border border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0e0e0e] p-4">
                     <pre className="whitespace-pre-wrap break-words font-mono text-[10px] leading-relaxed text-[#888888]">
                       {selected.body || "No body content available."}
                     </pre>
@@ -493,7 +493,7 @@ export function EmailsSentRegistry({
                       { label: "Date", val: formatDateFull(selected.sentAt) },
                       { label: "Status", val: selected.uiStatus.toUpperCase() },
                     ].map(({ label, val }) => (
-                      <div key={label} className="flex items-start justify-between gap-2 border-b border-[#0e0e0e] pb-1.5">
+                      <div key={label} className="flex items-start justify-between gap-2 border-b border-border dark:border-[#0e0e0e] pb-1.5">
                         <span className="shrink-0 font-mono text-[9px] uppercase tracking-widest text-[#444748]">{label}</span>
                         <span className="truncate text-right font-mono text-[10px] text-[#888888]">{val}</span>
                       </div>
@@ -506,9 +506,9 @@ export function EmailsSentRegistry({
                   <h3 className="mb-4 font-mono text-[9px] font-bold uppercase tracking-widest text-[#444748]">
                     Activity Log
                   </h3>
-                  <div className="relative space-y-4 border-l border-[#1f1f1f] pl-4">
+                  <div className="relative space-y-4 border-l border-border dark:border-[#1f1f1f] pl-4">
                     <div className="relative">
-                      <span className="absolute -left-[17px] top-1.5 size-2 rounded-full border border-[#333333] bg-[#0B0B0B]" />
+                      <span className="absolute -left-[17px] top-1.5 size-2 rounded-full border border-border dark:border-[#333333] bg-background dark:bg-[#0B0B0B]" />
                       <p className="text-[11px] font-semibold text-[#c4c7c8]">Created</p>
                       <p className="font-mono text-[9px] text-[#444748]">{formatDateFull(selected.sentAt)}</p>
                     </div>
@@ -517,8 +517,8 @@ export function EmailsSentRegistry({
                         "absolute -left-[17px] top-1.5 size-2 rounded-full",
                         selected.uiStatus === "delivered" ? "bg-emerald-400" :
                         selected.uiStatus === "opened" ? "bg-amber-400" :
-                        selected.uiStatus === "bounced" ? "bg-[#ee7d77]" :
-                        "border border-[#333333] bg-[#0B0B0B]"
+                        selected.uiStatus === "bounced" ? "bg-background dark:bg-[#ee7d77]" :
+                        "border border-border dark:border-[#333333] bg-background dark:bg-[#0B0B0B]"
                       )} />
                       <p className={cn(
                         "text-[11px] font-bold",
@@ -550,7 +550,7 @@ export function EmailsSentRegistry({
           </div>
 
           {/* Inspector actions */}
-          <div className="space-y-2 border-t border-[#1f1f1f] bg-[#0e0e0e] p-4">
+          <div className="space-y-2 border-t border-border dark:border-[#1f1f1f] bg-background dark:bg-[#0e0e0e] p-4">
             <EmailDraftViewButton
               subject={selected.subject}
               body={selected.body}
@@ -559,7 +559,7 @@ export function EmailsSentRegistry({
             <button
               type="button"
               onClick={closeInspector}
-              className="w-full border border-[#282828] py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#555555] transition-colors hover:border-[#444444] hover:text-[#888888]"
+              className="w-full border border-border dark:border-[#282828] py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#555555] transition-colors hover:border-border dark:border-[#444444] hover:text-[#888888]"
             >
               Discard
             </button>

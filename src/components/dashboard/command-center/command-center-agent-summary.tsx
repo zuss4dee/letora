@@ -25,7 +25,7 @@ export async function CommandCenterAgentSummary({ userId }: { userId: string }) 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
-        <span className="size-1.5 bg-[#afefdd]" />
+        <span className="size-1.5 bg-background dark:bg-[#afefdd]" />
         <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Agent Work Summary</h2>
       </div>
 

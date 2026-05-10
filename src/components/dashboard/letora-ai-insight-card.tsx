@@ -6,12 +6,12 @@ export function LetoraAiInsightCard({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        "border border-[#BD9952]/20 bg-zinc-50/90 p-8 backdrop-blur-md dark:bg-[#1F2020]/40",
+        "border border-border dark:border-[#BD9952]/20 bg-zinc-50/90 p-8 backdrop-blur-md dark:bg-[#1F2020]/40",
         className,
       )}
     >
       <div className="relative overflow-hidden">
-        <div className="absolute -right-16 -top-16 size-32 rounded-full bg-[#BD9952]/5 blur-3xl" />
+        <div className="absolute -right-16 -top-16 size-32 rounded-full bg-background dark:bg-[#BD9952]/5 blur-3xl" />
         <div className="relative mb-4 flex items-center gap-3">
           <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.2em] text-[#BD9952]">
             AI insight

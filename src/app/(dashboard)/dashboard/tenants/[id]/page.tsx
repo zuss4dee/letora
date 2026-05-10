@@ -380,7 +380,7 @@ export default async function TenantDetailPage({
   const batchReviewReturnHref = parseSafeBatchReviewReturnFromSearchParams(sp);
 
   return (
-    <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
+    <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-background dark:bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
       {batchReviewReturnHref ? <BatchReviewReturnBanner href={batchReviewReturnHref} /> : null}
       <Suspense fallback={<TenantDetailSkeleton />}>
         <TenantDetailContent params={params} />

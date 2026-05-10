@@ -20,7 +20,7 @@ export function LetoraTransactionPipeline({ leads }: { leads: LeadListRow[] }) {
       </div>
       <Link
         href="/dashboard/leads"
-        className="group block border border-border bg-card p-8 transition-colors hover:border-secondary/30 hover:bg-muted/70 dark:hover:bg-[#1F2020]/40"
+        className="group block border border-border bg-card p-8 transition-colors hover:border-secondary/30 hover:bg-muted/70 dark:hover:bg-background dark:bg-[#1F2020]/40"
       >
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">

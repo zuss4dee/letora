@@ -65,7 +65,7 @@ export function LetoraPricingSection() {
   return (
     <section
       id="pricing"
-      className="scroll-mt-24 border-t border-[#4F4632]/10 bg-[#131313] px-6 py-24 md:px-12 lg:px-24 lg:py-32"
+      className="scroll-mt-24 border-t border-border dark:border-[#4F4632]/10 bg-background dark:bg-[#131313] px-6 py-24 md:px-12 lg:px-24 lg:py-32"
       aria-labelledby="pricing-heading"
     >
       <div className="mx-auto max-w-screen-2xl">
@@ -105,7 +105,7 @@ export function LetoraPricingSection() {
                 "flex h-full min-w-0 flex-col rounded-2xl border p-6 shadow-[0_24px_64px_rgba(0,0,0,0.35)] md:p-7",
                 plan.highlighted
                   ? "border-emerald-500/30 bg-[linear-gradient(180deg,rgba(27,27,27,0.98)_0%,rgba(19,19,19,0.99)_100%)] ring-1 ring-emerald-500/15"
-                  : "border-zinc-800 bg-[#161616]/90",
+                  : "border-zinc-800 bg-background dark:bg-[#161616]/90",
               )}
             >
               <div className="space-y-2">
@@ -144,7 +144,7 @@ export function LetoraPricingSection() {
                 ) : null}
               </div>
 
-              <div className="mt-auto border-t border-[#4F4632]/15 pt-6">
+              <div className="mt-auto border-t border-border dark:border-[#4F4632]/15 pt-6">
                 <div className="flex flex-wrap items-baseline gap-1.5">
                   <span className="font-headline text-3xl font-bold tabular-nums tracking-tight text-foreground">
                     {plan.price}

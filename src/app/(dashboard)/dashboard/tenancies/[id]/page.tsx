@@ -77,7 +77,7 @@ export default async function TenancyDetailPage({
   }
 
   return (
-    <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
+    <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-background dark:bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
       {batchReviewReturnHref ? <BatchReviewReturnBanner href={batchReviewReturnHref} /> : null}
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-y border-zinc-200/70 bg-white dark:border-zinc-800 dark:bg-[#1A1A1A]">
         <div className="relative flex min-h-0 flex-1 flex-col">
@@ -129,7 +129,7 @@ export default async function TenancyDetailPage({
             </header>
 
             <div className="flex min-h-0 flex-1 flex-col gap-px bg-zinc-200/70 dark:bg-zinc-800">
-              <section className="bg-[#f8f8f7] dark:bg-[#1A1A1A]">
+              <section className="bg-background dark:bg-[#f8f8f7] dark:bg-[#1A1A1A]">
                 <div className="border-b border-zinc-200/70 px-4 py-3 dark:border-zinc-800 md:px-6">
                   <h2 className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                     Dates &amp; financials

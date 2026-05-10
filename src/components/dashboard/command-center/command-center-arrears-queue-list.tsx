@@ -107,7 +107,7 @@ export function CommandCenterArrearsQueueList({ rows }: { rows: ArrearsQueueRow[
         {visible.map((row) => (
           <div
             key={row.rentPaymentId}
-            className="group flex min-h-[4.5rem] items-center justify-between gap-3 p-4 transition-colors hover:bg-zinc-50 dark:hover:bg-[#242424]"
+            className="group flex min-h-[4.5rem] items-center justify-between gap-3 p-4 transition-colors hover:bg-zinc-50 dark:hover:bg-background dark:bg-[#242424]"
           >
             <Link
               href={arrearsRowHref(row)}

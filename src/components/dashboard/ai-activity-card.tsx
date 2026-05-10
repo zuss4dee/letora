@@ -197,7 +197,7 @@ export function AiActivityCard({ initialRuns }: { initialRuns: ActivityRun[] }) 
                     <TableCell>
                       <div className="flex gap-3">
                         <div
-                          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white shadow-sm ${iconBg}`}
+                          className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-zinc-900 dark:text-white shadow-sm ${iconBg}`}
                           aria-hidden
                         >
                           <Icon className="h-4 w-4" />

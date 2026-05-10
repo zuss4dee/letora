@@ -336,7 +336,7 @@ export function RentTrackerRegistry({
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden border border-zinc-200 dark:border-[#333333] bg-white dark:bg-[#161616]">
       <header className="flex shrink-0 flex-col gap-3 border-b border-zinc-200 dark:border-[#282828] bg-white dark:bg-[#161616] px-5 py-4 md:flex-row md:items-center md:justify-between md:px-6">
         <div className="flex items-start gap-3">
-          <span className="mt-1 size-1.5 shrink-0 bg-[#afefdd]" aria-hidden />
+          <span className="mt-1 size-1.5 shrink-0 bg-background dark:bg-[#afefdd]" aria-hidden />
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">Rent tracker</p>
             <h1 className="text-sm font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Rent operations</h1>
@@ -479,7 +479,7 @@ export function RentTrackerRegistry({
                     }
                   }}
                   className={cn(
-                    "grid cursor-pointer grid-cols-12 items-center gap-2 px-5 py-4 transition-colors hover:bg-zinc-100 md:gap-4 md:px-6 dark:hover:bg-[#1c1c1c]",
+                    "grid cursor-pointer grid-cols-12 items-center gap-2 px-5 py-4 transition-colors hover:bg-zinc-100 md:gap-4 md:px-6 dark:hover:bg-background dark:bg-[#1c1c1c]",
                     isSelected ? "bg-zinc-100 dark:bg-[#141414] shadow-[inset_3px_0_0_0_#afefdd]" : "bg-transparent",
                   )}
                 >
@@ -554,7 +554,7 @@ export function RentTrackerRegistry({
               </div>
               <button
                 type="button"
-                className="rounded border border-transparent p-1 text-zinc-500 transition-colors hover:border-zinc-200 hover:text-zinc-900 dark:hover:border-[#333333] dark:hover:text-white"
+                className="rounded border border-transparent p-1 text-zinc-500 transition-colors hover:border-zinc-200 hover:text-zinc-900 dark:hover:border-border dark:border-[#333333] dark:hover:text-white"
                 aria-label="Close detail"
                 onClick={() => setSelectedId(null)}
               >
@@ -657,7 +657,7 @@ export function RentTrackerRegistry({
               {getAgentState(selectedRow, pendingApprovals).label === "DRAFT READY" ? (
                 <Button
                   asChild
-                  className="w-full bg-emerald-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-white hover:bg-emerald-700"
+                  className="w-full bg-emerald-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-[#ffffff] hover:bg-emerald-700"
                 >
                   <Link
                     href={`/dashboard/approvals?id=${getAgentState(selectedRow, pendingApprovals).approvalId}`}
@@ -679,7 +679,7 @@ export function RentTrackerRegistry({
                 <Button
                   asChild
                   variant="outline"
-                  className="border-zinc-200 bg-transparent py-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-zinc-100 dark:border-[#333333] dark:hover:bg-[#161616]"
+                  className="border-zinc-200 bg-transparent py-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-zinc-100 dark:border-[#333333] dark:hover:bg-background dark:bg-[#161616]"
                 >
                   <Link
                     href={
@@ -694,7 +694,7 @@ export function RentTrackerRegistry({
                 <Button
                   asChild
                   variant="outline"
-                  className="border-zinc-200 bg-transparent py-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-zinc-100 dark:border-[#333333] dark:hover:bg-[#161616]"
+                  className="border-zinc-200 bg-transparent py-2.5 text-[9px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-zinc-100 dark:border-[#333333] dark:hover:bg-background dark:bg-[#161616]"
                 >
                   <Link
                     href={

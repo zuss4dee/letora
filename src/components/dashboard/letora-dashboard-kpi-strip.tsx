@@ -78,7 +78,7 @@ export function LetoraDashboardKpiStrip({
 
       <Link
         href="/dashboard/rent-tracker"
-        className="group flex flex-col gap-4 border border-border bg-card p-8 transition-colors hover:bg-muted/80 dark:hover:bg-[#1F2020]/80"
+        className="group flex flex-col gap-4 border border-border bg-card p-8 transition-colors hover:bg-muted/80 dark:hover:bg-background dark:bg-[#1F2020]/80"
       >
         <div className="flex items-start justify-between">
           <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
@@ -105,7 +105,7 @@ export function LetoraDashboardKpiStrip({
 
       <Link
         href="/dashboard/maintenance"
-        className="group flex flex-col gap-4 border border-border bg-card p-8 transition-colors hover:bg-muted/80 dark:hover:bg-[#1F2020]/80"
+        className="group flex flex-col gap-4 border border-border bg-card p-8 transition-colors hover:bg-muted/80 dark:hover:bg-background dark:bg-[#1F2020]/80"
       >
         <div className="flex items-start justify-between">
           <span className="font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">

@@ -122,7 +122,7 @@ export function RentTrackerOperationalContextStrip({
 
       {showQueueBacktrail ? (
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2 bg-zinc-100 px-4 py-3 dark:bg-[#141414] md:px-6">
-          <span className="size-1.5 shrink-0 bg-[#ffb4ab]" aria-hidden />
+          <span className="size-1.5 shrink-0 bg-background dark:bg-[#ffb4ab]" aria-hidden />
           <Link
             href="/dashboard"
             aria-label="Back to Command Center"

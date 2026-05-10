@@ -28,13 +28,13 @@ export function ImportBatchScopeChip({
       <div className="flex shrink-0 flex-wrap gap-2">
         <Link
           href={`/dashboard/import/batch/${batchId}`}
-          className="inline-flex items-center justify-center border border-zinc-200 bg-white px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-800 transition-colors hover:border-zinc-400 hover:text-zinc-950 dark:border-[#333333] dark:bg-[#0B0B0B] dark:text-zinc-200 dark:hover:border-[#444444] dark:hover:text-white"
+          className="inline-flex items-center justify-center border border-zinc-200 bg-white px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-800 transition-colors hover:border-zinc-400 hover:text-zinc-950 dark:border-[#333333] dark:bg-[#0B0B0B] dark:text-zinc-200 dark:hover:border-border dark:border-[#444444] dark:hover:text-white"
         >
           Batch results
         </Link>
         <Link
           href={clearHref}
-          className="inline-flex items-center justify-center border border-[#afefdd]/40 bg-[#afefdd] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-colors hover:bg-white"
+          className="inline-flex items-center justify-center border border-border dark:border-[#afefdd]/40 bg-background dark:bg-[#afefdd] px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-colors hover:bg-white"
         >
           Clear filter
         </Link>

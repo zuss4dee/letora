@@ -389,7 +389,7 @@ export function ContractsRegistry({
                 </tr>
               ) : (
                 pageRows.map((c) => (
-                  <tr key={c.id} className="group transition-colors hover:bg-muted/50 dark:hover:bg-[#211f1e]">
+                  <tr key={c.id} className="group transition-colors hover:bg-muted/50 dark:hover:bg-background dark:bg-[#211f1e]">
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-3">
                         <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted font-[family-name:var(--font-inter)] text-xs font-bold text-teal-700 dark:bg-[#2b2a28] dark:text-[#85d3da]">
@@ -442,7 +442,7 @@ export function ContractsRegistry({
               type="button"
               disabled={safePage <= 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="flex size-8 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:bg-muted dark:border-[#3f4949]/20 dark:hover:bg-[#211f1e] disabled:opacity-30"
+              className="flex size-8 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:bg-muted dark:border-[#3f4949]/20 dark:hover:bg-background dark:bg-[#211f1e] disabled:opacity-30"
               aria-label="Previous page"
             >
               <ChevronLeft className="size-4" />
@@ -457,7 +457,7 @@ export function ContractsRegistry({
                     "flex size-8 items-center justify-center rounded text-xs font-bold transition-colors",
                     i === safePage
                       ? "bg-foreground text-background"
-                      : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground dark:border-[#3f4949]/20 dark:hover:bg-[#211f1e]",
+                      : "border border-border text-muted-foreground hover:bg-muted hover:text-foreground dark:border-[#3f4949]/20 dark:hover:bg-background dark:bg-[#211f1e]",
                   )}
                 >
                   {i + 1}
@@ -472,7 +472,7 @@ export function ContractsRegistry({
               type="button"
               disabled={safePage >= pageCount - 1}
               onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-              className="flex size-8 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:bg-muted dark:border-[#3f4949]/20 dark:hover:bg-[#211f1e] disabled:opacity-30"
+              className="flex size-8 items-center justify-center rounded border border-border text-muted-foreground transition-colors hover:bg-muted dark:border-[#3f4949]/20 dark:hover:bg-background dark:bg-[#211f1e] disabled:opacity-30"
               aria-label="Next page"
             >
               <ChevronRight className="size-4" />

@@ -35,7 +35,7 @@ export function BaseEmailTemplate({
       <Tailwind>
         <Body className="bg-gray-50 font-sans my-auto mx-auto px-2">
           <Container className="bg-white border border-gray-200 my-[40px] mx-auto max-w-[600px] rounded-lg overflow-hidden">
-            <Section className="bg-[#1a1a2e] p-6 text-center">
+            <Section className="bg-background dark:bg-[#1a1a2e] p-6 text-center">
               <Img
                 src={logoUrl}
                 alt="Letora"

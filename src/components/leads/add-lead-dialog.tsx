@@ -21,7 +21,7 @@ import type { PropertyPickListItem } from "@/lib/actions/properties";
 import { cn } from "@/lib/utils";
 
 const LABEL_CLASS = "text-[10px] uppercase tracking-widest font-semibold text-[#888888]";
-const INPUT_CLASS = "bg-[#0B0B0B] border border-[#333333] text-[11px] text-white py-2 px-3 focus-visible:ring-0 focus-visible:border-white rounded-none placeholder-[#444748] w-full transition-colors font-mono";
+const INPUT_CLASS = "bg-background dark:bg-[#0B0B0B] border border-border dark:border-[#333333] text-[11px] text-white py-2 px-3 focus-visible:ring-0 focus-visible:border-white rounded-none placeholder-[#444748] w-full transition-colors font-mono";
 
 
 import { Button } from "@/components/ui/button";
@@ -116,9 +116,9 @@ export function AddLeadDialog({
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className={cn(DIALOG_SINGLE_COLUMN_CLASS, "bg-[#161616] border border-[#282828] text-white rounded-none p-0 gap-0 shadow-2xl")}>
-        <div className="p-5 border-b border-[#282828] bg-[#1A1A1A]">
-          <DialogTitle className="text-xs font-bold uppercase tracking-widest text-white">Add lead</DialogTitle>
+      <DialogContent className={cn(DIALOG_SINGLE_COLUMN_CLASS, "bg-background dark:bg-[#161616] border border-border dark:border-[#282828] text-white rounded-none p-0 gap-0 shadow-2xl")}>
+        <div className="p-5 border-b border-border dark:border-[#282828] bg-background dark:bg-[#1A1A1A]">
+          <DialogTitle className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Add lead</DialogTitle>
           <DialogDescription className="text-[10px] text-[#888888] mt-1 tracking-wide">CREATE A NEW PROSPECTIVE TENANT LEAD</DialogDescription>
         </div>
 
@@ -185,10 +185,10 @@ export function AddLeadDialog({
                     <SelectTrigger className={INPUT_CLASS}>
                       <SelectValue placeholder="No specific property" />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#0B0B0B] border-[#333333] text-white rounded-none font-mono text-[11px]">
-                      <SelectItem value={LEAD_OPTION_NONE} className="focus:bg-[#242424] focus:text-white rounded-none">No specific property</SelectItem>
+                    <SelectContent className="bg-background dark:bg-[#0B0B0B] border-border dark:border-[#333333] text-white rounded-none font-mono text-[11px]">
+                      <SelectItem value={LEAD_OPTION_NONE} className="focus:bg-background dark:bg-[#242424] focus:text-white rounded-none">No specific property</SelectItem>
                       {properties.map((p) => (
-                        <SelectItem key={p.id} value={p.id} className="focus:bg-[#242424] focus:text-white rounded-none">
+                        <SelectItem key={p.id} value={p.id} className="focus:bg-background dark:bg-[#242424] focus:text-white rounded-none">
                           {p.address?.trim() || "Property"}
                         </SelectItem>
                       ))}
@@ -213,10 +213,10 @@ export function AddLeadDialog({
                     <SelectTrigger className={INPUT_CLASS}>
                       <SelectValue placeholder="Select source" />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#0B0B0B] border-[#333333] text-white rounded-none font-mono text-[11px]">
-                      <SelectItem value={LEAD_OPTION_NONE} className="focus:bg-[#242424] focus:text-white rounded-none">Not specified</SelectItem>
+                    <SelectContent className="bg-background dark:bg-[#0B0B0B] border-border dark:border-[#333333] text-white rounded-none font-mono text-[11px]">
+                      <SelectItem value={LEAD_OPTION_NONE} className="focus:bg-background dark:bg-[#242424] focus:text-white rounded-none">Not specified</SelectItem>
                       {LEAD_SOURCE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt} value={opt} className="focus:bg-[#242424] focus:text-white rounded-none">
+                        <SelectItem key={opt} value={opt} className="focus:bg-background dark:bg-[#242424] focus:text-white rounded-none">
                           {opt}
                         </SelectItem>
                       ))}
@@ -283,11 +283,11 @@ export function AddLeadDialog({
             </div>
           </div>
 
-          <div className="p-4 border-t border-[#282828] bg-[#1A1A1A] flex items-center justify-end gap-3 mt-1">
-            <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="text-[#888888] hover:text-white hover:bg-[#242424] font-bold text-[10px] tracking-wider uppercase rounded-none px-4">
+          <div className="p-4 border-t border-border dark:border-[#282828] bg-background dark:bg-[#1A1A1A] flex items-center justify-end gap-3 mt-1">
+            <Button type="button" variant="ghost" onClick={() => setOpen(false)} className="text-[#888888] hover:text-white hover:bg-background dark:bg-[#242424] font-bold text-[10px] tracking-wider uppercase rounded-none px-4">
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting} className="bg-white text-[#161616] hover:bg-[#e2e2e2] uppercase text-[10px] font-bold tracking-wider rounded-none px-6">
+            <Button type="submit" disabled={isSubmitting} className="bg-white text-[#161616] hover:bg-background dark:bg-[#e2e2e2] uppercase text-[10px] font-bold tracking-wider rounded-none px-6">
               {isSubmitting ? "Adding…" : "Add lead"}
             </Button>
           </div>

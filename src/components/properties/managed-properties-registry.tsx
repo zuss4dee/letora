@@ -336,7 +336,7 @@ export function ManagedPropertiesRegistry({
                     key={row.id}
                     onClick={() => setSelectedPropertyId(row.id)}
                     className={cn(
-                      "grid cursor-pointer grid-cols-12 items-center gap-4 px-6 py-4 transition-colors hover:bg-zinc-100 dark:hover:bg-[#161616]",
+                      "grid cursor-pointer grid-cols-12 items-center gap-4 px-6 py-4 transition-colors hover:bg-zinc-100 dark:hover:bg-background dark:bg-[#161616]",
                       isSelected ? "bg-zinc-100 shadow-[inset_2px_0_0_0_#18181b] dark:bg-[#111111] dark:shadow-[inset_2px_0_0_0_#ffffff]" : "bg-transparent"
                     )}
                   >

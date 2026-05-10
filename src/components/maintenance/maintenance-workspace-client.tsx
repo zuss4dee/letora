@@ -370,7 +370,7 @@ export function MaintenanceWorkspaceClient({
               placeholder="Search issues, properties..."
             />
           </div>
-          <Button className="h-8 rounded-none bg-zinc-900 px-4 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
+          <Button className="h-8 rounded-none bg-zinc-100 dark:bg-zinc-900 px-4 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-zinc-200 dark:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
             Log Issue
           </Button>
         </div>
@@ -427,7 +427,7 @@ export function MaintenanceWorkspaceClient({
                     onClick={() => setStatusFilter(f)}
                     className={cn(
                       "border px-2 py-1 text-[9px] font-bold uppercase tracking-wider transition-colors",
-                      statusFilter === f ? "border-zinc-900/25 bg-zinc-900/10 text-zinc-900 dark:border-white/20 dark:bg-white/10 dark:text-white" : "border-zinc-200/90 bg-transparent text-zinc-600 hover:text-zinc-900 dark:border-[#232323] dark:text-zinc-500 dark:hover:text-zinc-300"
+                      statusFilter === f ? "border-zinc-900/25 bg-zinc-100 dark:bg-zinc-900/10 text-zinc-900 dark:border-white/20 dark:bg-white/10 dark:text-white" : "border-zinc-200/90 bg-transparent text-zinc-600 hover:text-zinc-900 dark:border-[#232323] dark:text-zinc-500 dark:hover:text-zinc-300"
                     )}
                   >
                     {f.replace('_', ' ')}
@@ -482,7 +482,7 @@ export function MaintenanceWorkspaceClient({
                       }
                     }}
                     className={cn(
-                      "grid cursor-pointer grid-cols-12 items-center gap-4 px-4 py-4 transition-colors hover:bg-zinc-100 dark:hover:bg-[#161616]",
+                      "grid cursor-pointer grid-cols-12 items-center gap-4 px-4 py-4 transition-colors hover:bg-zinc-100 dark:hover:bg-background dark:bg-[#161616]",
                       isSelected ? "bg-zinc-100 shadow-[inset_2px_0_0_0_#18181b] dark:bg-[#111111] dark:shadow-[inset_2px_0_0_0_#ffffff]" : "bg-transparent"
                     )}
                   >
@@ -571,7 +571,7 @@ export function MaintenanceWorkspaceClient({
                     className={cn(
                       "pb-4 pt-6 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors relative",
                       isActive
-                        ? "text-zinc-900 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-zinc-900 dark:text-white dark:after:bg-white"
+                        ? "text-zinc-900 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-[2px] after:bg-zinc-100 dark:bg-zinc-900 dark:text-white dark:after:bg-white"
                         : "text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-200",
                     )}
                   >
@@ -630,7 +630,7 @@ export function MaintenanceWorkspaceClient({
                     {selected.propertyId && (
                       <Link
                         href={`/dashboard/properties/${selected.propertyId}`}
-                        className="flex items-center justify-between border border-zinc-200/90 px-3 py-2 text-[11px] text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-[#232323] dark:text-zinc-400 dark:hover:bg-[#1b1b1b]"
+                        className="flex items-center justify-between border border-zinc-200/90 px-3 py-2 text-[11px] text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-[#232323] dark:text-zinc-400 dark:hover:bg-background dark:bg-[#1b1b1b]"
                       >
                         <span>View Property Record</span>
                         <span className="font-bold text-zinc-900 dark:text-white">VIEW</span>
@@ -645,7 +645,7 @@ export function MaintenanceWorkspaceClient({
                   <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">History</h3>
                   <div className="relative space-y-6 border-l border-zinc-200 pl-4 ml-1 dark:border-[#232323]">
                     <div className="relative">
-                      <div className="absolute -left-[21px] top-1 size-2 rounded-full bg-zinc-900 dark:bg-white" />
+                      <div className="absolute -left-[21px] top-1 size-2 rounded-full bg-zinc-100 dark:bg-zinc-900 dark:bg-white" />
                       <p className="text-[11px] font-bold text-zinc-900 uppercase dark:text-white">Issue Reported</p>
                       <p className="text-[10px] text-zinc-500">{fmtDateTime(selected.createdAt)}</p>
                     </div>
@@ -666,7 +666,7 @@ export function MaintenanceWorkspaceClient({
                 {getAgentState(selected, pendingApprovals).label === "DRAFT READY" ? (
                   <Button
                     asChild
-                    className="bg-emerald-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-white hover:bg-emerald-700 transition-colors"
+                    className="bg-emerald-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-[#ffffff] hover:bg-emerald-700 transition-colors"
                   >
                     <Link href={`/dashboard/approvals?id=${getAgentState(selected, pendingApprovals).approvalId}`}>
                       Review & Approve Draft
@@ -685,7 +685,7 @@ export function MaintenanceWorkspaceClient({
                 <Button
                   asChild
                   variant="outline"
-                    className="border-zinc-200 bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-400 dark:hover:bg-zinc-900 transition-colors"
+                    className="border-zinc-200 bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-400 dark:hover:bg-zinc-100 dark:bg-zinc-900 transition-colors"
                 >
                   <Link href={`/dashboard/maintenance/${selected.id}`}>
                     Open Full Case

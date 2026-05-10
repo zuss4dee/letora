@@ -122,7 +122,7 @@ function MercuryTourCelebration({ onComplete }: { onComplete: () => void }) {
         <p className="font-headline text-[0.62rem] font-semibold uppercase tracking-[0.28em] text-[#BD9952]/95">
           Mercury complete
         </p>
-        <p className="mt-4 font-headline text-xl font-extralight leading-snug tracking-[-0.02em] text-white sm:text-2xl">
+        <p className="mt-4 font-headline text-xl font-extralight leading-snug tracking-[-0.02em] text-zinc-900 dark:text-white sm:text-2xl">
           You&apos;re all set. Welcome to the future of landlording.
         </p>
       </motion.div>
@@ -336,7 +336,7 @@ export function MercuryProductTour({
         type="button"
         onClick={onSkip}
         disabled={busy}
-        className="pointer-events-auto fixed right-5 top-5 z-[270] font-headline text-[0.65rem] font-medium uppercase tracking-[0.2em] text-white/55 transition-colors hover:text-white/90 disabled:opacity-50"
+        className="pointer-events-auto fixed right-5 top-5 z-[270] font-headline text-[0.65rem] font-medium uppercase tracking-[0.2em] text-zinc-900 dark:text-zinc-900/55 dark:text-white/55 transition-colors hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-zinc-900/90 dark:text-white/90 disabled:opacity-50"
       >
         Skip
       </button>
@@ -355,10 +355,10 @@ export function MercuryProductTour({
             <p className="font-headline text-[0.58rem] font-semibold uppercase tracking-[0.28em] text-[#BD9952]/90">
               Mercury · Step {step + 1} of {TOUR_TARGETS.length}
             </p>
-            <h2 id="mercury-tour-title" className="mt-2 font-headline text-lg font-light tracking-tight text-white">
+            <h2 id="mercury-tour-title" className="mt-2 font-headline text-lg font-light tracking-tight text-zinc-900 dark:text-white">
               {copy.title}
             </h2>
-            <p id="mercury-tour-desc" className="mt-2 font-headline text-sm font-light leading-relaxed text-white/75">
+            <p id="mercury-tour-desc" className="mt-2 font-headline text-sm font-light leading-relaxed text-zinc-900 dark:text-zinc-900/75 dark:text-white/75">
               {copy.body}
             </p>
             <div className="mt-6 flex justify-end">
@@ -368,7 +368,7 @@ export function MercuryProductTour({
                 disabled={busy}
                 className={cn(
                   "font-headline text-[0.7rem] font-medium uppercase tracking-[0.18em]",
-                  "rounded-md border border-white/35 bg-transparent px-5 py-2.5 text-white transition-colors",
+                  "rounded-md border border-white/35 bg-transparent px-5 py-2.5 text-zinc-900 dark:text-white transition-colors",
                   "hover:border-white/55 hover:bg-white/[0.04] disabled:opacity-50",
                 )}
               >
@@ -378,7 +378,7 @@ export function MercuryProductTour({
           </motion.div>
         </AnimatePresence>
       ) : (
-        <div className="pointer-events-auto fixed bottom-8 left-1/2 z-[270] -translate-x-1/2 rounded-md border border-white/20 px-4 py-2 font-headline text-xs text-white/70">
+        <div className="pointer-events-auto fixed bottom-8 left-1/2 z-[270] -translate-x-1/2 rounded-md border border-white/20 px-4 py-2 font-headline text-xs text-zinc-900 dark:text-zinc-900/70 dark:text-white/70">
           Looking for tour targets…
         </div>
       )}

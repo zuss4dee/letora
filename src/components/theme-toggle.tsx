@@ -1,10 +1,9 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
+import { useSyncExternalStore } from "react";
 
-import { useTheme } from "@/components/theme-provider";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type ThemeToggleProps = {
@@ -13,29 +12,33 @@ type ThemeToggleProps = {
 
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {
+      /* no-op */
+    },
+    () => true,
+    () => false,
+  );
 
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
-
-  const isDark = mounted ? resolvedTheme === "dark" : true;
+  const isDark = (resolvedTheme ?? "dark") === "dark";
 
   return (
-    <Button
+    <button
       type="button"
-      variant="ghost"
-      size="icon"
       onClick={() => setTheme(isDark ? "light" : "dark")}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
       className={cn(
-        "h-9 w-9 shrink-0 rounded-sm border border-border bg-transparent text-zinc-500 shadow-none hover:bg-accent hover:text-zinc-900 dark:hover:text-zinc-100",
+        "flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:text-zinc-100",
         className,
       )}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
     >
-      {isDark ? <Sun className="h-4 w-4" aria-hidden /> : <Moon className="h-4 w-4" aria-hidden />}
-    </Button>
+      {!mounted ? (
+        <span className="size-[15px] shrink-0" aria-hidden />
+      ) : isDark ? (
+        <Sun size={15} aria-hidden />
+      ) : (
+        <Moon size={15} aria-hidden />
+      )}
+    </button>
   );
 }
-

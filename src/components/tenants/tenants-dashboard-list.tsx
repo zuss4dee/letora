@@ -160,13 +160,13 @@ export function TenantsDashboardList({ tenants }: { tenants: TenantRow[] }) {
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-[2px] px-3 py-1 text-[11px] transition-colors",
                     selected
-                      ? "bg-zinc-800 font-semibold text-white dark:bg-zinc-800"
+                      ? "bg-zinc-200 dark:bg-zinc-800 font-semibold text-white dark:bg-zinc-800"
                       : "font-medium text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-white",
                   )}
                 >
                   {TAB_LABEL[id]}
                   {id === "arrears" ? (
-                    <span className="h-1.5 w-1.5 rounded-full bg-[#ffb4ab]" aria-hidden />
+                    <span className="h-1.5 w-1.5 rounded-full bg-background dark:bg-[#ffb4ab]" aria-hidden />
                   ) : null}
                 </button>
               );
@@ -179,7 +179,7 @@ export function TenantsDashboardList({ tenants }: { tenants: TenantRow[] }) {
             type="button"
             variant="outline"
             size="sm"
-            className="h-7 rounded-[2px] border-zinc-300 bg-white px-3 text-[11px] font-medium text-zinc-600 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-800"
+            className="h-7 rounded-[2px] border-zinc-300 bg-white px-3 text-[11px] font-medium text-zinc-600 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-200 dark:bg-zinc-800"
             onClick={() => setFiltersOpen(true)}
             aria-expanded={filtersOpen}
             aria-controls="tenants-filters-sheet"
@@ -190,7 +190,7 @@ export function TenantsDashboardList({ tenants }: { tenants: TenantRow[] }) {
           <Button
             variant="outline"
             size="sm"
-            className="h-7 rounded-[2px] border-zinc-300 bg-white px-3 text-[11px] font-medium text-zinc-600 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-800"
+            className="h-7 rounded-[2px] border-zinc-300 bg-white px-3 text-[11px] font-medium text-zinc-600 hover:bg-zinc-100 dark:border-zinc-800 dark:bg-transparent dark:text-zinc-400 dark:hover:bg-zinc-200 dark:bg-zinc-800"
             asChild
           >
             <Link href="/dashboard/tenancies" aria-label="Open tenancies workspace">
@@ -291,7 +291,7 @@ export function TenantsDashboardList({ tenants }: { tenants: TenantRow[] }) {
                 <tr
                   key={row.id}
                   className={cn(
-                    "h-9 border-b border-zinc-200/60 transition-colors hover:bg-zinc-100/70 dark:border-zinc-800 dark:hover:bg-zinc-800/35",
+                    "h-9 border-b border-zinc-200/60 transition-colors hover:bg-zinc-100/70 dark:border-zinc-800 dark:hover:bg-zinc-200 dark:bg-zinc-800/35",
                     idx === 0 && "bg-zinc-100/50 dark:bg-zinc-800/30",
                   )}
                 >

@@ -46,7 +46,7 @@ export function ConfirmMoveInButton({
           disabled={!isSigned || loading}
           className={
             isSigned
-              ? "rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-opacity hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              ? "rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-[#ffffff] transition-opacity hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
               : "rounded-lg bg-muted px-5 py-2.5 text-sm font-medium text-muted-foreground cursor-not-allowed"
           }
         >

@@ -358,7 +358,7 @@ export function TenanciesRegistry({
                     "h-7 border px-3 text-[11px] font-medium transition-colors",
                     filter === item.id
                       ? "border-zinc-300 bg-zinc-200 text-zinc-900 dark:border-[#3a3a3a] dark:bg-[#1d1d1d] dark:text-[#f2f2f2]"
-                      : "border-transparent text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-[#737373] dark:hover:bg-[#1a1a1a] dark:hover:text-[#c4c7c8]",
+                      : "border-transparent text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-[#737373] dark:hover:bg-background dark:bg-[#1a1a1a] dark:hover:text-[#c4c7c8]",
                   )}
                 >
                   {item.label}
@@ -371,7 +371,7 @@ export function TenanciesRegistry({
                   "flex h-7 items-center border px-3 text-[11px] font-medium transition-colors",
                   filter === "overdue"
                     ? "border-zinc-300 bg-zinc-200 text-red-700 dark:border-[#3a3a3a] dark:bg-[#1d1d1d] dark:text-[#ffb4ab]"
-                    : "border-transparent text-red-600 hover:bg-red-50 dark:text-[#ff8c8c] dark:hover:bg-[#1a1a1a]",
+                    : "border-transparent text-red-600 hover:bg-red-50 dark:text-[#ff8c8c] dark:hover:bg-background dark:bg-[#1a1a1a]",
                 )}
               >
                 <span className="mr-2 size-1.5 rounded-full bg-red-400 dark:bg-[#ffb4ab]" />
@@ -434,7 +434,7 @@ export function TenanciesRegistry({
                         key={row.id}
                         onClick={() => setSelectedTenancyId(row.id)}
                         className={cn(
-                          "group cursor-pointer border-b border-zinc-200/80 transition-colors hover:bg-zinc-100 dark:border-[#232323] dark:hover:bg-[#1b1b1b]",
+                          "group cursor-pointer border-b border-zinc-200/80 transition-colors hover:bg-zinc-100 dark:border-[#232323] dark:hover:bg-background dark:bg-[#1b1b1b]",
                           isSelected && "bg-zinc-100 dark:bg-[#1a1a1a]",
                         )}
                       >
@@ -462,10 +462,10 @@ export function TenanciesRegistry({
                           <span
                             className={cn(
                               "border px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider",
-                              rowStatus === "Active" && "border-[#2f6c3e]/50 bg-[#163121]/40 text-[#5ab875]",
-                              rowStatus === "Pending" && "border-[#73641d]/50 bg-[#392f12]/40 text-[#c7aa48]",
-                              rowStatus === "Ending" && "border-[#93000a]/40 bg-[#93000a]/10 text-[#ffdad6]",
-                              rowStatus === "Onboarding" && "border-[#365488]/50 bg-[#162238]/40 text-[#78a4f5]",
+                              rowStatus === "Active" && "border-border dark:border-[#2f6c3e]/50 bg-background dark:bg-[#163121]/40 text-[#5ab875]",
+                              rowStatus === "Pending" && "border-border dark:border-[#73641d]/50 bg-background dark:bg-[#392f12]/40 text-[#c7aa48]",
+                              rowStatus === "Ending" && "border-border dark:border-[#93000a]/40 bg-background dark:bg-[#93000a]/10 text-[#ffdad6]",
+                              rowStatus === "Onboarding" && "border-border dark:border-[#365488]/50 bg-background dark:bg-[#162238]/40 text-[#78a4f5]",
                             )}
                           >
                             {rowStatus}
@@ -514,7 +514,7 @@ export function TenanciesRegistry({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="size-6 shrink-0 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-900 dark:text-[#8a8a8a] dark:hover:bg-[#1a1a1a] dark:hover:text-[#e8e8e8]"
+                    className="size-6 shrink-0 text-zinc-500 hover:bg-zinc-200 hover:text-zinc-900 dark:text-[#8a8a8a] dark:hover:bg-background dark:bg-[#1a1a1a] dark:hover:text-[#e8e8e8]"
                     aria-label="Close panel"
                     onClick={() => setSelectedTenancyId(null)}
                   >
@@ -539,13 +539,13 @@ export function TenanciesRegistry({
                 <div className="grid grid-cols-2 gap-2">
                   <Link
                     href={`/dashboard/tenants/${selected.tenantId}`}
-                    className="border border-zinc-300 bg-zinc-100 py-2 text-center text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-900 transition-colors hover:bg-zinc-200 dark:border-[#2f2f2f] dark:bg-[#161616] dark:text-white dark:hover:bg-[#202020]"
+                    className="border border-zinc-300 bg-zinc-100 py-2 text-center text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-900 transition-colors hover:bg-zinc-200 dark:border-[#2f2f2f] dark:bg-[#161616] dark:text-white dark:hover:bg-background dark:bg-[#202020]"
                   >
                     Tenant Profile
                   </Link>
                   <Link
                     href={`/dashboard/properties/${selected.propertyId}`}
-                    className="border border-zinc-300 bg-zinc-100 py-2 text-center text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-900 transition-colors hover:bg-zinc-200 dark:border-[#2f2f2f] dark:bg-[#161616] dark:text-white dark:hover:bg-[#202020]"
+                    className="border border-zinc-300 bg-zinc-100 py-2 text-center text-[10px] font-bold uppercase tracking-[0.08em] text-zinc-900 transition-colors hover:bg-zinc-200 dark:border-[#2f2f2f] dark:bg-[#161616] dark:text-white dark:hover:bg-background dark:bg-[#202020]"
                   >
                     Property
                   </Link>
@@ -644,7 +644,7 @@ export function TenanciesRegistry({
                 <div className="grid grid-cols-1 gap-2">
                   <Link
                     href={`/dashboard/tenancies/${selected.id}`}
-                    className="flex items-center justify-center bg-zinc-900 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white transition-colors hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+                    className="flex items-center justify-center bg-zinc-100 dark:bg-zinc-900 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white transition-colors hover:bg-zinc-200 dark:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
                   >
                     Open Full Case File
                   </Link>
@@ -657,7 +657,7 @@ export function TenanciesRegistry({
                         : selected.monthlyRent ?? 0
                     }
                     triggerLabel="Log Payment Action"
-                    triggerClassName="w-full border border-zinc-300 bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-800 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-white dark:hover:bg-zinc-900"
+                    triggerClassName="w-full border border-zinc-300 bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-800 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-white dark:hover:bg-zinc-100 dark:bg-zinc-900"
                   />
                   
                   {/* Demoted Metadata Edit */}

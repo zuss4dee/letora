@@ -250,7 +250,7 @@ export function PortfolioImportPreflight(props: PortfolioImportPreflightProps) {
             className={cn(
               "border px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest transition-colors",
               listMode === "fix"
-                ? "border-[#afefdd]/50 bg-[#152420] text-[#afefdd]"
+                ? "border-border dark:border-[#afefdd]/50 bg-background dark:bg-[#152420] text-[#afefdd]"
                 : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:border-[#333333] dark:bg-transparent dark:text-[#888888] dark:hover:text-white",
             )}
           >
@@ -265,7 +265,7 @@ export function PortfolioImportPreflight(props: PortfolioImportPreflightProps) {
             className={cn(
               "border px-3 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest transition-colors",
               listMode === "all"
-                ? "border-[#afefdd]/50 bg-[#152420] text-[#afefdd]"
+                ? "border-border dark:border-[#afefdd]/50 bg-background dark:bg-[#152420] text-[#afefdd]"
                 : "border-zinc-200 bg-white text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:border-[#333333] dark:bg-transparent dark:text-[#888888] dark:hover:text-white",
             )}
           >
@@ -307,7 +307,7 @@ export function PortfolioImportPreflight(props: PortfolioImportPreflightProps) {
       ) : null}
 
       {savedFlash ? (
-        <div className="flex items-center gap-2 border-b border-[#306f60]/30 bg-[#152420]/80 px-4 py-2">
+        <div className="flex items-center gap-2 border-b border-border dark:border-[#306f60]/30 bg-background dark:bg-[#152420]/80 px-4 py-2">
           <CheckCircle2 className="size-3.5 text-[#afefdd]" aria-hidden />
           <p className="text-[11px] text-[#c8dfd7]">
             Saved to this browser — you can close the tab and use “Restore prepared import” when you return.
@@ -325,7 +325,7 @@ export function PortfolioImportPreflight(props: PortfolioImportPreflightProps) {
       ) : null}
 
       {reprepareError ? (
-        <div className="flex items-start gap-2 border-b border-[#BB5551]/30 bg-[#7f2927]/12 px-4 py-3">
+        <div className="flex items-start gap-2 border-b border-border dark:border-[#BB5551]/30 bg-background dark:bg-[#7f2927]/12 px-4 py-3">
           <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-[#ee7d77]" aria-hidden />
           <span className="text-[11px] text-[#ee7d77]">{reprepareError}</span>
         </div>
@@ -486,8 +486,8 @@ export function PortfolioImportPreflight(props: PortfolioImportPreflightProps) {
               className={cn(
                 "flex min-h-[40px] min-w-[12rem] items-center justify-center gap-2 px-6 py-2 font-mono text-[10px] font-bold uppercase tracking-widest transition-opacity disabled:opacity-40",
                 primaryIsSolidImport
-                  ? "bg-zinc-900 text-white hover:opacity-90 dark:bg-white dark:text-[#161616]"
-                  : "border border-zinc-300 bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:border-[#555555] dark:bg-transparent dark:text-white dark:hover:bg-[#282828]",
+                  ? "bg-zinc-100 dark:bg-zinc-900 text-white hover:opacity-90 dark:bg-white dark:text-[#161616]"
+                  : "border border-zinc-300 bg-zinc-100 text-zinc-900 hover:bg-zinc-200 dark:border-[#555555] dark:bg-transparent dark:text-white dark:hover:bg-background dark:bg-[#282828]",
               )}
             >
               {isImportPending && importableCount > 0 ? (
@@ -626,7 +626,7 @@ function PreflightRowPanel({
               type="button"
               disabled={busy}
               onClick={() => setDetailExpanded(true)}
-              className="inline-flex items-center gap-1 border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-700 transition-colors hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-40 dark:border-[#333333] dark:bg-[#0B0B0B] dark:text-[#cfcfcf] dark:hover:border-[#555555] dark:hover:text-white"
+              className="inline-flex items-center gap-1 border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-700 transition-colors hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-40 dark:border-[#333333] dark:bg-[#0B0B0B] dark:text-[#cfcfcf] dark:hover:border-border dark:border-[#555555] dark:hover:text-white"
               aria-expanded={false}
             >
               Edit row
@@ -670,7 +670,7 @@ function PreflightRowPanel({
               type="button"
               disabled={busy}
               onClick={() => setDetailExpanded(false)}
-              className="inline-flex items-center gap-1 font-mono text-[9px] font-bold uppercase tracking-widest text-[#737373] transition-colors hover:text-white disabled:opacity-40"
+              className="inline-flex items-center gap-1 font-mono text-[9px] font-bold uppercase tracking-widest text-[#737373] transition-colors hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white disabled:opacity-40"
             >
               <ChevronUp className="size-3" aria-hidden />
               Hide details
@@ -692,7 +692,7 @@ function PreflightRowPanel({
       {(hasBlocking || hasReviewIssues) && (
         <div className="mt-4 space-y-3">
           {hasBlocking ? (
-            <div className="border border-[#BB5551]/25 bg-[#7f2927]/12 p-3">
+            <div className="border border-border dark:border-[#BB5551]/25 bg-background dark:bg-[#7f2927]/12 p-3">
               <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-[#ee7d77]">
                 Blocking fixes
               </p>
@@ -714,7 +714,7 @@ function PreflightRowPanel({
           ) : null}
 
           {hasReviewIssues ? (
-            <div className="border border-[#4f3700]/35 bg-[#2a2210]/55 p-3">
+            <div className="border border-border dark:border-[#4f3700]/35 bg-background dark:bg-[#2a2210]/55 p-3">
               <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-[#f8cf83]">
                 Review warnings
               </p>
@@ -733,7 +733,7 @@ function PreflightRowPanel({
                 </div>
               ) : null}
               {hasPrepareWarnings ? (
-                <div className={cn("mt-2", hasRowWarnings && "border-t border-[#4f3700]/25 pt-2")}>
+                <div className={cn("mt-2", hasRowWarnings && "border-t border-border dark:border-[#4f3700]/25 pt-2")}>
                   <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-[#a89060]">
                     Portfolio check
                   </p>

@@ -75,7 +75,7 @@ function lineFromHash(queue: BatchReconciliationModel["needsReviewQueue"]): numb
 type ReviewQueueEntry = BatchReconciliationModel["needsReviewQueue"][number];
 
 const reviewedTaskButtonClass =
-  "inline-flex shrink-0 border border-zinc-200 bg-zinc-100 px-2 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-800 hover:border-[#afefdd]/40 hover:text-emerald-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-[#afefdd]/40 dark:hover:text-[#afefdd]";
+  "inline-flex shrink-0 border border-zinc-200 bg-zinc-100 px-2 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-800 hover:border-border dark:border-[#afefdd]/40 hover:text-emerald-800 dark:border-zinc-600 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-border dark:border-[#afefdd]/40 dark:hover:text-[#afefdd]";
 
 function ReviewQueueRow({
   batchId,
@@ -108,7 +108,7 @@ function ReviewQueueRow({
 
   const [primaryOpen, ...secondaryOpens] = opens;
   const primaryClass =
-    "inline-flex border border-[#306f60]/50 bg-[#152420]/90 px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#afefdd] hover:border-[#afefdd]/50";
+    "inline-flex border border-border dark:border-[#306f60]/50 bg-background dark:bg-[#152420]/90 px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#afefdd] hover:border-border dark:border-[#afefdd]/50";
   const secondaryClass =
     "inline-flex border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-800 hover:border-zinc-400 dark:border-[#333333] dark:bg-[#161616] dark:text-zinc-200 dark:hover:border-white";
   const rowId = reviewRowDomId(row.line);
@@ -122,7 +122,7 @@ function ReviewQueueRow({
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <button
             type="button"
-            className="flex w-full items-start gap-2 text-left hover:bg-zinc-100 sm:gap-3 dark:hover:bg-[#1A1A1A]/80"
+            className="flex w-full items-start gap-2 text-left hover:bg-zinc-100 sm:gap-3 dark:hover:bg-background dark:bg-[#1A1A1A]/80"
             onClick={onActivateRow}
           >
             <span className="font-mono text-[10px] tabular-nums text-zinc-500">{row.line}</span>
@@ -331,7 +331,7 @@ function ReviewQueueSection({
 
   return (
     <div>
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 dark:border-[#282828] bg-[#141414] px-3 py-2 font-mono text-[10px] uppercase tracking-widest">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-200 dark:border-[#282828] bg-background dark:bg-[#141414] px-3 py-2 font-mono text-[10px] uppercase tracking-widest">
         <button
           type="button"
           onClick={goPrevInQueue}
@@ -339,7 +339,7 @@ function ReviewQueueSection({
           className={cn(
             "rounded-sm border px-2 py-1.5 text-zinc-300 disabled:pointer-events-none disabled:opacity-30",
             effectiveIndex > 0
-              ? "border-zinc-600 hover:border-[#f8cf83]/50 hover:text-[#f8cf83]"
+              ? "border-zinc-600 hover:border-border dark:border-[#f8cf83]/50 hover:text-[#f8cf83]"
               : "border-zinc-800 text-zinc-600",
           )}
         >
@@ -355,7 +355,7 @@ function ReviewQueueSection({
           className={cn(
             "rounded-sm border px-2 py-1.5 text-zinc-300 disabled:pointer-events-none disabled:opacity-30",
             effectiveIndex < queue.length - 1
-              ? "border-zinc-600 hover:border-[#f8cf83]/50 hover:text-[#f8cf83]"
+              ? "border-zinc-600 hover:border-border dark:border-[#f8cf83]/50 hover:text-[#f8cf83]"
               : "border-zinc-800 text-zinc-600",
           )}
         >
@@ -386,8 +386,8 @@ function ReviewQueueSection({
 function ReviewedQueueCollapsible({ entries }: { entries: ReviewQueueEntry[] }) {
   if (entries.length === 0) return null;
   return (
-    <details className="group border-t border-zinc-200 dark:border-[#282828] bg-[#141414]">
-      <summary className="cursor-pointer list-none px-3 py-2.5 font-mono text-[10px] uppercase tracking-widest text-zinc-500 marker:content-none hover:bg-[#1A1A1A]/60 [&::-webkit-details-marker]:hidden">
+    <details className="group border-t border-zinc-200 dark:border-[#282828] bg-background dark:bg-[#141414]">
+      <summary className="cursor-pointer list-none px-3 py-2.5 font-mono text-[10px] uppercase tracking-widest text-zinc-500 marker:content-none hover:bg-background dark:bg-[#1A1A1A]/60 [&::-webkit-details-marker]:hidden">
         Reviewed ({entries.length})
       </summary>
       <ul className="divide-y divide-[#282828]">
@@ -419,13 +419,13 @@ function outcomeBadge(outcome: string): { label: string; className: string } {
   switch (outcome) {
     case "created":
     case "resumed":
-      return { label: "Saved", className: "border-[#306f60]/40 bg-[#206153]/20 text-[#afefdd]" };
+      return { label: "Saved", className: "border-border dark:border-[#306f60]/40 bg-background dark:bg-[#206153]/20 text-[#afefdd]" };
     case "skipped":
-      return { label: "Skipped", className: "border-zinc-600/50 bg-zinc-900/60 text-zinc-400" };
+      return { label: "Skipped", className: "border-zinc-600/50 bg-zinc-100 dark:bg-zinc-900/60 text-zinc-400" };
     case "error":
-      return { label: "Failed", className: "border-[#BB5551]/40 bg-[#7f2927]/15 text-[#ee7d77]" };
+      return { label: "Failed", className: "border-border dark:border-[#BB5551]/40 bg-background dark:bg-[#7f2927]/15 text-[#ee7d77]" };
     default:
-      return { label: outcome, className: "border-zinc-600/50 bg-zinc-900/60 text-zinc-400" };
+      return { label: outcome, className: "border-zinc-600/50 bg-zinc-100 dark:bg-zinc-900/60 text-zinc-400" };
   }
 }
 
@@ -455,7 +455,7 @@ function CompactRowPreview({ r }: { r: BatchImportDetailRow }) {
         <span className="font-mono text-[9px] text-zinc-500">Email: {r.emailStatus}</span>
       ) : null}
       {hint ? (
-        <span className="rounded-sm border border-[#f8cf83]/25 bg-[#2a2210]/80 px-1.5 py-0.5 font-mono text-[9px] text-[#f8cf83]">
+        <span className="rounded-sm border border-border dark:border-[#f8cf83]/25 bg-background dark:bg-[#2a2210]/80 px-1.5 py-0.5 font-mono text-[9px] text-[#f8cf83]">
           {hint}
         </span>
       ) : null}
@@ -465,7 +465,7 @@ function CompactRowPreview({ r }: { r: BatchImportDetailRow }) {
 
 function RowDetailsBody({ r }: { r: BatchImportDetailRow }) {
   return (
-    <div className="space-y-2 border-t border-zinc-200 dark:border-[#282828] bg-[#0d0d0d] px-3 py-3 font-mono text-[10px] leading-relaxed text-zinc-400">
+    <div className="space-y-2 border-t border-zinc-200 dark:border-[#282828] bg-background dark:bg-[#0d0d0d] px-3 py-3 font-mono text-[10px] leading-relaxed text-zinc-400">
       <p>
         <span className="text-zinc-500">Line {r.line}</span> ·{" "}
         <span className="text-zinc-300">{r.propertyAddress || "—"}</span>
@@ -501,11 +501,13 @@ function RowDetailsBody({ r }: { r: BatchImportDetailRow }) {
 function AuditImportRowCard({ r }: { r: BatchImportDetailRow }) {
   return (
     <details className="group border-b border-zinc-200 dark:border-[#282828] last:border-b-0">
-      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-3 py-3 marker:content-none hover:bg-[#1A1A1A]/80 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-3 py-3 marker:content-none hover:bg-background dark:bg-[#1A1A1A]/80 [&::-webkit-details-marker]:hidden">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-mono text-[10px] tabular-nums text-zinc-500">#{r.line}</span>
-            <p className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-100">{r.propertyAddress || "—"}</p>
+            <p className="min-w-0 flex-1 truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+              {r.propertyAddress || "—"}
+            </p>
           </div>
           <CompactRowPreview r={r} />
         </div>
@@ -521,11 +523,11 @@ function FailedRowCard({ r }: { r: BatchImportDetailRow }) {
 
   return (
     <details className="group border-b border-zinc-200 dark:border-[#282828] last:border-b-0">
-      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-3 py-3 marker:content-none hover:bg-[#1A1A1A]/80 [&::-webkit-details-marker]:hidden">
+      <summary className="flex cursor-pointer list-none items-start justify-between gap-3 px-3 py-3 marker:content-none hover:bg-background dark:bg-[#1A1A1A]/80 [&::-webkit-details-marker]:hidden">
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-start gap-2">
             <span className="font-mono text-[10px] tabular-nums text-zinc-500">Row {r.line}</span>
-            <span className="inline-flex shrink-0 border border-[#BB5551]/45 bg-[#2a1514]/80 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#ee7d77]">
+            <span className="inline-flex shrink-0 border border-border dark:border-[#BB5551]/45 bg-background dark:bg-[#2a1514]/80 px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase tracking-widest text-[#ee7d77]">
               Not saved
             </span>
           </div>
@@ -538,7 +540,7 @@ function FailedRowCard({ r }: { r: BatchImportDetailRow }) {
           />
           <Link
             href="/dashboard/import"
-            className="inline-flex border border-[#BB5551]/40 bg-[#2a1514]/50 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-[#ee7d77] hover:border-[#ee7d77]/60"
+            className="inline-flex border border-border dark:border-[#BB5551]/40 bg-background dark:bg-[#2a1514]/50 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-widest text-[#ee7d77] hover:border-border dark:border-[#ee7d77]/60"
           >
             Try import again
           </Link>
@@ -665,7 +667,7 @@ export function PortfolioImportBatchReconciliation({
   const completedLabel = completedAt ? batchCompletedFormatter.format(new Date(completedAt)) : null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-[#f8f8f7] text-zinc-900 dark:bg-[#131313] dark:text-[#e5e2e1]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background dark:bg-[#f8f8f7] text-zinc-900 dark:bg-[#131313] dark:text-[#e5e2e1]">
       <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-[#161616]">
         <Link
           href="/dashboard/import"
@@ -725,7 +727,7 @@ export function PortfolioImportBatchReconciliation({
           </div>
 
           {finalizeError ? (
-            <p className="mt-4 max-w-2xl rounded-sm border border-[#BB5551]/35 bg-[#2a1514]/80 px-3 py-2 font-mono text-[11px] leading-snug text-[#ee7d77]">
+            <p className="mt-4 max-w-2xl rounded-sm border border-border dark:border-[#BB5551]/35 bg-background dark:bg-[#2a1514]/80 px-3 py-2 font-mono text-[11px] leading-snug text-[#ee7d77]">
               DB: {finalizeError}
             </p>
           ) : null}
@@ -765,7 +767,7 @@ export function PortfolioImportBatchReconciliation({
             {retryFailedAvailable ? (
               <Link
                 href={`/dashboard/import?retryBatch=${encodeURIComponent(batchId)}`}
-                className="inline-flex items-center justify-center gap-2 border border-[#f8cf83]/50 bg-[#2a2210]/60 px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#f8cf83] transition-colors hover:border-[#f8cf83]"
+                className="inline-flex items-center justify-center gap-2 border border-border dark:border-[#f8cf83]/50 bg-background dark:bg-[#2a2210]/60 px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#f8cf83] transition-colors hover:border-border dark:border-[#f8cf83]"
               >
                 Retry failed rows
               </Link>
@@ -776,28 +778,28 @@ export function PortfolioImportBatchReconciliation({
                 "inline-flex items-center justify-center gap-2 border px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest transition-colors",
                 failedCount === 0
                   ? "pointer-events-none border-zinc-200 bg-zinc-100 text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-600"
-                  : "border-[#BB5551]/45 bg-[#2a1514]/50 text-[#ee7d77] hover:border-[#ee7d77]/50",
+                  : "border-border dark:border-[#BB5551]/45 bg-background dark:bg-[#2a1514]/50 text-[#ee7d77] hover:border-border dark:border-[#ee7d77]/50",
               )}
             >
               Jump to failures
             </Link>
             <Link
               href="/dashboard/import"
-              className="inline-flex items-center justify-center gap-2 border border-[#306f60]/50 bg-[#152420] px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#afefdd] hover:border-[#afefdd]/50"
+              className="inline-flex items-center justify-center gap-2 border border-border dark:border-[#306f60]/50 bg-background dark:bg-[#152420] px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#afefdd] hover:border-border dark:border-[#afefdd]/50"
             >
               Upload again
             </Link>
           </div>
 
           {!hasAttention ? (
-            <p className="rounded-sm border border-[#306f60]/30 bg-[#152420]/40 px-3 py-3 text-[12px] text-[#afefdd]">
+            <p className="rounded-sm border border-border dark:border-[#306f60]/30 bg-background dark:bg-[#152420]/40 px-3 py-3 text-[12px] text-[#afefdd]">
               You’re caught up — nothing urgent from this upload.
             </p>
           ) : null}
 
           {needsReviewTotal > 0 ? (
-            <div id="attention-review" className="scroll-mt-24 overflow-hidden rounded-sm border border-[#f8cf83]/20 bg-white dark:bg-[#161616]">
-              <div className="border-b border-[#f8cf83]/15 bg-[#2a2210]/30 px-3 py-2.5">
+            <div id="attention-review" className="scroll-mt-24 overflow-hidden rounded-sm border border-border dark:border-[#f8cf83]/20 bg-white dark:bg-[#161616]">
+              <div className="border-b border-border dark:border-[#f8cf83]/15 bg-background dark:bg-[#2a2210]/30 px-3 py-2.5">
                 <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#f8cf83]">Quick checks</h3>
               </div>
               <ReviewQueueSection batchId={batchId} queue={activeReviewQueue} onMarkReviewed={markReviewLineDone} />
@@ -805,8 +807,8 @@ export function PortfolioImportBatchReconciliation({
             </div>
           ) : null}
 
-          <div id="attention-failed" className="scroll-mt-24 overflow-hidden rounded-sm border border-[#BB5551]/25 bg-white dark:bg-[#161616]">
-            <div className="border-b border-[#BB5551]/15 bg-[#2a1514]/30 px-3 py-2.5">
+          <div id="attention-failed" className="scroll-mt-24 overflow-hidden rounded-sm border border-border dark:border-[#BB5551]/25 bg-white dark:bg-[#161616]">
+            <div className="border-b border-border dark:border-[#BB5551]/15 bg-background dark:bg-[#2a1514]/30 px-3 py-2.5">
               <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#ee7d77]">Didn&apos;t save</h3>
             </div>
             <p className="border-b border-zinc-200 dark:border-[#282828] px-3 py-3 text-[13px] leading-snug text-zinc-400">
@@ -834,7 +836,7 @@ export function PortfolioImportBatchReconciliation({
                 "inline-flex items-center justify-center gap-2 border px-4 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest transition-colors",
                 propDisabled
                   ? "pointer-events-none border-zinc-200 bg-zinc-100 text-zinc-400 dark:border-zinc-800 dark:bg-zinc-900/40 dark:text-zinc-600"
-                  : "border-[#306f60]/50 bg-[#152420] text-[#afefdd] hover:border-[#afefdd]/50",
+                  : "border-border dark:border-[#306f60]/50 bg-background dark:bg-[#152420] text-[#afefdd] hover:border-border dark:border-[#afefdd]/50",
               )}
             >
               Properties · this upload
@@ -868,7 +870,7 @@ export function PortfolioImportBatchReconciliation({
         </section>
 
         {model.suspicious.length > 0 ? (
-          <section className="space-y-2 rounded-sm border border-[#f8cf83]/25 bg-[#2a2210]/40 px-4 py-3">
+          <section className="space-y-2 rounded-sm border border-border dark:border-[#f8cf83]/25 bg-background dark:bg-[#2a2210]/40 px-4 py-3">
             <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#f8cf83]">Suspicious</h3>
             <ul className="space-y-2">
               {model.suspicious.map((f: SuspiciousFlag, i: number) => (
@@ -881,14 +883,14 @@ export function PortfolioImportBatchReconciliation({
           </section>
         ) : null}
 
-        <details id="import-section-clean" className="group rounded-sm border border-zinc-200 dark:border-[#282828] bg-[#161616]">
+        <details id="import-section-clean" className="group rounded-sm border border-zinc-200 dark:border-[#282828] bg-background dark:bg-[#161616]">
           <summary className="cursor-pointer px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400 marker:content-none [&::-webkit-details-marker]:hidden">
             Clean saves &amp; vacant rows ({cleanSuccessful.length + model.vacantOrPropertyOnly.length})
           </summary>
           <div className="space-y-6 border-t border-zinc-200 dark:border-[#282828] px-4 py-5">
             <div>
               <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#888888]">No flags</h3>
-              <div className="overflow-hidden rounded-sm border border-zinc-200 dark:border-[#282828] bg-[#0d0d0d]">
+              <div className="overflow-hidden rounded-sm border border-zinc-200 dark:border-[#282828] bg-background dark:bg-[#0d0d0d]">
                 <RowListQuiet
                   rows={cleanSuccessful}
                   emptyLabel="None."
@@ -897,14 +899,14 @@ export function PortfolioImportBatchReconciliation({
             </div>
             <div>
               <h3 className="mb-2 text-[11px] font-bold uppercase tracking-widest text-[#888888]">Vacant</h3>
-              <div className="overflow-hidden rounded-sm border border-zinc-200 dark:border-[#282828] bg-[#0d0d0d]">
+              <div className="overflow-hidden rounded-sm border border-zinc-200 dark:border-[#282828] bg-background dark:bg-[#0d0d0d]">
                 <RowListQuiet rows={model.vacantOrPropertyOnly} emptyLabel="None." />
               </div>
             </div>
           </div>
         </details>
 
-        <details className="group rounded-sm border border-zinc-200 dark:border-[#282828] bg-[#161616] px-4 py-3">
+        <details className="group rounded-sm border border-zinc-200 dark:border-[#282828] bg-background dark:bg-[#161616] px-4 py-3">
           <summary className="cursor-pointer font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400">
             Audit trail ({rawRows.length})
           </summary>

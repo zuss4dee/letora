@@ -317,7 +317,7 @@ export function OnboardingWizard({
   const stepsRemainingAfter = LANDLORD_ONBOARDING_WIZARD_STEP_COUNT - (step + 1);
 
   const onboardingInputClass =
-    "h-12 border-zinc-800 bg-zinc-950/40 px-4 font-headline text-base font-light text-white placeholder:text-zinc-600 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/20";
+    "h-12 border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 px-4 font-headline text-base font-light text-white placeholder:text-zinc-600 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/20";
 
   const canSubmitProperty =
     propertyStreet.trim().length >= 1 &&
@@ -332,9 +332,9 @@ export function OnboardingWizard({
   );
 
   return (
-    <div className="relative min-h-svh overflow-hidden bg-black text-zinc-100">
+    <div className="relative min-h-svh overflow-hidden bg-zinc-950 dark:bg-black text-zinc-100">
       <div className="pointer-events-none fixed inset-x-0 top-0 z-[100] h-[2px]">
-        <div className="absolute inset-0 bg-[#0a0a0a]" aria-hidden />
+        <div className="absolute inset-0 bg-background dark:bg-[#0a0a0a]" aria-hidden />
         <div
           className="absolute inset-x-0 top-1/2 h-[6px] -translate-y-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-80 blur-md"
           aria-hidden
@@ -405,7 +405,7 @@ export function OnboardingWizard({
                   <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-zinc-400">
                     Identity
                   </p>
-                  <h1 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
+                  <h1 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-zinc-900 dark:text-white md:text-5xl">
                     Your company or portfolio name
                   </h1>
                   <p className="max-w-lg font-headline text-base font-light leading-relaxed text-zinc-500">
@@ -422,7 +422,7 @@ export function OnboardingWizard({
                     value={portfolioName}
                     onChange={(e) => setPortfolioName(e.target.value)}
                     placeholder="e.g. Meridian Street Holdings"
-                    className="h-16 border-zinc-800 bg-zinc-950/40 px-6 font-headline text-xl font-light tracking-tight text-white placeholder:text-zinc-600 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/20"
+                    className="h-16 border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 px-6 font-headline text-xl font-light tracking-tight text-white placeholder:text-zinc-600 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/20"
                   />
                 </div>
 
@@ -461,7 +461,7 @@ export function OnboardingWizard({
                   <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-zinc-400">
                     Priorities
                   </p>
-                  <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
+                  <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-zinc-900 dark:text-white md:text-5xl">
                     What should we prioritise?
                   </h2>
                   <p className="max-w-xl font-headline text-base font-light text-zinc-500">
@@ -490,14 +490,14 @@ export function OnboardingWizard({
                         )}
                       >
                         <span className="flex items-start justify-between gap-4">
-                          <span className="font-headline text-xl font-light tracking-tight text-white md:text-[1.35rem]">
+                          <span className="font-headline text-xl font-light tracking-tight text-zinc-900 dark:text-white md:text-[1.35rem]">
                             {opt.title}
                           </span>
                           <span
                             className={cn(
                               "mt-1 flex size-6 shrink-0 items-center justify-center rounded-full border",
                               selected
-                                ? "border-white bg-white/15 text-white"
+                                ? "border-white bg-white/15 text-zinc-900 dark:text-white"
                                 : "border-zinc-700 text-transparent",
                             )}
                           >
@@ -554,7 +554,7 @@ export function OnboardingWizard({
                   <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-zinc-400">
                     Essentials
                   </p>
-                  <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
+                  <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-zinc-900 dark:text-white md:text-5xl">
                     Landlord &amp; agency details
                   </h2>
                   <p className="max-w-xl font-headline text-base font-light text-zinc-500">
@@ -580,7 +580,7 @@ export function OnboardingWizard({
                     />
                   </div>
 
-                  <div className="flex gap-3 rounded-lg border border-zinc-800/80 bg-zinc-950/30 px-4 py-3">
+                  <div className="flex gap-3 rounded-lg border border-zinc-800/80 bg-zinc-50 dark:bg-zinc-950/30 px-4 py-3">
                     <Checkbox
                       id="ob-no-agency"
                       checked={noAgencyOrReferencing}
@@ -691,7 +691,7 @@ export function OnboardingWizard({
                   <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-zinc-400">
                     First property
                   </p>
-                  <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-white md:text-5xl">
+                  <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-zinc-900 dark:text-white md:text-5xl">
                     Add an address
                   </h2>
                   <p className="max-w-xl font-headline text-base font-light text-zinc-500">
@@ -712,7 +712,7 @@ export function OnboardingWizard({
                           type="checkbox"
                           checked={addressManualOnly}
                           onChange={(e) => setAddressManualOnly(e.target.checked)}
-                          className="size-3.5 rounded border-zinc-600 bg-zinc-950 accent-white"
+                          className="size-3.5 rounded border-zinc-600 bg-zinc-50 dark:bg-zinc-950 accent-white"
                         />
                         <Label
                           htmlFor="onboarding-address-manual"
@@ -731,7 +731,7 @@ export function OnboardingWizard({
                         setPropertyCity(v.city);
                         setPropertyPostcode(v.postcode);
                       }}
-                      mapClassName="border-zinc-800 bg-zinc-900/50"
+                      mapClassName="border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50"
                       searchInputClassName={onboardingInputClass}
                     />
                   ) : null}
@@ -757,7 +757,7 @@ export function OnboardingWizard({
                             }
                             placeholder="Start typing — pick a suggestion to fill street, city, and postcode"
                             className={cn(
-                              "h-12 w-full rounded-md border border-zinc-800 bg-zinc-950/40 px-4 font-headline text-base font-light text-white placeholder:text-zinc-600 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:outline-none disabled:opacity-50",
+                              "h-12 w-full rounded-md border border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 px-4 font-headline text-base font-light text-white placeholder:text-zinc-600 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:outline-none disabled:opacity-50",
                             )}
                           />
                           <p className="font-headline text-xs font-light text-zinc-600">

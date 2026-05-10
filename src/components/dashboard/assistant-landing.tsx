@@ -166,7 +166,7 @@ export function AssistantLanding({
               <Button
                 type="submit"
                 disabled={busy || !text.trim()}
-                className="h-10 rounded-full bg-[#BD9952] px-6 font-headline text-xs font-semibold uppercase tracking-[0.14em] text-[#1f1608] transition-colors duration-200 ease-out hover:bg-[#c4a45e]"
+                className="h-10 rounded-full bg-background dark:bg-[#BD9952] px-6 font-headline text-xs font-semibold uppercase tracking-[0.14em] text-[#1f1608] transition-colors duration-200 ease-out hover:bg-background dark:bg-[#c4a45e]"
               >
                 {busy ? (
                   <Loader2 className="size-4 animate-spin" aria-hidden />

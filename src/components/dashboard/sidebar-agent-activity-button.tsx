@@ -23,7 +23,7 @@ export function SidebarAgentActivityButton({
         openAgentRuns();
       }}
       className={cn(
-        "relative mx-2 mb-0.5 flex w-[calc(100%-1rem)] touch-manipulation items-center gap-3 rounded-md px-3 py-2.5 text-left font-[family-name:var(--font-inter)] text-[0.8125rem] font-medium leading-snug tracking-[0.01em] text-zinc-600 transition-[background-color,color] duration-150 ease-out hover:bg-black/[0.035] hover:text-zinc-900 active:bg-black/[0.06] dark:text-zinc-400 dark:hover:bg-white/[0.045] dark:hover:text-zinc-100 dark:active:bg-white/[0.07]",
+        "relative mx-2 mb-0.5 flex w-[calc(100%-1rem)] touch-manipulation items-center gap-3 rounded-md px-3 py-2.5 text-left font-[family-name:var(--font-inter)] text-[0.8125rem] font-medium leading-snug tracking-[0.01em] text-zinc-600 transition-[background-color,color] duration-150 ease-out hover:bg-zinc-950 dark:bg-black/[0.035] hover:text-zinc-900 active:bg-zinc-950 dark:bg-black/[0.06] dark:text-zinc-400 dark:hover:bg-white/[0.045] dark:hover:text-zinc-100 dark:active:bg-white/[0.07]",
         className,
       )}
     >

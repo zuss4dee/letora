@@ -81,8 +81,8 @@ function planPresenceStyles(subscriptionStatus: string | null | undefined): {
   const st = subscriptionStatus?.toLowerCase() ?? "";
   if (st === "active") {
     return {
-      dot: "bg-[#2dd4bf] shadow-[0_0_0_1px_rgb(45_212_191/0.35),0_0_14px_rgb(45_212_191/0.25)]",
-      ping: "bg-[#2dd4bf]",
+      dot: "bg-background dark:bg-[#2dd4bf] shadow-[0_0_0_1px_rgb(45_212_191/0.35),0_0_14px_rgb(45_212_191/0.25)]",
+      ping: "bg-background dark:bg-[#2dd4bf]",
     };
   }
   if (st === "trialing") return { dot: "bg-amber-400", ping: "bg-amber-300" };
@@ -90,7 +90,7 @@ function planPresenceStyles(subscriptionStatus: string | null | undefined): {
   if (st === "inactive" || st === "canceled" || st === "cancelled" || st === "unpaid") {
     return { dot: "bg-zinc-500" };
   }
-  if (!st) return { dot: "bg-[#6b6966]" };
+  if (!st) return { dot: "bg-background dark:bg-[#6b6966]" };
   return { dot: "bg-sky-500", ping: "bg-sky-400" };
 }
 
@@ -98,7 +98,7 @@ function planPresenceStyles(subscriptionStatus: string | null | undefined): {
 const navRowBase =
   "relative mx-2 flex touch-manipulation items-center gap-2.5 rounded-md px-2.5 py-2 text-left font-[family-name:var(--font-inter)] text-[0.74rem] font-medium leading-none tracking-[0.01em] transition-[background-color,color,box-shadow] duration-150 ease-out";
 const navRowIdle =
-  "text-[#6a655d] hover:bg-black/[0.04] hover:text-[#23211f] active:bg-black/[0.06] dark:text-[#a19f9a] dark:hover:bg-white/[0.055] dark:hover:text-[#e7e5e2] dark:active:bg-white/[0.07]";
+  "text-[#6a655d] hover:bg-zinc-950 dark:bg-black/[0.04] hover:text-[#23211f] active:bg-zinc-950 dark:bg-black/[0.06] dark:text-[#a19f9a] dark:hover:bg-white/[0.055] dark:hover:text-[#e7e5e2] dark:active:bg-white/[0.07]";
 const navRowActive =
   "bg-zinc-100 text-zinc-900 shadow-[inset_2px_0_0_0_#000000] dark:bg-zinc-800/80 dark:text-zinc-100 dark:shadow-[inset_2px_0_0_0_#ffffff]";
 
@@ -154,19 +154,20 @@ function NavSection({
                 <span className="min-w-0 flex-1 truncate">{item.title}</span>
                 {item.badgeCount != null && item.badgeCount > 0 ? (
                   <span
-                    className="absolute right-2.5 top-2 h-2 w-2 shrink-0 rounded-full bg-red-500"
+                    className="inline-flex min-h-[1.25rem] min-w-[1.25rem] shrink-0 items-center justify-center rounded-full border border-zinc-200 bg-zinc-100 px-2 font-mono text-[10px] font-bold tabular-nums text-zinc-600 dark:border-zinc-700/60 dark:bg-zinc-900/50 dark:text-muted-foreground"
                     title={item.badgeTitle}
-                    aria-hidden
-                  />
-                ) : null}
-                {item.badgeCount != null && item.badgeCount > 0 && item.url === "/dashboard/approvals" ? (
-                  <span className="sr-only">
-                    {`${item.badgeCount} pending approval${item.badgeCount === 1 ? "" : "s"}`}
+                    aria-label={
+                      item.url === "/dashboard/approvals"
+                        ? `${item.badgeCount} pending approval${item.badgeCount === 1 ? "" : "s"}`
+                        : `${item.badgeCount} notifications`
+                    }
+                  >
+                    {item.badgeCount}
                   </span>
                 ) : null}
                 {showDot && attention ? (
                   <span
-                    className="size-1.5 shrink-0 rounded-full bg-[#c45c52] ring-2 ring-[#c45c52]/30 dark:ring-[#c45c52]/25"
+                    className="size-1.5 shrink-0 rounded-full bg-background dark:bg-[#c45c52] ring-2 ring-[#c45c52]/30 dark:ring-[#c45c52]/25"
                     title={attention.title}
                     aria-label={attention.ariaLabel}
                   />
@@ -346,7 +347,7 @@ export function AppSidebar({
       variant={variant ?? "sidebar"}
       side={side}
       className={cn(
-        "border-transparent [&_[data-sidebar=sidebar]]:border-transparent [&_[data-sidebar=sidebar]]:bg-zinc-50 dark:[&_[data-sidebar=sidebar]]:bg-[#0B0B0B]",
+        "border-transparent [&_[data-sidebar=sidebar]]:border-transparent [&_[data-sidebar=sidebar]]:bg-zinc-50 dark:[&_[data-sidebar=sidebar]]:bg-background dark:bg-[#0B0B0B]",
         className,
       )}
     >
@@ -400,7 +401,7 @@ export function AppSidebar({
           <Link
             href="/dashboard/properties"
             onClick={closeMobileNav}
-            className="flex touch-manipulation items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white py-2 font-[family-name:var(--font-inter)] text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-900"
+            className="flex touch-manipulation items-center justify-center gap-2 rounded-md border border-zinc-200 bg-white py-2 font-[family-name:var(--font-inter)] text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-100 dark:hover:bg-zinc-100 dark:bg-zinc-900"
           >
             <PlusCircle className="size-4 shrink-0 stroke-[1.5]" aria-hidden />
             Add to Portfolio
@@ -409,10 +410,10 @@ export function AppSidebar({
       </SidebarHeader>
 
       <SidebarContent className="px-0 pb-3 pt-1">
-        <div className="mx-5 mb-3 h-px bg-black/[0.09] dark:bg-white/[0.07]" aria-hidden />
+        <div className="mx-5 mb-3 h-px bg-zinc-950 dark:bg-black/[0.09] dark:bg-white/[0.07]" aria-hidden />
         <nav className="flex min-h-0 flex-1 flex-col" aria-label="Dashboard">
           <NavSection label="Main" items={mainNavItems} pathname={pathname} onNavigate={closeMobileNav} />
-          <div className="my-2.5 mx-5 h-px bg-black/[0.08] dark:bg-white/[0.06]" aria-hidden />
+          <div className="my-2.5 mx-5 h-px bg-zinc-950 dark:bg-black/[0.08] dark:bg-white/[0.06]" aria-hidden />
           <NavSection
             label="Operations"
             items={operationsItemsBase}
@@ -424,11 +425,11 @@ export function AppSidebar({
       </SidebarContent>
 
       <SidebarFooter className="border-none bg-transparent px-0 pb-4 pt-2">
-        <div className="mx-5 mb-2.5 h-px bg-black/[0.09] dark:bg-white/[0.07]" aria-hidden />
+        <div className="mx-5 mb-2.5 h-px bg-zinc-950 dark:bg-black/[0.09] dark:bg-white/[0.07]" aria-hidden />
         <button
           type="button"
           onClick={() => setFooterOpen((o) => !o)}
-          className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-[#7f7569] transition-colors hover:bg-black/[0.04] hover:text-[#5e554a] dark:text-[#7d7a75] dark:hover:bg-white/[0.04] dark:hover:text-[#b6b3ae]"
+          className="mx-2 flex w-[calc(100%-1rem)] items-center justify-between gap-2 rounded-md px-2.5 py-2 text-left font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-[#7f7569] transition-colors hover:bg-zinc-950 dark:bg-black/[0.04] hover:text-[#5e554a] dark:text-[#7d7a75] dark:hover:bg-white/[0.04] dark:hover:text-[#b6b3ae]"
           aria-expanded={footerOpen}
           aria-controls="sidebar-footer-panel"
         >
@@ -447,10 +448,7 @@ export function AppSidebar({
         >
             <div className="min-h-0 overflow-hidden">
             <div className={cn("flex flex-col gap-0.5 pt-1", !footerOpen && "pointer-events-none")}>
-              <div className="mx-2 mb-1 flex items-center gap-2">
-                <span className="font-[family-name:var(--font-inter)] text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-[#7f7569] dark:text-[#7d7a75]">
-                  Theme
-                </span>
+              <div className="mx-2 mb-1 flex items-center px-2.5">
                 <ThemeToggle />
               </div>
               <Link href="/dashboard/settings" onClick={closeMobileNav} className={footerNavClass(settingsNavActive)}>
@@ -475,7 +473,7 @@ export function AppSidebar({
               </Link>
               <div className="mx-2 mt-2 rounded-md bg-zinc-100 p-2.5 dark:bg-zinc-900/50">
                 <div className="flex items-center gap-3">
-                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-[#ddd7cc] font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-wide text-[#3b3329] ring-1 ring-black/[0.05] dark:bg-[#2a2826] dark:text-[#cdccca] dark:ring-white/[0.06]">
+                  <div className="flex size-8 shrink-0 items-center justify-center rounded-md bg-background dark:bg-[#ddd7cc] font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-wide text-[#3b3329] ring-1 ring-black/[0.05] dark:bg-[#2a2826] dark:text-[#cdccca] dark:ring-white/[0.06]">
                     {(userEmail?.[0] ?? "?").toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
@@ -489,7 +487,7 @@ export function AppSidebar({
                   <button
                     type="button"
                     onClick={onLogout}
-                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-[#7f7569] transition-colors hover:bg-black/[0.06] hover:text-[#201e1b] dark:text-[#7d7a75] dark:hover:bg-white/[0.06] dark:hover:text-[#e8e6e3]"
+                    className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-[#7f7569] transition-colors hover:bg-zinc-950 dark:bg-black/[0.06] hover:text-[#201e1b] dark:text-[#7d7a75] dark:hover:bg-white/[0.06] dark:hover:text-[#e8e6e3]"
                     aria-label="Log out"
                   >
                     <LogOut className="size-4 stroke-[1.5]" />

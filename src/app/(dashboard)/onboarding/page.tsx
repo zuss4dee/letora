@@ -92,7 +92,7 @@ export default async function OnboardingPage() {
   const initialStep = inferInitialStep(status, hasBusinessName, settingsComplete, propertyCount);
 
   return (
-    <Suspense fallback={<div className="min-h-svh bg-black" aria-hidden />}>
+    <Suspense fallback={<div className="min-h-svh bg-zinc-950 dark:bg-black" aria-hidden />}>
       <OnboardingWizard
         initialStep={initialStep}
         defaultPortfolioName={settings?.businessName ?? ""}

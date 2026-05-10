@@ -403,7 +403,7 @@ export function ComplianceDashboard({
                                 size="sm"
                                 variant="outline"
                                 disabled={isOpening || isUploading}
-                                className="h-9 w-full justify-center rounded-full border-zinc-200 bg-background/80 px-4 font-headline text-xs font-medium text-foreground transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
+                                className="h-9 w-full justify-center rounded-full border-zinc-200 bg-background/80 px-4 font-headline text-xs font-medium text-foreground transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:border-zinc-700 dark:hover:bg-zinc-100 dark:bg-zinc-900"
                                 onClick={() => void onViewDocument(p.id, row.type)}
                               >
                                 {isOpening ? (
@@ -419,7 +419,7 @@ export function ComplianceDashboard({
                                 size="sm"
                                 variant="outline"
                                 disabled={isUploading || pending}
-                                className="h-9 w-full justify-center rounded-full border-zinc-200 bg-background/80 px-4 font-headline text-xs font-medium transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:border-zinc-700 dark:hover:bg-zinc-900"
+                                className="h-9 w-full justify-center rounded-full border-zinc-200 bg-background/80 px-4 font-headline text-xs font-medium transition hover:border-zinc-300 hover:bg-zinc-50 dark:border-zinc-800 dark:hover:border-zinc-700 dark:hover:bg-zinc-100 dark:bg-zinc-900"
                                 onClick={() => fileInputRefs.current[rk]?.click()}
                               >
                                 {isUploading ? (

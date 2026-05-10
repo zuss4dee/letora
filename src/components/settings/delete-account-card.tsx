@@ -82,7 +82,7 @@ export function DeleteAccountCard() {
             variant="destructive"
             disabled={!canSubmit}
             className={cn(
-              "rounded-md bg-[#7a2e2a] text-[#fce8e7] hover:bg-[#8f3832]",
+              "rounded-md bg-background dark:bg-[#7a2e2a] text-[#fce8e7] hover:bg-background dark:bg-[#8f3832]",
               pending && "opacity-80",
             )}
           >

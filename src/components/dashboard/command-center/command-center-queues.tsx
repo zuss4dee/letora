@@ -53,7 +53,7 @@ export async function CommandCenterArrearsQueue({ userId }: { userId: string }) 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="size-1.5 bg-[#ffb4ab]" />
+        <span className="size-1.5 bg-background dark:bg-[#ffb4ab]" />
         <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Late rent — needs action</h2>
         {rows.length > 0 ? (
           <span className="inline-flex min-h-[1.25rem] min-w-[1.5rem] items-center justify-center rounded-full border border-zinc-200 bg-zinc-100 px-2 font-mono text-[10px] font-bold tabular-nums text-zinc-600 dark:border-zinc-700/60 dark:bg-zinc-900/50 dark:text-muted-foreground">
@@ -105,7 +105,7 @@ export async function CommandCenterMaintenanceQueue({ userId }: { userId: string
                 key={row.id}
                 href={maintenanceQueueRowHref(row)}
                 aria-label={`Open maintenance case: ${row.summary}`}
-                className="group flex items-center justify-between p-4 transition-colors hover:bg-zinc-100 dark:hover:bg-[#242424]"
+                className="group flex items-center justify-between p-4 transition-colors hover:bg-zinc-100 dark:hover:bg-background dark:bg-[#242424]"
               >
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="flex size-8 shrink-0 items-center justify-center bg-zinc-100 text-zinc-500 dark:bg-zinc-900 dark:text-zinc-400">

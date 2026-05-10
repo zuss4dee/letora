@@ -22,7 +22,7 @@ function QuickChip({ icon, label, description, onClick, busy }: ChipProps) {
       disabled={busy}
       className={cn(
         "group flex min-w-[10rem] flex-1 flex-col items-start gap-1.5 rounded-xl border border-border bg-card px-4 py-3.5 text-left transition-all duration-200 ease-out",
-        "hover:border-secondary/35 hover:bg-muted/80 dark:hover:bg-[#141210]",
+        "hover:border-secondary/35 hover:bg-muted/80 dark:hover:bg-background dark:bg-[#141210]",
         "disabled:pointer-events-none disabled:opacity-50",
       )}
     >

@@ -62,7 +62,7 @@ export function ExpandableInstructionText({
       {needsToggle ? (
         <button
           type="button"
-          className="inline-flex border border-[#333333] bg-[#141414] px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-widest text-[#afefdd]/90 hover:border-[#afefdd]/40 hover:text-[#afefdd]"
+          className="inline-flex border border-border dark:border-[#333333] bg-background dark:bg-[#141414] px-2 py-1 font-mono text-[9px] font-bold uppercase tracking-widest text-[#afefdd]/90 hover:border-border dark:border-[#afefdd]/40 hover:text-[#afefdd]"
           aria-expanded={expanded}
           aria-controls={bodyId}
           onClick={(e) => {

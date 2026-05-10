@@ -352,7 +352,7 @@ export function AgentSettingsForm({
         <CardContent className={`${SETTINGS_CONTENT} grid gap-4`}>
           <label
             htmlFor="contract-template-upload"
-            className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/40 p-8 text-center transition hover:bg-muted/70 dark:border-[rgb(72_72_72_/0.35)] dark:bg-[#0e0e0e]/40 dark:hover:bg-[#1a1918]/50"
+            className="flex cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/40 p-8 text-center transition hover:bg-muted/70 dark:border-[rgb(72_72_72_/0.35)] dark:bg-[#0e0e0e]/40 dark:hover:bg-background dark:bg-[#1a1918]/50"
           >
             <span className="font-headline text-sm font-light text-foreground">Drop a file here or click to upload</span>
             <span className="mt-1 font-[family-name:var(--font-inter)] text-xs text-muted-foreground">
@@ -560,7 +560,7 @@ export function AgentSettingsForm({
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-md bg-zinc-900 px-8 text-white shadow-none hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
+          className="rounded-md bg-zinc-100 dark:bg-zinc-900 px-8 text-white shadow-none hover:bg-zinc-200 dark:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200"
         >
           {isSubmitting ? "Saving…" : "Save settings"}
         </Button>

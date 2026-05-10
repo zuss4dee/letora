@@ -67,7 +67,7 @@ function onboardingStatusBadge(status: string) {
     return (
       <Badge
         className={cn(
-          "border-0 bg-[#142018]/85 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[#9cd4a8] ring-1 ring-[#2d4a38]/50",
+          "border-0 bg-background dark:bg-[#142018]/85 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.1em] text-[#9cd4a8] ring-1 ring-[#2d4a38]/50",
         )}
       >
         Complete
@@ -97,7 +97,7 @@ function taskStatusBadge(task: OnboardingTaskRow) {
     return (
       <Badge
         className={cn(
-          "border-0 bg-[#142018]/85 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#9cd4a8] ring-1 ring-[#2d4a38]/50",
+          "border-0 bg-background dark:bg-[#142018]/85 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#9cd4a8] ring-1 ring-[#2d4a38]/50",
         )}
       >
         Complete
@@ -108,7 +108,7 @@ function taskStatusBadge(task: OnboardingTaskRow) {
     return (
       <Badge
         className={cn(
-          "border-0 bg-[#142018]/85 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#9cd4a8] ring-1 ring-[#2d4a38]/50",
+          "border-0 bg-background dark:bg-[#142018]/85 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.08em] text-[#9cd4a8] ring-1 ring-[#2d4a38]/50",
         )}
       >
         Complete
@@ -267,7 +267,7 @@ export function TenancyOnboardingPanel({
                 {tasks.map((task) => (
                   <TableRow
                     key={task.id}
-                    className="border-0 border-b border-zinc-200/60 last:border-0 hover:bg-zinc-100/80 dark:border-zinc-800 dark:hover:bg-zinc-800/35"
+                    className="border-0 border-b border-zinc-200/60 last:border-0 hover:bg-zinc-100/80 dark:border-zinc-800 dark:hover:bg-zinc-200 dark:bg-zinc-800/35"
                   >
                     <TableCell className="text-center align-middle">
                       <Checkbox

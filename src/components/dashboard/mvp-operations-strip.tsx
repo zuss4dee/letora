@@ -67,7 +67,7 @@ export function MvpOperationsStrip({
         </div>
         <Link
           href="/dashboard/approvals"
-          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-md border border-border/80 px-3 py-1.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:border-[#BD9952]/40 hover:bg-[#BD9952]/10 hover:text-foreground dark:border-white/[0.1]"
+          className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-md border border-border/80 px-3 py-1.5 font-[family-name:var(--font-inter)] text-[0.65rem] font-medium uppercase tracking-[0.1em] text-muted-foreground transition-colors hover:border-border dark:border-[#BD9952]/40 hover:bg-background dark:bg-[#BD9952]/10 hover:text-foreground dark:border-white/[0.1]"
         >
           {MVP_TERMS.pendingApprovals}
           <ArrowRight className="size-3.5 opacity-70" aria-hidden />

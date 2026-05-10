@@ -80,16 +80,16 @@ function filterTenants(tab: TabId, rows: TenantRow[]): TenantRow[] {
 function RentStatusPill({ status }: { status: TenantRentStatus }) {
   if (status === "paid") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#b7f8e6]/10 px-3 py-1 font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-wider text-[#afefdd]">
-        <span className="size-1 rounded-full bg-[#e6fff6]" aria-hidden />
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-background dark:bg-[#b7f8e6]/10 px-3 py-1 font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-wider text-[#afefdd]">
+        <span className="size-1 rounded-full bg-background dark:bg-[#e6fff6]" aria-hidden />
         Paid
       </span>
     );
   }
   if (status === "overdue") {
     return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-[#7f2927]/10 px-3 py-1 font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-wider text-[#BB5551]">
-        <span className="size-1 rounded-full bg-[#ee7d77]" aria-hidden />
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-background dark:bg-[#7f2927]/10 px-3 py-1 font-[family-name:var(--font-inter)] text-[11px] font-bold uppercase tracking-wider text-[#BB5551]">
+        <span className="size-1 rounded-full bg-background dark:bg-[#ee7d77]" aria-hidden />
         Overdue
       </span>
     );
@@ -183,7 +183,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
                 {totalActive.toLocaleString("en-GB")}
               </p>
             </div>
-            <div className="border-l border-[#484848]/20 pl-12 text-right">
+            <div className="border-l border-border dark:border-[#484848]/20 pl-12 text-right">
               <p className="mb-1 font-[family-name:var(--font-inter)] text-[0.625rem] uppercase tracking-[0.15em] text-muted-foreground">
                 Pending review
               </p>
@@ -264,7 +264,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
                   pageRows.map((row) => (
                     <tr
                       key={row.id}
-                      className="group transition-colors duration-200 ease-out hover:bg-muted/70 dark:hover:bg-[#252626]"
+                      className="group transition-colors duration-200 ease-out hover:bg-muted/70 dark:hover:bg-background dark:bg-[#252626]"
                     >
                       <td className="px-8 py-6">
                         <div className="flex items-center gap-4">
@@ -327,7 +327,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
               type="button"
               disabled={safePage <= 0}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
-              className="border border-border p-2 text-foreground transition-colors hover:bg-muted dark:hover:bg-[#1F2020] disabled:pointer-events-none disabled:opacity-30"
+              className="border border-border p-2 text-foreground transition-colors hover:bg-muted dark:hover:bg-background dark:bg-[#1F2020] disabled:pointer-events-none disabled:opacity-30"
               aria-label="Previous page"
             >
               <ChevronLeft className="size-[18px]" aria-hidden />
@@ -336,7 +336,7 @@ export function TenantRegistry({ tenants }: { tenants: TenantRow[] }) {
               type="button"
               disabled={safePage >= pageCount - 1}
               onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-              className="border border-border p-2 text-foreground transition-colors hover:bg-muted dark:hover:bg-[#1F2020] disabled:pointer-events-none disabled:opacity-30"
+              className="border border-border p-2 text-foreground transition-colors hover:bg-muted dark:hover:bg-background dark:bg-[#1F2020] disabled:pointer-events-none disabled:opacity-30"
               aria-label="Next page"
             >
               <ChevronRight className="size-[18px]" aria-hidden />

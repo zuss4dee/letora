@@ -42,7 +42,7 @@ export function ManageBillingButton({ provider = "stripe" }: { provider?: "strip
         disabled={pending}
         data-testid="manage-billing"
         onClick={() => void onClick()}
-        className="rounded-md border-border bg-card font-[family-name:var(--font-inter)] text-xs font-semibold uppercase tracking-[0.12em] text-foreground shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-800/50 hover:text-white"
+        className="rounded-md border-border bg-card font-[family-name:var(--font-inter)] text-xs font-semibold uppercase tracking-[0.12em] text-foreground shadow-none transition-colors hover:border-zinc-500 hover:bg-zinc-200 dark:bg-zinc-800/50 hover:text-white"
       >
         {pending ? "Opening…" : `Manage billing on ${provider === "polar" ? "Polar" : "Stripe"}`}
       </Button>

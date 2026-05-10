@@ -107,7 +107,7 @@ async function SettingsAsyncSection() {
 
 export default function SettingsPage() {
   return (
-    <div className="@container/main relative flex flex-1 flex-col overflow-hidden bg-[#f8f8f7] text-zinc-950 dark:bg-[#0b0b0b] dark:text-zinc-100">
+    <div className="@container/main relative flex flex-1 flex-col overflow-hidden bg-background dark:bg-[#f8f8f7] text-zinc-950 dark:bg-[#0b0b0b] dark:text-zinc-100">
       <div className="relative flex h-full min-h-0 flex-col">
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-0 lg:px-12">
           <div className="mx-auto w-full max-w-6xl">

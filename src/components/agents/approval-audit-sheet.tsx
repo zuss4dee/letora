@@ -383,7 +383,7 @@ export function ApprovalAuditSheetTrigger({
         side="right"
         showCloseButton
         className="flex w-full flex-col gap-0 overflow-y-auto border-border/80 p-0 sm:max-w-lg dark:border-white/[0.08]"
-        overlayClassName="bg-black/20 dark:bg-black/40"
+        overlayClassName="bg-zinc-950 dark:bg-black/20 dark:bg-black/40"
       >
         <SheetHeader className="border-b border-border/60 px-4 pb-4 pt-4 text-left dark:border-white/[0.06]">
           <SheetTitle className="font-headline text-base font-light tracking-tight text-foreground pr-8">

@@ -58,9 +58,9 @@ export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-6xl mx-auto space-y-12 pb-24">
       {/* 01. NAVIGATION & ACTIONS */}
-      <header className="sticky top-0 z-20 flex items-center justify-between bg-[#0b0b0b]/80 backdrop-blur-md py-6 border-b border-zinc-800/50">
+      <header className="sticky top-0 z-20 flex items-center justify-between bg-background dark:bg-[#0b0b0b]/80 backdrop-blur-md py-6 border-b border-zinc-800/50">
         <div className="space-y-1">
-          <h1 className="text-[16px] font-black tracking-tight text-white uppercase italic">Workspace Settings</h1>
+          <h1 className="text-[16px] font-black tracking-tight text-zinc-900 dark:text-white uppercase italic">Workspace Settings</h1>
           <div className="flex items-center gap-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
             <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{metadata.businessName || "Workspace Root"}</p>
@@ -71,7 +71,7 @@ export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props
             <button
               type="button"
               onClick={() => form.reset()}
-              className="text-[10px] font-bold text-zinc-500 hover:text-white transition-colors uppercase tracking-widest"
+              className="text-[10px] font-bold text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white transition-colors uppercase tracking-widest"
             >
               Discard Changes
             </button>
@@ -97,29 +97,29 @@ export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props
           <span className="material-symbols-outlined text-[16px] text-zinc-600">business</span>
           <h2 className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Workspace & Subscription</h2>
         </div>
-        <div className="grid grid-cols-12 gap-px bg-zinc-800 border border-zinc-800/50 overflow-hidden">
+        <div className="grid grid-cols-12 gap-px bg-zinc-200 dark:bg-zinc-800 border border-zinc-800/50 overflow-hidden">
           {/* Workspace Name */}
-          <div className="col-span-12 md:col-span-6 bg-[#111111] p-6 space-y-4">
+          <div className="col-span-12 md:col-span-6 bg-background dark:bg-[#111111] p-6 space-y-4">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-black border border-zinc-800 flex items-center justify-center shrink-0">
+              <div className="w-12 h-12 bg-zinc-950 dark:bg-black border border-zinc-800 flex items-center justify-center shrink-0">
                 <span className="material-symbols-outlined text-[20px] text-zinc-600">domain</span>
               </div>
               <div className="flex-1 space-y-1">
                 <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Public Workspace Name</label>
                 <input
                   {...form.register("businessName")}
-                  className="w-full bg-transparent text-[13px] font-bold text-white outline-none placeholder:text-zinc-700 focus:text-emerald-400 transition-colors"
+                  className="w-full bg-transparent text-[13px] font-bold text-zinc-900 dark:text-white outline-none placeholder:text-zinc-700 focus:text-emerald-400 transition-colors"
                   placeholder="Primary workspace name..."
                 />
               </div>
             </div>
           </div>
           {/* Billing Quick Look */}
-          <div className="col-span-12 md:col-span-6 bg-[#111111] p-6 flex items-center justify-between">
+          <div className="col-span-12 md:col-span-6 bg-background dark:bg-[#111111] p-6 flex items-center justify-between">
             <div className="space-y-4">
               <div className="space-y-1">
                 <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Active Tier</p>
-                <p className="text-[13px] font-black text-white uppercase">{tierLabel}</p>
+                <p className="text-[13px] font-black text-zinc-900 dark:text-white uppercase">{tierLabel}</p>
               </div>
             </div>
             <div className="text-right space-y-4">
@@ -127,7 +127,7 @@ export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props
                 <p className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Billing Status</p>
                 <div className="flex items-center gap-2 justify-end">
                   <span className={cn("w-1.5 h-1.5 rounded-full", metadata.subscriptionStatus === "active" ? "bg-emerald-500" : "bg-zinc-700")} />
-                  <p className="text-[13px] font-black text-white uppercase">{metadata.subscriptionStatus || "Active"}</p>
+                  <p className="text-[13px] font-black text-zinc-900 dark:text-white uppercase">{metadata.subscriptionStatus || "Active"}</p>
                 </div>
               </div>
             </div>
@@ -135,7 +135,7 @@ export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props
               <button 
                 type="button"
                 onClick={() => router.push("/dashboard/billing")}
-                className="px-4 py-2 bg-zinc-800 border border-zinc-700 text-[10px] font-black uppercase text-white hover:bg-white hover:text-black transition-all"
+                className="px-4 py-2 bg-zinc-200 dark:bg-zinc-800 border border-zinc-700 text-[10px] font-black uppercase text-white hover:bg-white hover:text-black transition-all"
               >
                 Go to Billing
               </button>
@@ -150,21 +150,21 @@ export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props
           <span className="material-symbols-outlined text-[16px] text-zinc-600">account_circle</span>
           <h2 className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Account Profile</h2>
         </div>
-        <div className="bg-[#111111] border border-zinc-800/50 p-6 space-y-8">
+        <div className="bg-background dark:bg-[#111111] border border-zinc-800/50 p-6 space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="group space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest group-focus-within:text-white transition-colors">Primary Contact Name</label>
+              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest group-focus-within:text-zinc-900 dark:text-white transition-colors">Primary Contact Name</label>
               <input
                 {...form.register("landlordName")}
-                className="w-full bg-black border border-zinc-800 p-3 text-[12px] text-white focus:border-white outline-none transition-all"
+                className="w-full bg-zinc-950 dark:bg-black border border-zinc-800 p-3 text-[12px] text-white focus:border-white outline-none transition-all"
                 placeholder="Full legal name"
               />
             </div>
             <div className="group space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest group-focus-within:text-white transition-colors">Operational Email</label>
+              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest group-focus-within:text-zinc-900 dark:text-white transition-colors">Operational Email</label>
               <input
                 {...form.register("contactEmail")}
-                className="w-full bg-black border border-zinc-800 p-3 text-[12px] text-white focus:border-white outline-none transition-all"
+                className="w-full bg-zinc-950 dark:bg-black border border-zinc-800 p-3 text-[12px] text-white focus:border-white outline-none transition-all"
                 placeholder="email@example.com"
               />
             </div>
@@ -180,13 +180,13 @@ export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props
             <span className="material-symbols-outlined text-[16px] text-zinc-600">shield</span>
             <h2 className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Security Protocol</h2>
           </div>
-          <div className="bg-[#111111] border border-zinc-800/50 p-6 space-y-6">
+          <div className="bg-background dark:bg-[#111111] border border-zinc-800/50 p-6 space-y-6">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
-                <p className="text-[11px] font-bold text-white uppercase tracking-tight">Two-Factor Auth</p>
+                <p className="text-[11px] font-bold text-zinc-900 dark:text-white uppercase tracking-tight">Two-Factor Auth</p>
                 <p className="text-[9px] text-zinc-500 uppercase font-black">Managed via Auth Provider</p>
               </div>
-              <span className="px-2 py-0.5 bg-zinc-800 text-zinc-500 text-[9px] font-black uppercase border border-zinc-700">Protected</span>
+              <span className="px-2 py-0.5 bg-zinc-200 dark:bg-zinc-800 text-zinc-500 text-[9px] font-black uppercase border border-zinc-700">Protected</span>
             </div>
           </div>
         </div>
@@ -197,19 +197,19 @@ export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props
             <span className="material-symbols-outlined text-[16px] text-zinc-600">cable</span>
             <h2 className="text-[11px] font-black text-zinc-400 uppercase tracking-[0.2em]">Active Integrations</h2>
           </div>
-          <div className="bg-[#111111] border border-zinc-800/50 p-6">
+          <div className="bg-background dark:bg-[#111111] border border-zinc-800/50 p-6">
             <div className="flex items-center justify-between group">
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-black border border-zinc-800 flex items-center justify-center font-black text-[11px] text-zinc-500 group-hover:text-white transition-colors italic underline">S</div>
+                <div className="w-10 h-10 bg-zinc-950 dark:bg-black border border-zinc-800 flex items-center justify-center font-black text-[11px] text-zinc-500 group-hover:text-white transition-colors italic underline">S</div>
                 <div className="space-y-0.5">
-                  <p className="text-[11px] font-bold text-white uppercase">Stripe Connect</p>
+                  <p className="text-[11px] font-bold text-zinc-900 dark:text-white uppercase">Stripe Connect</p>
                   <p className="text-[9px] text-zinc-500 uppercase font-black tracking-tighter">Financial Settlement Node</p>
                 </div>
               </div>
               {metadata.stripeConnectAccountId || metadata.stripeCustomerId ? (
                 <span className="text-[9px] font-black uppercase px-2 py-0.5 border border-emerald-900/50 bg-emerald-950/20 text-emerald-500">Live</span>
               ) : (
-                <span className="text-[9px] font-black uppercase px-2 py-0.5 border border-zinc-800 bg-black text-zinc-600">Disabled</span>
+                <span className="text-[9px] font-black uppercase px-2 py-0.5 border border-zinc-800 bg-zinc-950 dark:bg-black text-zinc-600">Disabled</span>
               )}
             </div>
           </div>
@@ -226,7 +226,7 @@ export function WorkspaceSettingsForm({ initialValues, metadata, userId }: Props
               tenant identifiers, and historical transaction logs. 
             </p>
           </div>
-          <button type="button" className="px-8 py-3 bg-red-950/20 border border-red-950/40 text-[10px] font-black uppercase text-red-500 hover:bg-red-500 hover:text-white transition-all tracking-[0.2em]">
+          <button type="button" className="px-8 py-3 bg-red-950/20 border border-red-950/40 text-[10px] font-black uppercase text-red-500 hover:bg-red-500 hover:text-[#ffffff] transition-all tracking-[0.2em]">
             Destroy Workspace
           </button>
         </div>

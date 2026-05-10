@@ -74,7 +74,7 @@ export function RentChaserPanel() {
               type="button"
               onClick={runAgent}
               disabled={running}
-              className="bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
+              className="bg-zinc-100 dark:bg-zinc-900 text-white hover:bg-zinc-200 dark:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-950 dark:hover:bg-zinc-200"
             >
               {running ? (
                 <>

@@ -119,17 +119,17 @@ async function ComplianceDataSection({ propertyId }: { propertyId?: string }) {
 function ComplianceFallback() {
   return (
     <div className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="grid grid-cols-4 border-b border-zinc-800 bg-[#0B0B0B]">
+      <div className="grid grid-cols-4 border-b border-zinc-800 bg-background dark:bg-[#0B0B0B]">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-[88px] animate-pulse border-r border-zinc-800 bg-[#111]" />
+          <div key={i} className="h-[88px] animate-pulse border-r border-zinc-800 bg-background dark:bg-[#111]" />
         ))}
       </div>
-      <div className="flex border-b border-zinc-800 bg-[#131313] px-4 py-3">
-        <div className="h-4 w-52 animate-pulse rounded bg-zinc-800" />
+      <div className="flex border-b border-zinc-800 bg-background dark:bg-[#131313] px-4 py-3">
+        <div className="h-4 w-52 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800" />
       </div>
-      <div className="min-h-0 flex-1 space-y-2 overflow-auto bg-[#131313] p-4">
+      <div className="min-h-0 flex-1 space-y-2 overflow-auto bg-background dark:bg-[#131313] p-4">
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="h-10 animate-pulse rounded-[2px] bg-zinc-800/70" />
+          <div key={i} className="h-10 animate-pulse rounded-[2px] bg-zinc-200 dark:bg-zinc-800/70" />
         ))}
       </div>
     </div>
@@ -148,12 +148,12 @@ export default async function CompliancePage({
 
   return (
     <div className="@container/main relative flex min-h-0 flex-1 flex-col">
-      <section className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col bg-[#0B0B0B]">
-        <div className="flex h-12 items-center justify-between border-b border-zinc-800 bg-zinc-950 px-4 font-[family-name:var(--font-inter)]">
+      <section className="relative z-10 flex min-h-0 min-w-0 flex-1 flex-col bg-background dark:bg-[#0B0B0B]">
+        <div className="flex h-12 items-center justify-between border-b border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 font-[family-name:var(--font-inter)]">
           <div className="relative w-full max-w-lg">
             <input
               placeholder="Search compliance records, properties, or task IDs..."
-              className="h-8 w-full border border-zinc-800 bg-[#0B0B0B] px-3 text-xs text-white placeholder:text-zinc-600 focus:border-white focus:outline-none"
+              className="h-8 w-full border border-zinc-800 bg-background dark:bg-[#0B0B0B] px-3 text-xs text-white placeholder:text-zinc-600 focus:border-white focus:outline-none"
             />
           </div>
           <div className="ml-4 flex items-center gap-3 text-zinc-500">
@@ -164,8 +164,8 @@ export default async function CompliancePage({
         </div>
 
         {propertyId ? (
-          <div className="border-b border-zinc-800 bg-zinc-950 px-4 py-2">
-            <Suspense fallback={<div className="h-4 w-44 animate-pulse rounded bg-zinc-800/80" />}>
+          <div className="border-b border-zinc-800 bg-zinc-50 dark:bg-zinc-950 px-4 py-2">
+            <Suspense fallback={<div className="h-4 w-44 animate-pulse rounded bg-zinc-200 dark:bg-zinc-800/80" />}>
               <PropertyPortfolioBackLink propertyId={propertyId} />
             </Suspense>
           </div>

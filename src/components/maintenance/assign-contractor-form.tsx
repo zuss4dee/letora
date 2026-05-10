@@ -54,13 +54,13 @@ export function AssignContractorForm({
   const showForm = !isResolved && (!hasContractor || editing);
 
   const inputTone =
-    "rounded-none border border-[#333333] bg-[#0B0B0B] text-[13px] text-zinc-200 placeholder:text-zinc-600 focus-visible:border-zinc-600";
+    "rounded-none border border-border dark:border-[#333333] bg-background dark:bg-[#0B0B0B] text-[13px] text-zinc-200 placeholder:text-zinc-600 focus-visible:border-zinc-600";
 
   return (
-    <div className="border border-[#333333] bg-[#161616]">
-      <div className="border-b border-[#282828] px-5 py-4 md:px-6">
+    <div className="border border-border dark:border-[#333333] bg-background dark:bg-[#161616]">
+      <div className="border-b border-border dark:border-[#282828] px-5 py-4 md:px-6">
         <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">Contractor</p>
-        <h3 className="mt-1 text-xs font-bold uppercase tracking-wider text-white">Contractor on file</h3>
+        <h3 className="mt-1 text-xs font-bold uppercase tracking-wider text-zinc-900 dark:text-white">Contractor on file</h3>
         <p className="mt-2 max-w-2xl text-[11px] leading-relaxed text-zinc-500">
           Saves who is handling this job in your workspace. It does{" "}
           <span className="font-semibold text-zinc-300">not</span> email the contractor. Outbound sends use{" "}
@@ -109,7 +109,7 @@ export function AssignContractorForm({
               variant="outline"
               size="sm"
               onClick={() => setEditing(true)}
-              className="rounded-none border-[#333333] bg-transparent text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:bg-[#141414]"
+              className="rounded-none border-border dark:border-[#333333] bg-transparent text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:bg-background dark:bg-[#141414]"
             >
               Edit
             </Button>
@@ -156,7 +156,7 @@ export function AssignContractorForm({
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="self-start rounded-none border-[#333333] bg-transparent text-[10px] font-bold uppercase tracking-wider text-zinc-500"
+                  className="self-start rounded-none border-border dark:border-[#333333] bg-transparent text-[10px] font-bold uppercase tracking-wider text-zinc-500"
                   onClick={() => setEditing(false)}
                 >
                   Cancel

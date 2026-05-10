@@ -76,7 +76,7 @@ function rowPresentation(row: MaintenanceRequestRow): {
       statusLabel: "Reported",
       actionLabel: "Manage",
       muted: false,
-      badgeClass: "bg-[#BB5551]/15 text-[#ee7d77]",
+      badgeClass: "bg-background dark:bg-[#BB5551]/15 text-[#ee7d77]",
     };
   }
   if (ai === "urgent") {
@@ -85,7 +85,7 @@ function rowPresentation(row: MaintenanceRequestRow): {
       statusLabel: "Review Required",
       actionLabel: "Approve",
       muted: false,
-      badgeClass: "bg-[#afefdd]/10 text-[#afefdd]",
+      badgeClass: "bg-background dark:bg-[#afefdd]/10 text-[#afefdd]",
     };
   }
   if (ai === "routine" || ai === "low-priority") {
@@ -94,7 +94,7 @@ function rowPresentation(row: MaintenanceRequestRow): {
       statusLabel: "Triage",
       actionLabel: "Manage",
       muted: false,
-      badgeClass: "bg-[#484848]/40 text-muted-foreground",
+      badgeClass: "bg-background dark:bg-[#484848]/40 text-muted-foreground",
     };
   }
   if (row.contractorName?.trim()) {
@@ -111,17 +111,17 @@ function rowPresentation(row: MaintenanceRequestRow): {
     statusLabel: "Reported",
     actionLabel: "Manage",
     muted: false,
-    badgeClass: "bg-[#BB5551]/15 text-[#ee7d77]",
+    badgeClass: "bg-background dark:bg-[#BB5551]/15 text-[#ee7d77]",
   };
 }
 
 function StatusDot({ tone }: { tone: DotTone }) {
   const cls: Record<DotTone, string> = {
-    red: "bg-[#ee7d77] shadow-[0_0_8px_rgba(238,125,119,0.35)]",
+    red: "bg-background dark:bg-[#ee7d77] shadow-[0_0_8px_rgba(238,125,119,0.35)]",
     yellow: "bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.35)]",
-    teal: "bg-[#afefdd] shadow-[0_0_8px_rgba(175,239,221,0.35)]",
-    grey: "bg-[#767575]",
-    muted: "bg-[#767575]/35",
+    teal: "bg-background dark:bg-[#afefdd] shadow-[0_0_8px_rgba(175,239,221,0.35)]",
+    grey: "bg-background dark:bg-[#767575]",
+    muted: "bg-background dark:bg-[#767575]/35",
   };
   return <div className={cn("size-2 shrink-0 rounded-full", cls[tone])} aria-hidden />;
 }
@@ -195,7 +195,7 @@ export function MaintenanceRegistry({
     <div className="relative flex min-h-0 flex-1 flex-col bg-background">
       <div className="mx-auto w-full max-w-7xl flex-1 px-6 pb-20 pt-6 md:px-12 md:pt-8">
         <MaintenanceSafetyAlerts safetyAlerts={safetyAlerts} className="max-w-full" />
-        <div className="flex flex-col gap-6 border-b border-[#484848]/15 pb-8 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-6 border-b border-border dark:border-[#484848]/15 pb-8 md:flex-row md:items-center md:justify-between">
           <p className="max-w-xl font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
             Track issues, triage with AI, and keep every property within SLA. Use the queue below to manage
             work in real time.
@@ -215,7 +215,7 @@ export function MaintenanceRegistry({
           />
         </div>
 
-        <div className="mb-12 grid grid-cols-2 gap-8 border-b border-[#484848]/10 pb-10 pt-10 md:grid-cols-4 md:gap-12">
+        <div className="mb-12 grid grid-cols-2 gap-8 border-b border-border dark:border-[#484848]/10 pb-10 pt-10 md:grid-cols-4 md:gap-12">
           <div>
             <p className="font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
               Active Issues
@@ -286,7 +286,7 @@ export function MaintenanceRegistry({
           !showHistory &&
           sortedOpen.length === 0 &&
           resolvedRows.length > 0 ? (
-            <div className="border border-[#484848]/10 bg-black/40 px-6 py-14 text-center">
+            <div className="border border-border dark:border-[#484848]/10 bg-zinc-950 dark:bg-black/40 px-6 py-14 text-center">
               <p className="font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
                 No active maintenance requests.
               </p>
@@ -299,7 +299,7 @@ export function MaintenanceRegistry({
               </button>
             </div>
           ) : queueRows.length === 0 ? (
-            <div className="border border-[#484848]/10 bg-black/40 px-6 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
+            <div className="border border-border dark:border-[#484848]/10 bg-zinc-950 dark:bg-black/40 px-6 py-16 text-center font-[family-name:var(--font-inter)] text-sm text-muted-foreground">
               No maintenance requests in this view.
             </div>
           ) : (
@@ -318,7 +318,7 @@ export function MaintenanceRegistry({
                 <div
                   key={row.id}
                   className={cn(
-                    "group flex flex-col gap-4 border border-border bg-card p-6 transition-all duration-200 ease-out hover:bg-muted/50 dark:border-[#484848]/10 dark:bg-black/50 dark:hover:bg-[#252626]/35 sm:flex-row sm:items-center sm:justify-between",
+                    "group flex flex-col gap-4 border border-border bg-card p-6 transition-all duration-200 ease-out hover:bg-muted/50 dark:border-[#484848]/10 dark:bg-black/50 dark:hover:bg-background dark:bg-[#252626]/35 sm:flex-row sm:items-center sm:justify-between",
                     pres.muted && "opacity-50",
                   )}
                 >
@@ -354,7 +354,7 @@ export function MaintenanceRegistry({
                     </div>
                     <Link
                       href={`/dashboard/maintenance?issueId=${encodeURIComponent(row.id)}`}
-                      className="inline-flex shrink-0 items-center justify-center border border-[#484848]/25 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-foreground transition-all hover:border-zinc-400 hover:text-zinc-400"
+                      className="inline-flex shrink-0 items-center justify-center border border-border dark:border-[#484848]/25 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-foreground transition-all hover:border-zinc-400 hover:text-zinc-400"
                     >
                       {pres.actionLabel}
                     </Link>
@@ -410,13 +410,13 @@ export function MaintenanceRegistry({
           <div className="flex flex-wrap gap-4">
             <button
               type="button"
-              className="bg-[#C9C6C5]/10 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-foreground transition-colors hover:bg-[#C9C6C5]/20"
+              className="bg-background dark:bg-[#C9C6C5]/10 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-foreground transition-colors hover:bg-background dark:bg-[#C9C6C5]/20"
             >
               Schedule Check
             </button>
             <button
               type="button"
-              className="border border-[#484848]/15 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground transition-colors hover:border-[#484848]/35"
+              className="border border-border dark:border-[#484848]/15 px-6 py-2 font-[family-name:var(--font-inter)] text-[10px] uppercase tracking-widest text-muted-foreground transition-colors hover:border-border dark:border-[#484848]/35"
             >
               Dismiss
             </button>

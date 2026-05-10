@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 
 import { AuthDeepLinkRecover } from "@/components/auth/auth-deeplink-recover";
@@ -44,18 +43,12 @@ export default function RootLayout({
         suppressHydrationWarning
         className={`${inter.className} min-h-full flex flex-col bg-background font-normal text-foreground`}
       >
-        <Script
-          id="letora-theme-init"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var k=${JSON.stringify(THEME_STORAGE_KEY)};var t=localStorage.getItem(k);var r=t==="light"?"light":t==="dark"?"dark":(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light");var e=document.documentElement;e.classList.remove("light","dark");e.classList.add(r);e.style.colorScheme=r;}catch(_){}})();`,
-          }}
-        />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           enableColorScheme
+          storageKey={THEME_STORAGE_KEY}
         >
           <AuthDeepLinkRecover />
           {children}

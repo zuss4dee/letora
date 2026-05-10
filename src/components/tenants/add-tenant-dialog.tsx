@@ -229,7 +229,7 @@ export function AddTenantDialog({ trigger }: { trigger?: ReactElement }) {
                 variant="outline"
                 className={cn(
                   "h-8 rounded-[2px] border-zinc-300 bg-background px-4 text-[11px] font-medium text-zinc-700 shadow-none hover:bg-zinc-100",
-                  "dark:border-zinc-700 dark:bg-transparent dark:text-zinc-300 dark:hover:bg-zinc-800/80",
+                  "dark:border-zinc-700 dark:bg-transparent dark:text-zinc-300 dark:hover:bg-zinc-200 dark:bg-zinc-800/80",
                 )}
               >
                 Cancel

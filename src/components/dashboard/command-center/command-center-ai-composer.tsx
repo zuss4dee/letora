@@ -22,7 +22,7 @@ export function CommandCenterAiComposer() {
   }, [busy, router, text]);
 
   return (
-    <div className="w-full border-t border-zinc-200 bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-white/90 dark:border-zinc-800 dark:bg-[#1a1a1a] dark:supports-[backdrop-filter]:bg-[#1a1a1a]/90 md:pb-5 md:pt-4">
+    <div className="w-full border-t border-zinc-200 bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-white/90 dark:border-zinc-800 dark:bg-[#1a1a1a] dark:supports-[backdrop-filter]:bg-background dark:bg-[#1a1a1a]/90 md:pb-5 md:pt-4">
       <div className="mx-auto w-full max-w-4xl px-4 md:px-6">
         <form
           onSubmit={(e) => {
@@ -48,7 +48,7 @@ export function CommandCenterAiComposer() {
             <button
               type="submit"
               disabled={busy || !text.trim()}
-              className="flex items-center gap-2 bg-zinc-900 px-6 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-zinc-700 disabled:opacity-50 active:scale-95 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+              className="flex items-center gap-2 bg-zinc-100 dark:bg-zinc-900 px-6 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-white transition-all hover:bg-zinc-700 disabled:opacity-50 active:scale-95 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
             >
               {busy ? (
                 <Loader2 className="size-3.5 animate-spin" />

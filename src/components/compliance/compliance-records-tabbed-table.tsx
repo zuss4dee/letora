@@ -100,7 +100,7 @@ export function ComplianceRecordsTabbedTable({
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-      <div className="flex border-b border-zinc-800 bg-[#131313] px-4" role="tablist" aria-label="Filter compliance records">
+      <div className="flex border-b border-zinc-800 bg-background dark:bg-[#131313] px-4" role="tablist" aria-label="Filter compliance records">
         {TABS.map(({ id, label }) => {
           const selected = tab === id;
           return (
@@ -115,7 +115,7 @@ export function ComplianceRecordsTabbedTable({
               className={cn(
                 "border-b-2 px-4 py-3 text-[11px] uppercase tracking-widest transition-colors",
                 selected
-                  ? "border-white font-bold text-white"
+                  ? "border-white font-bold text-zinc-900 dark:text-white"
                   : "border-transparent font-semibold text-zinc-500 hover:text-zinc-300",
               )}
             >
@@ -126,13 +126,13 @@ export function ComplianceRecordsTabbedTable({
       </div>
 
       <div
-        className="min-h-0 flex-1 overflow-auto bg-[#131313]"
+        className="min-h-0 flex-1 overflow-auto bg-background dark:bg-[#131313]"
         role="tabpanel"
         id="compliance-records-panel"
         aria-labelledby={`compliance-tab-${tab}`}
       >
         <table className="w-full border-collapse text-left">
-          <thead className="sticky top-0 z-10 bg-[#161616]">
+          <thead className="sticky top-0 z-10 bg-background dark:bg-[#161616]">
             <tr className="border-b border-zinc-800">
               <th className="px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-zinc-500">Property</th>
               <th className="px-4 py-2 text-[11px] font-bold uppercase tracking-widest text-zinc-500">Type</th>
@@ -168,13 +168,13 @@ export function ComplianceRecordsTabbedTable({
                 }
                 className={cn(
                   "group transition-colors",
-                  interactive && "cursor-pointer hover:bg-zinc-900 focus-visible:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
-                  selected && "border-l-2 border-white bg-zinc-800/40",
+                  interactive && "cursor-pointer hover:bg-zinc-100 dark:bg-zinc-900 focus-visible:bg-zinc-100 dark:bg-zinc-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/30",
+                  selected && "border-l-2 border-white bg-zinc-200 dark:bg-zinc-800/40",
                 )}
               >
                 <td className="px-4 py-3">
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold uppercase tracking-tight text-white">{row.property}</span>
+                    <span className="text-xs font-bold uppercase tracking-tight text-zinc-900 dark:text-white">{row.property}</span>
                     <span className="text-[10px] text-zinc-500">{row.propertySub}</span>
                   </div>
                 </td>
@@ -195,7 +195,7 @@ export function ComplianceRecordsTabbedTable({
                   <ChevronRight
                     className={cn(
                       "ml-auto h-4 w-4 text-zinc-600 transition-colors",
-                      interactive && "group-hover:text-white",
+                      interactive && "group-hover:text-zinc-900 dark:hover:text-zinc-900 dark:text-white",
                     )}
                     aria-hidden
                   />

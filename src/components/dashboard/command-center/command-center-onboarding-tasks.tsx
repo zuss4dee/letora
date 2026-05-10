@@ -47,7 +47,7 @@ export async function CommandCenterOnboardingTasks({ userId }: { userId: string 
                 <span className="shrink-0 pl-2 font-mono tabular-nums text-zinc-900 dark:text-white">{b.pct}%</span>
               </div>
               <div className="mt-1 h-1 w-full bg-zinc-200 dark:bg-[#282828]">
-                <div className="h-full bg-zinc-900 dark:bg-white" style={{ width: `${Math.min(100, Math.max(0, b.pct))}%` }} />
+                <div className="h-full bg-zinc-100 dark:bg-zinc-900 dark:bg-white" style={{ width: `${Math.min(100, Math.max(0, b.pct))}%` }} />
               </div>
             </div>
           ))}

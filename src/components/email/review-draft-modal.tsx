@@ -91,7 +91,7 @@ export function ReviewDraftModal({
           <Button
             type="button"
             disabled={!draft || sending}
-            className="bg-zinc-950 text-white hover:bg-zinc-900 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-800"
+            className="bg-zinc-50 dark:bg-zinc-950 text-white hover:bg-zinc-100 dark:bg-zinc-900 dark:bg-zinc-950 dark:text-white dark:hover:bg-zinc-200 dark:bg-zinc-800"
             onClick={() => void onSendNow()}
           >
             {sending ? "Sending…" : "Send now"}

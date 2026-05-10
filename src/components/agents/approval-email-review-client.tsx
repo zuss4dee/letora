@@ -117,10 +117,10 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
 
   return (
     <div className="grid min-h-0 flex-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,38%)] lg:gap-12">
-      <section className="flex min-h-0 flex-col gap-6 bg-[#161513] px-6 py-8">
+      <section className="flex min-h-0 flex-col gap-6 bg-background dark:bg-[#161513] px-6 py-8">
         <div className="flex flex-wrap items-center gap-3">
           {isEdited ? (
-            <span className="border border-[#01696f]/50 bg-[#01696f]/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[#97e6ec]">
+            <span className="border border-border dark:border-[#01696f]/50 bg-background dark:bg-[#01696f]/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-[#97e6ec]">
               Edited
             </span>
           ) : null}
@@ -128,7 +128,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
 
         <div className="space-y-2">
           <Label className="text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500">To</Label>
-          <p className="rounded-md border border-white/[0.08] bg-[#0f0e0d] px-3 py-2.5 font-mono text-[13px] text-zinc-300">
+          <p className="rounded-md border border-white/[0.08] bg-background dark:bg-[#0f0e0d] px-3 py-2.5 font-mono text-[13px] text-zinc-300">
             {ctx.tenantEmail}
           </p>
         </div>
@@ -141,7 +141,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
             id="email-subject"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            className="border-white/[0.12] bg-[#0f0e0d] text-[15px] text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-[#01696f]/40"
+            className="border-white/[0.12] bg-background dark:bg-[#0f0e0d] text-[15px] text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-[#01696f]/40"
           />
         </div>
 
@@ -155,7 +155,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
             onChange={(e) => setBody(e.target.value)}
             spellCheck
             className={cn(
-              "min-h-[400px] w-full flex-1 resize-y rounded-md border border-white/[0.12] bg-[#0f0e0d] px-3 py-3 text-[15px] leading-[1.7] text-zinc-100 shadow-none outline-none",
+              "min-h-[400px] w-full flex-1 resize-y rounded-md border border-white/[0.12] bg-background dark:bg-[#0f0e0d] px-3 py-3 text-[15px] leading-[1.7] text-zinc-100 shadow-none outline-none",
               "font-mono placeholder:text-zinc-600 focus-visible:ring-2 focus-visible:ring-[#01696f]/40",
             )}
           />
@@ -163,13 +163,13 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
         </div>
       </section>
 
-      <aside className="flex flex-col gap-8 bg-[#141312] px-6 py-8 lg:border-l lg:border-white/[0.06]">
+      <aside className="flex flex-col gap-8 bg-background dark:bg-[#141312] px-6 py-8 lg:border-l lg:border-white/[0.06]">
         <div className="space-y-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500">Tenant summary</p>
           <dl className="space-y-3 text-[13px]">
             <div>
               <dt className="text-[9px] font-bold uppercase tracking-wider text-zinc-600">Name</dt>
-              <dd className="mt-1 font-medium text-zinc-100">{ctx.tenantName}</dd>
+              <dd className="mt-1 font-medium text-zinc-900 dark:text-zinc-100">{ctx.tenantName}</dd>
             </div>
             <div>
               <dt className="text-[9px] font-bold uppercase tracking-wider text-zinc-600">Property</dt>
@@ -190,7 +190,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
           </dl>
         </div>
 
-        <details className="group rounded-md border border-white/[0.08] bg-[#0f0e0d]">
+        <details className="group rounded-md border border-white/[0.08] bg-background dark:bg-[#0f0e0d]">
           <summary className="cursor-pointer list-none px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 marker:content-none [&::-webkit-details-marker]:hidden">
             <span className="flex items-center justify-between gap-2">
               Original AI draft
@@ -215,7 +215,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
           <Button
             type="button"
             disabled={busy !== "none"}
-            className="bg-[#01696f] py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-[#97e6ec] hover:bg-[#015a5f]"
+            className="bg-background dark:bg-[#01696f] py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-[#97e6ec] hover:bg-background dark:bg-[#015a5f]"
             onClick={() => void runApprove()}
           >
             {busy === "approve" ? "Sending…" : "Approve & send"}
