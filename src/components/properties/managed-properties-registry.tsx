@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   Bell,
+  Building2,
   Circle,
   CircleDollarSign,
   CircleUserRound,
@@ -24,6 +25,7 @@ import {
 
 import { AddPropertyDialog } from "@/components/properties/add-property-dialog";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -144,7 +146,10 @@ export function ManagedPropertiesRegistry({
     // Only react to URL/deep-link changes, not `rows` reference churn (avoids clobbering manual selection).
     // eslint-disable-next-line react-hooks/exhaustive-deps -- rows read from latest render via closure
   }, [initialSelectedPropertyId]);
-  const [activityLogExpandedByPropertyId, setActivityLogExpandedByPropertyId] = useState<Record<string, boolean>>({});
+  const [activityLogExpandedByPropertyId, setActivityLogExpandedByPropertyId] = useState<Record<string, boolean>>(
+    {},
+  );
+  const [emptyPropertyOpen, setEmptyPropertyOpen] = useState(false);
 
   const serverOrderIndex = useMemo(() => {
     const map = new Map<string, number>();
@@ -239,6 +244,22 @@ export function ManagedPropertiesRegistry({
       });
     });
   }, [initialSelectedPropertyId, selectedPropertyId]);
+
+  if (rows.length === 0) {
+    return (
+      <div className="flex flex-1 flex-col overflow-hidden bg-zinc-50 dark:bg-[#0e0e0e]">
+        <EmptyState
+          icon={Building2}
+          title="Your portfolio is empty"
+          description="Add your first property to get started with Letora."
+          actionLabel="Add Property"
+          onAction={() => setEmptyPropertyOpen(true)}
+          className="flex-1"
+        />
+        <AddPropertyDialog open={emptyPropertyOpen} onOpenChange={setEmptyPropertyOpen} />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-zinc-100 dark:bg-[#0e0e0e]">

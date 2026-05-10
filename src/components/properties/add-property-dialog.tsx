@@ -38,9 +38,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export function AddPropertyDialog({ trigger }: { trigger?: ReactElement }) {
+export function AddPropertyDialog({
+  trigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+}: {
+  trigger?: ReactElement;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    controlledOnOpenChange?.(next);
+    if (!isControlled) {
+      setUncontrolledOpen(next);
+    }
+  };
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [compliancePromptOpen, setCompliancePromptOpen] = useState(false);
   const [createdPropertyId, setCreatedPropertyId] = useState<string | null>(null);
@@ -108,13 +124,17 @@ export function AddPropertyDialog({ trigger }: { trigger?: ReactElement }) {
   return (
     <>
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button className="bg-white text-black hover:bg-zinc-200">
-            Add property
-          </Button>
-        )}
-      </DialogTrigger>
+      {!isControlled ? (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button className="bg-white text-black hover:bg-zinc-200 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
+              Add property
+            </Button>
+          )}
+        </DialogTrigger>
+      ) : trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : null}
       <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
         <DialogHeader>
           <DialogTitle>Add property</DialogTitle>

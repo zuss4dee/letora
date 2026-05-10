@@ -11,6 +11,7 @@ import {
 } from "@/app/(dashboard)/dashboard/tenancies/tenancy-inspector-types";
 import { AddTenancyDialog } from "@/components/rent/add-tenancy-dialog";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
@@ -25,7 +26,7 @@ import { LogPaymentDialog } from "@/components/rent/log-payment-dialog";
 import { EditTenancyDialog } from "@/components/tenancies/edit-tenancy-dialog";
 import type { RentPaymentRow, TenancyRow } from "@/lib/actions/tenancies";
 import { cn } from "@/lib/utils";
-import { CheckCircle2, Circle, Ellipsis, Hourglass, MinusCircle, Plus, X } from "lucide-react";
+import { CheckCircle2, Circle, Ellipsis, FileText, Hourglass, MinusCircle, Plus, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
@@ -210,6 +211,7 @@ export function TenanciesRegistry({
   const [activityLogExpandedByTenancyId, setActivityLogExpandedByTenancyId] = useState<
     Record<string, boolean>
   >({});
+  const [emptyTenancyOpen, setEmptyTenancyOpen] = useState(false);
 
   const paymentByTenancy = useMemo(() => {
     const map = new Map<string, RentPaymentRow>();
@@ -303,18 +305,39 @@ export function TenanciesRegistry({
 
   const rtr = selected ? rightToRentLabel(selected.tenantRightToRentStatus) : { label: "PENDING", passed: false };
 
+  if (tenancies.length === 0) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col text-zinc-900 dark:text-[#e5e2e1]">
+        <EmptyState
+          icon={FileText}
+          title="No tenancies found"
+          description="Create a tenancy to link a tenant to a property."
+          actionLabel="New Tenancy"
+          onAction={() => setEmptyTenancyOpen(true)}
+          className="flex-1"
+        />
+        <AddTenancyDialog
+          properties={propertyOptions}
+          tenants={tenantOptions}
+          open={emptyTenancyOpen}
+          onOpenChange={setEmptyTenancyOpen}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-0 flex-1 flex-col text-zinc-900 dark:text-[#e5e2e1]">
       {/* B. Top Summary Row */}
       <div className="mb-8 grid grid-cols-1 gap-px border border-zinc-200/90 bg-zinc-200/90 sm:grid-cols-2 lg:grid-cols-4 dark:border-[#333333] dark:bg-[#333333]">
         <div className="flex flex-col bg-white p-4 dark:bg-[#161616]">
           <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Active Tenancies</span>
-          <span className="text-xl font-bold tabular-nums text-zinc-900 dark:text-white">{activeCount}</span>
+          <span className="text-2xl font-bold tabular-nums text-zinc-900 md:text-3xl dark:text-white">{activeCount}</span>
         </div>
         <div className="flex flex-col bg-white p-4 dark:bg-[#161616]">
           <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Ending Soon</span>
           <div className="flex items-center gap-2">
-            <span className="text-xl font-bold tabular-nums text-zinc-900 dark:text-white">{endingSoonCount}</span>
+            <span className="text-2xl font-bold tabular-nums text-zinc-900 md:text-3xl dark:text-white">{endingSoonCount}</span>
             {endingSoonCount > 0 && (
               <span className="bg-red-100 px-1 py-0.5 text-[8px] font-bold uppercase text-red-900 dark:bg-[#93000a] dark:text-[#ffdad6]">
                 Review Required
@@ -324,13 +347,13 @@ export function TenanciesRegistry({
         </div>
         <div className="flex flex-col bg-white p-4 dark:bg-[#161616]">
           <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Vacant Units</span>
-          <span className={cn("text-xl font-bold tabular-nums", vacantCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-zinc-900 dark:text-white")}>
+          <span className={cn("text-2xl font-bold tabular-nums md:text-3xl", vacantCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-zinc-900 dark:text-white")}>
             {vacantCount}
           </span>
         </div>
         <div className="flex flex-col bg-white p-4 dark:bg-[#161616]">
           <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Monthly Yield (Live)</span>
-          <span className="text-xl font-bold tabular-nums text-emerald-700 dark:text-[#afefdd]">{gbp.format(monthlyRentExpected)}</span>
+          <span className="text-2xl font-bold tabular-nums text-emerald-700 md:text-3xl dark:text-[#afefdd]">{gbp.format(monthlyRentExpected)}</span>
         </div>
       </div>
 
@@ -402,19 +425,19 @@ export function TenanciesRegistry({
           </div>
 
           {/* C. Main Tenancies List/Table */}
-          <div className="min-h-0 flex-1 overflow-auto">
-            <table className="w-full border-collapse text-left">
-              <thead className="sticky top-0 z-10 bg-zinc-100 text-[10px] uppercase tracking-[0.08em] text-zinc-500 dark:bg-[#111111] dark:text-[#6f6f6f]">
-                <tr className="border-b border-zinc-200/80 dark:border-[#232323]">
+          <div className="min-h-0 flex-1 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]">
+            <table className="min-w-[640px] w-full border-collapse text-left">
+              <thead className="sticky top-0 z-10 bg-zinc-50 text-[10px] uppercase tracking-[0.08em] text-zinc-600 dark:bg-[#161616] dark:text-zinc-400">
+                <tr className="border-b border-zinc-200 dark:border-[#232323]">
                   <th className="px-3 py-2.5 font-medium">Occupant</th>
                   <th className="px-3 py-2.5 font-medium">Property</th>
-                  <th className="px-3 py-2.5 font-medium">Rent</th>
+                  <th className="hidden px-3 py-2.5 font-medium md:table-cell">Rent</th>
                   <th className="px-3 py-2.5 font-medium">Status</th>
-                  <th className="px-3 py-2.5 font-medium">Dates</th>
+                  <th className="hidden px-3 py-2.5 font-medium md:table-cell">Dates</th>
                   <th className="px-3 py-2.5 font-medium">Due State</th>
                 </tr>
               </thead>
-              <tbody className="text-[12px]">
+              <tbody className="text-[12px] text-zinc-800 dark:text-zinc-200">
                 {filteredRows.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-3 py-12 text-center text-[12px] text-zinc-500 dark:text-[#7b7b7b]">
@@ -455,7 +478,7 @@ export function TenanciesRegistry({
                           <p className="truncate text-[12px]">{address.line1}</p>
                           <p className="truncate text-[10px] text-zinc-500 dark:text-[#737373]">{address.line2}</p>
                         </td>
-                        <td className="px-3 py-3 font-mono text-[12px] font-medium text-zinc-900 dark:text-[#ebebeb]">
+                        <td className="hidden px-3 py-3 font-mono text-[12px] font-medium text-zinc-900 md:table-cell dark:text-[#ebebeb]">
                           {gbp.format(row.monthlyRent ?? 0)}
                         </td>
                         <td className="px-3 py-3">
@@ -471,7 +494,7 @@ export function TenanciesRegistry({
                             {rowStatus}
                           </span>
                         </td>
-                        <td className="px-3 py-3 text-[11px] text-zinc-600 dark:text-[#7f7f7f]">
+                        <td className="hidden px-3 py-3 text-[11px] text-zinc-600 md:table-cell dark:text-[#7f7f7f]">
                           <div className="flex flex-col">
                             <span>{fmtShortDate(row.startDate)}</span>
                             <span className="text-[9px] opacity-60">to {fmtShortDate(row.endDate)}</span>
@@ -501,6 +524,7 @@ export function TenanciesRegistry({
                 )}
               </tbody>
             </table>
+            <p className="px-3 pt-1 text-xs text-zinc-500 md:hidden dark:text-zinc-500">← Scroll to see more</p>
           </div>
         </div>
 

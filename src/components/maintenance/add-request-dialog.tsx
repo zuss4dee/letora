@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type ReactElement } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 
 import { addMaintenanceRequest } from "@/lib/actions/maintenance";
 import {
@@ -40,12 +40,22 @@ import { Textarea } from "@/components/ui/textarea";
 export function AddRequestDialog({
   tenancies,
   trigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
 }: {
   tenancies: Array<{ id: string; label: string }>;
   trigger?: ReactElement;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined && controlledOnOpenChange !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (next: boolean) => {
+    controlledOnOpenChange?.(next);
+    if (!isControlled) setInternalOpen(next);
+  };
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const defaultValues = useMemo<AddMaintenanceRequestInput>(
@@ -62,6 +72,9 @@ export function AddRequestDialog({
     defaultValues,
   });
 
+  const watchedTenancyId = useWatch({ control: form.control, name: "tenancyId" });
+  const watchedPriority = useWatch({ control: form.control, name: "priority" });
+
   const isSubmitting = form.formState.isSubmitting;
   const disabled = tenancies.length === 0;
 
@@ -76,18 +89,22 @@ export function AddRequestDialog({
     router.refresh();
   }
 
+  const defaultTrigger = (
+    <Button
+      className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
+      disabled={disabled}
+    >
+      Add Request
+    </Button>
+  );
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button
-            className="bg-indigo-600 text-white hover:bg-indigo-700 dark:bg-indigo-400 dark:text-zinc-950 dark:hover:bg-indigo-300"
-            disabled={disabled}
-          >
-            Add Request
-          </Button>
-        )}
-      </DialogTrigger>
+      {trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : !isControlled ? (
+        <DialogTrigger asChild>{defaultTrigger}</DialogTrigger>
+      ) : null}
       <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
         <DialogHeader>
           <DialogTitle>Add maintenance request</DialogTitle>
@@ -101,7 +118,7 @@ export function AddRequestDialog({
             <div className={DIALOG_FIELD_CLASS}>
               <Label htmlFor="mr-tenancy">Tenancy</Label>
               <Select
-                value={form.watch("tenancyId")}
+                value={watchedTenancyId}
                 onValueChange={(v) =>
                   form.setValue("tenancyId", v, { shouldValidate: true })
                 }
@@ -142,7 +159,7 @@ export function AddRequestDialog({
             <div className={DIALOG_FIELD_CLASS}>
               <Label htmlFor="mr-priority">Priority</Label>
               <Select
-                value={form.watch("priority")}
+                value={watchedPriority}
                 onValueChange={(v) =>
                   form.setValue("priority", v as AddMaintenanceRequestInput["priority"], {
                     shouldValidate: true,

@@ -111,11 +111,11 @@ export function ApprovalsPendingInteractive({
     <div className="flex min-h-[600px] flex-1 border border-zinc-200/90 bg-zinc-50 dark:border-[#232323] dark:bg-[#0e0e0e]">
       {/* Queue List */}
       <div className="flex min-w-0 flex-1 flex-col border-r border-zinc-200/90 dark:border-[#232323]">
-        <div className="sticky top-0 z-10 grid grid-cols-12 border-b border-zinc-200/90 bg-zinc-100 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500 dark:border-[#232323] dark:bg-[#111111]">
-          <div className="col-span-5">Case / Context</div>
-          <div className="col-span-3">Action Type</div>
-          <div className="col-span-2">Agent</div>
-          <div className="col-span-2 text-right">Age</div>
+        <div className="sticky top-0 z-10 grid grid-cols-12 border-b border-zinc-200/90 bg-zinc-100 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-600 dark:border-[#232323] dark:bg-[#111111] dark:text-zinc-400">
+          <div className="col-span-12 md:col-span-5">Case / Context</div>
+          <div className="hidden md:block md:col-span-3">Action Type</div>
+          <div className="hidden md:block md:col-span-2">Agent</div>
+          <div className="hidden text-right md:block md:col-span-2">Age</div>
         </div>
         <div className="min-h-0 flex-1 overflow-auto">
           {approvals.map((approval) => {
@@ -129,11 +129,11 @@ export function ApprovalsPendingInteractive({
                 key={approval.id}
                 onClick={() => setSelectedId(approval.id)}
                 className={cn(
-                  "grid w-full grid-cols-12 items-center px-3 py-3 text-left transition-colors hover:bg-zinc-100 dark:hover:bg-background dark:bg-[#1b1b1b]",
-                  isSelected ? "bg-zinc-100 dark:bg-[#1a1a1a]" : "bg-transparent border-b border-zinc-200/70 dark:border-[#232323]/50"
+                  "grid w-full grid-cols-12 items-center px-3 py-3 text-left transition-colors hover:bg-zinc-100 md:gap-0 dark:bg-[#1b1b1b] dark:hover:bg-[#222]",
+                  isSelected ? "bg-zinc-100 dark:bg-[#1a1a1a]" : "border-b border-zinc-200/70 bg-transparent dark:border-[#232323]/50"
                 )}
               >
-                <div className="col-span-5 flex items-center gap-3 pr-4">
+                <div className="col-span-12 flex items-center gap-3 pr-2 md:col-span-5 md:pr-4">
                   <div className={cn(
                     "size-1.5 shrink-0 rounded-full",
                     isStale ? "bg-rose-400" : isSelected ? "bg-zinc-100 dark:bg-zinc-900 dark:bg-white" : "bg-zinc-400 dark:bg-zinc-700"
@@ -147,22 +147,29 @@ export function ApprovalsPendingInteractive({
                     </p>
                   </div>
                 </div>
-                <div className="col-span-3">
+                <div className="hidden md:col-span-3 md:block">
                   <span className={cn(
-                    "inline-block border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider",
-                    approval.action_type.includes("onboarding") && "border-blue-500/40 bg-blue-500/10 text-blue-400",
-                    approval.action_type.includes("rent_chase") && "border-emerald-500/40 bg-emerald-500/10 text-emerald-400",
-                    approval.action_type.includes("move_in") && "border-amber-500/40 bg-amber-500/10 text-amber-400",
-                    approval.action_type.includes("maintenance") && "border-purple-500/40 bg-purple-500/10 text-purple-400",
-                  )}>
+                    "inline-block border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-zinc-800",
+                    approval.action_type.includes("onboarding") &&
+                      "border-blue-500/40 bg-blue-500/10 text-blue-800 dark:text-blue-400",
+                    approval.action_type.includes("rent_chase") &&
+                      "border-emerald-500/40 bg-emerald-500/10 text-emerald-800 dark:text-emerald-400",
+                    approval.action_type.includes("move_in") &&
+                      "border-amber-500/40 bg-amber-500/10 text-amber-800 dark:text-amber-400",
+                    approval.action_type.includes("maintenance") &&
+                      "border-purple-500/40 bg-purple-500/10 text-purple-800 dark:text-purple-400",
+                  )}
+                >
                     {actionTypeLabel}
                   </span>
                 </div>
-                <div className="col-span-2 text-[11px] text-zinc-400">
+                <div className="hidden md:col-span-2 md:block">
+                  <span className="text-[11px] text-zinc-700 dark:text-zinc-400">
                   {formatApprovalAgentType(approval.agent_type)}
+                  </span>
                 </div>
-                <div className="col-span-2 text-right text-[11px] font-medium tabular-nums text-zinc-500">
-                  {ageLabel}
+                <div className="hidden text-right md:col-span-2 md:block">
+                  <span className="text-[11px] font-medium tabular-nums text-zinc-700 dark:text-zinc-500">{ageLabel}</span>
                 </div>
               </button>
             );

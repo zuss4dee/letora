@@ -904,6 +904,12 @@ export function AssistantChat({
   const showEmptyPlaceholder =
     messages.length === 0 && !loading && assistantStream.kind === "idle";
 
+  const quickPrompts = [
+    "What's overdue?",
+    "Show pending approvals",
+    "Portfolio summary",
+  ] as const;
+
   const assistantStreamVisible =
     assistantStream.kind === "streaming" && assistantStream.text.length > 0;
   const showAssistantStreamSection =
@@ -915,20 +921,32 @@ export function AssistantChat({
       <main className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-[#0B0B0B]">
         <div 
           ref={scrollRef}
-          className="flex-1 overflow-y-auto p-6 custom-scrollbar"
+          className="flex-1 overflow-y-auto p-4 pb-6 custom-scrollbar sm:p-6"
         >
           <div className="mx-auto w-full max-w-4xl space-y-8">
             {showEmptyPlaceholder ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="mb-4 flex size-12 items-center justify-center border border-zinc-200 bg-white dark:border-[#1f1f1f] dark:bg-[#0e0e0e]">
-                  <Sparkles className="size-6 text-zinc-900 dark:text-white" />
+              <div className="flex h-full min-h-[240px] flex-col items-center justify-center gap-3 px-6 text-center">
+                <div className="text-3xl text-zinc-700 dark:text-zinc-300" aria-hidden>
+                  ✦
                 </div>
-                <h2 className="font-mono text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-900 dark:text-white">
-                  Letora AI Ready
+                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">
+                  How can I help today?
                 </h2>
-                <p className="mt-2 text-[12px] text-zinc-600 dark:text-zinc-400">
-                  Audit properties, check compliance, or draft communications.
+                <p className="max-w-[260px] text-sm text-zinc-600 dark:text-zinc-400">
+                  Ask me about rent, tenants, approvals, or anything about your portfolio.
                 </p>
+                <div className="mt-2 flex flex-wrap justify-center gap-2">
+                  {quickPrompts.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setInput(s)}
+                      className="rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-700 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
             ) : (
               <>
@@ -974,7 +992,7 @@ export function AssistantChat({
         </div>
 
         {/* ── Bottom Input ── */}
-        <div className="shrink-0 border-t border-zinc-200 bg-white p-6 dark:border-[#2a2a2a] dark:bg-[#0B0B0B]">
+        <div className="shrink-0 border-t border-zinc-200 bg-white p-4 pb-6 dark:border-[#2a2a2a] dark:bg-[#0B0B0B] sm:p-6">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -1007,7 +1025,7 @@ export function AssistantChat({
               </button>
             </div>
             <div className="mt-3 flex justify-center border-t border-zinc-200 bg-zinc-100 px-4 py-2 dark:border-[#2a2a2a] dark:bg-[#161616]">
-              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-500">
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
                 Agent LX-Core v4.2 Active
               </span>
             </div>
@@ -1015,10 +1033,27 @@ export function AssistantChat({
         </div>
       </main>
 
-      {/* ── Right: History Sidebar ── */}
-      <aside className="relative flex h-full min-h-0 w-72 shrink-0 flex-col border-l border-zinc-200 bg-zinc-50 dark:border-[#1f1f1f] dark:bg-[#111111]">
+      {/* Sessions: hidden < md; compact md–lg; full list lg+ */}
+      <aside className="relative hidden h-full min-h-0 shrink-0 flex-col border-l border-zinc-200 bg-zinc-50 dark:border-[#1f1f1f] dark:bg-[#111111] md:flex md:w-16 lg:w-72">
+        <div className="flex flex-col items-center gap-3 border-b border-zinc-200 py-4 dark:border-[#1e1e1e] lg:hidden">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400">
+            {conversations.length}
+          </span>
+          <button
+            type="button"
+            onClick={() => createNewChat()}
+            className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-[#1e1e1e] dark:hover:text-white"
+            title="New session"
+            aria-label="New session"
+          >
+            <MessageSquarePlus className="size-4" />
+          </button>
+          <MessageSquare className="size-4 text-zinc-500 dark:text-zinc-500" aria-hidden />
+        </div>
+
+        <div className="hidden min-h-0 flex-1 flex-col lg:flex">
         <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3.5 dark:border-[#1e1e1e]">
-          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-500">
+          <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
             Active Sessions
           </span>
           <button
@@ -1026,6 +1061,7 @@ export function AssistantChat({
             onClick={() => createNewChat()}
             className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-[#1e1e1e] dark:hover:text-white"
             title="New Session"
+            aria-label="New session"
           >
             <MessageSquarePlus className="size-4" />
           </button>
@@ -1048,11 +1084,11 @@ export function AssistantChat({
                 >
                   <div className={cn(
                     "text-[11px] font-medium leading-tight",
-                    isActive ? "text-zinc-800 dark:text-zinc-300" : "text-zinc-600 dark:text-zinc-400"
+                    isActive ? "text-zinc-800 dark:text-zinc-300" : "text-zinc-700 dark:text-zinc-400"
                   )}>
                     {conv.title || "New session"}
                   </div>
-                  <div className="mt-1 flex items-center justify-between font-mono text-[9px] uppercase text-zinc-400 dark:text-zinc-600">
+                  <div className="mt-1 flex items-center justify-between font-mono text-[9px] uppercase text-zinc-500 dark:text-zinc-600">
                     <span>{conv.updated_at ? new Date(conv.updated_at).toLocaleDateString() : "Now"}</span>
                   </div>
                 </Link>
@@ -1062,10 +1098,11 @@ export function AssistantChat({
         </div>
 
         <div className="border-t border-zinc-200 bg-zinc-100 p-4 dark:border-[#2a2a2a] dark:bg-[#161616]">
-          <div className="flex items-center justify-between font-mono text-[9px] uppercase text-zinc-500 dark:text-zinc-500">
+          <div className="flex items-center justify-between font-mono text-[9px] uppercase text-zinc-600 dark:text-zinc-500">
             <span>Shard Ops Center</span>
             <div className="size-1.5 animate-pulse rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
           </div>
+        </div>
         </div>
       </aside>
     </div>

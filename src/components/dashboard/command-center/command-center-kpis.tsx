@@ -6,13 +6,12 @@ import { cn } from "@/lib/utils";
 
 export function CommandCenterKpiGridSkeleton() {
   return (
-    <div className="mb-8 grid grid-cols-2 gap-px border border-zinc-200 bg-zinc-200 dark:border-[#2a2a2a] dark:bg-[#2a2a2a] md:grid-cols-12">
+    <div className="mb-8 grid grid-cols-2 gap-px border border-zinc-200 bg-zinc-200 md:grid-cols-2 lg:grid-cols-4 dark:border-[#2a2a2a] dark:bg-[#2a2a2a]">
       {Array.from({ length: 7 }).map((_, i) => (
         <div
           key={i}
           className={cn(
-            "flex min-h-[88px] flex-col bg-white p-4 dark:bg-[#161616]",
-            i < 4 ? "md:col-span-3" : i < 6 ? "md:col-span-4" : "col-span-2 md:col-span-4",
+            "flex min-h-[100px] flex-col bg-white p-4 dark:bg-[#161616]",
           )}
         >
           <div className="mb-2 h-2 w-24 animate-pulse rounded bg-zinc-200 dark:bg-zinc-700" />

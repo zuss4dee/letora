@@ -118,6 +118,11 @@ async function MaintenanceWorkspaceSection({
   const rows = focalRow ? [focalRow, ...withoutFocal.slice(0, 19)] : combined.slice(0, 20);
   const activeCount = openFiltered.length;
 
+  const tenancyDialogOptions = tenancies.map((t) => ({
+    id: t.id,
+    label: [t.propertyAddress, t.tenantFullName].filter(Boolean).join(" · ") || "Tenancy",
+  }));
+
   const resolvedDeeplinkId =
     focus != null && focus.length > 0 && rows.some((r) => r.id === focus) ? focus : undefined;
   const issueDeeplinkMissing = Boolean(focus && resolvedDeeplinkId == null);
@@ -127,6 +132,7 @@ async function MaintenanceWorkspaceSection({
       rows={rows}
       activeCount={activeCount}
       pendingApprovals={pendingApprovals}
+      tenancyDialogOptions={tenancyDialogOptions}
       deeplinkIssueId={resolvedDeeplinkId}
       issueDeeplinkMissing={issueDeeplinkMissing}
       tenantScopeMissing={requestedTenantMissing}

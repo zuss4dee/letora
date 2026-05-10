@@ -1,12 +1,13 @@
 "use client";
 
-import { Download, Search, X } from "lucide-react";
+import { Download, Receipt, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import type { AgentApprovalRow } from "@/lib/approvals/types";
 import { markRentPaid, type RentPaymentListRow } from "@/lib/actions/rent-tracker";
 import type { LateRentChaseUiState } from "@/lib/dashboard/late-rent-chase-status";
@@ -313,21 +314,17 @@ export function RentTrackerRegistry({
 
   if (payments.length === 0) {
     return (
-      <div className="flex min-h-[22rem] flex-col border border-zinc-200 dark:border-[#333333] bg-white dark:bg-[#161616]">
-        <header className="flex items-center gap-2 border-b border-zinc-200 dark:border-[#282828] px-5 py-4 md:px-6">
+      <div className="flex min-h-[22rem] flex-col border border-zinc-200 bg-white dark:border-[#333333] dark:bg-[#161616]">
+        <header className="flex items-center gap-2 border-b border-zinc-200 px-5 py-4 dark:border-[#282828] md:px-6">
           <span className="size-1.5 shrink-0 bg-zinc-500" aria-hidden />
           <h1 className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Rent operations</h1>
         </header>
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 py-16 text-center">
-          <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-600">0 rent cases</p>
-          <p className="max-w-sm text-[13px] leading-relaxed text-zinc-400">
-            There are no rent payments to triage yet. Add a tenancy payment schedule or{" "}
-            <Link href="/dashboard" className="text-[#afefdd] underline-offset-4 hover:underline">
-              return to Command Center
-            </Link>{" "}
-            to continue the demo.
-          </p>
-        </div>
+        <EmptyState
+          icon={Receipt}
+          title="No rent records"
+          description="Rent instalments will appear here once tenancies are active."
+          className="flex-1"
+        />
       </div>
     );
   }
@@ -339,7 +336,9 @@ export function RentTrackerRegistry({
           <span className="mt-1 size-1.5 shrink-0 bg-background dark:bg-[#afefdd]" aria-hidden />
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-zinc-500">Rent tracker</p>
-            <h1 className="text-sm font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Rent operations</h1>
+            <h1 className="text-xl font-bold uppercase tracking-widest text-zinc-900 md:text-2xl dark:text-white">
+              Rent operations
+            </h1>
             <p className="mt-1 text-[11px] text-zinc-500">
               Arrears triage and collection workflow
               {pendingApprovals.length > 0 ? (
@@ -414,7 +413,7 @@ export function RentTrackerRegistry({
             <span className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500">{stat.label}</span>
             <span
               className={cn(
-                "text-lg font-bold tabular-nums tracking-tight",
+                "text-2xl font-bold tabular-nums tracking-tight md:text-3xl",
                 stat.tone === "rose" && stats.arrearsAmount > 0
                   ? "text-[#ffb4ab]"
                   : stat.tone === "emerald"
@@ -446,19 +445,20 @@ export function RentTrackerRegistry({
       <div className="flex min-h-0 flex-1 overflow-hidden bg-zinc-50 dark:bg-[#0B0B0B]">
         <section
           className={cn(
-            "flex min-h-0 min-w-0 flex-1 flex-col border-zinc-200 dark:border-[#282828] bg-white dark:bg-[#161616]",
+            "flex min-h-0 min-w-0 flex-1 flex-col overflow-x-auto border-zinc-200 dark:border-[#282828] bg-white dark:bg-[#161616] md:overflow-hidden",
             selectedRow ? "border-r" : "",
           )}
         >
-          <div className="sticky top-0 z-10 grid grid-cols-12 gap-2 border-b border-zinc-200 dark:border-[#282828] bg-white dark:bg-[#161616] px-5 py-2.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500 md:gap-4 md:px-6">
-            <div className="col-span-4">Tenant · property</div>
-            <div className="col-span-2 text-right">Rent due</div>
-            <div className="col-span-2 text-center">Status</div>
-            <div className="col-span-2 text-center">Chase status</div>
-            <div className="col-span-2 text-right">Agent</div>
+          <div className="min-w-[640px]">
+            <div className="sticky top-0 z-10 grid grid-cols-12 gap-2 border-b border-zinc-200 bg-zinc-50 px-5 py-2.5 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-600 dark:border-[#282828] dark:bg-[#161616] md:gap-4 md:px-6 dark:text-zinc-400">
+            <div className="col-span-6 md:col-span-4">Tenant · property</div>
+            <div className="col-span-3 text-right md:col-span-2">Rent due</div>
+            <div className="col-span-3 flex justify-center md:col-span-2">Status</div>
+            <div className="hidden text-center md:col-span-2 md:flex md:justify-center">Chase status</div>
+            <div className="hidden text-right md:col-span-2 md:block">Agent</div>
           </div>
 
-          <div className="min-h-0 flex-1 divide-y divide-zinc-200 dark:divide-[#282828] overflow-y-auto">
+          <div className="min-h-0 flex-1 divide-y divide-zinc-200 overflow-y-auto dark:divide-[#282828]">
             {filtered.map((p) => {
               const isSelected = selectedId === p.id;
               const status = getDisplayStatus(p, todayIso);
@@ -479,11 +479,11 @@ export function RentTrackerRegistry({
                     }
                   }}
                   className={cn(
-                    "grid cursor-pointer grid-cols-12 items-center gap-2 px-5 py-4 transition-colors hover:bg-zinc-100 md:gap-4 md:px-6 dark:hover:bg-background dark:bg-[#1c1c1c]",
+                    "grid min-w-0 cursor-pointer grid-cols-12 items-center gap-2 px-5 py-4 transition-colors hover:bg-zinc-50 md:gap-4 md:px-6 dark:hover:bg-[#1a1a1a] dark:bg-[#1c1c1c]",
                     isSelected ? "bg-zinc-100 dark:bg-[#141414] shadow-[inset_3px_0_0_0_#afefdd]" : "bg-transparent",
                   )}
                 >
-                  <div className="col-span-4 min-w-0">
+                  <div className="col-span-6 min-w-0 md:col-span-4">
                     <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                       <span className="text-[12px] font-semibold text-zinc-900 dark:text-zinc-100">{p.tenantName}</span>
                       <span className="truncate text-[10px] text-zinc-500">· {p.propertyAddress}</span>
@@ -494,31 +494,31 @@ export function RentTrackerRegistry({
                       </div>
                     ) : null}
                   </div>
-                  <div className="col-span-2 text-right">
+                  <div className="col-span-3 text-right md:col-span-2">
                     <div className="font-mono text-[11px] font-bold tabular-nums text-zinc-900 dark:text-zinc-100">
                       {gbp.format(p.amount)}
                     </div>
-                    <div className="text-[9px] uppercase tracking-tighter text-zinc-500">
+                    <div className="text-[9px] uppercase tracking-tighter text-zinc-600 dark:text-zinc-500">
                       Due {formatDisplayDate(p.due_date)}
                     </div>
                   </div>
-                  <div className="col-span-2 flex justify-center">
+                  <div className="col-span-3 flex justify-center md:col-span-2">
                     <StatusPill status={status} />
                   </div>
-                  <div className="col-span-2 flex justify-center">
+                  <div className="hidden md:col-span-2 md:flex md:justify-center">
                     <ChaseStatusCell
                       row={p}
                       todayIso={todayIso}
                       chaseStatusByPaymentId={chaseStatusByPaymentId}
                     />
                   </div>
-                  <div className="col-span-2 text-right">
+                  <div className="hidden text-right md:col-span-2 md:block">
                     <span
                       className={cn(
                         "inline-block border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider",
                         agentState.tone === "emerald"
-                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                          : "border-zinc-200 dark:border-[#333333] text-zinc-500",
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-400"
+                          : "border-zinc-200 text-zinc-700 dark:border-[#333333] dark:text-zinc-500",
                       )}
                     >
                       {agentState.label}
@@ -543,6 +543,8 @@ export function RentTrackerRegistry({
               </div>
             ) : null}
           </div>
+          </div>
+          <p className="px-5 pt-1 text-xs text-zinc-400 md:hidden">← Scroll to see more</p>
         </section>
 
         {selectedRow ? (

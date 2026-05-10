@@ -30,7 +30,7 @@ export default async function DashboardShellLayout({ children }: { children: Rea
         style={
           {
             "--sidebar-width": "220px",
-            "--header-height": "4rem",
+            "--header-height": "3.5rem",
           } as CSSProperties
         }
       >
@@ -46,7 +46,7 @@ export default async function DashboardShellLayout({ children }: { children: Rea
           </SidebarDynamicProvider>
           <SidebarInset className="flex h-full w-full min-h-0 flex-col overflow-hidden bg-background">
             <DashboardMobileInsetBar />
-            <div className="flex h-full w-full min-h-0 flex-1 flex-col overflow-hidden relative">
+            <div className="relative flex min-h-0 flex-1 flex-col overflow-x-hidden p-4 md:p-6 lg:p-8">
               {children}
             </div>
           </SidebarInset>

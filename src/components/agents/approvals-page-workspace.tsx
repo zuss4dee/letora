@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckCircle2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { ApprovalsPendingInteractive } from "@/components/agents/approvals-pending-interactive";
@@ -7,6 +8,7 @@ import { ApprovalsResolvedSection } from "@/components/agents/approvals-resolved
 import { approvalActionTypeKey } from "@/lib/approvals/action-type-key";
 import type { AgentApprovalActionType, AgentApprovalRow } from "@/lib/approvals/types";
 import { MVP_TERMS } from "@/components/dashboard/workspace-terminology";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
@@ -139,18 +141,13 @@ export function ApprovalsPageWorkspace({
 
         <TabsContent value="queue" className="mt-0 space-y-4 outline-none">
           {pending.length === 0 ? (
-            <section className="border border-zinc-200/90 bg-white p-5 dark:border-white/[0.1] dark:bg-[#121212]">
-              <p className="font-[family-name:var(--font-inter)] text-[0.66rem] font-semibold uppercase tracking-[0.15em] text-zinc-500">
-                Queue state
-              </p>
-              <p className="mt-2 font-[family-name:var(--font-inter)] text-sm font-medium text-zinc-900 dark:text-zinc-100">
-                No {MVP_TERMS.pendingApprovals.toLowerCase()} in queue
-              </p>
-              <p className="mt-1 max-w-3xl font-[family-name:var(--font-inter)] text-[0.78rem] leading-relaxed text-zinc-400">
-                You&apos;re clear. New onboarding, rent chase, move-in, and maintenance recommendations will surface here
-                for review before they are {MVP_TERMS.sent.toLowerCase()}.
-              </p>
-            </section>
+            <div className="border border-zinc-200 bg-white dark:border-white/[0.1] dark:bg-[#121212]">
+              <EmptyState
+                icon={CheckCircle2}
+                title="All caught up"
+                description="No approvals pending. Any rent chase drafts will appear here."
+              />
+            </div>
           ) : (
             <>
               <div className="flex flex-col gap-3 border border-zinc-200/90 bg-zinc-50 px-4 py-3 dark:border-[#232323] dark:bg-[#111111] sm:flex-row sm:items-center sm:justify-between">

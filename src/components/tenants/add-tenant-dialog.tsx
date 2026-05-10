@@ -39,9 +39,26 @@ const controlClassName =
 const selectTriggerClassName =
   "h-8 w-full min-w-0 rounded-[2px] border-zinc-300 bg-background shadow-none dark:border-zinc-700 dark:bg-zinc-900/50";
 
-export function AddTenantDialog({ trigger }: { trigger?: ReactElement }) {
+export function AddTenantDialog({
+  trigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+}: {
+  trigger?: ReactElement;
+  /** When set with `onOpenChange`, dialog is controlled (e.g. empty-state CTA). */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : uncontrolledOpen;
+  const setOpen = (next: boolean) => {
+    controlledOnOpenChange?.(next);
+    if (!isControlled) {
+      setUncontrolledOpen(next);
+    }
+  };
   const [submitError, setSubmitError] = useState<string | null>(null);
   const submitLock = useRef(false);
 
@@ -84,20 +101,24 @@ export function AddTenantDialog({ trigger }: { trigger?: ReactElement }) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
-          <Button
-            type="button"
-            className={cn(
-              "inline-flex h-7 items-center gap-1.5 rounded-[2px] bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-none hover:bg-zinc-200",
-              "dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200",
-            )}
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add tenant
-          </Button>
-        )}
-      </DialogTrigger>
+      {!isControlled ? (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button
+              type="button"
+              className={cn(
+                "inline-flex h-7 items-center gap-1.5 rounded-[2px] bg-white px-3 text-[11px] font-semibold text-zinc-900 shadow-none hover:bg-zinc-200",
+                "dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200",
+              )}
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add tenant
+            </Button>
+          )}
+        </DialogTrigger>
+      ) : trigger ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : null}
       <DialogContent
         className={cn(
           "max-w-[calc(100%-2rem)] gap-0 overflow-hidden rounded-[2px] border border-border bg-background p-0 text-sm shadow-[0_24px_48px_rgba(1,105,111,0.06)] ring-0",

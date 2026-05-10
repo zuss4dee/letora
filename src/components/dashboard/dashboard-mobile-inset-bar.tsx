@@ -66,7 +66,7 @@ function breadcrumbFor(pathname: string): { current: string } {
   return { current: "Home" };
 }
 
-/** Mobile-only strip: opens the sidebar; not sticky (replaces removed SiteHeader chrome). */
+/** Mobile / tablet strip (< lg): opens the sidebar drawer. Hidden on large desktops. */
 export function DashboardMobileInsetBar() {
   const pathname = usePathname();
   const { current } = breadcrumbFor(pathname ?? "");
@@ -74,12 +74,14 @@ export function DashboardMobileInsetBar() {
   return (
     <div
       className={cn(
-        "flex h-12 shrink-0 items-center gap-2 border-b border-border/80 bg-background px-4 md:hidden",
+        "flex h-14 shrink-0 items-center gap-3 border-b border-border/80 bg-background px-4 lg:hidden",
         "dark:bg-[#0b0b0b]",
       )}
     >
-      <SidebarTrigger className="-ml-1 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white" />
-      <span className="font-headline min-w-0 flex-1 truncate text-sm font-light text-foreground">{current}</span>
+      <SidebarTrigger className="-ml-1 min-h-11 min-w-11 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-white" />
+      <span className="font-headline min-w-0 flex-1 truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
+        {current}
+      </span>
     </div>
   );
 }

@@ -37,7 +37,7 @@ function KpiMoneyTile({ label, tooltip, value, valueClassName, href, tileAriaLab
   return (
     <div
       className={cn(
-        "relative flex min-h-[88px] flex-col bg-white p-4 transition-colors hover:bg-zinc-50 focus-within:bg-zinc-50 dark:bg-[#161616] dark:hover:bg-background dark:bg-[#1c1c1c] dark:focus-within:bg-background dark:bg-[#1c1c1c]",
+        "relative flex min-h-[100px] flex-col bg-white p-4 transition-colors hover:bg-zinc-50 focus-within:bg-zinc-50 dark:bg-[#161616] dark:hover:bg-background dark:bg-[#1c1c1c] dark:focus-within:bg-background dark:bg-[#1c1c1c]",
         cellClassName,
       )}
     >
@@ -60,7 +60,7 @@ function KpiMoneyTile({ label, tooltip, value, valueClassName, href, tileAriaLab
         </Tooltip>
       </div>
       <div className="relative z-10 flex flex-1 flex-col pointer-events-none">
-        <span className={cn("text-xl font-bold tabular-nums", valueClassName ?? "text-zinc-900 dark:text-white")}>{formatMoney(value)}</span>
+        <span className={cn("text-2xl font-bold tabular-nums md:text-3xl", valueClassName ?? "text-zinc-900 dark:text-white")}>{formatMoney(value)}</span>
       </div>
     </div>
   );
@@ -78,7 +78,7 @@ function KpiMaintenanceTile({ kpis, cellClassName }: MaintTileProps) {
   return (
     <div
       className={cn(
-        "relative flex min-h-[88px] flex-col bg-white p-4 transition-colors hover:bg-zinc-50 focus-within:bg-zinc-50 dark:bg-[#161616] dark:hover:bg-background dark:bg-[#1c1c1c] dark:focus-within:bg-background dark:bg-[#1c1c1c]",
+        "relative flex min-h-[100px] flex-col bg-white p-4 transition-colors hover:bg-zinc-50 focus-within:bg-zinc-50 dark:bg-[#161616] dark:hover:bg-background dark:bg-[#1c1c1c] dark:focus-within:bg-background dark:bg-[#1c1c1c]",
         cellClassName,
       )}
     >
@@ -106,7 +106,7 @@ function KpiMaintenanceTile({ kpis, cellClassName }: MaintTileProps) {
       </div>
       <div className="relative z-10 flex flex-1 flex-col pointer-events-none">
         <div className="flex flex-wrap items-baseline gap-2">
-          <span className="text-xl font-bold tabular-nums text-zinc-900 dark:text-white">{kpis.maintenanceOpen}</span>
+          <span className="text-2xl font-bold tabular-nums text-zinc-900 md:text-3xl dark:text-white">{kpis.maintenanceOpen}</span>
           {kpis.maintenanceHighPriority > 0 ? (
             <span className="bg-red-100 px-1 py-0.5 text-[8px] font-bold uppercase text-red-900 dark:bg-[#93000a] dark:text-[#ffdad6]">
               {kpis.maintenanceHighPriority} high
@@ -156,8 +156,8 @@ export function CommandCenterKpiGridClient({
             </div>
           </div>
         ) : null}
-        {/* 12 cols on md: row of four × span-3, row of three × span-4 — no empty cells. Mobile: 2 cols with last tile span-2. */}
-        <div className="grid grid-cols-2 gap-px border border-zinc-200 bg-zinc-200 md:grid-cols-12 dark:border-[#2a2a2a] dark:bg-[#2a2a2a]">
+        {/* Mobile/tablet: 2 columns; desktop: 4 columns */}
+        <div className="grid grid-cols-2 gap-px border border-zinc-200 bg-zinc-200 md:grid-cols-2 lg:grid-cols-4 dark:border-[#2a2a2a] dark:bg-[#2a2a2a]">
           <KpiMoneyTile
             label="Scheduled · This Month"
             tooltip="Contractual monthly rent for active tenancies (sum of monthly_rent) when the portfolio has a non‑zero rent roll — matches Rent Tracker Expected (Mo). Otherwise sums instalment amounts with due_date in this month. Use it as the month’s rent roll versus cash collected."
@@ -165,7 +165,6 @@ export function CommandCenterKpiGridClient({
             valueClassName="text-zinc-900 dark:text-white"
             href={rentTrackerHref("scheduled_this_month")}
             tileAriaLabel="Open rent tracker: scheduled this month"
-            cellClassName="md:col-span-3"
           />
           <KpiMoneyTile
             label="Collected · This Month"
@@ -174,7 +173,6 @@ export function CommandCenterKpiGridClient({
             valueClassName="text-emerald-800 dark:text-[#afefdd]"
             href={rentTrackerHref("collected_this_month")}
             tileAriaLabel="Open rent tracker: collected this month"
-            cellClassName="md:col-span-3"
           />
           <KpiMoneyTile
             label="Still Due · This Month"
@@ -183,7 +181,6 @@ export function CommandCenterKpiGridClient({
             valueClassName="text-zinc-900 dark:text-white"
             href={rentTrackerHref("due_this_month")}
             tileAriaLabel="Open rent tracker: still due this month"
-            cellClassName="md:col-span-3"
           />
           <KpiMoneyTile
             label="Total Unpaid (Late)"
@@ -194,7 +191,6 @@ export function CommandCenterKpiGridClient({
             }
             href={rentTrackerHref("arrears")}
             tileAriaLabel="Open rent tracker: total unpaid late rent"
-            cellClassName="md:col-span-3"
           />
           <KpiMoneyTile
             label="Scheduled · Next Month"
@@ -203,7 +199,6 @@ export function CommandCenterKpiGridClient({
             valueClassName="text-zinc-600 dark:text-zinc-400"
             href={rentTrackerHref("scheduled_next_month")}
             tileAriaLabel="Open rent tracker: scheduled next month"
-            cellClassName="md:col-span-4"
           />
           <KpiMoneyTile
             label="Collected · Last Month"
@@ -212,9 +207,8 @@ export function CommandCenterKpiGridClient({
             valueClassName="text-zinc-600 dark:text-zinc-400"
             href={rentTrackerHref("collected_last_month")}
             tileAriaLabel="Open rent tracker: collected last month"
-            cellClassName="md:col-span-4"
           />
-          <KpiMaintenanceTile kpis={kpis} cellClassName="col-span-2 md:col-span-4" />
+          <KpiMaintenanceTile kpis={kpis} />
         </div>
       </div>
     </TooltipProvider>

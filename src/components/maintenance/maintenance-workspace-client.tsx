@@ -10,6 +10,7 @@ import {
   Search,
   SlidersHorizontal,
   SortAsc,
+  Wrench,
   X,
   Zap,
 } from "lucide-react";
@@ -18,6 +19,7 @@ import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import type { AgentApprovalRow } from "@/lib/approvals/types";
 
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -35,6 +37,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { AddRequestDialog } from "@/components/maintenance/add-request-dialog";
 import type { MaintenanceRequestRow } from "@/lib/actions/maintenance";
 import { cn } from "@/lib/utils";
 
@@ -176,6 +179,8 @@ type MaintenanceWorkspaceClientProps = {
   tenantIssueContextConflict?: boolean;
   /** Tenant filter matched no rows; list was widened (tenant filter dropped, property filter kept). */
   tenantScopeRosterFallback?: boolean;
+  /** Tenant options for raising a maintenance request */
+  tenancyDialogOptions: Array<{ id: string; label: string }>;
 };
 
 export function MaintenanceWorkspaceClient({
@@ -187,7 +192,10 @@ export function MaintenanceWorkspaceClient({
   tenantScopeMissing,
   tenantIssueContextConflict,
   tenantScopeRosterFallback,
+  tenancyDialogOptions,
 }: MaintenanceWorkspaceClientProps) {
+  void activeCount;
+  const [addRequestOpen, setAddRequestOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
@@ -355,28 +363,42 @@ export function MaintenanceWorkspaceClient({
           </p>
         </div>
       ) : null}
-      <div className="flex shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white px-6 py-4 dark:border-[#232323] dark:bg-[#0e0e0e]">
+      <div className="flex shrink-0 flex-col gap-3 border-b border-zinc-200/80 bg-white px-4 py-4 dark:border-[#232323] dark:bg-[#0e0e0e] sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div>
-          <h1 className="text-[16px] font-bold tracking-tight text-zinc-900 uppercase dark:text-white">Maintenance Center</h1>
-          <p className="text-[11px] text-zinc-500">Operational Issue Triage & Contractor Coordination</p>
+          <h1 className="text-xl font-bold uppercase tracking-tight text-zinc-900 md:text-2xl dark:text-white">
+            Maintenance Center
+          </h1>
+          <p className="text-[11px] text-zinc-600 dark:text-zinc-500">
+            Operational Issue Triage & Contractor Coordination
+          </p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative w-64">
+        <div className="flex flex-wrap items-center gap-3">
+          <AddRequestDialog
+            tenancies={tenancyDialogOptions}
+            open={addRequestOpen}
+            onOpenChange={setAddRequestOpen}
+          />
+          <div className="relative hidden min-w-0 flex-1 sm:block sm:w-64 sm:flex-none">
             <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-500 dark:text-zinc-600" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-8 w-full border border-zinc-200/90 bg-white pl-8 pr-3 text-[11px] text-zinc-900 placeholder-zinc-400 transition-colors focus:border-zinc-400 focus:outline-none dark:border-[#232323] dark:bg-[#080808] dark:text-zinc-300 dark:placeholder-zinc-600 dark:focus:border-zinc-700"
+              className="h-8 w-full border border-zinc-200/90 bg-white pl-8 pr-3 text-[11px] text-zinc-900 placeholder:text-zinc-500 transition-colors focus:border-zinc-300 focus:outline-none dark:border-[#232323] dark:bg-[#080808] dark:text-zinc-300 dark:placeholder-zinc-600 dark:focus:border-zinc-700"
               placeholder="Search issues, properties..."
             />
           </div>
-          <Button className="h-8 rounded-none bg-zinc-100 dark:bg-zinc-900 px-4 text-[10px] font-bold uppercase tracking-widest text-white hover:bg-zinc-200 dark:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200">
+          <Button
+            type="button"
+            onClick={() => setAddRequestOpen(true)}
+            disabled={tenancyDialogOptions.length === 0}
+            className="h-9 w-full rounded-md border border-zinc-200 bg-zinc-900 px-4 text-[10px] font-bold uppercase tracking-widest text-white transition-colors hover:bg-zinc-800 disabled:opacity-40 sm:h-8 sm:w-auto dark:border-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+          >
             Log Issue
           </Button>
         </div>
       </div>
 
-      <div className="grid shrink-0 grid-cols-4 border-b border-zinc-200/80 bg-zinc-50 dark:border-[#232323] dark:bg-[#0B0B0B]">
+      <div className="grid shrink-0 grid-cols-2 gap-px border-b border-zinc-200/80 bg-zinc-200 dark:border-[#232323] dark:bg-[#282828] lg:grid-cols-4">
         {[
           {
             label: "Open Issues",
@@ -395,15 +417,20 @@ export function MaintenanceWorkspaceClient({
             }).length,
           },
         ].map((stat, i) => (
-          <div key={i} className={cn(
-            "flex flex-col border-r border-zinc-200/80 p-4 last:border-r-0 dark:border-r-[#232323]",
+      <div key={i} className={cn(
+            "flex min-h-[88px] flex-col border-r border-zinc-200/80 bg-white p-4 last:border-r-0 dark:border-r-[#232323] dark:bg-[#0B0B0B]",
           )}>
             <span className="mb-1 text-[9px] font-bold uppercase tracking-wider text-zinc-500">{stat.label}</span>
-            <span className={cn(
-              "text-xl font-bold tabular-nums",
-              stat.tone === 'rose' && stat.value > 0 ? "text-rose-600 dark:text-rose-400" : 
-              stat.tone === 'emerald' && stat.value > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-zinc-900 dark:text-white"
-            )}>
+            <span
+              className={cn(
+                "text-2xl font-bold tabular-nums md:text-3xl",
+                stat.tone === "rose" && stat.value > 0
+                  ? "text-rose-600 dark:text-rose-400"
+                  : stat.tone === "emerald" && stat.value > 0
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-zinc-900 dark:text-white",
+              )}
+            >
               {stat.value}
             </span>
           </div>
@@ -450,15 +477,26 @@ export function MaintenanceWorkspaceClient({
             </div>
           </div>
 
-          <div className="min-h-0 flex-1 overflow-auto">
-            <div className="sticky top-0 z-10 grid grid-cols-12 border-b border-zinc-200/80 bg-zinc-50 px-4 py-2 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500 dark:border-[#232323] dark:bg-[#111111]">
+          <div className="min-h-0 flex-1 overflow-x-auto overflow-y-auto">
+            <div className="sticky top-0 z-10 grid min-w-[640px] grid-cols-12 border-b border-zinc-200/80 bg-zinc-50 px-4 py-2 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-600 dark:border-[#232323] dark:bg-[#111111] dark:text-zinc-400">
               <div className="col-span-5">Issue & Property</div>
-              <div className="col-span-2">Priority</div>
-              <div className="col-span-3">Agent State</div>
-              <div className="col-span-2 text-right">Age</div>
+              <div className="hidden col-span-2 md:block">Priority</div>
+              <div className="hidden col-span-3 md:block">Agent State</div>
+              <div className="col-span-7 text-right md:col-span-2">Age</div>
             </div>
-            <div className="divide-y divide-zinc-200/80 dark:divide-[#232323]">
-              {filteredSorted.map((row) => {
+            <div className="min-w-[640px] divide-y divide-zinc-200/80 dark:divide-[#232323]">
+              {rows.length === 0 ? (
+                <EmptyState
+                  icon={Wrench}
+                  title="No maintenance requests"
+                  description="Tenant maintenance requests will appear here."
+                  actionLabel="Log Request"
+                  onAction={() => setAddRequestOpen(true)}
+                  className="min-h-[14rem]"
+                />
+              ) : (
+                <>
+                  {filteredSorted.map((row) => {
                 const tone = toPriorityTone(row.priority);
                 const isSelected = selectedId === row.id;
                 const agentState = getAgentState(row, pendingApprovals);
@@ -491,11 +529,11 @@ export function MaintenanceWorkspaceClient({
                         <span className="text-[12px] font-semibold text-zinc-900 dark:text-zinc-100">{shortAddress(row.propertyAddress)}</span>
                         <span className="text-[10px] text-zinc-500 truncate">· {row.tenantFullName}</span>
                       </div>
-                      <div className="mt-1 truncate text-[11px] text-zinc-400">
+                      <div className="mt-1 truncate text-[11px] text-zinc-600 dark:text-zinc-500">
                         {row.description}
                       </div>
                     </div>
-                    <div className="col-span-2">
+                    <div className="hidden col-span-2 md:block">
                       <div className="flex items-center gap-1.5">
                         <span className={cn("size-1.5 rounded-full", priorityDotClass(tone))} />
                         <span className={cn(
@@ -506,30 +544,37 @@ export function MaintenanceWorkspaceClient({
                         </span>
                       </div>
                     </div>
-                    <div className="col-span-3">
+                    <div className="hidden col-span-3 md:block">
                       <span className={cn(
                         "inline-block border px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider",
-                        agentState.tone === 'emerald' ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400" :
-                        agentState.tone === 'blue' ? "border-blue-500/30 bg-blue-500/10 text-blue-400" :
-                        "border-zinc-200 text-zinc-600 dark:border-[#333333] dark:text-zinc-500"
+                        agentState.tone === 'emerald' ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400" :
+                        agentState.tone === 'blue' ? "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400" :
+                        "border-zinc-200 text-zinc-700 dark:border-[#333333] dark:text-zinc-500"
                       )}>
                         {agentState.label}
                       </span>
                     </div>
-                    <div className="col-span-2 text-right">
-                      <span className="text-[10px] tabular-nums text-zinc-600">
+                    <div className="col-span-7 text-right md:col-span-2">
+                      <span className="text-[10px] tabular-nums text-zinc-700 dark:text-zinc-600">
                         {fmtDateTime(row.createdAt).split(',')[0]}
                       </span>
                     </div>
                   </div>
                 );
-              })}
-              {filteredSorted.length === 0 && (
+                  })}
+                  {filteredSorted.length === 0 ? (
                 <div className="px-4 py-12 text-center">
-                  <p className="text-[11px] uppercase tracking-widest text-zinc-600">No issues matching filters</p>
+                  <p className="text-[11px] uppercase tracking-widest text-zinc-700 dark:text-zinc-300">
+                    No issues matching filters
+                  </p>
                 </div>
+                  ) : null}
+                </>
               )}
             </div>
+            <p className="border-t border-zinc-200/80 px-4 py-1 text-xs text-zinc-400 dark:border-[#282828] md:hidden">
+              ← Scroll to see more
+            </p>
           </div>
         </section>
 

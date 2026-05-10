@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { getRecentActivity } from "@/lib/actions/activity-log";
 import { createClient } from "@/lib/supabase/server";
+import { ActivityLogEmptyState } from "./activity-empty";
 import { ActivityRowDetail } from "./activity-row-detail";
 
 type ActivityRow = {
@@ -59,79 +60,92 @@ export default async function ActivityPage() {
   const rows = (data as unknown as ActivityRow[]) ?? [];
 
   return (
-    <div className="@container/main flex flex-1 flex-col gap-2">
+    <div className="@container/main flex min-h-0 flex-1 flex-col gap-2 bg-zinc-50 dark:bg-[#0B0B0B]">
       <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
         <div className="flex items-center justify-between gap-3 px-4 lg:px-6">
           <div>
-            <h1 className="text-base font-semibold tracking-tight">AI Activity Log</h1>
-            <p className="text-sm text-muted-foreground">
+            <h1 className="text-xl font-semibold tracking-tight text-zinc-900 md:text-2xl dark:text-white">
+              AI Activity Log
+            </h1>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">
               Recent tool calls made by your AI assistant.
             </p>
           </div>
         </div>
 
         <div className="px-4 lg:px-6">
-          <Card>
-            <CardHeader className="border-b">
-              <CardTitle>Recent Activity</CardTitle>
+          <Card className="border-zinc-200 bg-white dark:border-[#2a2a2a] dark:bg-[#161616]">
+            <CardHeader className="border-b border-zinc-200 bg-zinc-50 dark:border-[#2a2a2a] dark:bg-[#161616]">
+              <CardTitle className="text-base font-semibold text-zinc-900 md:text-lg dark:text-zinc-100">
+                Recent Activity
+              </CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="-mx-6 overflow-x-auto px-6 md:mx-0 md:overflow-visible md:px-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead>Tool</TableHead>
-                    <TableHead>Source</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Details</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {rows.length === 0 ? (
-                    <TableRow>
-                      <TableCell
-                        colSpan={4}
-                        className="py-10 text-center text-sm text-muted-foreground"
-                      >
-                        No activity recorded yet. Use the assistant to see tool calls here.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    rows.map((row) => (
-                      <TableRow key={row.id}>
-                        <TableCell className="font-medium">
-                          {formatToolName(row.tool_name)}
-                        </TableCell>
-                        <TableCell className="text-sm text-zinc-500 capitalize">
-                          {row.source || "assistant"}
-                        </TableCell>
-                        <TableCell>
-                          {row.success ? (
-                            <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
-                              Success
-                            </Badge>
-                          ) : (
-                            <Badge className="border border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-500/10 dark:text-red-300">
-                              Failed
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {formatDate(row.created_at)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <ActivityRowDetail
-                            args={row.args}
-                            result={row.result}
-                          />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-              </div>
+              {rows.length === 0 ? (
+                <ActivityLogEmptyState />
+              ) : (
+                <>
+                  <div className="-mx-4 overflow-x-auto px-4 md:mx-0 md:px-0">
+                    <Table className="min-w-[640px] w-full">
+                      <TableHeader>
+                        <TableRow className="border-zinc-200 hover:bg-transparent dark:border-[#2a2a2a] dark:hover:bg-transparent">
+                          <TableHead className="bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:bg-[#161616] dark:text-zinc-400">
+                            Tool
+                          </TableHead>
+                          <TableHead className="hidden bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-600 md:table-cell dark:bg-[#161616] dark:text-zinc-400">
+                            Source
+                          </TableHead>
+                          <TableHead className="bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:bg-[#161616] dark:text-zinc-400">
+                            Status
+                          </TableHead>
+                          <TableHead className="hidden bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-600 sm:table-cell dark:bg-[#161616] dark:text-zinc-400">
+                            Date
+                          </TableHead>
+                          <TableHead className="text-right bg-zinc-50 text-xs font-semibold uppercase tracking-wide text-zinc-600 dark:bg-[#161616] dark:text-zinc-400">
+                            Details
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rows.map((row) => (
+                          <TableRow
+                            key={row.id}
+                            className="border-zinc-200 text-sm text-zinc-800 hover:bg-zinc-50 dark:border-[#2a2a2a] dark:text-zinc-200 dark:hover:bg-transparent"
+                          >
+                            <TableCell className="font-medium text-zinc-800 dark:text-zinc-200">
+                              {formatToolName(row.tool_name)}
+                            </TableCell>
+                            <TableCell className="hidden text-zinc-600 capitalize md:table-cell dark:text-zinc-400">
+                              {row.source || "assistant"}
+                            </TableCell>
+                            <TableCell>
+                              {row.success ? (
+                                <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-500/10 dark:text-emerald-300">
+                                  Success
+                                </Badge>
+                              ) : (
+                                <Badge className="border border-red-200 bg-red-50 text-red-800 dark:border-red-900/40 dark:bg-red-500/10 dark:text-red-300">
+                                  Failed
+                                </Badge>
+                              )}
+                            </TableCell>
+                            <TableCell className="hidden text-zinc-700 sm:table-cell dark:text-zinc-300">
+                              {formatDate(row.created_at)}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <ActivityRowDetail
+                                args={row.args}
+                                result={row.result}
+                              />
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                  <p className="mt-1 text-xs text-zinc-400 md:hidden">← Scroll to see more</p>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
