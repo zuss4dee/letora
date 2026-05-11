@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 
 import {
   changePassword,
-  saveProfileSection,
+  saveProfileSettings,
   uploadProfileAvatar,
 } from "@/app/(dashboard)/dashboard/settings/actions";
 import { SettingsSaveButton, type SaveStatus } from "@/components/settings/settings-save-button";
@@ -30,12 +30,15 @@ type Props = {
 const FIELD_LABEL = "text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400";
 const FIELD_HELP = "text-xs text-zinc-500 dark:text-zinc-500";
 
+const MAX_AVATAR_BYTES = 1 * 1024 * 1024;
+
 export function ProfileSettings({ initialValues, authEmail, onDirtyChange }: Props) {
   const form = useForm<ProfileSettingsInput>({
     resolver: zodResolver(profileSettingsSchema),
-    defaultValues: { ...initialValues, email: initialValues.email || authEmail },
+    defaultValues: initialValues,
   });
   const [status, setStatus] = useState<SaveStatus>("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string>(initialValues.avatarUrl ?? "");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, startUpload] = useTransition();
@@ -43,13 +46,13 @@ export function ProfileSettings({ initialValues, authEmail, onDirtyChange }: Pro
 
   const dirty = form.formState.isDirty;
 
-  /* -- Password card has its own independent state. -- */
   const passwordForm = useForm<PasswordChangeInput>({
     resolver: zodResolver(passwordChangeSchema),
     defaultValues: { currentPassword: "", newPassword: "", confirmPassword: "" },
   });
   const [passwordStatus, setPasswordStatus] = useState<SaveStatus>("idle");
   const [passwordServerError, setPasswordServerError] = useState<string | null>(null);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
 
   const passwordDirty = passwordForm.formState.isDirty;
 
@@ -65,11 +68,16 @@ export function ProfileSettings({ initialValues, authEmail, onDirtyChange }: Pro
     const file = event.target.files?.[0];
     if (!file) return;
     setUploadError(null);
+    if (file.size > MAX_AVATAR_BYTES) {
+      setUploadError("File must be under 1MB");
+      event.target.value = "";
+      return;
+    }
     const fd = new FormData();
     fd.append("file", file);
     startUpload(async () => {
       const result = await uploadProfileAvatar(fd);
-      if (result.ok === false) {
+      if (result.success === false) {
         setUploadError(result.error);
         return;
       }
@@ -80,11 +88,13 @@ export function ProfileSettings({ initialValues, authEmail, onDirtyChange }: Pro
   }
 
   async function onSubmit(values: ProfileSettingsInput) {
+    setSaveError(null);
     setStatus("loading");
-    const result = await saveProfileSection({ ...values, avatarUrl: avatarPreview });
-    if (!result.ok) {
+    const result = await saveProfileSettings({ ...values, avatarUrl: avatarPreview });
+    if (result.success === false) {
+      setSaveError(result.error);
       setStatus("error");
-      window.setTimeout(() => setStatus("idle"), 2000);
+      window.setTimeout(() => setStatus("idle"), 3000);
       return;
     }
     setStatus("success");
@@ -94,21 +104,26 @@ export function ProfileSettings({ initialValues, authEmail, onDirtyChange }: Pro
 
   async function onPasswordSubmit(values: PasswordChangeInput) {
     setPasswordServerError(null);
+    setPasswordSuccess(false);
     setPasswordStatus("loading");
     const result = await changePassword(values);
-    if (!result.ok) {
+    if (result.success === false) {
       setPasswordStatus("error");
       if (result.field) {
         passwordForm.setError(result.field, { message: result.error });
       } else {
         setPasswordServerError(result.error);
       }
-      window.setTimeout(() => setPasswordStatus("idle"), 2000);
+      window.setTimeout(() => setPasswordStatus("idle"), 3000);
       return;
     }
     setPasswordStatus("success");
+    setPasswordSuccess(true);
     passwordForm.reset({ currentPassword: "", newPassword: "", confirmPassword: "" });
-    window.setTimeout(() => setPasswordStatus("idle"), 2000);
+    window.setTimeout(() => {
+      setPasswordStatus("idle");
+      setPasswordSuccess(false);
+    }, 2000);
   }
 
   return (
@@ -153,7 +168,16 @@ export function ProfileSettings({ initialValues, authEmail, onDirtyChange }: Pro
                       "inline-flex h-9 items-center rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 disabled:opacity-60 dark:border-[#2a2a2a] dark:bg-transparent dark:text-zinc-100 dark:hover:bg-[#1f1f1f]",
                     )}
                   >
-                    {isUploading ? "Uploading…" : avatarPreview ? "Replace photo" : "Upload photo"}
+                    {isUploading ? (
+                      <span className="inline-flex items-center gap-2">
+                        <span className="size-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-white" />
+                        Uploading…
+                      </span>
+                    ) : avatarPreview ? (
+                      "Replace photo"
+                    ) : (
+                      "Upload photo"
+                    )}
                   </button>
                   <p className={FIELD_HELP}>PNG or JPEG. Max 1MB.</p>
                   {uploadError ? (
@@ -176,32 +200,31 @@ export function ProfileSettings({ initialValues, authEmail, onDirtyChange }: Pro
                 <Label htmlFor="first-name" className={FIELD_LABEL}>
                   First name
                 </Label>
-                <Input id="first-name" placeholder="Jordan" {...form.register("firstName")} />
+                <Input id="first-name" {...form.register("firstName")} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="last-name" className={FIELD_LABEL}>
                   Last name
                 </Label>
-                <Input id="last-name" placeholder="Singh" {...form.register("lastName")} />
+                <Input id="last-name" {...form.register("lastName")} />
               </div>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="profile-email" className={FIELD_LABEL}>
-                Email
+                Email address
               </Label>
-              <Input
-                id="profile-email"
-                type="email"
-                value={form.watch("email") ?? ""}
-                onChange={(e) => form.setValue("email", e.target.value, { shouldDirty: true })}
-                placeholder="you@yourcompany.co.uk"
-                disabled
-              />
-              <p className={FIELD_HELP}>This is your login email. Contact support to change it.</p>
+              <Input id="profile-email" type="email" value={authEmail} readOnly disabled className="opacity-80" />
+              <p className={FIELD_HELP}>This is your login email.</p>
             </div>
           </div>
         </div>
+
+        {saveError ? (
+          <p className="text-xs text-red-600 dark:text-red-400" role="alert">
+            {saveError}
+          </p>
+        ) : null}
 
         <div className="flex flex-col items-stretch justify-end gap-3 border-t border-zinc-200 pt-4 dark:border-[#2a2a2a] sm:flex-row sm:items-center">
           <SettingsSaveButton status={status} disabled={!dirty && status === "idle"} />
@@ -269,6 +292,11 @@ export function ProfileSettings({ initialValues, authEmail, onDirtyChange }: Pro
           {passwordServerError ? (
             <p className="mt-3 text-sm text-red-600 dark:text-red-400" role="alert">
               {passwordServerError}
+            </p>
+          ) : null}
+          {passwordSuccess ? (
+            <p className="mt-3 text-sm text-emerald-600 dark:text-emerald-400" role="status">
+              Password updated
             </p>
           ) : null}
           <div className="mt-6 flex flex-col items-stretch justify-end gap-3 border-t border-zinc-200 pt-4 dark:border-[#2a2a2a] sm:flex-row sm:items-center">

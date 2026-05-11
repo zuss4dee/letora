@@ -1,5 +1,6 @@
 import type { CSSProperties, ReactNode } from "react";
 import { Suspense } from "react";
+import Script from "next/script";
 
 import { AppSidebar } from "@/components/dashboard/app-sidebar";
 import { DashboardShellProviders } from "@/components/dashboard/dashboard-shell-providers";
@@ -12,6 +13,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/server";
+import { getThemePreferenceForUser } from "@/lib/actions/user-settings";
 
 export default async function DashboardShellLayout({ children }: { children: ReactNode }) {
   // Auth-only: no slow server actions here (see isolated Suspense loaders below).
@@ -22,6 +24,8 @@ export default async function DashboardShellLayout({ children }: { children: Rea
   if (!user) redirect("/login");
   const userId = user.id;
   const userEmail = user.email ?? null;
+  const themePreference = await getThemePreferenceForUser(userId);
+  const themeBootstrap = JSON.stringify(themePreference);
 
   return (
     <TooltipProvider>
@@ -34,6 +38,13 @@ export default async function DashboardShellLayout({ children }: { children: Rea
           } as CSSProperties
         }
       >
+        <Script
+          id="letora-db-theme"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=${themeBootstrap};var k="letora-theme";var w=typeof window!=="undefined"?window:null;var m=w&&w.matchMedia&&w.matchMedia("(prefers-color-scheme: dark)").matches;var resolved=t==="dark"||(t==="system"&&m)?"dark":"light";var r=document.documentElement;r.setAttribute("data-theme",t);r.classList.remove("light","dark");r.classList.add(resolved);r.style.colorScheme=resolved;if(w)w.localStorage.setItem(k,t);}catch(e){}})();`,
+          }}
+        />
         <DashboardShellProviders initialAgentRuns={[]}>
           <SidebarDynamicProvider>
             <AppSidebar variant="sidebar" userEmail={userEmail} />

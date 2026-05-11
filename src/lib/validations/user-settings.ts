@@ -62,7 +62,7 @@ export type UserSettingsInput = z.output<typeof userSettingsSchema>;
 /* -------------------------------------------------------------------------- */
 
 export const organisationSettingsSchema = z.object({
-  orgName: z.string().trim().max(120, "Keep this under 120 characters.").optional(),
+  orgName: z.string().trim().min(1, "Enter your organisation name.").max(120, "Keep this under 120 characters."),
   orgLogoUrl: z.string().trim().max(500).optional(),
   orgContactEmail: optionalEmailSchema,
   orgPhone: z.string().trim().max(40).optional(),
@@ -73,8 +73,6 @@ export type OrganisationSettingsInput = z.output<typeof organisationSettingsSche
 export const profileSettingsSchema = z.object({
   firstName: z.string().trim().max(80).optional(),
   lastName: z.string().trim().max(80).optional(),
-  /** Email is informational here — the auth email is the source of truth. */
-  email: optionalEmailSchema,
   avatarUrl: z.string().trim().max(500).optional(),
 });
 export type ProfileSettingsInput = z.output<typeof profileSettingsSchema>;
@@ -121,7 +119,7 @@ export type EmailTemplatesSettingsInput = z.output<typeof emailTemplatesSettings
 
 export const notificationSettingsSchema = z.object({
   notifRentOverdue: z.boolean().default(true),
-  notifRentOverdueDays: preprocessInt(3, 1, 14),
+  notifRentOverdueDays: preprocessInt(1, 1, 14),
   notifEscalation: z.boolean().default(true),
   notifApprovalReady: z.boolean().default(true),
   notifApprovalQueueThreshold: preprocessInt(5, 1, 50),

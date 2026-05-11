@@ -3,8 +3,7 @@
 import { Check, Monitor, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { saveAppearanceSection } from "@/app/(dashboard)/dashboard/settings/actions";
-import { SettingsSaveButton, type SaveStatus } from "@/components/settings/settings-save-button";
+import { saveAppearanceSettings } from "@/app/(dashboard)/dashboard/settings/actions";
 import { useTheme } from "@/components/theme-provider-client";
 import { cn } from "@/lib/utils";
 import { type ThemePreference } from "@/lib/validations/user-settings";
@@ -35,53 +34,52 @@ const OPTIONS: ReadonlyArray<{
   {
     value: "system",
     title: "System",
-    description: "Match the appearance of your operating system.",
+    description: "Follows your device setting.",
     icon: Monitor,
   },
 ];
 
 export function AppearanceSettings({ initialValue, onDirtyChange }: Props) {
   const { setTheme } = useTheme();
-  const [pending, setPending] = useState<ThemePreference>(initialValue);
   const [saved, setSaved] = useState<ThemePreference>(initialValue);
-  const [status, setStatus] = useState<SaveStatus>("idle");
+  const [pending, setPending] = useState<ThemePreference>(initialValue);
+  const [loading, setLoading] = useState(false);
+  const [inlineError, setInlineError] = useState<string | null>(null);
 
-  const dirty = pending !== saved;
+  useEffect(() => {
+    setSaved(initialValue);
+    setPending(initialValue);
+  }, [initialValue]);
+
+  const dirty = pending !== saved || loading;
   useEffect(() => {
     onDirtyChange?.(dirty);
   }, [dirty, onDirtyChange]);
 
-  function handleSelect(next: ThemePreference) {
+  async function handleSelect(next: ThemePreference) {
+    setInlineError(null);
     setPending(next);
+    document.documentElement.setAttribute("data-theme", next);
     setTheme(next);
-  }
-
-  async function handleSave() {
-    setStatus("loading");
-    const result = await saveAppearanceSection({ themePreference: pending });
-    if (!result.ok) {
-      setStatus("error");
-      window.setTimeout(() => setStatus("idle"), 2000);
+    setLoading(true);
+    const result = await saveAppearanceSettings({ themePreference: next });
+    setLoading(false);
+    if (result.success === false) {
+      setInlineError(result.error);
+      setTheme(saved);
+      setPending(saved);
+      document.documentElement.setAttribute("data-theme", saved);
       return;
     }
-    setSaved(pending);
-    setStatus("success");
-    window.setTimeout(() => setStatus("idle"), 2000);
+    setSaved(next);
   }
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        void handleSave();
-      }}
-      className="space-y-6"
-    >
+    <div className="space-y-6">
       <div>
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Appearance</h2>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Pick the theme you want Letora to use across this device. Your choice is saved to your
-          account so it follows you everywhere.
+          Personalise how Letora looks. Your theme is saved to your account.
         </p>
       </div>
 
@@ -94,10 +92,11 @@ export function AppearanceSettings({ initialValue, onDirtyChange }: Props) {
               <button
                 key={option.value}
                 type="button"
-                onClick={() => handleSelect(option.value)}
+                onClick={() => void handleSelect(option.value)}
+                disabled={loading}
                 aria-pressed={active}
                 className={cn(
-                  "group relative flex h-full flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all",
+                  "group relative flex h-full flex-col items-start gap-3 rounded-xl border p-5 text-left transition-all disabled:opacity-60",
                   active
                     ? "border-zinc-900 ring-2 ring-zinc-900/10 dark:border-white dark:ring-white/15"
                     : "border-zinc-200 hover:border-zinc-300 dark:border-[#2a2a2a] dark:hover:border-zinc-600",
@@ -132,11 +131,15 @@ export function AppearanceSettings({ initialValue, onDirtyChange }: Props) {
             );
           })}
         </div>
+        {loading ? (
+          <p className="mt-4 text-xs text-zinc-500 dark:text-zinc-400">Saving…</p>
+        ) : null}
+        {inlineError ? (
+          <p className="mt-4 text-xs text-red-600 dark:text-red-400" role="alert">
+            {inlineError}
+          </p>
+        ) : null}
       </div>
-
-      <div className="flex flex-col items-stretch justify-end gap-3 border-t border-zinc-200 pt-4 dark:border-[#2a2a2a] sm:flex-row sm:items-center">
-        <SettingsSaveButton status={status} disabled={!dirty && status === "idle"} />
-      </div>
-    </form>
+    </div>
   );
 }

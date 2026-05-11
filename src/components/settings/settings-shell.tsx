@@ -98,9 +98,12 @@ export type SettingsShellInitialValues = {
 export function SettingsShell({
   initial,
   authEmail,
+  loadFailed = false,
 }: {
   initial: SettingsShellInitialValues;
   authEmail: string;
+  /** When true, settings could not be read from the database — fields show defaults. */
+  loadFailed?: boolean;
 }) {
   const [activeTab, setActiveTab] = useState<TabId>("organisation");
   const [pendingTab, setPendingTab] = useState<TabId | null>(null);
@@ -136,6 +139,8 @@ export function SettingsShell({
     setPendingTab(null);
   }
 
+  const activeTabLabel = TABS.find((t) => t.id === activeTab)?.label ?? "this tab";
+
   function cancelLeave() {
     setPendingTab(null);
   }
@@ -150,6 +155,14 @@ export function SettingsShell({
           <p className="max-w-2xl text-sm text-zinc-600 dark:text-zinc-400">
             Manage your organisation, AI agents, communication preferences, and how Letora looks.
           </p>
+          {loadFailed ? (
+            <div
+              role="alert"
+              className="mt-4 max-w-2xl rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/35 dark:text-amber-100"
+            >
+              Could not load your settings. Showing defaults.
+            </div>
+          ) : null}
         </header>
 
         {/* Mobile pill navigation */}
@@ -277,13 +290,11 @@ export function SettingsShell({
         </div>
       </div>
 
-      <Dialog open={pendingTab !== null} onOpenChange={(open) => (open ? null : cancelLeave())}>
+      <Dialog open={pendingTab !== null} onOpenChange={(open) => !open && cancelLeave()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>You have unsaved changes</DialogTitle>
-            <DialogDescription>
-              Leave this tab? Your changes will be lost.
-            </DialogDescription>
+            <DialogTitle>You have unsaved changes in {activeTabLabel}</DialogTitle>
+            <DialogDescription>Leave without saving?</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <button
@@ -291,14 +302,14 @@ export function SettingsShell({
               onClick={cancelLeave}
               className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-[#2a2a2a] dark:bg-transparent dark:text-zinc-100 dark:hover:bg-[#1f1f1f]"
             >
-              Stay
+              Stay and save
             </button>
             <button
               type="button"
               onClick={confirmLeave}
               className="inline-flex h-9 items-center justify-center rounded-lg bg-zinc-900 px-3 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
             >
-              Leave without saving
+              Leave anyway
             </button>
           </DialogFooter>
         </DialogContent>

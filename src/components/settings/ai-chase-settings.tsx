@@ -5,7 +5,7 @@ import { Lock, ShieldCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 
-import { saveAiChaseSection } from "@/app/(dashboard)/dashboard/settings/actions";
+import { saveAIChaseSettings } from "@/app/(dashboard)/dashboard/settings/actions";
 import { SettingsSaveButton, type SaveStatus } from "@/components/settings/settings-save-button";
 import {
   Dialog,
@@ -142,8 +142,8 @@ function ToggleRow({
       >
         <span
           className={cn(
-            "inline-block size-4 transform rounded-full bg-white shadow transition-transform dark:bg-zinc-900",
-            checked ? "translate-x-4" : "translate-x-0.5",
+            "inline-block size-4 transform rounded-full shadow transition-transform",
+            checked ? "translate-x-4 bg-white dark:bg-zinc-900" : "translate-x-0.5 bg-white",
           )}
         />
       </button>
@@ -199,6 +199,7 @@ export function AiChaseSettings({ initialValues, onDirtyChange }: Props) {
     defaultValues: initialValues,
   });
   const [status, setStatus] = useState<SaveStatus>("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmTurnOffApproval, setConfirmTurnOffApproval] = useState(false);
 
   const dirty = form.formState.isDirty;
@@ -207,11 +208,13 @@ export function AiChaseSettings({ initialValues, onDirtyChange }: Props) {
   }, [dirty, onDirtyChange]);
 
   async function onSubmit(values: AiChaseSettingsInput) {
+    setSaveError(null);
     setStatus("loading");
-    const result = await saveAiChaseSection(values);
-    if (!result.ok) {
+    const result = await saveAIChaseSettings(values);
+    if (result.success === false) {
+      setSaveError(result.error);
       setStatus("error");
-      window.setTimeout(() => setStatus("idle"), 2000);
+      window.setTimeout(() => setStatus("idle"), 3000);
       return;
     }
     setStatus("success");
@@ -348,6 +351,12 @@ export function AiChaseSettings({ initialValues, onDirtyChange }: Props) {
           />
         </div>
       </div>
+
+      {saveError ? (
+        <p className="text-xs text-red-600 dark:text-red-400" role="alert">
+          {saveError}
+        </p>
+      ) : null}
 
       <div className="flex flex-col items-stretch justify-end gap-3 border-t border-zinc-200 pt-4 dark:border-[#2a2a2a] sm:flex-row sm:items-center">
         <SettingsSaveButton status={status} disabled={!dirty && status === "idle"} />

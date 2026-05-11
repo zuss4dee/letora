@@ -4,11 +4,20 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { saveEmailTemplatesSection } from "@/app/(dashboard)/dashboard/settings/actions";
+import { saveEmailTemplateSettings } from "@/app/(dashboard)/dashboard/settings/actions";
 import { SettingsSaveButton, type SaveStatus } from "@/components/settings/settings-save-button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CHASE_EMAIL_DEFAULTS } from "@/lib/settings/email-template-defaults";
 import {
   emailTemplatesSettingsSchema,
   type EmailTemplatesSettingsInput,
@@ -24,39 +33,21 @@ const FIELD_LABEL = "text-xs font-medium uppercase tracking-wider text-zinc-500 
 const FIELD_HELP = "text-xs text-zinc-500 dark:text-zinc-500";
 
 const VARIABLES: ReadonlyArray<{ token: string; description: string }> = [
-  { token: "{{tenant_name}}", description: "Full name of the tenant" },
-  { token: "{{property_address}}", description: "Address of the let property" },
-  { token: "{{amount_due}}", description: "Amount currently outstanding" },
-  { token: "{{due_date}}", description: "Original rent due date" },
-  { token: "{{days_overdue}}", description: "Days past the due date" },
-  { token: "{{landlord_name}}", description: "Your name (from Profile)" },
-  { token: "{{org_name}}", description: "Your organisation name" },
+  { token: "{{tenant_name}}", description: "Tenant name" },
+  { token: "{{property_address}}", description: "Property address" },
+  { token: "{{amount_due}}", description: "Amount due" },
+  { token: "{{due_date}}", description: "Due date" },
+  { token: "{{days_overdue}}", description: "Days overdue" },
+  { token: "{{landlord_name}}", description: "Your name" },
+  { token: "{{org_name}}", description: "Organisation name" },
 ];
-
-const DEFAULT_TEMPLATES: Record<
-  1 | 2 | 3,
-  { subject: string; body: string }
-> = {
-  1: {
-    subject: "Friendly reminder: rent for {{property_address}}",
-    body: `Hi {{tenant_name}},\n\nThis is a quick reminder that your rent of {{amount_due}} for {{property_address}} was due on {{due_date}} and we haven't seen it land yet.\n\nIf you've paid in the last 24 hours, please ignore this. Otherwise, please send the payment when you can or let me know if you need to chat through it.\n\nThanks,\n{{landlord_name}}`,
-  },
-  2: {
-    subject: "Action needed: rent overdue at {{property_address}}",
-    body: `Hi {{tenant_name}},\n\nWe still haven't received the {{amount_due}} due on {{due_date}} for {{property_address}} — it's now {{days_overdue}} days overdue.\n\nPlease either pay today or reply to confirm a date you'll have it cleared.\n\n{{landlord_name}}\n{{org_name}}`,
-  },
-  3: {
-    subject: "Final notice: rent overdue at {{property_address}}",
-    body: `Dear {{tenant_name}},\n\nThis is a formal final notice that the rent of {{amount_due}} due on {{due_date}} for {{property_address}} remains unpaid ({{days_overdue}} days overdue).\n\nIf payment or a written repayment plan isn't received within 7 days, we will escalate this matter as set out in your tenancy agreement.\n\nRegards,\n{{landlord_name}}\n{{org_name}}`,
-  },
-};
 
 type ChaseField = "emailChase1" | "emailChase2" | "emailChase3";
 
 const CHASE_STEPS: Array<{ step: 1 | 2 | 3; field: ChaseField; label: string }> = [
-  { step: 1, field: "emailChase1", label: "Chase 1 — initial reminder" },
-  { step: 2, field: "emailChase2", label: "Chase 2 — follow up" },
-  { step: 3, field: "emailChase3", label: "Chase 3 — final notice" },
+  { step: 1, field: "emailChase1", label: "Chase 1 — Friendly reminder" },
+  { step: 2, field: "emailChase2", label: "Chase 2 — Firm follow-up" },
+  { step: 3, field: "emailChase3", label: "Chase 3 — Formal notice" },
 ];
 
 export function EmailTemplateSettings({ initialValues, onDirtyChange }: Props) {
@@ -65,6 +56,8 @@ export function EmailTemplateSettings({ initialValues, onDirtyChange }: Props) {
     defaultValues: initialValues,
   });
   const [status, setStatus] = useState<SaveStatus>("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [resetTarget, setResetTarget] = useState<{ field: ChaseField; step: 1 | 2 | 3 } | null>(null);
 
   const dirty = form.formState.isDirty;
   useEffect(() => {
@@ -72,11 +65,13 @@ export function EmailTemplateSettings({ initialValues, onDirtyChange }: Props) {
   }, [dirty, onDirtyChange]);
 
   async function onSubmit(values: EmailTemplatesSettingsInput) {
+    setSaveError(null);
     setStatus("loading");
-    const result = await saveEmailTemplatesSection(values);
-    if (!result.ok) {
+    const result = await saveEmailTemplateSettings(values);
+    if (result.success === false) {
+      setSaveError(result.error);
       setStatus("error");
-      window.setTimeout(() => setStatus("idle"), 2000);
+      window.setTimeout(() => setStatus("idle"), 3000);
       return;
     }
     setStatus("success");
@@ -103,11 +98,13 @@ export function EmailTemplateSettings({ initialValues, onDirtyChange }: Props) {
     });
   }
 
-  function resetTemplate(field: ChaseField, step: 1 | 2 | 3) {
+  function applyReset(field: ChaseField, step: 1 | 2 | 3) {
     const subjectKey = `${field}Subject` as keyof EmailTemplatesSettingsInput;
     const bodyKey = `${field}Body` as keyof EmailTemplatesSettingsInput;
-    form.setValue(subjectKey, DEFAULT_TEMPLATES[step].subject, { shouldDirty: true });
-    form.setValue(bodyKey, DEFAULT_TEMPLATES[step].body, { shouldDirty: true });
+    const d = CHASE_EMAIL_DEFAULTS[step];
+    form.setValue(subjectKey, d.subject, { shouldDirty: true });
+    form.setValue(bodyKey, d.body, { shouldDirty: true });
+    setResetTarget(null);
   }
 
   return (
@@ -115,39 +112,32 @@ export function EmailTemplateSettings({ initialValues, onDirtyChange }: Props) {
       <div>
         <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-50">Email templates</h2>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Customise how chase emails read. Letora rewrites the tone according to the rules you set in
-          AI &amp; Chasing — these subjects and bodies are the starting point.
+          Customise the emails the AI uses as a base when drafting rent chase messages.
         </p>
       </div>
 
       <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-[#2a2a2a] dark:bg-[#161616] dark:shadow-none">
         <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Sender details</h3>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          Shown in the From and Reply-To headers of every email Letora sends.
+          Shown in the From and Reply-To headers of chase emails.
         </p>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="email-sender-name" className={FIELD_LABEL}>
               Sender name
             </Label>
-            <Input
-              id="email-sender-name"
-              placeholder="e.g. Smith Lettings"
-              {...form.register("emailSenderName")}
-            />
-            <p className={FIELD_HELP}>Display name. The address comes from the Letora platform.</p>
+            <Input id="email-sender-name" {...form.register("emailSenderName")} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email-reply-to" className={FIELD_LABEL}>
-              Reply-to address
+              Reply-to email
             </Label>
-            <Input
-              id="email-reply-to"
-              type="email"
-              placeholder="rent@yourcompany.co.uk"
-              {...form.register("emailReplyTo")}
-            />
-            <p className={FIELD_HELP}>Where tenants&apos; replies should land.</p>
+            <Input id="email-reply-to" type="email" {...form.register("emailReplyTo")} />
+            {form.formState.errors.emailReplyTo?.message ? (
+              <p className="text-xs text-red-600 dark:text-red-400">
+                {form.formState.errors.emailReplyTo.message}
+              </p>
+            ) : null}
           </div>
         </div>
       </div>
@@ -164,12 +154,12 @@ export function EmailTemplateSettings({ initialValues, onDirtyChange }: Props) {
               <div>
                 <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">{label}</h3>
                 <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-                  Tone {step}/3 in the chase sequence. Use variables to personalise.
+                  Variables are replaced when the email is sent.
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => resetTemplate(field, step)}
+                onClick={() => setResetTarget({ field, step })}
                 className={cn(
                   "inline-flex h-8 items-center rounded-lg border border-zinc-300 bg-white px-3 text-xs font-medium text-zinc-900 transition-colors hover:bg-zinc-50 dark:border-[#2a2a2a] dark:bg-transparent dark:text-zinc-100 dark:hover:bg-[#1f1f1f]",
                 )}
@@ -180,23 +170,19 @@ export function EmailTemplateSettings({ initialValues, onDirtyChange }: Props) {
             <div className="mt-4 space-y-4">
               <div className="space-y-2">
                 <Label htmlFor={`${field}-subject`} className={FIELD_LABEL}>
-                  Subject
+                  Subject line
                 </Label>
-                <Input
-                  id={`${field}-subject`}
-                  placeholder={DEFAULT_TEMPLATES[step].subject}
-                  {...form.register(subjectKey)}
-                />
+                <Input id={`${field}-subject`} {...form.register(subjectKey)} />
               </div>
               <div className="space-y-2">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                   <Label htmlFor={`${field}-body`} className={FIELD_LABEL}>
-                    Body
+                    Email body
                   </Label>
                   <div className="flex flex-wrap gap-1.5">
                     {VARIABLES.map((variable) => (
                       <button
-                        key={variable.token}
+                        key={`${field}-${variable.token}`}
                         type="button"
                         onClick={() => insertVariable(field, variable.token)}
                         className="rounded-full border border-zinc-200 bg-zinc-50 px-2 py-0.5 text-[11px] font-medium text-zinc-600 transition-colors hover:border-zinc-300 hover:bg-zinc-100 dark:border-[#2a2a2a] dark:bg-[#0e0e0e] dark:text-zinc-300 dark:hover:bg-[#1f1f1f]"
@@ -210,22 +196,52 @@ export function EmailTemplateSettings({ initialValues, onDirtyChange }: Props) {
                 <Textarea
                   id={`${field}-body`}
                   rows={8}
-                  placeholder={DEFAULT_TEMPLATES[step].body}
                   {...form.register(bodyKey)}
                   className="font-mono text-sm leading-relaxed"
                 />
-                <p className={FIELD_HELP}>
-                  Click a variable above to insert it at your cursor. The AI will replace these at send time.
-                </p>
+                <p className={FIELD_HELP}>Click a variable to insert it at the cursor.</p>
               </div>
             </div>
           </div>
         );
       })}
 
+      {saveError ? (
+        <p className="text-xs text-red-600 dark:text-red-400" role="alert">
+          {saveError}
+        </p>
+      ) : null}
+
       <div className="flex flex-col items-stretch justify-end gap-3 border-t border-zinc-200 pt-4 dark:border-[#2a2a2a] sm:flex-row sm:items-center">
         <SettingsSaveButton status={status} disabled={!dirty && status === "idle"} />
       </div>
+
+      <Dialog open={resetTarget !== null} onOpenChange={(open) => !open && setResetTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reset this template?</DialogTitle>
+            <DialogDescription>
+              Reset this template to the default? Your changes will be lost.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setResetTarget(null)}
+              className="inline-flex h-9 items-center justify-center rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 hover:bg-zinc-50 dark:border-[#2a2a2a] dark:bg-transparent dark:text-zinc-100 dark:hover:bg-[#1f1f1f]"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => resetTarget && applyReset(resetTarget.field, resetTarget.step)}
+              className="inline-flex h-9 items-center justify-center rounded-lg bg-zinc-900 px-3 text-sm font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+            >
+              Reset
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

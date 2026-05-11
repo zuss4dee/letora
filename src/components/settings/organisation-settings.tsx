@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 
 import {
-  saveOrganisationSection,
+  saveOrganisationSettings,
   uploadOrgLogo,
 } from "@/app/(dashboard)/dashboard/settings/actions";
 import { SettingsSaveButton, type SaveStatus } from "@/components/settings/settings-save-button";
@@ -27,12 +27,15 @@ type Props = {
 const FIELD_LABEL = "text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400";
 const FIELD_HELP = "text-xs text-zinc-500 dark:text-zinc-500";
 
+const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+
 export function OrganisationSettings({ initialValues, onDirtyChange }: Props) {
   const form = useForm<OrganisationSettingsInput>({
     resolver: zodResolver(organisationSettingsSchema),
     defaultValues: initialValues,
   });
   const [status, setStatus] = useState<SaveStatus>("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [logoPreview, setLogoPreview] = useState<string>(initialValues.orgLogoUrl ?? "");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isUploading, startUpload] = useTransition();
@@ -44,11 +47,13 @@ export function OrganisationSettings({ initialValues, onDirtyChange }: Props) {
   }, [dirty, onDirtyChange]);
 
   async function onSubmit(values: OrganisationSettingsInput) {
+    setSaveError(null);
     setStatus("loading");
-    const result = await saveOrganisationSection({ ...values, orgLogoUrl: logoPreview });
-    if (!result.ok) {
+    const result = await saveOrganisationSettings({ ...values, orgLogoUrl: logoPreview });
+    if (result.success === false) {
+      setSaveError(result.error);
       setStatus("error");
-      window.setTimeout(() => setStatus("idle"), 2000);
+      window.setTimeout(() => setStatus("idle"), 3000);
       return;
     }
     setStatus("success");
@@ -64,11 +69,16 @@ export function OrganisationSettings({ initialValues, onDirtyChange }: Props) {
     const file = event.target.files?.[0];
     if (!file) return;
     setUploadError(null);
+    if (file.size > MAX_LOGO_BYTES) {
+      setUploadError("File must be under 2MB");
+      event.target.value = "";
+      return;
+    }
     const fd = new FormData();
     fd.append("file", file);
     startUpload(async () => {
       const result = await uploadOrgLogo(fd);
-      if (result.ok === false) {
+      if (result.success === false) {
         setUploadError(result.error);
         return;
       }
@@ -106,7 +116,7 @@ export function OrganisationSettings({ initialValues, onDirtyChange }: Props) {
                   />
                 ) : (
                   <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
-                    No logo
+                    NO LOGO
                   </span>
                 )}
               </div>
@@ -119,9 +129,18 @@ export function OrganisationSettings({ initialValues, onDirtyChange }: Props) {
                     "inline-flex h-9 items-center rounded-lg border border-zinc-300 bg-white px-3 text-sm font-medium text-zinc-900 transition-colors hover:bg-zinc-50 disabled:opacity-60 dark:border-[#2a2a2a] dark:bg-transparent dark:text-zinc-100 dark:hover:bg-[#1f1f1f]",
                   )}
                 >
-                  {isUploading ? "Uploading…" : logoPreview ? "Replace logo" : "Upload logo"}
+                  {isUploading ? (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="size-4 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-900 dark:border-zinc-600 dark:border-t-white" />
+                      Uploading…
+                    </span>
+                  ) : logoPreview ? (
+                    "Replace logo"
+                  ) : (
+                    "Upload logo"
+                  )}
                 </button>
-                <p className={FIELD_HELP}>PNG, JPEG, or SVG. Max 2MB. Recommended 256×256.</p>
+                <p className={FIELD_HELP}>Used in rent chase emails and reports. PNG, JPEG, or SVG. Max 2MB.</p>
                 {uploadError ? (
                   <p className="text-xs text-red-600 dark:text-red-400">{uploadError}</p>
                 ) : null}
@@ -143,36 +162,29 @@ export function OrganisationSettings({ initialValues, onDirtyChange }: Props) {
             </Label>
             <Input
               id="org-name"
-              placeholder="e.g. Smith Lettings Ltd"
-              {...form.register("orgName")}
+              {...form.register("orgName", {
+                onChange: () => setSaveError(null),
+              })}
             />
+            {form.formState.errors.orgName?.message ? (
+              <p className="text-xs text-red-600 dark:text-red-400">{form.formState.errors.orgName.message}</p>
+            ) : null}
             <p className={FIELD_HELP}>Shown to tenants in emails and on listings.</p>
           </div>
 
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="org-contact-email" className={FIELD_LABEL}>
-                Contact email
+                Primary contact email
               </Label>
-              <Input
-                id="org-contact-email"
-                type="email"
-                placeholder="hello@yourcompany.co.uk"
-                {...form.register("orgContactEmail")}
-              />
-              <p className={FIELD_HELP}>Public address tenants can reply to.</p>
+              <Input id="org-contact-email" type="email" {...form.register("orgContactEmail")} />
+              <p className={FIELD_HELP}>Replies to chase emails go here.</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="org-phone" className={FIELD_LABEL}>
                 Phone number
               </Label>
-              <Input
-                id="org-phone"
-                type="tel"
-                placeholder="+44 20 1234 5678"
-                {...form.register("orgPhone")}
-              />
-              <p className={FIELD_HELP}>Optional — included on contracts and listings.</p>
+              <Input id="org-phone" type="tel" {...form.register("orgPhone")} />
             </div>
           </div>
 
@@ -180,16 +192,16 @@ export function OrganisationSettings({ initialValues, onDirtyChange }: Props) {
             <Label htmlFor="org-address" className={FIELD_LABEL}>
               Business address
             </Label>
-            <Textarea
-              id="org-address"
-              rows={3}
-              placeholder="123 Letting Street, London, EC1A 1AA"
-              {...form.register("orgAddress")}
-            />
-            <p className={FIELD_HELP}>Required for the legal footer on UK tenancy contracts.</p>
+            <Textarea id="org-address" rows={3} {...form.register("orgAddress")} />
           </div>
         </div>
       </div>
+
+      {saveError ? (
+        <p className="text-xs text-red-600 dark:text-red-400" role="alert">
+          {saveError}
+        </p>
+      ) : null}
 
       <div className="flex flex-col items-stretch justify-end gap-3 border-t border-zinc-200 pt-4 dark:border-[#2a2a2a] sm:flex-row sm:items-center">
         <SettingsSaveButton status={status} disabled={!dirty && status === "idle"} />

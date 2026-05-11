@@ -60,6 +60,7 @@ export function ThemeProviderClient({
     if (!mounted) return;
 
     const root = document.documentElement;
+    root.setAttribute("data-theme", theme);
     root.classList.remove("light", "dark");
     root.classList.add(resolvedTheme);
     if (enableColorScheme) {
@@ -67,7 +68,7 @@ export function ThemeProviderClient({
     } else {
       root.style.removeProperty("color-scheme");
     }
-  }, [enableColorScheme, mounted, resolvedTheme]);
+  }, [enableColorScheme, mounted, resolvedTheme, theme]);
 
   React.useEffect(() => {
     if (!enableSystem || theme !== "system") return;

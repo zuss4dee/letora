@@ -65,7 +65,7 @@ export function SettingsSaveButton({
           <span>Saved</span>
         </>
       ) : isError ? (
-        <span>Failed to save</span>
+        <span>Failed to save — try again</span>
       ) : (
         <span>{idleLabel}</span>
       )}

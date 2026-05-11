@@ -133,97 +133,84 @@ function parseTheme(value: unknown): ThemePreference {
     : "system";
 }
 
-export async function getUserSettings(userId: string): Promise<UserSettingsRow | null> {
-  const supabase = await createClient();
+/** Raw `user_settings` row — wide select for settings panel + legacy columns. */
+type UserSettingsRowDb = {
+  id: string;
+  user_id: string;
+  stripe_customer_id?: string | null;
+  stripe_connect_account_id?: string | null;
+  polar_customer_id?: string | null;
+  polar_subscription_id?: string | null;
+  business_name?: string | null;
+  landlord_name?: string | null;
+  contact_phone?: string | null;
+  contact_email?: string | null;
+  business_address?: string | null;
+  rent_chaser_tone?: string | null;
+  first_chase_days?: number | null;
+  email_signoff?: string | null;
+  include_payment_plan?: boolean | null;
+  email_from_name?: string | null;
+  auto_send_rent_chaser?: boolean | null;
+  auto_send_maintenance_updates?: boolean | null;
+  auto_send_onboarding_emails?: boolean | null;
+  auto_send_lead_updates?: boolean | null;
+  auto_send_referencing_emails?: boolean | null;
+  referencing_agency_name?: string | null;
+  referencing_agency_email?: string | null;
+  referencing_agency_notes?: string | null;
+  rent_chaser_instructions?: string | null;
+  min_lead_score?: number | null;
+  preferred_sources?: string[] | null;
+  disqualify_no_movein?: boolean | null;
+  lead_qualifier_criteria?: string | null;
+  onboarding_status?: string | null;
+  onboarding_primary_goal?: string | null;
+  onboarding_setup_reminder_dismissed_at?: string | null;
+  has_seen_tour?: boolean | null;
+  subscription_plan?: string | null;
+  subscription_status?: string | null;
+  subscription_period_end?: string | null;
+  subscription_trial_end?: string | null;
+  org_name?: string | null;
+  org_logo_url?: string | null;
+  org_contact_email?: string | null;
+  org_phone?: string | null;
+  org_address?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  avatar_url?: string | null;
+  chase_trigger_days?: number | null;
+  chase_max_per_month?: number | null;
+  chase_min_gap_days?: number | null;
+  chase_allow_weekends?: boolean | null;
+  chase_escalation_threshold?: number | null;
+  chase_tone_1?: string | null;
+  chase_tone_2?: string | null;
+  chase_tone_3?: string | null;
+  chase_require_approval?: boolean | null;
+  chase_ai_proactive?: boolean | null;
+  email_sender_name?: string | null;
+  email_reply_to?: string | null;
+  email_chase1_subject?: string | null;
+  email_chase1_body?: string | null;
+  email_chase2_subject?: string | null;
+  email_chase2_body?: string | null;
+  email_chase3_subject?: string | null;
+  email_chase3_body?: string | null;
+  notif_rent_overdue?: boolean | null;
+  notif_rent_overdue_days?: number | null;
+  notif_escalation?: boolean | null;
+  notif_approval_ready?: boolean | null;
+  notif_approval_queue_threshold?: number | null;
+  notif_maintenance?: boolean | null;
+  notif_weekly_digest?: boolean | null;
+  notif_digest_day?: string | null;
+  notif_digest_time?: string | null;
+  theme_preference?: string | null;
+};
 
-  /** Wide select intentionally typed `*` so we can read columns from the new
-   *  settings panel migration without being blocked by `supabase_types.ts` drift.
-   *  The `data` object is normalised manually below. */
-  const { data: rawData, error } = await supabase
-    .from("user_settings")
-    .select("*")
-    .eq("user_id", userId)
-    .maybeSingle();
-
-  if (error || !rawData) return null;
-
-  type UserSettingsRowDb = {
-    id: string;
-    user_id: string;
-    stripe_customer_id?: string | null;
-    stripe_connect_account_id?: string | null;
-    polar_customer_id?: string | null;
-    polar_subscription_id?: string | null;
-    business_name?: string | null;
-    landlord_name?: string | null;
-    contact_phone?: string | null;
-    contact_email?: string | null;
-    business_address?: string | null;
-    rent_chaser_tone?: string | null;
-    first_chase_days?: number | null;
-    email_signoff?: string | null;
-    include_payment_plan?: boolean | null;
-    email_from_name?: string | null;
-    auto_send_rent_chaser?: boolean | null;
-    auto_send_maintenance_updates?: boolean | null;
-    auto_send_onboarding_emails?: boolean | null;
-    auto_send_lead_updates?: boolean | null;
-    auto_send_referencing_emails?: boolean | null;
-    referencing_agency_name?: string | null;
-    referencing_agency_email?: string | null;
-    referencing_agency_notes?: string | null;
-    rent_chaser_instructions?: string | null;
-    min_lead_score?: number | null;
-    preferred_sources?: string[] | null;
-    disqualify_no_movein?: boolean | null;
-    lead_qualifier_criteria?: string | null;
-    onboarding_status?: string | null;
-    onboarding_primary_goal?: string | null;
-    onboarding_setup_reminder_dismissed_at?: string | null;
-    has_seen_tour?: boolean | null;
-    subscription_plan?: string | null;
-    subscription_status?: string | null;
-    subscription_period_end?: string | null;
-    subscription_trial_end?: string | null;
-    org_name?: string | null;
-    org_logo_url?: string | null;
-    org_contact_email?: string | null;
-    org_phone?: string | null;
-    org_address?: string | null;
-    first_name?: string | null;
-    last_name?: string | null;
-    avatar_url?: string | null;
-    chase_trigger_days?: number | null;
-    chase_max_per_month?: number | null;
-    chase_min_gap_days?: number | null;
-    chase_allow_weekends?: boolean | null;
-    chase_escalation_threshold?: number | null;
-    chase_tone_1?: string | null;
-    chase_tone_2?: string | null;
-    chase_tone_3?: string | null;
-    chase_require_approval?: boolean | null;
-    chase_ai_proactive?: boolean | null;
-    email_sender_name?: string | null;
-    email_reply_to?: string | null;
-    email_chase1_subject?: string | null;
-    email_chase1_body?: string | null;
-    email_chase2_subject?: string | null;
-    email_chase2_body?: string | null;
-    email_chase3_subject?: string | null;
-    email_chase3_body?: string | null;
-    notif_rent_overdue?: boolean | null;
-    notif_rent_overdue_days?: number | null;
-    notif_escalation?: boolean | null;
-    notif_approval_ready?: boolean | null;
-    notif_approval_queue_threshold?: number | null;
-    notif_maintenance?: boolean | null;
-    notif_weekly_digest?: boolean | null;
-    notif_digest_day?: string | null;
-    notif_digest_time?: string | null;
-    theme_preference?: string | null;
-  };
-  const data = rawData as unknown as UserSettingsRowDb;
-
+function mapDbRowToUserSettings(data: UserSettingsRowDb): UserSettingsRow {
   const rawTone = (data.rent_chaser_tone ?? "professional_firm") as string;
   /** Map legacy `friendly_reminder` to `friendly_polite` so the tone Select matches options. */
   const mapped =
@@ -303,7 +290,7 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
     emailChase3Body: data.email_chase3_body ?? "",
     /* Notifications */
     notifRentOverdue: Boolean(data.notif_rent_overdue ?? true),
-    notifRentOverdueDays: data.notif_rent_overdue_days ?? 3,
+    notifRentOverdueDays: data.notif_rent_overdue_days ?? 1,
     notifEscalation: Boolean(data.notif_escalation ?? true),
     notifApprovalReady: Boolean(data.notif_approval_ready ?? true),
     notifApprovalQueueThreshold: data.notif_approval_queue_threshold ?? 5,
@@ -314,6 +301,46 @@ export async function getUserSettings(userId: string): Promise<UserSettingsRow |
     /* Appearance */
     themePreference: parseTheme(data.theme_preference),
   };
+}
+
+export type UserSettingsFetchResult =
+  | { ok: true; row: UserSettingsRow | null }
+  | { ok: false; error: string };
+
+/** Full settings row read with explicit fetch failure (for the settings page banner). */
+export async function fetchUserSettingsRow(userId: string): Promise<UserSettingsFetchResult> {
+  const supabase = await createClient();
+  const { data: rawData, error } = await supabase
+    .from("user_settings")
+    .select("*")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[fetchUserSettingsRow]", error.message);
+    return { ok: false, error: error.message };
+  }
+  if (!rawData) {
+    return { ok: true, row: null };
+  }
+  return { ok: true, row: mapDbRowToUserSettings(rawData as unknown as UserSettingsRowDb) };
+}
+
+export async function getUserSettings(userId: string): Promise<UserSettingsRow | null> {
+  const r = await fetchUserSettingsRow(userId);
+  return r.ok ? r.row : null;
+}
+
+/** Narrow read for dashboard theme bootstrap (avoids wide selects in layout). */
+export async function getThemePreferenceForUser(userId: string): Promise<ThemePreference> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("user_settings")
+    .select("theme_preference")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error || !data) return "system";
+  return parseTheme((data as { theme_preference?: string | null }).theme_preference);
 }
 
 export async function markProductTourComplete(): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -494,13 +521,17 @@ export async function saveProfileSettings(input: ProfileSettingsInput): Promise<
   }
   const v = parsed.data;
   const fullName = [v.firstName?.trim(), v.lastName?.trim()].filter(Boolean).join(" ");
-  return upsertSection({
+  const result = await upsertSection({
     first_name: v.firstName?.trim() || null,
     last_name: v.lastName?.trim() || null,
     avatar_url: v.avatarUrl?.trim() || null,
     /** Keep legacy landlord_name in sync so chase emails address the same person. */
     landlord_name: fullName.length > 0 ? fullName : null,
   });
+  if (result.ok) {
+    revalidatePath("/dashboard");
+  }
+  return result;
 }
 
 export async function saveAiChaseSettings(input: AiChaseSettingsInput): Promise<SectionResult> {
