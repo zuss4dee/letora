@@ -307,7 +307,7 @@ export function BatchOnboardingImport({
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-background dark:bg-[#f8f8f7] text-zinc-950 dark:bg-[#131313] dark:text-[#e5e2e1]">
       {/* ── Page Header ── */}
-      <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-200 dark:border-[#282828] dark:bg-[#161616]">
+      <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-200 dark:border-[#282828] dark:bg-zinc-900">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-zinc-500 dark:text-[#555555]">
           Import Console
         </p>
@@ -677,7 +677,7 @@ export function BatchOnboardingImport({
             ) : null}
 
             {/* ── Or Use Chat ── */}
-            <section className="border-t border-zinc-200 bg-white px-4 py-5 dark:border-[#282828] dark:bg-[#0B0B0B]">
+            <section className="border-t border-zinc-200 bg-white px-4 py-5 dark:border-[#282828] dark:bg-zinc-900">
               <div className="flex items-start gap-4">
                 <div className="flex size-8 shrink-0 items-center justify-center border border-zinc-200 bg-zinc-100 dark:border-[#333333] dark:bg-[#1A1A1A]">
                   <MessageSquare className="size-3.5 text-zinc-500 dark:text-[#555555]" />
@@ -712,7 +712,7 @@ export function BatchOnboardingImport({
         >
           <details
             className={cn(
-              "group border-b border-zinc-200 bg-white [&_summary::-webkit-details-marker]:hidden [&[open]_summary_.past-import-chevron]:rotate-180 dark:border-[#282828] dark:bg-[#1A1A1A]",
+              "group border-b border-zinc-200 bg-white [&_summary::-webkit-details-marker]:hidden [&[open]_summary_.past-import-chevron]:rotate-180 dark:border-[#282828] dark:bg-zinc-900",
               sidebarPreflightMuted && "bg-zinc-50 dark:border-[#1d1d1d] dark:bg-[#121212]",
             )}
           >
@@ -797,7 +797,7 @@ export function BatchOnboardingImport({
           <details
             key={sidebarPreflightMuted ? "preflight-muted" : "pre-preview"}
             className={cn(
-              "border-t border-zinc-200 bg-white [&_summary::-webkit-details-marker]:hidden [&[open]_summary_.guide-chevron]:rotate-180 dark:border-[#282828] dark:bg-[#1A1A1A]",
+              "border-t border-zinc-200 bg-white [&_summary::-webkit-details-marker]:hidden [&[open]_summary_.guide-chevron]:rotate-180 dark:border-[#282828] dark:bg-zinc-900",
               sidebarPreflightMuted && "bg-zinc-50 dark:border-[#1d1d1d] dark:bg-[#101010]",
             )}
             {...({

@@ -30,7 +30,7 @@ export function PropertyCreatedCompliancePrompt({
 }: PropertyCreatedCompliancePromptProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md gap-0 overflow-hidden border-border dark:border-[#BD9952]/25 bg-card p-0 font-headline shadow-[0_28px_56px_-32px_rgba(0,0,0,0.55)] sm:max-w-md">
+      <DialogContent className="max-w-md gap-0 overflow-hidden rounded-xl border border-border bg-white p-0 font-headline shadow-lg dark:border-[#BD9952]/25 dark:bg-zinc-900 sm:max-w-md">
         <div
           className="h-[3px] w-full bg-gradient-to-r from-[#BD9952] via-[#BD9952]/50 to-transparent"
           aria-hidden
@@ -53,7 +53,7 @@ export function PropertyCreatedCompliancePrompt({
                   Property Secure — compliance certificates
                 </DialogTitle>
                 <DialogDescription asChild>
-                  <p className="font-headline text-base font-light leading-relaxed text-foreground">
+                  <p className="font-headline text-base font-light leading-relaxed text-zinc-800 dark:text-zinc-200">
                     <span className="font-normal text-foreground">Property Secure.</span> Now, let&apos;s protect your
                     legal standing.{" "}
                     {hasGasSupply ? (
@@ -73,15 +73,15 @@ export function PropertyCreatedCompliancePrompt({
           <DialogFooter className="relative mt-8 flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3">
             <Button
               type="button"
-              variant="ghost"
-              className="font-headline text-muted-foreground hover:text-foreground"
+              variant="outline"
+              className="font-headline rounded-lg border-zinc-300 text-zinc-700 hover:bg-zinc-50 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800"
               onClick={() => onOpenChange(false)}
             >
               Later
             </Button>
             <Button
               type="button"
-              className="font-headline rounded-full border border-border dark:border-[#BD9952]/45 bg-background dark:bg-[#BD9952]/12 px-6 text-foreground shadow-sm transition hover:border-border dark:border-[#BD9952]/70 hover:bg-background dark:bg-[#BD9952]/20"
+              className="font-headline rounded-lg border border-zinc-900 bg-zinc-900 px-6 text-white shadow-sm transition hover:bg-zinc-800 dark:border-[#BD9952]/50 dark:bg-[#BD9952]/20 dark:text-[#f5e6c8] dark:hover:bg-[#BD9952]/30"
               onClick={onUploadNow}
             >
               Upload Now

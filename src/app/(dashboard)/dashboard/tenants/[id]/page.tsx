@@ -60,7 +60,7 @@ function toTenantFormInput(t: {
 function TenantDetailSkeleton() {
   return (
     <div className="flex flex-1 flex-col bg-zinc-100 dark:bg-[#0B0B0B]">
-      <div className="h-20 border-b border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#0e0e0e]" />
+      <div className="h-20 border-b border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-zinc-900" />
       <div className="h-16 border-b border-zinc-200/80 bg-zinc-100 dark:border-[#232323] dark:bg-[#0B0B0B]" />
       <div className="flex-1 p-6">
         <div className="grid grid-cols-12 gap-6">
@@ -150,7 +150,7 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
           <div className="col-span-12 space-y-6 lg:col-span-8">
             
             {/* ACTIVE TENANCY CONTEXT */}
-            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#0e0e0e]">
+            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-zinc-900">
               <div className="flex items-center justify-between border-b border-zinc-200/80 px-5 py-3 dark:border-[#232323]">
                 <div className="flex items-center gap-2">
                   <Key className="size-3.5 text-zinc-500" />
@@ -201,7 +201,7 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
             </section>
 
             {/* RENT & ARREARS HUB */}
-            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#0e0e0e]">
+            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-zinc-900">
               <div className="flex items-center justify-between border-b border-zinc-200/80 px-5 py-3 dark:border-[#232323]">
                 <div className="flex items-center gap-2">
                   <CircleDollarSign className="size-3.5 text-zinc-500" />
@@ -272,7 +272,7 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
             </section>
 
             {/* MAINTENANCE OVERVIEW */}
-            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#0e0e0e]">
+            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-zinc-900">
               <div className="flex items-center justify-between border-b border-zinc-200/80 px-5 py-3 dark:border-[#232323]">
                 <div className="flex items-center gap-2">
                   <Wrench className="size-3.5 text-zinc-500" />
@@ -313,7 +313,7 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
           <div className="col-span-12 space-y-6 lg:col-span-4">
             
             {/* IDENTITY METADATA */}
-            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#0e0e0e]">
+            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-zinc-900">
               <div className="flex items-center gap-2 border-b border-zinc-200/80 px-5 py-3 dark:border-[#232323]">
                 <User className="size-3.5 text-zinc-500" />
                 <h3 className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
@@ -342,7 +342,7 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
             </section>
 
             {/* OPERATIONAL HISTORY LOG */}
-            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#0e0e0e]">
+            <section className="border border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-zinc-900">
               <div className="flex items-center justify-between border-b border-zinc-200/80 px-5 py-3 dark:border-[#232323]">
                 <div className="flex items-center gap-2">
                   <History className="size-3.5 text-zinc-500" />

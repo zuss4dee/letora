@@ -116,8 +116,8 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
   }, [ctx.approvalId, router]);
 
   return (
-    <div className="grid min-h-0 flex-1 gap-8 bg-white dark:bg-[#0B0B0B] lg:grid-cols-[minmax(0,1fr)_minmax(280px,38%)] lg:gap-12">
-      <section className="flex min-h-0 flex-col gap-6 bg-white px-6 py-8 dark:bg-[#0B0B0B]">
+    <div className="grid min-h-0 flex-1 gap-8 bg-white dark:bg-zinc-900 lg:grid-cols-[minmax(0,1fr)_minmax(280px,38%)] lg:gap-12">
+      <section className="flex min-h-0 flex-col gap-6 bg-white px-6 py-8 dark:bg-zinc-900">
         <div className="flex flex-wrap items-center gap-3">
           {isEdited ? (
             <span className="border border-zinc-300 bg-zinc-50 px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.12em] text-zinc-700 dark:border-[#01696f]/50 dark:bg-[#01696f]/15 dark:text-[#97e6ec]">

@@ -330,11 +330,11 @@ export function TenanciesRegistry({
     <div className="flex min-h-0 flex-1 flex-col text-zinc-900 dark:text-[#e5e2e1]">
       {/* B. Top Summary Row */}
       <div className="mb-8 grid grid-cols-1 gap-px border border-zinc-200/90 bg-zinc-200/90 sm:grid-cols-2 lg:grid-cols-4 dark:border-[#333333] dark:bg-[#333333]">
-        <div className="flex flex-col bg-white p-4 dark:bg-[#161616]">
+        <div className="flex flex-col bg-white p-4 dark:bg-zinc-900">
           <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Active Tenancies</span>
           <span className="text-2xl font-bold tabular-nums text-zinc-900 md:text-3xl dark:text-white">{activeCount}</span>
         </div>
-        <div className="flex flex-col bg-white p-4 dark:bg-[#161616]">
+        <div className="flex flex-col bg-white p-4 dark:bg-zinc-900">
           <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Ending Soon</span>
           <div className="flex items-center gap-2">
             <span className="text-2xl font-bold tabular-nums text-zinc-900 md:text-3xl dark:text-white">{endingSoonCount}</span>
@@ -345,13 +345,13 @@ export function TenanciesRegistry({
             )}
           </div>
         </div>
-        <div className="flex flex-col bg-white p-4 dark:bg-[#161616]">
+        <div className="flex flex-col bg-white p-4 dark:bg-zinc-900">
           <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Vacant Units</span>
           <span className={cn("text-2xl font-bold tabular-nums md:text-3xl", vacantCount > 0 ? "text-amber-600 dark:text-amber-400" : "text-zinc-900 dark:text-white")}>
             {vacantCount}
           </span>
         </div>
-        <div className="flex flex-col bg-white p-4 dark:bg-[#161616]">
+        <div className="flex flex-col bg-white p-4 dark:bg-zinc-900">
           <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Monthly Yield (Live)</span>
           <span className="text-2xl font-bold tabular-nums text-emerald-700 md:text-3xl dark:text-[#afefdd]">{gbp.format(monthlyRentExpected)}</span>
         </div>
@@ -360,7 +360,7 @@ export function TenanciesRegistry({
       <div className="flex min-h-0 min-w-0 flex-1 bg-zinc-50 dark:bg-[#0e0e0e]">
         <div
           className={cn(
-            "flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-transparent",
+            "flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-zinc-900",
             inspectorOpen && "border-r border-zinc-200/80 dark:border-[#232323]",
           )}
         >
@@ -664,7 +664,7 @@ export function TenanciesRegistry({
               </div>
 
               {/* Bottom Sticky Actions (Action Priority) */}
-              <div className="shrink-0 border-t border-zinc-200/80 bg-white p-6 dark:border-[#232323] dark:bg-[#0B0B0B]">
+              <div className="shrink-0 border-t border-zinc-200/80 bg-white p-6 dark:border-[#232323] dark:bg-zinc-900">
                 <div className="grid grid-cols-1 gap-2">
                   <Link
                     href={`/dashboard/tenancies/${selected.id}`}

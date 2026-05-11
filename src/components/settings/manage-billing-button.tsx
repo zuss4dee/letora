@@ -5,10 +5,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 /**
- * Opens Stripe Customer Portal (POST /api/stripe/create-portal). Used on the Billing page (`/dashboard/billing`).
+ * Opens Polar or Stripe billing portal (`POST /api/polar/create-portal` or `POST /api/stripe/create-portal`).
  */
 export function ManageBillingButton({
-  provider = "stripe",
+  provider = "polar",
   label,
 }: {
   provider?: "stripe" | "polar";

@@ -188,6 +188,7 @@ export function NewContractDialog({
                 min={0}
                 step="1"
                 {...form.register("monthlyRent", { valueAsNumber: true })}
+                onFocus={(e) => e.target.select()}
               />
             </div>
             <div className="grid gap-2">
@@ -198,6 +199,7 @@ export function NewContractDialog({
                 min={0}
                 step="1"
                 {...form.register("depositAmount", { valueAsNumber: true })}
+                onFocus={(e) => e.target.select()}
               />
             </div>
           </div>

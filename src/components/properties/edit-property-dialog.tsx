@@ -162,6 +162,7 @@ export function EditPropertyDialog({ propertyId, initial, triggerLabel = "Edit p
                   min={1}
                   max={10}
                   {...form.register("bedrooms", { valueAsNumber: true })}
+                  onFocus={(e) => e.target.select()}
                 />
                 {form.formState.errors.bedrooms?.message ? (
                   <p className="text-xs text-red-600 dark:text-red-400">
@@ -179,6 +180,7 @@ export function EditPropertyDialog({ propertyId, initial, triggerLabel = "Edit p
                   min={1}
                   max={5}
                   {...form.register("bathrooms", { valueAsNumber: true })}
+                  onFocus={(e) => e.target.select()}
                 />
                 {form.formState.errors.bathrooms?.message ? (
                   <p className="text-xs text-red-600 dark:text-red-400">
@@ -197,6 +199,7 @@ export function EditPropertyDialog({ propertyId, initial, triggerLabel = "Edit p
                 min={0}
                 step="1"
                 {...form.register("monthlyRent", { valueAsNumber: true })}
+                onFocus={(e) => e.target.select()}
               />
               {form.formState.errors.monthlyRent?.message ? (
                 <p className="text-xs text-red-600 dark:text-red-400">

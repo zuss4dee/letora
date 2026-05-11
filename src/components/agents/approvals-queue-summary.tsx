@@ -9,7 +9,7 @@ const MAINT = "approve_maintenance_dispatch" as const;
 
 function statBlock(label: string, value: number, isAging?: boolean) {
   return (
-    <div className="flex flex-col border border-zinc-200/90 bg-white p-4 dark:border-[#232323] dark:bg-[#111111]">
+    <div className="flex flex-col border border-zinc-200/90 bg-white p-4 dark:border-[#232323] dark:bg-zinc-900">
       <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">{label}</span>
       <span className={cn(
         "text-xl font-bold tabular-nums",
@@ -36,7 +36,7 @@ export function ApprovalsQueueSummary({ stats }: { stats: ApprovalQueueStats }) 
       {statBlock("Rent Chase", rent)}
       {statBlock("Move-In", moveIn)}
       {statBlock("Maintenance", maintenance)}
-      <div className="flex flex-col bg-white p-4 dark:bg-[#111111]">
+      <div className="flex flex-col bg-white p-4 dark:bg-zinc-900">
         <span className="mb-2 text-[9px] font-bold uppercase tracking-wider text-zinc-500">Oldest Waiting</span>
         <span className="text-[14px] font-bold text-zinc-800 dark:text-zinc-200">{oldest ?? "—"}</span>
       </div>

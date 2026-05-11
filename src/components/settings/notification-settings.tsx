@@ -176,6 +176,7 @@ export function NotificationSettings({ initialValues, onDirtyChange }: Props) {
                   type="number"
                   min={1}
                   max={14}
+                  onFocus={(e) => e.target.select()}
                   className="max-w-[6rem]"
                   value={form.watch("notifRentOverdueDays")}
                   onChange={(e) =>
@@ -215,6 +216,7 @@ export function NotificationSettings({ initialValues, onDirtyChange }: Props) {
                   type="number"
                   min={1}
                   max={50}
+                  onFocus={(e) => e.target.select()}
                   className="max-w-[6rem]"
                   value={form.watch("notifApprovalQueueThreshold")}
                   onChange={(e) =>

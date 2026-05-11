@@ -572,7 +572,7 @@ export function OnboardingWizard({
                     <Button
                       type="button"
                       disabled={busy}
-                      onClick={() => void finishAndGo("/dashboard", "home")}
+                      onClick={() => void finishAndGo("/dashboard?postSetup=1", "home")}
                       className="rounded-full bg-[#01696f] px-8 text-primary-foreground hover:bg-[#015a5f] dark:bg-[#4f98a3] dark:text-white dark:hover:bg-[#458892]"
                     >
                       {completeBusy === "home" ? (

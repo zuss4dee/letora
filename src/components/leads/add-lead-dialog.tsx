@@ -248,6 +248,7 @@ export function AddLeadDialog({
                       return Number.isFinite(n) && !Number.isNaN(n) ? n : undefined;
                     },
                   })}
+                  onFocus={(e) => e.target.select()}
                 />
                 {errors.budget ? (
                   <p className="text-sm text-destructive" role="alert">

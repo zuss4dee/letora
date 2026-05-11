@@ -15,6 +15,7 @@ import {
   DIALOG_SINGLE_COLUMN_CLASS,
   dialogFormFooterClass,
 } from "@/lib/ui/dialog-form";
+import { cn } from "@/lib/utils";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -130,45 +131,53 @@ export function AddTenancyDialog({
           )}
         </DialogTrigger>
       ) : null}
-      <DialogContent className={DIALOG_SINGLE_COLUMN_CLASS}>
-        <DialogHeader>
-          <DialogTitle>{postCreate ? "Tenancy added" : "Add tenancy"}</DialogTitle>
-          <DialogDescription>
-            {postCreate
-              ? "You can review any onboarding approvals from here or use Approvals in the sidebar."
-              : "Link a tenant to a property and set rent terms. Property and tenant are shown by address and name."}
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent
+        className={cn(
+          DIALOG_SINGLE_COLUMN_CLASS,
+          "flex max-h-[80vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[480px]",
+        )}
+      >
+        <div className="shrink-0 border-b px-6 pb-4 pt-6">
+          <DialogHeader>
+            <DialogTitle>{postCreate ? "Tenancy added" : "Add tenancy"}</DialogTitle>
+            <DialogDescription>
+              {postCreate
+                ? "You can review any onboarding approvals from here or use Approvals in the sidebar."
+                : "Link a tenant to a property and set rent terms. Property and tenant are shown by address and name."}
+            </DialogDescription>
+          </DialogHeader>
+        </div>
 
         {postCreate ? (
-          <div className={DIALOG_FORM_STACK_CLASS}>
-            <Card>
-              <CardHeader className="border-b py-3">
-                <CardTitle className="text-base font-medium leading-snug">
-                  {postCreate.hasPendingApproval
-                    ? "Onboarding is ready and waiting for approval"
-                    : "Tenancy created successfully. If onboarding needs approval, you’ll find it in Approvals."}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-4">
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" asChild className="bg-indigo-600 text-[#ffffff] hover:bg-indigo-700">
-                    <Link href="/dashboard/approvals">Open Approvals</Link>
-                  </Button>
-                  <DialogClose asChild>
-                    <Button type="button" variant="outline">
-                      Done
+          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+            <div className={DIALOG_FORM_STACK_CLASS}>
+              <Card>
+                <CardHeader className="border-b py-3">
+                  <CardTitle className="text-base font-medium leading-snug">
+                    {postCreate.hasPendingApproval
+                      ? "Onboarding is ready and waiting for approval"
+                      : "Tenancy created successfully. If onboarding needs approval, you’ll find it in Approvals."}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 pt-4">
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" asChild className="bg-indigo-600 text-[#ffffff] hover:bg-indigo-700">
+                      <Link href="/dashboard/approvals">Open Approvals</Link>
                     </Button>
-                  </DialogClose>
-                </div>
-              </CardContent>
-            </Card>
+                    <DialogClose asChild>
+                      <Button type="button" variant="outline">
+                        Done
+                      </Button>
+                    </DialogClose>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        ) : null}
-
-        {!postCreate ? (
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <div className={DIALOG_FORM_STACK_CLASS}>
+        ) : (
+          <form className="flex min-h-0 flex-1 flex-col overflow-hidden" onSubmit={form.handleSubmit(onSubmit)}>
+            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4">
+              <div className={DIALOG_FORM_STACK_CLASS}>
             <div className={DIALOG_FIELD_CLASS}>
               <Label htmlFor="at-property">Property</Label>
               <Select
@@ -261,6 +270,7 @@ export function AddTenancyDialog({
                   step="1"
                   placeholder="e.g. 1200"
                   {...form.register("monthlyRent", { valueAsNumber: true })}
+                  onFocus={(e) => e.target.select()}
                 />
                 {form.formState.errors.monthlyRent?.message ? (
                   <p className="text-xs text-red-600 dark:text-red-400">
@@ -278,6 +288,7 @@ export function AddTenancyDialog({
                   step="1"
                   placeholder="e.g. 1200"
                   {...form.register("depositAmount", { valueAsNumber: true })}
+                  onFocus={(e) => e.target.select()}
                 />
                 {form.formState.errors.depositAmount?.message ? (
                   <p className="text-xs text-red-600 dark:text-red-400">
@@ -292,20 +303,21 @@ export function AddTenancyDialog({
                 {submitError}
               </p>
             ) : null}
-          </div>
+              </div>
+            </div>
 
-          <div className={dialogFormFooterClass()}>
-            <DialogClose asChild>
-              <Button type="button" variant="outline">
-                Cancel
+            <div className={cn(dialogFormFooterClass(), "shrink-0 border-t px-6 py-4")}>
+              <DialogClose asChild>
+                <Button type="button" variant="outline">
+                  Cancel
+                </Button>
+              </DialogClose>
+              <Button type="submit" disabled={isSubmitting || disabled}>
+                {isSubmitting ? "Adding…" : "Add tenancy"}
               </Button>
-            </DialogClose>
-            <Button type="submit" disabled={isSubmitting || disabled}>
-              {isSubmitting ? "Adding…" : "Add tenancy"}
-            </Button>
-          </div>
-        </form>
-        ) : null}
+            </div>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );

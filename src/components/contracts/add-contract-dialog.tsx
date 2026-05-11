@@ -257,6 +257,7 @@ export function AddContractDialog({
                   min={0}
                   placeholder="e.g. 950.00"
                   {...form.register("monthlyRent", { valueAsNumber: true })}
+                  onFocus={(e) => e.target.select()}
                 />
                 {errors.monthlyRent ? (
                   <p className="text-sm text-destructive" role="alert">
@@ -273,6 +274,7 @@ export function AddContractDialog({
                   min={0}
                   placeholder="e.g. 1425.00"
                   {...form.register("depositAmount", { valueAsNumber: true })}
+                  onFocus={(e) => e.target.select()}
                 />
                 {errors.depositAmount ? (
                   <p className="text-sm text-destructive" role="alert">

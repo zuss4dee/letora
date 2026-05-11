@@ -112,7 +112,7 @@ function ReviewQueueRow({
   const primaryClass =
     "inline-flex border border-border dark:border-[#306f60]/50 bg-background dark:bg-[#152420]/90 px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#afefdd] hover:border-border dark:border-[#afefdd]/50";
   const secondaryClass =
-    "inline-flex border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-800 hover:border-zinc-400 dark:border-[#333333] dark:bg-[#161616] dark:text-zinc-200 dark:hover:border-white";
+    "inline-flex border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-800 hover:border-zinc-400 dark:border-[#333333] dark:bg-zinc-900 dark:text-zinc-200 dark:hover:border-white";
   const rowId = reviewRowDomId(row.line);
 
   if (!focused) {
@@ -151,7 +151,7 @@ function ReviewQueueRow({
   return (
     <div
       id={rowId}
-      className="scroll-mt-28 border-b border-zinc-200 dark:border-[#282828] border-l-2 border-l-[#f8cf83]/60 bg-amber-50/90 last:border-b-0 dark:bg-[#161616]/95"
+      className="scroll-mt-28 border-b border-zinc-200 dark:border-[#282828] border-l-2 border-l-[#f8cf83]/60 bg-amber-50/90 last:border-b-0 dark:bg-zinc-900/95"
     >
       <div className="space-y-3 px-3 py-3">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
@@ -580,6 +580,7 @@ export function PortfolioImportBatchReconciliation({
   model,
   rawRows,
   retryFailedAvailable,
+  showPostImportNextSteps = false,
 }: {
   batchId: string;
   headline: string;
@@ -593,6 +594,8 @@ export function PortfolioImportBatchReconciliation({
   model: BatchReconciliationModel;
   rawRows: BatchImportDetailRow[];
   retryFailedAvailable: boolean;
+  /** When the batch saved at least one row with zero failures — show “what’s next” navigation. */
+  showPostImportNextSteps?: boolean;
 }) {
   const reviewIdx = useMemo(() => new Set(model.needsReview.map((r) => r.rowIndex)), [model.needsReview]);
 
@@ -669,8 +672,8 @@ export function PortfolioImportBatchReconciliation({
   const completedLabel = completedAt ? batchCompletedFormatter.format(new Date(completedAt)) : null;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background dark:bg-[#f8f8f7] text-zinc-900 dark:bg-[#131313] dark:text-[#e5e2e1]">
-      <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-[#161616]">
+    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background text-zinc-900 dark:bg-[#131313] dark:text-[#e5e2e1]">
+      <header className="border-b border-zinc-200 bg-white px-6 py-4 dark:border-zinc-800 dark:bg-zinc-900">
         <Link
           href="/dashboard/import"
           className="mb-3 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-zinc-500 transition-colors hover:text-zinc-900 dark:text-[#888888] dark:hover:text-white"
@@ -739,6 +742,40 @@ export function PortfolioImportBatchReconciliation({
           ) : null}
         </section>
 
+        {showPostImportNextSteps ? (
+          <section
+            className="rounded-xl border border-zinc-200 bg-white p-6 shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+            aria-labelledby="batch-whats-next-heading"
+          >
+            <h2
+              id="batch-whats-next-heading"
+              className="text-base font-semibold tracking-tight text-zinc-900 dark:text-zinc-50"
+            >
+              What would you like to do next?
+            </h2>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch">
+              <Link
+                href="/dashboard?postSetup=1"
+                className="inline-flex flex-1 items-center justify-center rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-3 text-center text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:hover:bg-zinc-700"
+              >
+                Go to Dashboard
+              </Link>
+              <Link
+                href="/dashboard/rent-tracker"
+                className="inline-flex flex-1 items-center justify-center rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-3 text-center text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:hover:bg-zinc-700"
+              >
+                View Rent Tracker
+              </Link>
+              <Link
+                href="/dashboard/agents/approvals"
+                className="inline-flex flex-1 items-center justify-center rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-3 text-center text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:hover:bg-zinc-700"
+              >
+                Review AI Drafts
+              </Link>
+            </div>
+          </section>
+        ) : null}
+
         <section className="scroll-mt-24 space-y-4" aria-label="After import tasks" id="attention">
           {pendingReviewCount > 0 ? (
             <div className="max-w-xl space-y-2 text-[13px] leading-snug text-zinc-700 dark:text-[#cfc9c4]" id="batch-review-directive">
@@ -800,7 +837,7 @@ export function PortfolioImportBatchReconciliation({
           ) : null}
 
           {needsReviewTotal > 0 ? (
-            <div id="attention-review" className="scroll-mt-24 overflow-hidden rounded-sm border border-border dark:border-[#f8cf83]/20 bg-white dark:bg-[#161616]">
+            <div id="attention-review" className="scroll-mt-24 overflow-hidden rounded-sm border border-border dark:border-[#f8cf83]/20 bg-white dark:bg-zinc-900">
               <div className="border-b border-border dark:border-[#f8cf83]/15 bg-background dark:bg-[#2a2210]/30 px-3 py-2.5">
                 <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#f8cf83]">Quick checks</h3>
               </div>
@@ -809,7 +846,7 @@ export function PortfolioImportBatchReconciliation({
             </div>
           ) : null}
 
-          <div id="attention-failed" className="scroll-mt-24 overflow-hidden rounded-sm border border-border dark:border-[#BB5551]/25 bg-white dark:bg-[#161616]">
+          <div id="attention-failed" className="scroll-mt-24 overflow-hidden rounded-sm border border-border dark:border-[#BB5551]/25 bg-white dark:bg-zinc-900">
             <div className="border-b border-border dark:border-[#BB5551]/15 bg-background dark:bg-[#2a1514]/30 px-3 py-2.5">
               <h3 className="text-[11px] font-bold uppercase tracking-widest text-[#ee7d77]">Didn&apos;t save</h3>
             </div>
@@ -885,7 +922,7 @@ export function PortfolioImportBatchReconciliation({
           </section>
         ) : null}
 
-        <details id="import-section-clean" className="group rounded-sm border border-zinc-200 dark:border-[#282828] bg-background dark:bg-[#161616]">
+        <details id="import-section-clean" className="group rounded-sm border border-zinc-200 dark:border-[#282828] bg-background dark:bg-zinc-900">
           <summary className="cursor-pointer px-4 py-3 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400 marker:content-none [&::-webkit-details-marker]:hidden">
             Clean saves &amp; vacant rows ({cleanSuccessful.length + model.vacantOrPropertyOnly.length})
           </summary>
@@ -908,7 +945,7 @@ export function PortfolioImportBatchReconciliation({
           </div>
         </details>
 
-        <details className="group rounded-sm border border-zinc-200 dark:border-[#282828] bg-background dark:bg-[#161616] px-4 py-3">
+        <details className="group rounded-sm border border-zinc-200 dark:border-[#282828] bg-background dark:bg-zinc-900 px-4 py-3">
           <summary className="cursor-pointer font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-400">
             Audit trail ({rawRows.length})
           </summary>

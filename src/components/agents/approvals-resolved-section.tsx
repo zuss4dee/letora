@@ -19,7 +19,7 @@ export function ApprovalsResolvedSection({
 
   return (
     <section className={cn(className)}>
-      <ul className="divide-y divide-zinc-200 border border-zinc-200 bg-white dark:divide-[#232323] dark:border-[#232323] dark:bg-[#0e0e0e]">
+      <ul className="divide-y divide-zinc-200 border border-zinc-200 bg-white dark:divide-[#232323] dark:border-[#232323] dark:bg-zinc-900">
         {approvals.map((a) => {
           const targetLine = formatApprovalTargetLine(a.target_type, a.target_id);
           const decided = a.decided_at ?? a.executed_at ?? a.created_at;

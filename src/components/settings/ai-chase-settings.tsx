@@ -184,6 +184,7 @@ function NumberField({
           max={max}
           value={Number.isFinite(value) ? value : ""}
           onChange={(e) => onChange(Number(e.target.value))}
+          onFocus={(e) => e.target.select()}
           className="max-w-[7rem]"
         />
         {suffix ? <span className="text-sm text-zinc-500 dark:text-zinc-400">{suffix}</span> : null}

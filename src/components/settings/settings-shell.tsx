@@ -9,7 +9,8 @@ import {
   Trash2,
   UserRound,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 
 import { AiChaseSettings } from "@/components/settings/ai-chase-settings";
 import { AppearanceSettings } from "@/components/settings/appearance-settings";
@@ -95,6 +96,11 @@ const TABS: ReadonlyArray<{
   },
 ];
 
+function tabIdFromSearchParam(raw: string | null): TabId | null {
+  if (!raw) return null;
+  return TABS.some((t) => t.id === raw) ? (raw as TabId) : null;
+}
+
 export type SettingsShellInitialValues = {
   organisation: OrganisationSettingsInput;
   profile: ProfileSettingsInput;
@@ -114,6 +120,8 @@ export function SettingsShell({
   /** When true, settings could not be read from the database — fields show defaults. */
   loadFailed?: boolean;
 }) {
+  const searchParams = useSearchParams();
+  const appliedTabFromUrl = useRef(false);
   const [activeTab, setActiveTab] = useState<TabId>("organisation");
   const [pendingTab, setPendingTab] = useState<TabId | null>(null);
   const [dirtyByTab, setDirtyByTab] = useState<Record<TabId, boolean>>({
@@ -132,6 +140,14 @@ export function SettingsShell({
     },
     [],
   );
+
+  useEffect(() => {
+    if (appliedTabFromUrl.current) return;
+    const next = tabIdFromSearchParam(searchParams.get("tab"));
+    if (!next) return;
+    appliedTabFromUrl.current = true;
+    startTransition(() => setActiveTab(next));
+  }, [searchParams]);
 
   function requestTabChange(next: TabId) {
     if (next === activeTab) return;

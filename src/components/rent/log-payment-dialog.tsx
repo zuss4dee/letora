@@ -109,6 +109,7 @@ export function LogPaymentDialog({
                 min={0}
                 step="1"
                 {...form.register("amountPaid", { valueAsNumber: true })}
+                onFocus={(e) => e.target.select()}
               />
               {form.formState.errors.amountPaid?.message ? (
                 <p className="text-xs text-red-600 dark:text-red-400">

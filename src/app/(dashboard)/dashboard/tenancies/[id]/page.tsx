@@ -77,9 +77,9 @@ export default async function TenancyDetailPage({
   }
 
   return (
-    <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-background dark:bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
+    <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-background text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
       {batchReviewReturnHref ? <BatchReviewReturnBanner href={batchReviewReturnHref} /> : null}
-      <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-y border-zinc-200/70 bg-white dark:border-zinc-800 dark:bg-[#1A1A1A]">
+      <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-y border-zinc-200/70 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="relative flex min-h-0 flex-1 flex-col">
           <div
             className="pointer-events-none absolute inset-x-0 top-0 h-[min(38vh,360px)] bg-[radial-gradient(ellipse_70%_60%_at_50%_-8%,rgba(255,255,255,0.04),transparent_62%)] dark:bg-[radial-gradient(ellipse_70%_60%_at_50%_-8%,rgba(255,255,255,0.04),transparent_62%)]"

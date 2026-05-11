@@ -218,6 +218,7 @@ export function AddPropertyDialog({
                   min={1}
                   max={10}
                   {...form.register("bedrooms", { valueAsNumber: true })}
+                  onFocus={(e) => e.target.select()}
                 />
                 {form.formState.errors.bedrooms?.message ? (
                   <p className="text-xs text-red-600 dark:text-red-400">
@@ -235,6 +236,7 @@ export function AddPropertyDialog({
                   min={1}
                   max={5}
                   {...form.register("bathrooms", { valueAsNumber: true })}
+                  onFocus={(e) => e.target.select()}
                 />
                 {form.formState.errors.bathrooms?.message ? (
                   <p className="text-xs text-red-600 dark:text-red-400">
@@ -254,6 +256,7 @@ export function AddPropertyDialog({
                 step="1"
                 placeholder="e.g. 950"
                 {...form.register("monthlyRent", { valueAsNumber: true })}
+                onFocus={(e) => e.target.select()}
               />
               {form.formState.errors.monthlyRent?.message ? (
                 <p className="text-xs text-red-600 dark:text-red-400">

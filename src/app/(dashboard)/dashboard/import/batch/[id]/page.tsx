@@ -39,7 +39,7 @@ export default async function PortfolioImportBatchPage({ params }: { params: Pro
     const msg = loaded.error;
     if (msg === "Batch not found." || msg === "Invalid batch id.") notFound();
     return (
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background dark:bg-[#f8f8f7] px-6 py-10 text-zinc-950 dark:bg-[#131313] dark:text-[#e5e2e1]">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto bg-background px-6 py-10 text-zinc-950 dark:bg-[#131313] dark:text-[#e5e2e1]">
         <Link
           href="/dashboard/import"
           className="mb-6 inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-zinc-500 transition-colors hover:text-zinc-900 dark:text-[#888888] dark:hover:text-white"
@@ -85,6 +85,7 @@ export default async function PortfolioImportBatchPage({ params }: { params: Pro
   }
 
   const model = reconcilePortfolioBatch(b.rows);
+  const importSavedCleanly = failed === 0 && succeeded > 0;
 
   const failedOutcomes = b.rows.filter((r) => r.outcome === "error");
   const sr = b.sourceRows;
@@ -112,6 +113,7 @@ export default async function PortfolioImportBatchPage({ params }: { params: Pro
         model={model}
         rawRows={b.rows}
         retryFailedAvailable={retryFailedAvailable}
+        showPostImportNextSteps={importSavedCleanly}
       />
     </>
   );

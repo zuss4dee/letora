@@ -141,7 +141,7 @@ export function ApprovalsPageWorkspace({
 
         <TabsContent value="queue" className="mt-0 space-y-4 outline-none">
           {pending.length === 0 ? (
-            <div className="border border-zinc-200 bg-white dark:border-white/[0.1] dark:bg-[#121212]">
+            <div className="border border-zinc-200 bg-white dark:border-white/[0.1] dark:bg-zinc-900">
               <EmptyState
                 icon={CheckCircle2}
                 title="All caught up"

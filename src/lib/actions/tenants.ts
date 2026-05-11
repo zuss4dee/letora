@@ -611,8 +611,9 @@ export async function addTenant(formData: unknown) {
   const dob =
     values.dateOfBirth && values.dateOfBirth.trim().length > 0 ? values.dateOfBirth.trim() : null;
 
+  const tenantId = crypto.randomUUID();
   const { error } = await supabase.from("tenants").insert({
-    id: crypto.randomUUID(),
+    id: tenantId,
     user_id: user.id,
     full_name: values.fullName,
     email: values.email,
@@ -655,7 +656,8 @@ export async function addTenant(formData: unknown) {
   }
 
   revalidatePath("/dashboard/tenants");
-  return { ok: true as const };
+  revalidatePath(`/dashboard/tenants/${tenantId}`);
+  return { ok: true as const, tenantId };
 }
 
 export async function updateTenant(tenantId: string, formData: unknown) {

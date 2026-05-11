@@ -5,6 +5,7 @@ import { CommandCenterActivity } from "@/components/dashboard/command-center/com
 import { CommandCenterActivitySkeleton } from "@/components/dashboard/command-center/command-center-activity";
 import { CommandCenterAiComposer } from "@/components/dashboard/command-center/command-center-ai-composer";
 import { CommandCenterFailedImportBanner } from "@/components/dashboard/command-center/command-center-failed-import-banner";
+import { PostSetupChecklistPanel } from "@/components/dashboard/post-setup-checklist-panel";
 import { CommandCenterOnboardingHero } from "@/components/dashboard/command-center/command-center-onboarding-hero";
 import {
   CommandCenterArrearsQueue,
@@ -32,6 +33,9 @@ export async function CommandCenterLandingView({ userId }: { userId: string }) {
   return (
     <main className="flex min-h-0 flex-1 flex-col bg-zinc-50 font-['Inter',system-ui,sans-serif] text-zinc-900 dark:bg-[#0B0B0B] dark:text-[#e5e2e1]">
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 pb-10 pt-4 md:px-6 md:pb-12 md:pt-6">
+        <Suspense fallback={null}>
+          <PostSetupChecklistPanel />
+        </Suspense>
         <CommandCenterActionBar pendingApprovalsCount={kpiLoad.kpis.pendingApprovals} />
 
         {isNewUser ? (

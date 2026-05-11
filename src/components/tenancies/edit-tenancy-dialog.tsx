@@ -185,6 +185,7 @@ export function EditTenancyDialog({
                   step="1"
                   placeholder="e.g. 1200"
                   {...form.register("monthlyRent", { valueAsNumber: true })}
+                  onFocus={(e) => e.target.select()}
                 />
                 {form.formState.errors.monthlyRent?.message ? (
                   <p className="text-xs text-red-600 dark:text-red-400">
@@ -202,6 +203,7 @@ export function EditTenancyDialog({
                   step="1"
                   placeholder="e.g. 1200"
                   {...form.register("depositAmount", { valueAsNumber: true })}
+                  onFocus={(e) => e.target.select()}
                 />
                 {form.formState.errors.depositAmount?.message ? (
                   <p className="text-xs text-red-600 dark:text-red-400">

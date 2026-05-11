@@ -316,7 +316,10 @@ export function MaintenanceOperationalCaseFile({ detail }: { detail: Maintenance
             <h4 className="mt-3 text-[11px] font-bold uppercase tracking-wider text-zinc-900 dark:text-white">Case milestones</h4>
             <ol className="relative mt-6 space-y-8 border-l border-border dark:border-[#282828] pl-6 font-mono text-[10px] uppercase tracking-[0.08em] text-zinc-500">
               <li className="relative">
-                <span className="absolute -left-[25px] top-1 size-2 rounded-full bg-white" aria-hidden />
+                <span
+                  className="absolute -left-[25px] top-1 size-2 rounded-full bg-zinc-200 dark:bg-zinc-600"
+                  aria-hidden
+                />
                 <p className="text-[11px] font-bold text-zinc-900 dark:text-white">Reported</p>
                 <p className="mt-1">{fmtDt(detail.createdAt)}</p>
               </li>

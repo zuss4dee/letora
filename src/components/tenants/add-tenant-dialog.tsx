@@ -51,12 +51,17 @@ export function AddTenantDialog({
 }) {
   const router = useRouter();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  /** `null` = show path choice; set before the form for create vs skip-onboarding flows. */
+  const [tenantPath, setTenantPath] = useState<"new" | "active" | null>(null);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : uncontrolledOpen;
   const setOpen = (next: boolean) => {
     controlledOnOpenChange?.(next);
     if (!isControlled) {
       setUncontrolledOpen(next);
+    }
+    if (!next) {
+      setTenantPath(null);
     }
   };
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -91,9 +96,16 @@ export function AddTenantDialog({
         setSubmitError(result.error);
         return;
       }
+      const { tenantId } = result;
       form.reset(defaultValues);
       setOpen(false);
+      setTenantPath(null);
       router.refresh();
+      if (tenantPath === "active") {
+        router.push("/dashboard/tenancies");
+      } else {
+        router.push(`/dashboard/tenants/${tenantId}`);
+      }
     } finally {
       submitLock.current = false;
     }
@@ -131,12 +143,61 @@ export function AddTenantDialog({
             Add tenant
           </DialogTitle>
           <DialogDescription className="font-[family-name:var(--font-inter)] text-[13px] leading-relaxed text-zinc-600 dark:text-zinc-400">
-            Create a tenant profile. Use a real email so rent and maintenance notices can be sent.
+            {tenantPath
+              ? "Create a tenant profile. Use a real email so rent and maintenance notices can be sent."
+              : "Choose how you want to set this tenant up in Letora."}
           </DialogDescription>
         </DialogHeader>
 
+        {tenantPath ? null : (
+          <div className="flex flex-col gap-3 px-6 py-5">
+            <p className="font-[family-name:var(--font-inter)] text-sm text-zinc-700 dark:text-zinc-300">
+              Is this tenant new and needs onboarding, or are they already an active tenant?
+            </p>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                className={cn(
+                  "h-auto min-h-10 flex-1 whitespace-normal rounded-[2px] border border-zinc-300 bg-background px-4 py-3 text-left text-[13px] font-medium leading-snug text-zinc-900 shadow-none hover:bg-zinc-100",
+                  "dark:border-zinc-600 dark:bg-zinc-900/40 dark:text-zinc-100 dark:hover:bg-zinc-800/60",
+                )}
+                onClick={() => setTenantPath("new")}
+              >
+                New tenant — start onboarding
+              </Button>
+              <Button
+                type="button"
+                className={cn(
+                  "h-auto min-h-10 flex-1 whitespace-normal rounded-[2px] border border-zinc-300 bg-background px-4 py-3 text-left text-[13px] font-medium leading-snug text-zinc-900 shadow-none hover:bg-zinc-100",
+                  "dark:border-zinc-600 dark:bg-zinc-900/40 dark:text-zinc-100 dark:hover:bg-zinc-800/60",
+                )}
+                onClick={() => setTenantPath("active")}
+              >
+                Already active — skip onboarding
+              </Button>
+            </div>
+            <div className="flex justify-end pt-2">
+              <DialogClose asChild>
+                <Button type="button" variant="outline" className="h-8 rounded-[2px] text-[11px]">
+                  Cancel
+                </Button>
+              </DialogClose>
+            </div>
+          </div>
+        )}
+
+        {tenantPath ? (
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <div className="flex flex-col gap-5 px-6 py-5">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                className="font-[family-name:var(--font-inter)] text-[11px] font-medium text-zinc-500 underline-offset-4 hover:text-zinc-800 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
+                onClick={() => setTenantPath(null)}
+              >
+                Change setup type
+              </button>
+            </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="tn-name" className={labelClassName}>
                 Full name
@@ -268,6 +329,7 @@ export function AddTenantDialog({
             </Button>
           </div>
         </form>
+        ) : null}
       </DialogContent>
     </Dialog>
   );

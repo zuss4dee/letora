@@ -176,6 +176,7 @@ export function AddRentPaymentDialog({
                 min={0}
                 placeholder="e.g. 950.00"
                 {...form.register("amount", { valueAsNumber: true })}
+                onFocus={(e) => e.target.select()}
               />
               {errors.amount ? (
                 <p className="text-sm text-destructive" role="alert">

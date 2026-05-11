@@ -178,7 +178,7 @@ export function ApprovalsPendingInteractive({
       </div>
 
       {/* Decision Inspector */}
-      <aside className="flex w-[420px] shrink-0 flex-col bg-white dark:bg-[#111111]">
+      <aside className="flex w-[420px] shrink-0 flex-col bg-white dark:bg-zinc-900">
         {selectedApproval ? (
           <>
             <div className="shrink-0 border-b border-zinc-200/90 p-6 dark:border-[#232323]">

@@ -49,7 +49,7 @@ export function WorkspaceBillingView({ settings }: Props) {
     getSubscriptionAmountLine(settings?.subscriptionPlan ?? null) ??
     (paying ? "Amount syncs after checkout — open subscription management below." : null);
 
-  const portalProvider = polarBillingLinked ? "polar" : stripeLinked ? "stripe" : null;
+  const portalProvider: "polar" | null = "polar";
 
   return (
     <div className="mx-auto max-w-2xl space-y-10 pb-24">
@@ -71,7 +71,7 @@ export function WorkspaceBillingView({ settings }: Props) {
         </button>
       </header>
 
-      <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-[#161616]">
+      <section className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">Subscription</h2>
         <dl className="mt-6 space-y-5">
           <div className="flex flex-col gap-1 sm:flex-row sm:justify-between sm:gap-8">

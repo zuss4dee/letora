@@ -264,7 +264,7 @@ export function ManagedPropertiesRegistry({
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-zinc-100 dark:bg-[#0e0e0e]">
       {/* OPERATIONAL HEADER */}
-      <div className="flex shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white px-6 py-4 dark:border-[#232323] dark:bg-[#0e0e0e]">
+      <div className="flex shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white px-6 py-4 dark:border-[#232323] dark:bg-zinc-900">
         <div>
           <h1 className="text-[16px] font-bold tracking-tight text-zinc-900 uppercase dark:text-white">
             Portfolio Operations
@@ -320,7 +320,7 @@ export function ManagedPropertiesRegistry({
 
       <main className="flex min-h-0 flex-1 overflow-hidden">
         <section className={cn(
-          "flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-[#111111]",
+          "flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-zinc-900",
           inspectorOpen && "border-r border-zinc-200/80 dark:border-[#232323]"
         )}>
           <div className="sticky top-0 z-10 grid grid-cols-12 border-b border-zinc-200/80 bg-zinc-50 px-6 py-2 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500 dark:border-[#232323] dark:bg-[#111111]">

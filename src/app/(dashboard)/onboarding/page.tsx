@@ -46,7 +46,7 @@ export default async function OnboardingPage() {
 
   const legacy = await syncLegacyOnboardingAfterTenantStepRemoved();
   if (legacy.ok && legacy.didComplete) {
-    redirect("/dashboard");
+    redirect("/dashboard?postSetup=1");
   }
 
   const settings = await getUserSettings(user.id);
@@ -56,7 +56,7 @@ export default async function OnboardingPage() {
   // workspace setup (names/properties): the 3-step flow hands users to dashboard/import
   // and the in-app checklist covers the rest — a stricter gate would trap returning users.
   if (isOnboardingMarkedComplete(onboardingGate)) {
-    redirect("/dashboard");
+    redirect("/dashboard?postSetup=1");
   }
 
   const { firstName, lastName } = initialProfileNames(settings, user);

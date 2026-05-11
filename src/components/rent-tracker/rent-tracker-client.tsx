@@ -297,6 +297,7 @@ export function RentTrackerClient({
                     min={0}
                     step="1"
                     {...form.register("amount", { valueAsNumber: true })}
+                    onFocus={(e) => e.target.select()}
                   />
                 </div>
                 <div className="grid gap-2">

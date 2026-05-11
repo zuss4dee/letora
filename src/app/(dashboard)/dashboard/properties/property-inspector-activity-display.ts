@@ -24,7 +24,7 @@ export function formatPropertyInspectorActivityClock(iso: string): string {
 export function propertyInspectorActivityBarClass(accent: PropertyInspectorActivityAccent): string {
   switch (accent) {
     case "success":
-      return "bg-white";
+      return "bg-emerald-500 dark:bg-emerald-400";
     case "danger":
       return "bg-red-500";
     case "attention":
