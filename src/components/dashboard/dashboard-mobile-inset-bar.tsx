@@ -1,7 +1,9 @@
 "use client";
 
+import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 
+import { CommandCenterChatHistoryDrawer } from "@/components/dashboard/command-center-chat-history-drawer";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 
@@ -82,6 +84,9 @@ export function DashboardMobileInsetBar() {
       <span className="font-headline min-w-0 flex-1 truncate text-sm font-medium text-zinc-900 dark:text-zinc-100">
         {current}
       </span>
+      <Suspense fallback={null}>
+        <CommandCenterChatHistoryDrawer />
+      </Suspense>
     </div>
   );
 }

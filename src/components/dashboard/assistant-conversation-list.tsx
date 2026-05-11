@@ -36,12 +36,15 @@ export function AssistantConversationList({
   className,
   /** Path prefix for thread links (default: Command Center `/dashboard?c=`). */
   hrefBase = "/dashboard",
+  /** Called when the user picks a thread (e.g. close mobile sheet after navigation). */
+  onConversationNavigate,
 }: {
   conversations: AssistantConversationListItem[];
   activeConversationId?: string;
   variant?: "sidebar" | "inline";
   className?: string;
   hrefBase?: string;
+  onConversationNavigate?: () => void;
 }) {
   return (
     <div
@@ -58,6 +61,7 @@ export function AssistantConversationList({
             key={c.id}
             href={`${hrefBase}?c=${encodeURIComponent(c.id)}`}
             scroll={false}
+            onClick={() => onConversationNavigate?.()}
             className={cn(
               "block min-w-0 rounded-lg px-3 py-2.5 text-left font-headline text-[0.8125rem] font-normal leading-snug transition-colors duration-200 ease-out",
               variant === "sidebar" &&

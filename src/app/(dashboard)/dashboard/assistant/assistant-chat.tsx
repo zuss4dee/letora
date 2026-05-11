@@ -1033,8 +1033,8 @@ export function AssistantChat({
         </div>
       </main>
 
-      {/* Chat History: hidden on mobile; full list md+ */}
-      <aside className="relative hidden h-full min-h-0 shrink-0 flex-col border-l border-zinc-200 bg-zinc-50 dark:border-[#1f1f1f] dark:bg-[#111111] md:flex md:w-72">
+      {/* Chat History: right column from lg only; mobile uses DashboardMobileInsetBar history sheet */}
+      <aside className="relative hidden h-full min-h-0 w-72 shrink-0 flex-col border-l border-zinc-200 bg-zinc-50 dark:border-[#1f1f1f] dark:bg-[#111111] lg:flex">
         <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3.5 dark:border-[#1e1e1e]">
           <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
