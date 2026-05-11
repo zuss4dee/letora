@@ -7,48 +7,31 @@ import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { getOnboardingStatusForGate, getUserSettings } from "@/lib/actions/user-settings";
 import { syncLegacyOnboardingAfterTenantStepRemoved } from "@/lib/actions/user-onboarding";
 import { isOnboardingMarkedComplete } from "@/lib/onboarding/status";
-import type { OnboardingStatus } from "@/lib/onboarding/status";
-import {
-  LANDLORD_ONBOARDING_WIZARD_LAST_STEP_INDEX,
-  type OnboardingWizardStep,
-} from "@/lib/onboarding/landlord-wizard";
+import { clampOnboardingStep } from "@/lib/onboarding/landlord-wizard";
 import type { UserSettingsRow } from "@/lib/actions/user-settings";
 import { createClient } from "@/lib/supabase/server";
 import { displayNameFromUserMetadata } from "@/lib/auth/profile-hints";
-import { isWorkspaceSetupIncomplete } from "@/lib/onboarding/workspace-setup";
 
 export const metadata = {
   title: "Welcome · Letora",
 };
 
-/** Signup / OAuth metadata — pre-fills landlord name when not yet in `user_settings`. */
-function landlordNameForOnboarding(
+function initialProfileNames(
   settings: UserSettingsRow | null,
   user: { user_metadata?: Record<string, unknown> | null },
-): string {
-  const saved = settings?.landlordName?.trim() ?? "";
-  if (saved.length >= 2) return saved;
+): { firstName: string; lastName: string } {
+  const savedFirst = settings?.firstName?.trim() ?? "";
+  const savedLast = settings?.lastName?.trim() ?? "";
+  if (savedFirst || savedLast) return { firstName: savedFirst, lastName: savedLast };
+
+  const fromLandlord = settings?.landlordName?.trim() ?? "";
   const hint = displayNameFromUserMetadata(user.user_metadata ?? undefined);
-  return hint.length >= 2 ? hint : "";
-}
-
-function areSettingsEssentialsComplete(settings: UserSettingsRow | null): boolean {
-  return Boolean(settings?.landlordName?.trim());
-}
-
-function inferInitialStep(
-  status: OnboardingStatus,
-  hasBusinessName: boolean,
-  settingsComplete: boolean,
-  propertyCount: number,
-): OnboardingWizardStep {
-  if (status === "settings_pending") return 2;
-  if (status === "property_pending") {
-    if (!settingsComplete) return 2;
-    return LANDLORD_ONBOARDING_WIZARD_LAST_STEP_INDEX;
+  const full = fromLandlord.length >= 2 ? fromLandlord : hint;
+  const i = full.indexOf(" ");
+  if (i === -1) {
+    return { firstName: full.trim(), lastName: "" };
   }
-  if (status === "profile_pending" && hasBusinessName) return 1;
-  return 0;
+  return { firstName: full.slice(0, i).trim(), lastName: full.slice(i + 1).trim() };
 }
 
 export default async function OnboardingPage() {
@@ -67,39 +50,28 @@ export default async function OnboardingPage() {
   }
 
   const settings = await getUserSettings(user.id);
-  const status = settings?.onboardingStatus ?? "profile_pending";
-
-  const { count: propertyCountRaw } = await supabase
-    .from("properties")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", user.id);
-  const propertyCount = propertyCountRaw ?? 0;
 
   const onboardingGate = await getOnboardingStatusForGate(user.id);
-  if (
-    isOnboardingMarkedComplete(onboardingGate) &&
-    !isWorkspaceSetupIncomplete({
-      landlordName: settings?.landlordName,
-      propertyCount,
-    })
-  ) {
+  // Only `onboarding_status === 'completed'` exits the wizard. Do not also require
+  // workspace setup (names/properties): the 3-step flow hands users to dashboard/import
+  // and the in-app checklist covers the rest — a stricter gate would trap returning users.
+  if (isOnboardingMarkedComplete(onboardingGate)) {
     redirect("/dashboard");
   }
 
-  const hasBusinessName = Boolean(settings?.businessName?.trim());
-  const defaultLandlordName = landlordNameForOnboarding(settings, user);
-  const settingsComplete = areSettingsEssentialsComplete(settings);
-  const initialStep = inferInitialStep(status, hasBusinessName, settingsComplete, propertyCount);
+  const { firstName, lastName } = initialProfileNames(settings, user);
+  const orgName = (settings?.orgName?.trim() || settings?.businessName?.trim() || "").trim();
+  const initialStep = clampOnboardingStep(settings?.onboardingStep ?? 1);
 
   return (
-    <Suspense fallback={<div className="min-h-svh bg-zinc-950 dark:bg-black" aria-hidden />}>
+    <Suspense fallback={<div className="min-h-svh bg-background" aria-hidden />}>
       <OnboardingWizard
         initialStep={initialStep}
-        defaultPortfolioName={settings?.businessName ?? ""}
-        storedPrimaryGoal={settings?.onboardingPrimaryGoal ?? null}
-        defaultLandlordName={defaultLandlordName}
-        defaultContactEmail={settings?.contactEmail ?? ""}
-        defaultReferencingAgencyEmail={settings?.referencingAgencyEmail ?? ""}
+        initialOrgName={orgName}
+        initialFirstName={firstName}
+        initialLastName={lastName}
+        initialLandlordType={settings?.landlordType ?? null}
+        userEmail={user.email ?? undefined}
       />
     </Suspense>
   );

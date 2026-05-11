@@ -1,853 +1,593 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Check, Loader2 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { ArrowRight, ChevronRight, Home, Loader2, Sprout, TrendingUp, Users } from "lucide-react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
-import { AddressMapPicker } from "@/components/address/address-map-picker";
-import { PlacesStreetAutocomplete } from "@/components/address/places-street-autocomplete";
-import { isGoogleMapsConfigured } from "@/components/address/load-google-maps";
+import { saveOrganisationSettings, saveProfileSettings } from "@/app/(dashboard)/dashboard/settings/actions";
+import {
+  completeOnboarding,
+  saveLandlordType,
+  saveOnboardingStep,
+} from "@/app/(dashboard)/onboarding/actions";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  completeOnboardingGate,
-  completeOnboardingWithProperty,
-  saveOnboardingFocus,
-  saveOnboardingIdentity,
-  saveOnboardingSettingsEssentials,
-  skipOnboarding,
-} from "@/lib/actions/user-onboarding";
-import {
-  LANDLORD_ONBOARDING_WIZARD_LAST_STEP_INDEX,
+  type LandlordType,
   LANDLORD_ONBOARDING_WIZARD_STEP_COUNT,
   LANDLORD_ONBOARDING_WIZARD_STEPS,
   type OnboardingWizardStep,
 } from "@/lib/onboarding/landlord-wizard";
-import {
-  FOCUS_OPTIONS,
-  MAX_ONBOARDING_PRIORITIES,
-  parseStoredPrimaryGoals,
-  type FocusOptionId,
-} from "@/lib/onboarding/priorities";
-import { isValidEmailOrEmpty } from "@/lib/validations/email";
 import { cn } from "@/lib/utils";
-
-const nextGlow =
-  "bg-white text-black shadow-[0_0_22px_-2px_rgba(255,255,255,0.25)] transition-[box-shadow,transform] hover:shadow-[0_0_32px_-2px_rgba(255,255,255,0.35)] hover:brightness-[0.9] active:scale-[0.99] disabled:opacity-50 disabled:shadow-none";
-
-/** Empty is allowed; non-empty must be a valid email (server Zod is authoritative). */
-function isOptionalEmailFieldOk(value: string): boolean {
-  return isValidEmailOrEmpty(value);
-}
-
-function canProceedSettingsStep(
-  landlordName: string,
-  contactEmail: string,
-  referencingAgencyEmail: string,
-  noAgencyOrReferencing: boolean,
-): boolean {
-  if (landlordName.trim().length < 2) return false;
-  if (noAgencyOrReferencing) return true;
-  return isOptionalEmailFieldOk(contactEmail) && isOptionalEmailFieldOk(referencingAgencyEmail);
-}
-
-const slideVariants = {
-  enter: (dir: number) => ({ x: dir >= 0 ? 40 : -40, opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit: (dir: number) => ({ x: dir >= 0 ? -40 : 40, opacity: 0 }),
-};
 
 export type { OnboardingWizardStep };
 
+const TEAL_RING = "focus-visible:ring-[#01696f]/40";
+
+const LANDLORD_TYPE_CARDS: {
+  id: LandlordType;
+  title: string;
+  description: string;
+  Icon: typeof Home;
+}[] = [
+  {
+    id: "self_managed",
+    title: "Self-managed",
+    description: "I run my own lets day to day — Letora automates the busywork.",
+    Icon: Home,
+  },
+  {
+    id: "portfolio",
+    title: "Growing portfolio",
+    description: "Multiple properties — I need rent, compliance, and comms in one place.",
+    Icon: TrendingUp,
+  },
+  {
+    id: "agent",
+    title: "Letting agent",
+    description: "I act for landlords — approvals and drafts should match our brand.",
+    Icon: Users,
+  },
+  {
+    id: "new_landlord",
+    title: "New landlord",
+    description: "Early stage — I want guided setup and clear next steps.",
+    Icon: Sprout,
+  },
+];
+
+const LEFT_COPY: Record<
+  OnboardingWizardStep,
+  { kicker: string; title: string; body: string }
+> = {
+  1: {
+    kicker: "Step 1",
+    title: "Who’s behind this workspace?",
+    body: "Your name and organisation power contracts, emails, and the assistant — you can refine everything later in Settings.",
+  },
+  2: {
+    kicker: "Step 2",
+    title: "How do you operate?",
+    body: "We tune defaults and language around how you work — solo, scaling, agency, or just getting started.",
+  },
+  3: {
+    kicker: "Step 3",
+    title: "Pick your first move",
+    body: "Import a portfolio, open tenants, or jump into compliance. Finish anytime — your dashboard is ready.",
+  },
+};
+
 export function OnboardingWizard({
   initialStep,
-  defaultPortfolioName = "",
-  storedPrimaryGoal = null,
-  defaultLandlordName = "",
-  defaultContactEmail = "",
-  defaultReferencingAgencyEmail = "",
+  initialOrgName = "",
+  initialFirstName = "",
+  initialLastName = "",
+  initialLandlordType = null,
+  userEmail,
 }: {
   initialStep: OnboardingWizardStep;
-  defaultPortfolioName?: string;
-  storedPrimaryGoal?: string | null;
-  defaultLandlordName?: string;
-  defaultContactEmail?: string;
-  defaultReferencingAgencyEmail?: string;
+  initialOrgName?: string;
+  initialFirstName?: string;
+  initialLastName?: string;
+  initialLandlordType?: LandlordType | null;
+  userEmail?: string;
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const checkoutHandled = useRef(false);
-  const [step, setStep] = useState(initialStep);
-  const [dir, setDir] = useState(0);
+  const reduceMotion = useReducedMotion();
+  const [step, setStep] = useState<OnboardingWizardStep>(initialStep);
+  const [slideDir, setSlideDir] = useState(1);
 
-  const [portfolioName, setPortfolioName] = useState(defaultPortfolioName);
-  const [selectedPriorities, setSelectedPriorities] = useState<FocusOptionId[]>(() =>
-    parseStoredPrimaryGoals(storedPrimaryGoal),
-  );
-  const [identityBusy, setIdentityBusy] = useState(false);
-  const [focusBusy, setFocusBusy] = useState(false);
+  const [orgName, setOrgName] = useState(initialOrgName);
+  const [firstName, setFirstName] = useState(initialFirstName);
+  const [lastName, setLastName] = useState(initialLastName);
+  const [landlordType, setLandlordType] = useState<LandlordType | null>(initialLandlordType);
 
-  const [landlordName, setLandlordName] = useState(defaultLandlordName);
-  const [contactEmail, setContactEmail] = useState(defaultContactEmail);
-  const [referencingAgencyEmail, setReferencingAgencyEmail] = useState(defaultReferencingAgencyEmail);
-  const [noAgencyOrReferencing, setNoAgencyOrReferencing] = useState(
-    () => !defaultContactEmail.trim() && !defaultReferencingAgencyEmail.trim(),
-  );
-  const [settingsBusy, setSettingsBusy] = useState(false);
+  const [step1Busy, setStep1Busy] = useState(false);
+  const [step2Busy, setStep2Busy] = useState(false);
+  const [completeBusy, setCompleteBusy] = useState<string | null>(null);
 
-  const [propertyStreet, setPropertyStreet] = useState("");
-  const [propertyCity, setPropertyCity] = useState("");
-  const [propertyPostcode, setPropertyPostcode] = useState("");
-  const [addressManualOnly, setAddressManualOnly] = useState(() => !isGoogleMapsConfigured());
-  const [propertyBusy, setPropertyBusy] = useState(false);
+  const progressRatio = step / LANDLORD_ONBOARDING_WIZARD_STEP_COUNT;
+  const progressPct = Math.round(progressRatio * 100);
 
-  const [skipBusy, setSkipBusy] = useState(false);
+  const transition = reduceMotion
+    ? { duration: 0 }
+    : { duration: 0.22, ease: [0, 0, 0.2, 1] as [number, number, number, number] };
 
-  const finishCheckoutSuccess = useCallback(async () => {
-    const res = await completeOnboardingGate();
-    if (res.ok === false) {
-      toast.error(res.error);
+  const slideVariants = reduceMotion
+    ? {
+        enter: { x: 0, opacity: 1 },
+        center: { x: 0, opacity: 1 },
+        exit: { x: 0, opacity: 1 },
+      }
+    : {
+        enter: (dir: number) => ({ x: dir >= 0 ? 32 : -32, opacity: 0 }),
+        center: { x: 0, opacity: 1 },
+        exit: (dir: number) => ({ x: dir >= 0 ? -32 : 32, opacity: 0 }),
+      };
+
+  const goBack = useCallback(() => {
+    if (step <= 1) return;
+    const next = (step - 1) as OnboardingWizardStep;
+    setSlideDir(-1);
+    if (step === 3) void saveOnboardingStep(2);
+    else if (step === 2) void saveOnboardingStep(1);
+    setStep(next);
+  }, [step]);
+
+  const canSubmitStep1 =
+    orgName.trim().length >= 1 && firstName.trim().length >= 1 && lastName.trim().length >= 1;
+
+  async function submitStep1() {
+    if (!canSubmitStep1) {
+      toast.error("Enter your organisation name, first name, and last name.");
       return;
     }
-    toast.success("Payment received. Continue setup below.");
-    router.refresh();
-  }, [router]);
-
-  useEffect(() => {
-    const checkout = searchParams.get("checkout");
-    if (checkout === "success" && !checkoutHandled.current) {
-      checkoutHandled.current = true;
-      void finishCheckoutSuccess();
+    setStep1Busy(true);
+    try {
+      const orgRes = await saveOrganisationSettings({
+        orgName: orgName.trim(),
+        orgLogoUrl: "",
+        orgContactEmail: "",
+        orgPhone: "",
+        orgAddress: "",
+      });
+      if (orgRes.success === false) {
+        toast.error(orgRes.error);
+        return;
+      }
+      const profileRes = await saveProfileSettings({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        avatarUrl: "",
+      });
+      if (profileRes.success === false) {
+        toast.error(profileRes.error);
+        return;
+      }
+      const stepRes = await saveOnboardingStep(2);
+      if (stepRes.ok === false) {
+        toast.error(stepRes.error);
+        return;
+      }
+      setSlideDir(1);
+      setStep(2);
+    } finally {
+      setStep1Busy(false);
     }
-  }, [searchParams, finishCheckoutSuccess]);
+  }
 
-  /** Enter matches Next / Enter Letora: inputs submit the step; step 1 advances when a focus is chosen. */
+  async function submitStep2() {
+    if (!landlordType) {
+      toast.error("Choose how you operate.");
+      return;
+    }
+    setStep2Busy(true);
+    try {
+      const typeRes = await saveLandlordType(landlordType);
+      if (typeRes.ok === false) {
+        toast.error(typeRes.error);
+        return;
+      }
+      const stepRes = await saveOnboardingStep(3);
+      if (stepRes.ok === false) {
+        toast.error(stepRes.error);
+        return;
+      }
+      setSlideDir(1);
+      setStep(3);
+    } finally {
+      setStep2Busy(false);
+    }
+  }
+
+  async function finishAndGo(href: string, key: string) {
+    if (completeBusy) return;
+    setCompleteBusy(key);
+    try {
+      const done = await completeOnboarding();
+      if (done.ok === false) {
+        toast.error(done.error);
+        return;
+      }
+      router.push(href);
+      router.refresh();
+    } finally {
+      setCompleteBusy(null);
+    }
+  }
+
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key !== "Enter" || e.repeat || e.defaultPrevented) return;
-      if (identityBusy || focusBusy || settingsBusy || propertyBusy) return;
-
+      if (step1Busy || step2Busy || completeBusy) return;
       const target = e.target as HTMLElement | null;
       if (target?.closest("textarea")) return;
       if (target instanceof HTMLButtonElement || target instanceof HTMLAnchorElement) return;
 
-      if (target instanceof HTMLInputElement) {
-        if (step === 0 && portfolioName.trim().length >= 2) {
-          e.preventDefault();
-          void submitIdentity();
-        }
-        if (step === 2 && canProceedSettingsStep(landlordName, contactEmail, referencingAgencyEmail, noAgencyOrReferencing)) {
-          e.preventDefault();
-          void submitSettings();
-        }
-        if (
-          step === LANDLORD_ONBOARDING_WIZARD_LAST_STEP_INDEX &&
-          propertyStreet.trim().length >= 1 &&
-          propertyCity.trim().length >= 1 &&
-          propertyPostcode.trim().length >= 1
-        ) {
-          e.preventDefault();
-          void submitProperty();
-        }
-        return;
-      }
-
-      if (step === 0 && portfolioName.trim().length >= 2) {
+      if (step === 1 && canSubmitStep1 && target instanceof HTMLInputElement) {
         e.preventDefault();
-        void submitIdentity();
-      } else if (step === 1 && selectedPriorities.length > 0) {
-        e.preventDefault();
-        void submitFocusAndContinue();
-      } else if (step === 2 && canProceedSettingsStep(landlordName, contactEmail, referencingAgencyEmail, noAgencyOrReferencing)) {
-        e.preventDefault();
-        void submitSettings();
-      } else if (
-        step === LANDLORD_ONBOARDING_WIZARD_LAST_STEP_INDEX &&
-        propertyStreet.trim().length >= 1 &&
-        propertyCity.trim().length >= 1 &&
-        propertyPostcode.trim().length >= 1
-      ) {
-        e.preventDefault();
-        void submitProperty();
+        void submitStep1();
       }
     }
-
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-    // submit* are stable enough per render; step + fields drive behavior
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- submit handlers intentionally omitted; keyed by step + fields
-  }, [
-    step,
-    portfolioName,
-    selectedPriorities,
-    propertyStreet,
-    propertyCity,
-    propertyPostcode,
-    identityBusy,
-    focusBusy,
-    settingsBusy,
-    propertyBusy,
-    landlordName,
-    contactEmail,
-    referencingAgencyEmail,
-    noAgencyOrReferencing,
-  ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional: submitStep1 closes over latest fields
+  }, [step, step1Busy, step2Busy, completeBusy, canSubmitStep1, orgName, firstName, lastName]);
 
-  async function submitIdentity() {
-    setIdentityBusy(true);
-    try {
-      const res = await saveOnboardingIdentity({ portfolioName });
-      if (res.ok === false) {
-        toast.error(res.error);
-        return;
-      }
-      setDir(1);
-      setStep(1);
-    } finally {
-      setIdentityBusy(false);
-    }
-  }
-
-  function togglePriority(id: FocusOptionId) {
-    setSelectedPriorities((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((x) => x !== id);
-      }
-      if (prev.length >= MAX_ONBOARDING_PRIORITIES) {
-        toast.info(`You can select up to ${MAX_ONBOARDING_PRIORITIES} priorities.`);
-        return prev;
-      }
-      return [...prev, id];
-    });
-  }
-
-  async function submitFocusAndContinue() {
-    if (selectedPriorities.length === 0) {
-      toast.error("Choose at least one priority.");
-      return;
-    }
-    setFocusBusy(true);
-    try {
-      const res = await saveOnboardingFocus({ focusIds: selectedPriorities });
-      if (res.ok === false) {
-        toast.error(res.error);
-        return;
-      }
-      setDir(1);
-      setStep(2);
-    } finally {
-      setFocusBusy(false);
-    }
-  }
-
-  async function submitSettings() {
-    setSettingsBusy(true);
-    try {
-      const res = await saveOnboardingSettingsEssentials({
-        portfolioName,
-        landlordName,
-        contactEmail: noAgencyOrReferencing ? "" : contactEmail,
-        referencingAgencyEmail: noAgencyOrReferencing ? "" : referencingAgencyEmail,
-      });
-      if (res.ok === false) {
-        toast.error(res.error);
-        return;
-      }
-      setDir(1);
-      setStep(LANDLORD_ONBOARDING_WIZARD_LAST_STEP_INDEX);
-    } finally {
-      setSettingsBusy(false);
-    }
-  }
-
-  async function submitProperty() {
-    if (!propertyStreet.trim() || !propertyCity.trim() || !propertyPostcode.trim()) {
-      toast.error("Enter street, city, and postcode.");
-      return;
-    }
-    setPropertyBusy(true);
-    try {
-      const res = await completeOnboardingWithProperty({
-        address: propertyStreet.trim(),
-        city: propertyCity.trim(),
-        postcode: propertyPostcode.trim(),
-      });
-      if (res.ok === false) {
-        toast.error(res.error);
-        return;
-      }
-      toast.success("Welcome — opening your dashboard.");
-      router.replace("/dashboard");
-      router.refresh();
-    } finally {
-      setPropertyBusy(false);
-    }
-  }
-
-  const stepBusy = identityBusy || focusBusy || settingsBusy || propertyBusy;
-
-  async function handleSkipOnboarding() {
-    if (skipBusy || stepBusy) return;
-    setSkipBusy(true);
-    try {
-      const res = await skipOnboarding();
-      if (res.ok === false) {
-        toast.error(res.error);
-        return;
-      }
-      toast.info("You can finish setup from the dashboard checklist.");
-      router.replace("/dashboard");
-      router.refresh();
-    } finally {
-      setSkipBusy(false);
-    }
-  }
-
-  function back() {
-    if (step === 0) return;
-    setDir(-1);
-    setStep((s) => (s - 1) as OnboardingWizardStep);
-  }
-
-  const progress = ((step + 1) / LANDLORD_ONBOARDING_WIZARD_STEP_COUNT) * 100;
-  const progressValue = Math.round(progress);
-  const stepsRemainingAfter = LANDLORD_ONBOARDING_WIZARD_STEP_COUNT - (step + 1);
-
-  const onboardingInputClass =
-    "h-12 border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 px-4 font-headline text-base font-light text-white placeholder:text-zinc-600 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/20";
-
-  const canSubmitProperty =
-    propertyStreet.trim().length >= 1 &&
-    propertyCity.trim().length >= 1 &&
-    propertyPostcode.trim().length >= 1;
-
-  const canSubmitSettings = canProceedSettingsStep(
-    landlordName,
-    contactEmail,
-    referencingAgencyEmail,
-    noAgencyOrReferencing,
-  );
+  const left = LEFT_COPY[step];
+  const busy = Boolean(completeBusy);
 
   return (
-    <div className="relative min-h-svh overflow-hidden bg-zinc-950 dark:bg-black text-zinc-100">
-      <div className="pointer-events-none fixed inset-x-0 top-0 z-[100] h-[2px]">
-        <div className="absolute inset-0 bg-background dark:bg-[#0a0a0a]" aria-hidden />
-        <div
-          className="absolute inset-x-0 top-1/2 h-[6px] -translate-y-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent opacity-80 blur-md"
-          aria-hidden
-        />
-        <div className="relative h-[2px] w-full overflow-hidden">
-          <motion.div
-            role="progressbar"
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={progressValue}
-            aria-valuetext={`Step ${step + 1} of ${LANDLORD_ONBOARDING_WIZARD_STEP_COUNT}`}
-            aria-label="Setup progress"
-            className="absolute inset-y-0 left-0 h-full rounded-none bg-gradient-to-r from-zinc-700 via-zinc-400 to-white"
-            style={{
-              boxShadow:
-                "0 0 10px 1px rgba(255, 255, 255, 0.3), 0 0 24px 2px rgba(255, 255, 255, 0.1)",
-            }}
-            initial={false}
-            animate={{ width: `${progress}%` }}
-            transition={{ type: "spring", stiffness: 140, damping: 28 }}
-          />
+    <div className="flex min-h-svh flex-col bg-background md:flex-row">
+      <aside
+        className={cn(
+          "relative hidden flex-col justify-between px-10 py-12 text-white md:flex md:w-[40%]",
+          "bg-[#01696f] dark:bg-[#4f98a3]",
+        )}
+      >
+        <div>
+          <div className="flex items-center gap-3">
+            <Image
+              src="/letora-logo-dark.svg"
+              alt="Letora"
+              width={140}
+              height={32}
+              className="h-8 w-auto opacity-95"
+              priority
+              unoptimized
+            />
+          </div>
+          <p className="mt-10 font-[family-name:var(--font-inter)] text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-[#97e6ec]/90">
+            {left.kicker}
+          </p>
+          <h1 className="mt-3 max-w-md font-[family-name:var(--font-inter)] text-3xl font-light leading-tight tracking-tight">
+            {left.title}
+          </h1>
+          <p className="mt-4 max-w-sm font-[family-name:var(--font-inter)] text-sm font-light leading-relaxed text-white/85">
+            {left.body}
+          </p>
         </div>
-      </div>
+        {userEmail ? (
+          <p className="font-mono text-[10px] uppercase tracking-wider text-white/45">{userEmail}</p>
+        ) : null}
+      </aside>
 
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.28]"
-        style={{
-          backgroundImage:
-            "radial-gradient(ellipse 85% 55% at 50% -15%, rgba(255,255,255,0.06), transparent 58%)",
-        }}
-        aria-hidden
-      />
-
-      <div className="relative z-10 mx-auto flex min-h-svh w-full max-w-3xl flex-col px-6 pt-16 pb-6 md:px-12 md:pt-24">
-        <header className="mb-10 flex flex-col gap-3 md:mb-14">
-          <div className="flex items-center gap-4">
-            <span className="font-headline text-[0.6rem] font-medium uppercase tracking-[0.38em] text-zinc-600">
-              Letora
-            </span>
-            <div className="h-px flex-1 bg-gradient-to-r from-zinc-800/90 to-transparent" aria-hidden />
+      <div className="flex min-h-svh flex-1 flex-col md:w-[60%]">
+        <div className="border-b border-border px-4 py-4 md:px-10 md:py-6">
+          <div className="flex items-center justify-between gap-4 md:hidden">
+            <Image
+              src="/letora-logo.svg"
+              alt="Letora"
+              width={120}
+              height={28}
+              className="h-7 w-auto dark:hidden"
+              priority
+              unoptimized
+            />
+            <Image
+              src="/letora-logo-dark.svg"
+              alt="Letora"
+              width={120}
+              height={28}
+              className="hidden h-7 w-auto dark:block"
+              priority
+              unoptimized
+            />
           </div>
-          <div className="flex flex-col gap-1">
-            <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.28em] text-zinc-400">
-              Step {step + 1} of {LANDLORD_ONBOARDING_WIZARD_STEP_COUNT} · {LANDLORD_ONBOARDING_WIZARD_STEPS[step]}
-            </p>
-            <p className="font-headline text-xs font-light text-zinc-500">
-              {stepsRemainingAfter <= 0
-                ? "Last step — then you are in your dashboard."
-                : `${stepsRemainingAfter} more step${stepsRemainingAfter === 1 ? "" : "s"} after this one (about ${stepsRemainingAfter + 1}–${stepsRemainingAfter + 3} minutes in total).`}
-            </p>
-          </div>
-        </header>
 
-        <div className="relative min-h-0 flex-1">
-          <AnimatePresence mode="wait" custom={dir}>
-            {step === 0 ? (
-              <motion.section
-                key="identity"
-                custom={dir}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ type: "spring", stiffness: 380, damping: 38 }}
-                className="space-y-12"
-              >
-                <div className="space-y-5">
-                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-zinc-400">
-                    Identity
-                  </p>
-                  <h1 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-zinc-900 dark:text-white md:text-5xl">
-                    Your company or portfolio name
-                  </h1>
-                  <p className="max-w-lg font-headline text-base font-light leading-relaxed text-zinc-500">
-                    This is how your workspace is labelled across Letora — you can refine details later in Settings.
-                  </p>
-                </div>
+          <div className="mt-4 md:mt-0">
+            <div className="mb-4 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <motion.div
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progressPct}
+                aria-valuetext={`Step ${step} of ${LANDLORD_ONBOARDING_WIZARD_STEP_COUNT}`}
+                aria-label="Setup progress"
+                className="h-full rounded-full bg-[#01696f] dark:bg-[#4f98a3]"
+                initial={false}
+                animate={{ width: `${progressPct}%` }}
+                transition={reduceMotion ? { duration: 0 } : { duration: 0.22, ease: "easeOut" }}
+              />
+            </div>
 
-                <div>
-                  <label htmlFor="portfolio-name" className="sr-only">
-                    Company or portfolio name
-                  </label>
-                  <Input
-                    id="portfolio-name"
-                    value={portfolioName}
-                    onChange={(e) => setPortfolioName(e.target.value)}
-                    placeholder="e.g. Meridian Street Holdings"
-                    className="h-16 border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 px-6 font-headline text-xl font-light tracking-tight text-white placeholder:text-zinc-600 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/20"
-                  />
-                </div>
-
-                <div className="flex justify-end pt-2">
-                  <Button
-                    type="button"
-                    disabled={identityBusy || portfolioName.trim().length < 2}
-                    onClick={() => void submitIdentity()}
-                    className={cn("h-14 rounded-full px-10 font-headline text-xs font-semibold uppercase tracking-[0.22em]", nextGlow)}
-                  >
-                    {identityBusy ? (
-                      <Loader2 className="size-4 animate-spin" aria-hidden />
-                    ) : (
-                      <>
-                        Next
-                        <ArrowRight className="ml-2 size-4 opacity-90" aria-hidden />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </motion.section>
-            ) : null}
-
-            {step === 1 ? (
-              <motion.section
-                key="focus"
-                custom={dir}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ type: "spring", stiffness: 380, damping: 38 }}
-                className="space-y-12"
-              >
-                <div className="space-y-5">
-                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-zinc-400">
-                    Priorities
-                  </p>
-                  <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-zinc-900 dark:text-white md:text-5xl">
-                    What should we prioritise?
-                  </h2>
-                  <p className="max-w-xl font-headline text-base font-light text-zinc-500">
-                    Choose at least one and up to {MAX_ONBOARDING_PRIORITIES} areas — we tune defaults and assistant
-                    behaviour around your selections. Tap again to remove.
-                  </p>
-                  <p className="font-headline text-sm font-medium text-zinc-400" aria-live="polite">
-                    {selectedPriorities.length}/{MAX_ONBOARDING_PRIORITIES} selected
-                  </p>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {FOCUS_OPTIONS.map((opt) => {
-                    const selected = selectedPriorities.includes(opt.id);
-                    return (
-                      <button
-                        key={opt.id}
-                        type="button"
-                        aria-pressed={selected}
-                        onClick={() => togglePriority(opt.id)}
+            <div className="flex items-start justify-center gap-0 px-2 sm:px-6" aria-label="Onboarding steps">
+              {[1, 2, 3].map((n, idx) => {
+                const done = step > n;
+                const active = step === n;
+                const showLine = idx < 2;
+                return (
+                  <div key={n} className="flex min-w-0 flex-1 items-start justify-center last:flex-none last:w-auto">
+                    <div className="flex w-full max-w-[7rem] flex-col items-center gap-2">
+                      <div
                         className={cn(
-                          "group flex min-h-[7.5rem] flex-col justify-between rounded-2xl border px-6 py-6 text-left transition-colors sm:min-h-[8.25rem]",
-                          selected
-                            ? "border-white/50 bg-white/[0.06]"
-                            : "border-zinc-800/90 bg-transparent hover:border-zinc-700",
+                          "flex size-9 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-semibold transition-colors",
+                          done || active
+                            ? "border-[#01696f] bg-[#01696f] text-white dark:border-white/30 dark:bg-white/20 dark:text-white"
+                            : "border-muted-foreground/25 bg-background text-muted-foreground",
+                          active && "onboarding-step-dot--pulse",
                         )}
+                        aria-current={active ? "step" : undefined}
                       >
-                        <span className="flex items-start justify-between gap-4">
-                          <span className="font-headline text-xl font-light tracking-tight text-zinc-900 dark:text-white md:text-[1.35rem]">
-                            {opt.title}
-                          </span>
-                          <span
-                            className={cn(
-                              "mt-1 flex size-6 shrink-0 items-center justify-center rounded-full border",
-                              selected
-                                ? "border-white bg-white/15 text-zinc-900 dark:text-white"
-                                : "border-zinc-700 text-transparent",
-                            )}
-                          >
-                            <Check className="size-3.5" strokeWidth={2.5} aria-hidden />
-                          </span>
-                        </span>
-                        <span className="mt-3 font-headline text-sm font-light leading-relaxed text-zinc-500">
-                          {opt.line}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                  <button
-                    type="button"
-                    onClick={back}
-                    className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
-                  >
-                    Back
-                  </button>
-                  <Button
-                    type="button"
-                    disabled={focusBusy || selectedPriorities.length === 0}
-                    onClick={() => void submitFocusAndContinue()}
-                    className={cn("h-14 rounded-full px-10 font-headline text-xs font-semibold uppercase tracking-[0.22em]", nextGlow)}
-                  >
-                    {focusBusy ? (
-                      <Loader2 className="size-4 animate-spin" aria-hidden />
-                    ) : (
-                      <>
-                        Next
-                        <ArrowRight className="ml-2 size-4 opacity-90" aria-hidden />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </motion.section>
-            ) : null}
-
-            {step === 2 ? (
-              <motion.section
-                key="settings"
-                custom={dir}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ type: "spring", stiffness: 380, damping: 38 }}
-                className="space-y-12"
-              >
-                <div className="space-y-5">
-                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-zinc-400">
-                    Essentials
-                  </p>
-                  <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-zinc-900 dark:text-white md:text-5xl">
-                    Landlord &amp; agency details
-                  </h2>
-                  <p className="max-w-xl font-headline text-base font-light text-zinc-500">
-                    We use these on notices, referencing, and outbound email. You can refine everything later in Settings.
-                  </p>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="ob-landlord" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
-                      Full landlord / legal name{" "}
-                      <span className="normal-case tracking-normal text-zinc-400">(required)</span>
-                    </Label>
-                    <Input
-                      id="ob-landlord"
-                      value={landlordName}
-                      onChange={(e) => setLandlordName(e.target.value)}
-                      autoComplete="name"
-                      placeholder="e.g. Jane Smith"
-                      className={onboardingInputClass}
-                      required
-                      aria-required
-                    />
-                  </div>
-
-                  <div className="flex gap-3 rounded-lg border border-zinc-800/80 bg-zinc-50 dark:bg-zinc-950/30 px-4 py-3">
-                    <Checkbox
-                      id="ob-no-agency"
-                      checked={noAgencyOrReferencing}
-                      onCheckedChange={(c) => {
-                        const on = c === true;
-                        setNoAgencyOrReferencing(on);
-                        if (on) {
-                          setContactEmail("");
-                          setReferencingAgencyEmail("");
-                        }
-                      }}
-                      className="mt-0.5 border-zinc-600 data-checked:border-white data-checked:bg-white data-checked:text-black"
-                    />
-                    <label htmlFor="ob-no-agency" className="cursor-pointer font-headline text-sm font-light leading-snug text-zinc-700 dark:text-zinc-300">
-                      I don&apos;t have an agency or separate referencing contact
-                      <span className="mt-1 block text-xs text-zinc-500">
-                        You can add these later in Settings. Your landlord name is still required.
+                        {done ? "✓" : n}
+                      </div>
+                      <span className="hidden text-center font-mono text-[9px] uppercase tracking-wider text-muted-foreground sm:block">
+                        {LANDLORD_ONBOARDING_WIZARD_STEPS[idx]}
                       </span>
-                    </label>
-                  </div>
-
-                  <div
-                    className={cn(
-                      "space-y-4 transition-opacity",
-                      noAgencyOrReferencing ? "pointer-events-none opacity-40" : "",
-                    )}
-                  >
-                    <div className="space-y-2">
-                      <Label htmlFor="ob-contact-email" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
-                        Agency contact email
-                        <span className="ml-1.5 normal-case tracking-normal text-zinc-600">(optional)</span>
-                      </Label>
-                      <Input
-                        id="ob-contact-email"
-                        type="email"
-                        value={contactEmail}
-                        onChange={(e) => {
-                          setNoAgencyOrReferencing(false);
-                          setContactEmail(e.target.value);
-                        }}
-                        autoComplete="email"
-                        placeholder="e.g. office@youragency.co.uk"
-                        className={onboardingInputClass}
-                        disabled={noAgencyOrReferencing}
-                      />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="ob-ref-email" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
-                        Referencing contact email
-                        <span className="ml-1.5 normal-case tracking-normal text-zinc-600">(optional)</span>
-                      </Label>
-                      <Input
-                        id="ob-ref-email"
-                        type="email"
-                        value={referencingAgencyEmail}
-                        onChange={(e) => {
-                          setNoAgencyOrReferencing(false);
-                          setReferencingAgencyEmail(e.target.value);
-                        }}
-                        autoComplete="email"
-                        placeholder="e.g. referencing@youragency.co.uk"
-                        className={onboardingInputClass}
-                        disabled={noAgencyOrReferencing}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                  <button
-                    type="button"
-                    onClick={back}
-                    className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
-                  >
-                    Back
-                  </button>
-                  <Button
-                    type="button"
-                    disabled={settingsBusy || !canSubmitSettings}
-                    onClick={() => void submitSettings()}
-                    className={cn("h-14 rounded-full px-10 font-headline text-xs font-semibold uppercase tracking-[0.22em]", nextGlow)}
-                  >
-                    {settingsBusy ? (
-                      <Loader2 className="size-4 animate-spin" aria-hidden />
-                    ) : (
-                      <>
-                        Next
-                        <ArrowRight className="ml-2 size-4 opacity-90" aria-hidden />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </motion.section>
-            ) : null}
-
-            {step === LANDLORD_ONBOARDING_WIZARD_LAST_STEP_INDEX ? (
-              <motion.section
-                key="property"
-                custom={dir}
-                variants={slideVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ type: "spring", stiffness: 380, damping: 38 }}
-                className="space-y-12"
-              >
-                <div className="space-y-5">
-                  <p className="font-headline text-[0.65rem] font-semibold uppercase tracking-[0.32em] text-zinc-400">
-                    First property
-                  </p>
-                  <h2 className="font-headline text-4xl font-extralight leading-[1.08] tracking-[-0.045em] text-zinc-900 dark:text-white md:text-5xl">
-                    Add an address
-                  </h2>
-                  <p className="max-w-xl font-headline text-base font-light text-zinc-500">
-                    We create the property and wire compliance and rent around it. You can edit everything next in your
-                    portfolio.
-                  </p>
-                </div>
-
-                <div className="space-y-5">
-                  {isGoogleMapsConfigured() ? (
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="font-headline text-xs font-medium uppercase tracking-[0.2em] text-zinc-500">
-                        Pick on map or type
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <input
-                          id="onboarding-address-manual"
-                          type="checkbox"
-                          checked={addressManualOnly}
-                          onChange={(e) => setAddressManualOnly(e.target.checked)}
-                          className="size-3.5 rounded border-zinc-600 bg-zinc-50 dark:bg-zinc-950 accent-white"
-                        />
-                        <Label
-                          htmlFor="onboarding-address-manual"
-                          className="cursor-pointer font-headline text-xs font-normal text-zinc-500"
-                        >
-                          Add address manually
-                        </Label>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {!addressManualOnly && isGoogleMapsConfigured() ? (
-                    <AddressMapPicker
-                      onResolved={(v) => {
-                        setPropertyStreet(v.line1);
-                        setPropertyCity(v.city);
-                        setPropertyPostcode(v.postcode);
-                      }}
-                      mapClassName="border-zinc-800 bg-zinc-100 dark:bg-zinc-900/50"
-                      searchInputClassName={onboardingInputClass}
-                    />
-                  ) : null}
-
-                  <div className="space-y-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="ob-street" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
-                        Street address
-                      </Label>
-                      {!addressManualOnly && isGoogleMapsConfigured() ? (
-                        <>
-                          <PlacesStreetAutocomplete
-                            id="ob-street"
-                            value={propertyStreet}
-                            onChange={setPropertyStreet}
-                            onPlaceSelected={(v) => {
-                              setPropertyStreet(v.line1);
-                              setPropertyCity(v.city);
-                              setPropertyPostcode(v.postcode);
-                            }}
-                            onResolveFailed={() =>
-                              toast.error("Could not read that address. Try another suggestion or enter details manually.")
-                            }
-                            placeholder="Start typing — pick a suggestion to fill street, city, and postcode"
-                            className={cn(
-                              "h-12 w-full rounded-md border border-zinc-800 bg-zinc-50 dark:bg-zinc-950/40 px-4 font-headline text-base font-light text-white placeholder:text-zinc-600 focus-visible:border-white focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:outline-none disabled:opacity-50",
-                            )}
-                          />
-                          <p className="font-headline text-xs font-light text-zinc-600">
-                            Suggestions from Google as you type. You can still edit any field after selecting.
-                          </p>
-                        </>
-                      ) : (
-                        <Input
-                          id="ob-street"
-                          value={propertyStreet}
-                          onChange={(e) => setPropertyStreet(e.target.value)}
-                          placeholder="e.g. 12 King Street"
-                          className={onboardingInputClass}
-                        />
-                      )}
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="ob-postcode" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
-                          Postcode
-                        </Label>
-                        <Input
-                          id="ob-postcode"
-                          value={propertyPostcode}
-                          onChange={(e) => setPropertyPostcode(e.target.value)}
-                          placeholder="e.g. M1 1AA"
-                          className={onboardingInputClass}
+                    {showLine ? (
+                      <div
+                        className="mx-1 mt-[1.125rem] h-0.5 min-w-[1rem] flex-1 rounded-full bg-muted"
+                        aria-hidden
+                      >
+                        <div
+                          className={cn(
+                            "h-full rounded-full bg-[#01696f] dark:bg-[#4f98a3]",
+                            reduceMotion ? "" : "transition-[width] duration-200 ease-out",
+                          )}
+                          style={{ width: step > n ? "100%" : "0%" }}
                         />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="ob-city" className="font-headline text-[0.65rem] uppercase tracking-[0.18em] text-zinc-500">
-                          City
-                        </Label>
-                        <Input
-                          id="ob-city"
-                          value={propertyCity}
-                          onChange={(e) => setPropertyCity(e.target.value)}
-                          placeholder="e.g. Manchester"
-                          className={onboardingInputClass}
-                        />
-                      </div>
-                    </div>
+                    ) : null}
                   </div>
-                </div>
-
-                <div className="flex flex-wrap items-center justify-between gap-4 pt-2">
-                  <button
-                    type="button"
-                    onClick={back}
-                    className="font-headline text-xs uppercase tracking-[0.22em] text-zinc-500 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300"
-                  >
-                    Back
-                  </button>
-                  <Button
-                    type="button"
-                    disabled={propertyBusy || !canSubmitProperty}
-                    onClick={() => void submitProperty()}
-                    className={cn("h-14 rounded-full px-10 font-headline text-xs font-semibold uppercase tracking-[0.22em]", nextGlow)}
-                  >
-                    {propertyBusy ? (
-                      <Loader2 className="size-4 animate-spin" aria-hidden />
-                    ) : (
-                      <>
-                        Enter Letora
-                        <ArrowRight className="ml-2 size-4 opacity-90" aria-hidden />
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </motion.section>
-            ) : null}
-
-          </AnimatePresence>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
-        <div className="mt-auto shrink-0 border-t border-zinc-900/90 pt-8 pb-4 md:pt-10 md:pb-6">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <button
-              type="button"
-              onClick={() => void handleSkipOnboarding()}
-              disabled={skipBusy || stepBusy}
-              className="font-headline text-[0.65rem] uppercase tracking-[0.2em] text-zinc-500 underline-offset-4 transition-colors hover:text-zinc-700 dark:hover:text-zinc-300 hover:underline disabled:opacity-40 disabled:hover:no-underline"
-            >
-              {skipBusy ? "Opening dashboard…" : "Skip for now — finish from the dashboard"}
-            </button>
-            <p className="max-w-md font-headline text-[0.65rem] font-light leading-relaxed text-zinc-600">
-              We&apos;ll show a short checklist on your home screen for anything you still want to finish after you land
-              in Letora.
-            </p>
+        <div className="flex flex-1 flex-col px-4 py-8 md:px-10 md:py-12">
+          <p className="font-mono text-[10px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+            Step {step} of {LANDLORD_ONBOARDING_WIZARD_STEP_COUNT}
+          </p>
+          <h2 className="mt-2 font-[family-name:var(--font-inter)] text-2xl font-light tracking-tight text-foreground md:text-3xl">
+            {LANDLORD_ONBOARDING_WIZARD_STEPS[step - 1]}
+          </h2>
+
+          <div className="relative mt-8 min-h-[12rem] flex-1">
+            <AnimatePresence mode="wait" custom={slideDir}>
+              {step === 1 ? (
+                <motion.div
+                  key="s1"
+                  custom={slideDir}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={transition}
+                  className="mx-auto max-w-lg space-y-6"
+                >
+                  <div className="space-y-2">
+                    <Label htmlFor="ob-org">Organisation name</Label>
+                    <Input
+                      id="ob-org"
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      autoComplete="organization"
+                      placeholder="e.g. Meridian Street Holdings"
+                      className={cn(TEAL_RING)}
+                    />
+                  </div>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="ob-first">First name</Label>
+                      <Input
+                        id="ob-first"
+                        value={firstName}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        autoComplete="given-name"
+                        placeholder="Jane"
+                        className={cn(TEAL_RING)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ob-last">Last name</Label>
+                      <Input
+                        id="ob-last"
+                        value={lastName}
+                        onChange={(e) => setLastName(e.target.value)}
+                        autoComplete="family-name"
+                        placeholder="Smith"
+                        className={cn(TEAL_RING)}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-4 pt-4">
+                    <span className="text-sm text-muted-foreground" aria-hidden />
+                    <Button
+                      type="button"
+                      disabled={step1Busy || !canSubmitStep1}
+                      onClick={() => void submitStep1()}
+                      className="rounded-full bg-[#01696f] px-8 text-primary-foreground hover:bg-[#015a5f] dark:bg-[#4f98a3] dark:text-white dark:hover:bg-[#458892]"
+                    >
+                      {step1Busy ? (
+                        <Loader2 className="size-4 animate-spin" aria-hidden />
+                      ) : (
+                        <>
+                          Continue
+                          <ArrowRight className="ml-2 size-4" aria-hidden />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </motion.div>
+              ) : null}
+
+              {step === 2 ? (
+                <motion.div
+                  key="s2"
+                  custom={slideDir}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={transition}
+                  className="mx-auto max-w-2xl space-y-8"
+                >
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {LANDLORD_TYPE_CARDS.map(({ id, title, description, Icon }) => {
+                      const selected = landlordType === id;
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => setLandlordType(id)}
+                          className={cn(
+                            "flex flex-col rounded-xl border p-5 text-left transition-colors",
+                            selected
+                              ? "border-[#01696f] bg-[#01696f]/5 ring-2 ring-[#01696f]/25 dark:border-[#4f98a3] dark:bg-[#4f98a3]/10 dark:ring-[#4f98a3]/25"
+                              : "border-border hover:border-muted-foreground/30",
+                          )}
+                        >
+                          <Icon
+                            className={cn(
+                              "size-6",
+                              selected ? "text-[#01696f] dark:text-[#4f98a3]" : "text-muted-foreground",
+                            )}
+                            aria-hidden
+                          />
+                          <span className="mt-3 font-medium text-foreground">{title}</span>
+                          <span className="mt-1 text-sm text-muted-foreground">{description}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-4">
+                    <button
+                      type="button"
+                      onClick={goBack}
+                      className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                    >
+                      Back
+                    </button>
+                    <Button
+                      type="button"
+                      disabled={step2Busy || !landlordType}
+                      onClick={() => void submitStep2()}
+                      className="rounded-full bg-[#01696f] px-8 text-primary-foreground hover:bg-[#015a5f] dark:bg-[#4f98a3] dark:text-white dark:hover:bg-[#458892]"
+                    >
+                      {step2Busy ? (
+                        <Loader2 className="size-4 animate-spin" aria-hidden />
+                      ) : (
+                        <>
+                          Continue
+                          <ArrowRight className="ml-2 size-4" aria-hidden />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </motion.div>
+              ) : null}
+
+              {step === 3 ? (
+                <motion.div
+                  key="s3"
+                  custom={slideDir}
+                  variants={slideVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={transition}
+                  className="mx-auto max-w-lg space-y-4"
+                >
+                  <p className="text-sm text-muted-foreground">
+                    You can open the dashboard now, or jump straight into a workflow below.
+                  </p>
+                  <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
+                    {(
+                      [
+                        {
+                          key: "import",
+                          label: "Import portfolio",
+                          hint: "CSV or spreadsheet — we stage properties for review.",
+                          href: "/dashboard/portfolio?import=true",
+                        },
+                        {
+                          key: "tenants",
+                          label: "Tenants",
+                          hint: "Profiles, tenancies, and comms in one place.",
+                          href: "/dashboard/tenants",
+                        },
+                        {
+                          key: "compliance",
+                          label: "Compliance",
+                          hint: "Right to Rent and record keeping reminders.",
+                          href: "/dashboard/compliance",
+                        },
+                      ] as const
+                    ).map((row) => (
+                      <button
+                        key={row.key}
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void finishAndGo(row.href, row.key)}
+                        className="flex w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-muted/50 disabled:opacity-50"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-foreground">{row.label}</p>
+                          <p className="text-sm text-muted-foreground">{row.hint}</p>
+                        </div>
+                        {completeBusy === row.key ? (
+                          <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" aria-hidden />
+                        ) : (
+                          <ChevronRight className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-4 pt-4">
+                    <button
+                      type="button"
+                      onClick={goBack}
+                      disabled={busy}
+                      className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline disabled:opacity-50"
+                    >
+                      Back
+                    </button>
+                    <Button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void finishAndGo("/dashboard", "home")}
+                      className="rounded-full bg-[#01696f] px-8 text-primary-foreground hover:bg-[#015a5f] dark:bg-[#4f98a3] dark:text-white dark:hover:bg-[#458892]"
+                    >
+                      {completeBusy === "home" ? (
+                        <Loader2 className="size-4 animate-spin" aria-hidden />
+                      ) : (
+                        <>
+                          Enter dashboard
+                          <ArrowRight className="ml-2 size-4" aria-hidden />
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </div>
         </div>
       </div>

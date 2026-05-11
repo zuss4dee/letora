@@ -303,6 +303,32 @@
   }
 }
 
+/* Onboarding wizard — active step dot */
+@keyframes onboarding-step-dot-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(1, 105, 111, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(1, 105, 111, 0.08);
+  }
+}
+
+.onboarding-step-dot--pulse {
+  animation: onboarding-step-dot-pulse 2.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onboarding-step-dot--pulse {
+    animation: none;
+    box-shadow: 0 0 0 2px rgba(1, 105, 111, 0.28);
+  }
+
+  .dark .onboarding-step-dot--pulse {
+    box-shadow: 0 0 0 2px rgba(79, 152, 163, 0.45);
+  }
+}
+
 /* Google Places legacy Autocomplete attaches .pac-container to the document; keep above app chrome. */
 .pac-container {
   z-index: 12000 !important;

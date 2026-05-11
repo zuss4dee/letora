@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/lib/supabase/server";
+import { type LandlordType, parseLandlordType } from "@/lib/onboarding/landlord-wizard";
 import { type OnboardingStatus, parseOnboardingStatus } from "@/lib/onboarding/status";
 import {
   aiChaseSettingsSchema,
@@ -63,6 +64,9 @@ export type UserSettingsRow = UserSettingsInput & {
   hasSeenTour?: boolean;
   /** When set, dashboard workspace setup checklist is hidden. */
   onboardingSetupReminderDismissedAt?: string | null;
+  /** 3-step onboarding wizard position (1–3). */
+  onboardingStep?: number | null;
+  landlordType?: LandlordType | null;
   /** Stripe / Polar subscription display label (e.g. Monthly). */
   subscriptionPlan?: string | null;
   subscriptionStatus?: string | null;
@@ -166,6 +170,8 @@ type UserSettingsRowDb = {
   lead_qualifier_criteria?: string | null;
   onboarding_status?: string | null;
   onboarding_primary_goal?: string | null;
+  onboarding_step?: number | null;
+  landlord_type?: string | null;
   onboarding_setup_reminder_dismissed_at?: string | null;
   has_seen_tour?: boolean | null;
   subscription_plan?: string | null;
@@ -252,6 +258,8 @@ function mapDbRowToUserSettings(data: UserSettingsRowDb): UserSettingsRow {
     leadQualifierCriteria: data.lead_qualifier_criteria ?? "",
     onboardingStatus: parseOnboardingStatus(data.onboarding_status),
     onboardingPrimaryGoal: data.onboarding_primary_goal ?? null,
+    onboardingStep: data.onboarding_step ?? null,
+    landlordType: parseLandlordType(data.landlord_type),
     hasSeenTour: Boolean(data.has_seen_tour),
     onboardingSetupReminderDismissedAt: data.onboarding_setup_reminder_dismissed_at ?? null,
     subscriptionPlan: data.subscription_plan ?? null,

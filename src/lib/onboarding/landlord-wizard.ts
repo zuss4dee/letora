@@ -1,24 +1,30 @@
 /**
- * Landlord signup wizard — single source for step labels, count, and indices.
- * The last step submits via `completeOnboardingWithProperty` (`onboarding_status` → `completed`).
+ * Landlord onboarding wizard — step labels and landlord segment enum (DB + UI).
  */
+
 export const LANDLORD_ONBOARDING_WIZARD_STEPS = [
-  "Identity",
-  "Priorities",
-  "Landlord & agency",
-  "First property",
+  "Profile & organisation",
+  "How you operate",
+  "Get started",
 ] as const;
 
-/** Zero-based index; keep in sync with `LANDLORD_ONBOARDING_WIZARD_STEPS.length`. */
-export type OnboardingWizardStep = 0 | 1 | 2 | 3;
-
-type _Expect<T extends true> = T;
-type _landlordWizardStepsLength = _Expect<
-  (typeof LANDLORD_ONBOARDING_WIZARD_STEPS)["length"] extends 4 ? true : false
->;
+/** One-based step index (matches `user_settings.onboarding_step`). */
+export type OnboardingWizardStep = 1 | 2 | 3;
 
 export const LANDLORD_ONBOARDING_WIZARD_STEP_COUNT = LANDLORD_ONBOARDING_WIZARD_STEPS.length;
 
-export const LANDLORD_ONBOARDING_WIZARD_LAST_STEP_INDEX = (
-  LANDLORD_ONBOARDING_WIZARD_STEP_COUNT - 1
-) as OnboardingWizardStep;
+export const LANDLORD_TYPE_VALUES = ["self_managed", "portfolio", "agent", "new_landlord"] as const;
+export type LandlordType = (typeof LANDLORD_TYPE_VALUES)[number];
+
+export function parseLandlordType(raw: unknown): LandlordType | null {
+  if (typeof raw !== "string") return null;
+  return (LANDLORD_TYPE_VALUES as readonly string[]).includes(raw) ? (raw as LandlordType) : null;
+}
+
+export function clampOnboardingStep(n: number): OnboardingWizardStep {
+  if (!Number.isFinite(n)) return 1;
+  const r = Math.round(n);
+  if (r < 1) return 1;
+  if (r > 3) return 3;
+  return r as OnboardingWizardStep;
+}
