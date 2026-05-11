@@ -6,12 +6,14 @@ import {
   Mail,
   Palette,
   Sparkles,
+  Trash2,
   UserRound,
 } from "lucide-react";
 import { useCallback, useState } from "react";
 
 import { AiChaseSettings } from "@/components/settings/ai-chase-settings";
 import { AppearanceSettings } from "@/components/settings/appearance-settings";
+import { DeleteAccountCard } from "@/components/settings/delete-account-card";
 import { EmailTemplateSettings } from "@/components/settings/email-template-settings";
 import { NotificationSettings } from "@/components/settings/notification-settings";
 import { OrganisationSettings } from "@/components/settings/organisation-settings";
@@ -40,7 +42,8 @@ type TabId =
   | "ai"
   | "email"
   | "notifications"
-  | "appearance";
+  | "appearance"
+  | "account";
 
 const TABS: ReadonlyArray<{
   id: TabId;
@@ -84,6 +87,12 @@ const TABS: ReadonlyArray<{
     description: "Theme preference",
     icon: Palette,
   },
+  {
+    id: "account",
+    label: "Account",
+    description: "Danger zone, delete account",
+    icon: Trash2,
+  },
 ];
 
 export type SettingsShellInitialValues = {
@@ -114,6 +123,7 @@ export function SettingsShell({
     email: false,
     notifications: false,
     appearance: false,
+    account: false,
   });
 
   const setDirty = useCallback(
@@ -285,6 +295,9 @@ export function SettingsShell({
                 initialValue={initial.appearance}
                 onDirtyChange={setDirty("appearance")}
               />
+            </div>
+            <div className={cn(activeTab === "account" ? "block" : "hidden")}>
+              <DeleteAccountCard />
             </div>
           </section>
         </div>
