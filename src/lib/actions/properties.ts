@@ -462,7 +462,7 @@ export async function addProperty(formData: unknown): Promise<AddPropertyResult>
     gasSafetyExpiry: values.gasSafetyExpiry,
   });
 
-  if (!seeded.ok) {
+  if (seeded.ok === false) {
     await supabase.from("properties").delete().eq("id", propertyId).eq("user_id", user.id);
     return { ok: false as const, error: seeded.error };
   }

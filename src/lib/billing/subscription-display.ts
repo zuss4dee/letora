@@ -35,9 +35,6 @@ export function getSubscriptionAmountLine(subscriptionPlan: string | null | unde
   }
   if (key && key in PLANS) {
     const p = PLANS[key];
-    if (key === "yearly") {
-      return `£${p.price} / year`;
-    }
     return `£${p.price} / month`;
   }
   return null;

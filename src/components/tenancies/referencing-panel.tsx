@@ -88,7 +88,7 @@ export function ReferencingPanel({
   function onSendHandoff() {
     startTransition(async () => {
       const result = await sendReferencingHandoff(tenancyId);
-      if (!result.ok) {
+      if (result.ok === false) {
         toast.error(result.error);
         return;
       }
@@ -101,7 +101,7 @@ export function ReferencingPanel({
   function onMarkComplete() {
     startTransition(async () => {
       const result = await markReferencingCompleteManual(tenancyId);
-      if (!result.ok) {
+      if (result.ok === false) {
         toast.error(result.error);
         return;
       }
@@ -169,7 +169,7 @@ export function ReferencingPanel({
                 }
                 startTransition(async () => {
                   const r = await updateReferencingAgencyOverride(tenancyId, override);
-                  if (!r.ok) {
+                  if (r.ok === false) {
                     toast.error(r.error);
                     return;
                   }

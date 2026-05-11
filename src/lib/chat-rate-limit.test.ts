@@ -10,7 +10,7 @@ describe("checkChatRateLimit", () => {
     }
     const blocked = checkChatRateLimit(uid);
     expect(blocked.ok).toBe(false);
-    if (!blocked.ok) {
+    if (blocked.ok === false) {
       expect(blocked.retryAfterSec).toBeGreaterThan(0);
     }
   });

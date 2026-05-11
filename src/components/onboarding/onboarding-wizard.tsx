@@ -109,7 +109,7 @@ export function OnboardingWizard({
 
   const finishCheckoutSuccess = useCallback(async () => {
     const res = await completeOnboardingGate();
-    if (!res.ok) {
+    if (res.ok === false) {
       toast.error(res.error);
       return;
     }
@@ -201,7 +201,7 @@ export function OnboardingWizard({
     setIdentityBusy(true);
     try {
       const res = await saveOnboardingIdentity({ portfolioName });
-      if (!res.ok) {
+      if (res.ok === false) {
         toast.error(res.error);
         return;
       }
@@ -233,7 +233,7 @@ export function OnboardingWizard({
     setFocusBusy(true);
     try {
       const res = await saveOnboardingFocus({ focusIds: selectedPriorities });
-      if (!res.ok) {
+      if (res.ok === false) {
         toast.error(res.error);
         return;
       }
@@ -253,7 +253,7 @@ export function OnboardingWizard({
         contactEmail: noAgencyOrReferencing ? "" : contactEmail,
         referencingAgencyEmail: noAgencyOrReferencing ? "" : referencingAgencyEmail,
       });
-      if (!res.ok) {
+      if (res.ok === false) {
         toast.error(res.error);
         return;
       }
@@ -276,7 +276,7 @@ export function OnboardingWizard({
         city: propertyCity.trim(),
         postcode: propertyPostcode.trim(),
       });
-      if (!res.ok) {
+      if (res.ok === false) {
         toast.error(res.error);
         return;
       }
@@ -295,7 +295,7 @@ export function OnboardingWizard({
     setSkipBusy(true);
     try {
       const res = await skipOnboarding();
-      if (!res.ok) {
+      if (res.ok === false) {
         toast.error(res.error);
         return;
       }

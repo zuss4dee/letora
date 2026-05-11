@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+
+type CheckboxCheckedState = boolean | "indeterminate"
 import {
   closestCenter,
   DndContext,
@@ -132,18 +134,20 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     id: "select",
-    header: ({ table }) => (
-      <div className="flex items-center justify-center">
-        <Checkbox
-          checked={
-            table.getIsAllPageRowsSelected() ||
-            (table.getIsSomePageRowsSelected() && "indeterminate")
-          }
-          onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-          aria-label="Select all"
-        />
-      </div>
-    ),
+    header: ({ table }) => {
+      const allSelected = table.getIsAllPageRowsSelected()
+      const someSelected = table.getIsSomePageRowsSelected()
+      const checkedState: CheckboxCheckedState = allSelected ? true : someSelected ? "indeterminate" : false
+      return (
+        <div className="flex items-center justify-center">
+          <Checkbox
+            checked={checkedState}
+            onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+            aria-label="Select all"
+          />
+        </div>
+      )
+    },
     cell: ({ row }) => (
       <div className="flex items-center justify-center">
         <Checkbox

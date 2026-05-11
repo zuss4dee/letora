@@ -49,7 +49,7 @@ export async function confirmMoveIn(
       .eq("id", tenancyId);
 
     const moveInApproval = await enqueueMoveInEmailApproval(supabase, tenancyId, user.id, { agentRunId: null });
-    if (!moveInApproval.ok) {
+    if (moveInApproval.ok === false) {
       return {
         ok: false,
         error: userFacingError(

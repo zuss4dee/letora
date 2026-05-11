@@ -43,7 +43,7 @@ export async function createPlatformCheckoutSession(
   params: { priceId: string; planKey: PlanKey; returnTarget?: CheckoutReturnTarget },
 ): Promise<{ url: string } | { error: string; status?: number }> {
   const match = assertPriceIdMatchesPlan(params.priceId, params.planKey);
-  if (!match.ok) {
+  if (match.ok === false) {
     return { error: match.message, status: 400 };
   }
 

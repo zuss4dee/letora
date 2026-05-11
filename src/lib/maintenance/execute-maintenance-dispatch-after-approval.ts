@@ -156,7 +156,7 @@ export async function executeMaintenanceDispatchAfterApproval(
   }
 
   const owned = await assertMaintenanceRequestOwned(supabase, userId, maintenanceRequestId);
-  if (!owned.ok) {
+  if (owned.ok === false) {
     return { ok: false, error: owned.error };
   }
 

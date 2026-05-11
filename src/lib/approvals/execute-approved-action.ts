@@ -27,7 +27,7 @@ export async function runApprovedAgentSideEffect(
         payload: approval.payload,
         target_id: approval.target_id,
       });
-      if (!exec.ok) {
+      if (exec.ok === false) {
         return { ok: false, error: exec.error };
       }
       return { ok: true };
@@ -39,7 +39,7 @@ export async function runApprovedAgentSideEffect(
         payload: approval.payload,
         target_id: approval.target_id,
       });
-      if (!exec.ok) {
+      if (exec.ok === false) {
         return { ok: false, error: exec.error };
       }
       return { ok: true };
@@ -51,7 +51,7 @@ export async function runApprovedAgentSideEffect(
         payload: approval.payload,
         target_id: approval.target_id,
       });
-      if (!exec.ok) {
+      if (exec.ok === false) {
         return { ok: false, error: exec.error };
       }
       return { ok: true };
@@ -63,7 +63,7 @@ export async function runApprovedAgentSideEffect(
         payload: approval.payload,
         target_id: approval.target_id,
       });
-      if (!exec.ok) {
+      if (exec.ok === false) {
         return { ok: false, error: exec.error };
       }
       return { ok: true };

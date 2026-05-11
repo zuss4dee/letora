@@ -99,7 +99,7 @@ export async function executeSendOnboardingWelcomeAfterApproval(
   }
 
   const built = await buildWelcomeEmailForTenancy(supabase, userId, tenancyId);
-  if (!built.ok) {
+  if (built.ok === false) {
     return { ok: false, error: built.error };
   }
 

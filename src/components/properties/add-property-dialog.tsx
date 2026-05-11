@@ -93,7 +93,7 @@ export function AddPropertyDialog({
   async function onSubmit(values: AddPropertyInput) {
     setSubmitError(null);
     const result = await addProperty(values);
-    if (!result.ok) {
+    if (result.ok === false) {
       setSubmitError(result.error);
       return;
     }

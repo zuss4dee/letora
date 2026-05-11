@@ -683,7 +683,7 @@ async function resolveDraftContractByPropertyHint(
         optionalTenantName.trim(),
         accountPropertyCount,
       );
-      if (noTenancyRow.ok) return noTenancyRow;
+      if (noTenancyRow.ok === true) return noTenancyRow;
       return { ok: false, json: noTenancyRow.json };
     }
     return {
@@ -922,7 +922,7 @@ async function resolveTenancyIdForReferencingHandoff(
     resolvedTenantId = tp.id as string;
   } else if (tenantNameArg) {
     const tenantResolved = await resolveTenantProfileForAccount(supabase, userId, tenantNameArg);
-    if (!tenantResolved.ok) {
+    if (tenantResolved.ok === false) {
       const body = tenantResolved.body;
       if (Array.isArray(body.candidates)) {
         return {
@@ -1750,7 +1750,7 @@ export async function executeCEOTool(
       }
       if (onboardingFor) {
         const resolved = await resolveTenantProfileForAccount(supabase, userId, onboardingFor);
-        if (!resolved.ok) {
+        if (resolved.ok === false) {
           return JSON.stringify(resolved.body);
         }
         const { data: tenRows, error: tenErr } = await supabase
@@ -1825,7 +1825,7 @@ export async function executeCEOTool(
 
       if (tenantIdNew && propertyIdNew && startDateNew && !leadIdArg) {
         const resolvedTenant = await resolveTenantProfileForAccount(supabase, userId, tenantIdNew);
-        if (!resolvedTenant.ok) {
+        if (resolvedTenant.ok === false) {
           return JSON.stringify(resolvedTenant.body);
         }
         const tenantIdResolved = resolvedTenant.tenantId;
@@ -2022,7 +2022,7 @@ export async function executeCEOTool(
       let rows = parseBatchOnboardingCsv(csvText);
       if (rows.length === 0) {
         const llm = await extractBatchOnboardingRowsWithLlmFromText(csvText);
-        if (!llm.ok) {
+        if (llm.ok === false) {
           return JSON.stringify({
             error:
               "Couldn't parse any rows. Expected header: property_address, tenant_name, tenant_email, monthly_rent, start_date.",
@@ -2084,7 +2084,7 @@ export async function executeCEOTool(
     }
     case "send_referencing_handoff": {
       const resolved = await resolveTenancyIdForReferencingHandoff(supabase, userId, args);
-      if (!resolved.ok) {
+      if (resolved.ok === false) {
         return resolved.response;
       }
 
@@ -2106,7 +2106,7 @@ export async function executeCEOTool(
       const refResult = await runReferencingHandoffForUser(resolved.tenancyId, userId, supabase, {
         forceSend: true,
       });
-      if (!refResult.ok) {
+      if (refResult.ok === false) {
         const errText = refResult.error;
         const missingAgency =
           /referencing agency email|set a referencing agency/i.test(errText) ||
@@ -2154,7 +2154,7 @@ export async function executeCEOTool(
     }
     case "prepare_referencing": {
       const resolvedPrep = await resolveTenancyIdForReferencingHandoff(supabase, userId, args);
-      if (!resolvedPrep.ok) {
+      if (resolvedPrep.ok === false) {
         return resolvedPrep.response;
       }
       const prepTenancyId = resolvedPrep.tenancyId;
@@ -2394,7 +2394,7 @@ export async function executeCEOTool(
           { supabase, userId },
         );
 
-        if (!approval.ok) {
+        if (approval.ok === false) {
           return JSON.stringify({
             error: approval.error,
             maintenance_request_id: requestId,
@@ -2943,7 +2943,7 @@ export async function executeCEOTool(
           console.log("[draft_contract] resolving by property hint only (no tenant id/name)");
           const pr = await resolveDraftContractByPropertyHint(supabase, userId, propertyHint, null);
           console.log("[draft_contract] property-hint resolve ok:", pr.ok);
-          if (!pr.ok) return pr.json;
+          if (pr.ok === false) return pr.json;
           tenantRow = pr.data.tenantRow;
           resolvedTenancyId = pr.data.resolvedTenancyId;
           tenancyData = pr.data.tenancyData;
@@ -2961,11 +2961,18 @@ export async function executeCEOTool(
           const raw = tid ?? tname ?? "";
           console.log("[draft_contract] resolveTenantProfileForAccount query:", raw);
           const resolved = await resolveTenantProfileForAccount(supabase, userId, raw);
-          console.log("[draft_contract] tenant result:", JSON.stringify(resolved.ok ? { ok: true, tenantId: resolved.tenantId } : { ok: false, body: resolved.body }));
-          if (!resolved.ok) {
+          console.log(
+            "[draft_contract] tenant result:",
+            JSON.stringify(
+              resolved.ok === true
+                ? { ok: true, tenantId: resolved.tenantId }
+                : { ok: false, body: resolved.body },
+            ),
+          );
+          if (resolved.ok === false) {
             if (propertyHint) {
               const pr = await resolveDraftContractByPropertyHint(supabase, userId, propertyHint, tname ?? null);
-              if (!pr.ok) return pr.json;
+              if (pr.ok === false) return pr.json;
               tenantRow = pr.data.tenantRow;
               resolvedTenancyId = pr.data.resolvedTenancyId;
               tenancyData = pr.data.tenancyData;
@@ -2979,7 +2986,7 @@ export async function executeCEOTool(
             }
           }
 
-          if (!loadedFromProperty && resolved.ok) {
+          if (!loadedFromProperty && resolved.ok === true) {
             const { data: tp } = await supabase
               .from("tenants")
               .select("id, full_name, email, phone")
@@ -3494,7 +3501,7 @@ export async function executeCEOTool(
         }
 
         const enq = await enqueueMoveInEmailApproval(supabase, resolvedTenancyId, userId, { agentRunId: null });
-        if (!enq.ok) {
+        if (enq.ok === false) {
           const failResult = {
             success: false,
             message: enq.error,
@@ -3668,7 +3675,7 @@ export async function executeCEOTool(
         resolvedTenantId = tp.id as string;
       } else if (tenantNameArg) {
         const tenantResolved = await resolveTenantProfileForAccount(supabase, userId, tenantNameArg);
-        if (!tenantResolved.ok) {
+        if (tenantResolved.ok === false) {
           const body = tenantResolved.body;
           if (Array.isArray(body.candidates)) {
             return JSON.stringify({

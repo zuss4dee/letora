@@ -217,12 +217,12 @@ export async function completeOnboardingWithProperty(
     hasGasSupply: true,
   });
 
-  if (!result.ok) {
+  if (result.ok === false) {
     return { ok: false, error: result.error };
   }
 
   const statusRes = await setUserOnboardingStatus(user.id, "completed");
-  if (!statusRes.ok) {
+  if (statusRes.ok === false) {
     return { ok: false, error: statusRes.error };
   }
 
@@ -284,7 +284,7 @@ export async function syncLegacyOnboardingAfterTenantStepRemoved(): Promise<
 
   if (status === "property_pending" && settingsComplete && propertyCount >= 1) {
     const statusRes = await setUserOnboardingStatus(user.id, "completed");
-    if (!statusRes.ok) return { ok: false, error: statusRes.error };
+    if (statusRes.ok === false) return { ok: false, error: statusRes.error };
 
     revalidatePath("/onboarding");
     revalidatePath("/onboarding", "layout");

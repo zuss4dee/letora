@@ -158,7 +158,7 @@ export function ComplianceRecordsWorkspace({
         fd.append("documentLabel", label.slice(0, 200));
       }
       const result = await uploadComplianceDocument(uploadDraft.propertyId, uploadDraft.certificateType, fd);
-      if (!result.ok) {
+      if (result.ok === false) {
         toast.error(result.error);
         return;
       }

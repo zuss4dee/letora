@@ -35,5 +35,5 @@
     "**/*.ts",
     "**/*.tsx"
   ],
-  "exclude": ["node_modules", "remotion", "scratch"]
+  "exclude": ["node_modules", "remotion", "scratch", "supabase/functions"]
 }

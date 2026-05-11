@@ -157,7 +157,7 @@ export function ComplianceDashboard({
     if (!value) return;
     startTransition(async () => {
       const result = await upsertComplianceRecord(propertyId, type, value);
-      if (!result.ok) {
+      if (result.ok === false) {
         toast.error(result.error);
         return;
       }
@@ -174,7 +174,7 @@ export function ComplianceDashboard({
       const fd = new FormData();
       fd.append("file", file);
       const result = await uploadComplianceDocument(propertyId, type, fd);
-      if (!result.ok) {
+      if (result.ok === false) {
         toast.error(result.error);
         return;
       }
@@ -201,7 +201,7 @@ export function ComplianceDashboard({
     setOpeningKey(key);
     try {
       const result = await getComplianceDocumentSignedUrl(propertyId, type);
-      if (!result.ok) {
+      if (result.ok === false) {
         toast.error(result.error);
         return;
       }

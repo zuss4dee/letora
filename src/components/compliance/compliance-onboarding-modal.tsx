@@ -57,7 +57,7 @@ export function ComplianceOnboardingModal({
       const fd = new FormData();
       fd.append("file", file);
       const result = await uploadComplianceDocument(propertyIdNonNull, type, fd);
-      if (!result.ok) {
+      if (result.ok === false) {
         toast.error(result.error);
         return;
       }

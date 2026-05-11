@@ -14,6 +14,7 @@ function row(partial: Partial<RentPaymentListRow> & Pick<RentPaymentListRow, "id
     status: partial.status ?? "pending",
     due_date: partial.due_date ?? null,
     paid_date: partial.paid_date ?? null,
+    notes: partial.notes ?? null,
     tenancyId: partial.tenancyId ?? null,
     tenantId: partial.tenantId ?? null,
     tenantName: partial.tenantName ?? null,

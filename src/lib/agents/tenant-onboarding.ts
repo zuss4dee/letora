@@ -634,7 +634,7 @@ export async function runTenantOnboardingAgent(
       } satisfies CreateAgentApprovalContract,
       { supabase, userId },
     );
-    if (!approval.ok) {
+    if (approval.ok === false) {
       return {
         success: false,
         agentRunId,

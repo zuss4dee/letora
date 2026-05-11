@@ -66,7 +66,7 @@ export async function enqueueMoveInEmailApproval(
   opts?: { agentRunId?: string | null },
 ): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   const pack = await buildMoveInEmailApprovalPackage(supabase, tenancyId, userId, opts);
-  if (!pack.ok) {
+  if (pack.ok === false) {
     return { ok: false, error: pack.error };
   }
   return createAgentApproval(pack.contract, { supabase, userId });

@@ -27,7 +27,7 @@ export function WorkspaceSetupReminder({
     setBusy(true);
     try {
       const res = await dismissWorkspaceSetupReminder();
-      if (!res.ok) {
+      if (res.ok === false) {
         toast.error(res.error);
         return;
       }
