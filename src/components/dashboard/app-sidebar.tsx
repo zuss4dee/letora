@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   BadgeCheck,
   Building2,
@@ -13,6 +14,7 @@ import {
   Home,
   Key,
   LogOut,
+  MessageSquare,
   Settings,
   Upload,
   Users,
@@ -43,6 +45,7 @@ type NavItem = {
 
 const mainItemsStatic: NavItem[] = [
   { title: "Home", url: "/dashboard", icon: Home },
+  { title: "Assistant", url: "/dashboard/assistant", icon: MessageSquare },
   { title: "Portfolio", url: "/dashboard/properties", icon: Building2 },
   { title: "Tenants", url: "/dashboard/tenants", icon: Users },
   { title: "Tenancies", url: "/dashboard/tenancies", icon: Key },
@@ -55,9 +58,22 @@ const operationsItemsBase: NavItem[] = [
 
 // Leads and other low-frequency items removed from main nav
 
-function isActivePath(pathname: string, url: string) {
+function isActivePath(
+  pathname: string,
+  url: string,
+  opts?: { commandCenterConversationId: string | null },
+) {
+  const c = opts?.commandCenterConversationId ?? null;
+  const onDashboardRoot = pathname === "/dashboard" || pathname === "/dashboard/";
+
   if (url === "/dashboard") {
-    return pathname === "/dashboard" || pathname === "/dashboard/";
+    if (c) return false;
+    return onDashboardRoot;
+  }
+  if (url === "/dashboard/assistant") {
+    if (pathname === "/dashboard/assistant" || pathname === "/dashboard/assistant/") return true;
+    if (c && onDashboardRoot) return true;
+    return false;
   }
   return pathname === url || pathname.startsWith(`${url}/`);
 }
@@ -76,12 +92,14 @@ function NavSection({
   label,
   items,
   pathname,
+  commandCenterConversationId,
   attentionItems,
   onNavigate,
 }: {
   label: string;
   items: NavItem[];
   pathname: string;
+  commandCenterConversationId: string | null;
   attentionItems?: AttentionItem[];
   onNavigate?: () => void;
 }) {
@@ -94,7 +112,7 @@ function NavSection({
       </span>
       <ul className="flex flex-col gap-px">
         {items.map((item) => {
-          const active = isActivePath(pathname, item.url);
+          const active = isActivePath(pathname, item.url, { commandCenterConversationId });
           const Icon = item.icon;
           const attention = attentionByUrl.get(item.url);
           const showDot = Boolean(attention);
@@ -174,7 +192,23 @@ function useFooterOpen() {
   return [footerOpen, setFooterOpen] as const;
 }
 
-export function AppSidebar({
+type AppSidebarProps = Pick<
+  React.ComponentProps<typeof Sidebar>,
+  "variant" | "side" | "collapsible" | "className"
+> & {
+  userEmail?: string | null;
+  complianceAttention?: boolean;
+  maintenanceAttention?: boolean;
+  subscriptionPlan?: string | null;
+  subscriptionStatus?: string | null;
+  subscriptionPeriodEnd?: string | null;
+  subscriptionTrialEnd?: string | null;
+  polarBillingLinked?: boolean;
+  pendingApprovalsCount?: number;
+  pendingApprovalsBadgeTitle?: string | null;
+};
+
+function AppSidebarInner({
   userEmail,
   complianceAttention,
   maintenanceAttention,
@@ -189,18 +223,8 @@ export function AppSidebar({
   side,
   collapsible,
   className,
-}: Pick<React.ComponentProps<typeof Sidebar>, "variant" | "side" | "collapsible" | "className"> & {
-  userEmail?: string | null;
-  complianceAttention?: boolean;
-  maintenanceAttention?: boolean;
-  subscriptionPlan?: string | null;
-  subscriptionStatus?: string | null;
-  subscriptionPeriodEnd?: string | null;
-  subscriptionTrialEnd?: string | null;
-  polarBillingLinked?: boolean;
-  pendingApprovalsCount?: number;
-  pendingApprovalsBadgeTitle?: string | null;
-}) {
+  commandCenterConversationId,
+}: AppSidebarProps & { commandCenterConversationId: string | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const { isMobile, setOpenMobile } = useSidebar();
@@ -357,12 +381,19 @@ export function AppSidebar({
       <SidebarContent className="px-0 pb-3 pt-1">
         <div className="mx-5 mb-3 h-px bg-zinc-950 dark:bg-black/[0.09] dark:bg-white/[0.07]" aria-hidden />
         <nav className="flex min-h-0 flex-1 flex-col" aria-label="Dashboard">
-          <NavSection label="Main" items={mainNavItems} pathname={pathname} onNavigate={closeMobileNav} />
+          <NavSection
+            label="Main"
+            items={mainNavItems}
+            pathname={pathname}
+            commandCenterConversationId={commandCenterConversationId}
+            onNavigate={closeMobileNav}
+          />
           <div className="my-2.5 mx-5 h-px bg-zinc-950 dark:bg-black/[0.08] dark:bg-white/[0.06]" aria-hidden />
           <NavSection
             label="Operations"
             items={operationsItemsBase}
             pathname={pathname}
+            commandCenterConversationId={commandCenterConversationId}
             attentionItems={workflowAttention.length > 0 ? workflowAttention : undefined}
             onNavigate={closeMobileNav}
           />
@@ -444,5 +475,23 @@ export function AppSidebar({
         </div>
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function AppSidebarSearchParamsBridge(props: AppSidebarProps) {
+  const searchParams = useSearchParams();
+  return (
+    <AppSidebarInner
+      {...props}
+      commandCenterConversationId={searchParams.get("c")}
+    />
+  );
+}
+
+export function AppSidebar(props: AppSidebarProps) {
+  return (
+    <Suspense fallback={<AppSidebarInner {...props} commandCenterConversationId={null} />}>
+      <AppSidebarSearchParamsBridge {...props} />
+    </Suspense>
   );
 }

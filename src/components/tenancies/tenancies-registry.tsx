@@ -668,7 +668,7 @@ export function TenanciesRegistry({
                 <div className="grid grid-cols-1 gap-2">
                   <Link
                     href={`/dashboard/tenancies/${selected.id}`}
-                    className="flex items-center justify-center rounded-md border border-zinc-300 bg-white py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-800 transition-colors hover:bg-zinc-50 hover:text-zinc-900 dark:border-zinc-700 dark:bg-[#1e1e1e] dark:text-zinc-200 dark:hover:bg-[#2a2a2a] dark:hover:text-white"
+                    className="flex items-center justify-center rounded-md border border-zinc-300 bg-zinc-900 py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-white transition-colors hover:bg-zinc-700 dark:border-zinc-700 dark:bg-[#1e1e1e] dark:text-zinc-200 dark:hover:bg-[#2a2a2a] dark:hover:text-white"
                   >
                     Open Full Case File
                   </Link>
@@ -681,7 +681,7 @@ export function TenanciesRegistry({
                         : selected.monthlyRent ?? 0
                     }
                     triggerLabel="Log Payment Action"
-                    triggerClassName="w-full rounded-md border border-zinc-300 bg-transparent py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-800 transition-colors hover:bg-zinc-100 dark:border-[#333333] dark:text-zinc-200 dark:hover:bg-zinc-100 dark:bg-zinc-900"
+                    triggerClassName="w-full rounded-md border border-zinc-300 bg-white py-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-800 transition-colors hover:bg-zinc-50 hover:text-zinc-900 dark:border-[#333333] dark:text-zinc-200 dark:hover:bg-[#2a2a2a] dark:bg-[#1e1e1e]"
                   />
                   
                   {/* Demoted Metadata Edit */}

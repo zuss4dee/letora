@@ -1033,28 +1033,12 @@ export function AssistantChat({
         </div>
       </main>
 
-      {/* Sessions: hidden < md; compact md–lg; full list lg+ */}
-      <aside className="relative hidden h-full min-h-0 shrink-0 flex-col border-l border-zinc-200 bg-zinc-50 dark:border-[#1f1f1f] dark:bg-[#111111] md:flex md:w-16 lg:w-72">
-        <div className="flex flex-col items-center gap-3 border-b border-zinc-200 py-4 dark:border-[#1e1e1e] lg:hidden">
-          <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-400">
-            {conversations.length}
-          </span>
-          <button
-            type="button"
-            onClick={() => createNewChat()}
-            className="rounded-md p-1.5 text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-[#1e1e1e] dark:hover:text-white"
-            title="New session"
-            aria-label="New session"
-          >
-            <MessageSquarePlus className="size-4" />
-          </button>
-          <MessageSquare className="size-4 text-zinc-500 dark:text-zinc-500" aria-hidden />
-        </div>
-
-        <div className="hidden min-h-0 flex-1 flex-col lg:flex">
+      {/* Chat History: hidden on mobile; full list md+ */}
+      <aside className="relative hidden h-full min-h-0 shrink-0 flex-col border-l border-zinc-200 bg-zinc-50 dark:border-[#1f1f1f] dark:bg-[#111111] md:flex md:w-72">
+        <div className="flex min-h-0 flex-1 flex-col">
         <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3.5 dark:border-[#1e1e1e]">
           <span className="font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-600 dark:text-zinc-400">
-            Active Sessions
+            Chat History
           </span>
           <button
             type="button"
@@ -1097,6 +1081,14 @@ export function AssistantChat({
           </div>
         </div>
 
+        {conversations.length === 0 && (
+          <div className="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-8 text-center">
+            <MessageSquare className="size-6 text-zinc-300 dark:text-zinc-700" />
+            <p className="text-[11px] text-zinc-400 dark:text-zinc-600">
+              No chats yet. Start a conversation below.
+            </p>
+          </div>
+        )}
         <div className="border-t border-zinc-200 bg-zinc-100 p-4 dark:border-[#2a2a2a] dark:bg-[#161616]">
           <div className="flex items-center justify-between font-mono text-[9px] uppercase text-zinc-600 dark:text-zinc-500">
             <span>Shard Ops Center</span>
