@@ -25,7 +25,7 @@ export default async function ApprovalEmailReviewPage({ params }: { params: Prom
             Approvals // Email review
           </p>
           <h1 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Review rent chase email</h1>
-          <p className="max-w-2xl text-[13px] leading-relaxed text-zinc-400">
+          <p className="max-w-2xl text-[13px] leading-relaxed text-zinc-500 dark:text-zinc-400">
             Edit the outgoing message, then approve to send or reject to dismiss without sending.
           </p>
         </div>

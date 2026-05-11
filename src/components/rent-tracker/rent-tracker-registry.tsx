@@ -123,8 +123,16 @@ function downloadReportCsv(rows: RentPaymentListRow[], todayIso: string) {
   URL.revokeObjectURL(url);
 }
 
+function pendingApprovalMatchesInstalment(a: AgentApprovalRow, instalmentId: string): boolean {
+  if (a.target_id === instalmentId) return true;
+  const p = a.payload as { rentPaymentId?: unknown; instalmentId?: unknown } | null | undefined;
+  if (typeof p?.rentPaymentId === "string" && p.rentPaymentId === instalmentId) return true;
+  if (typeof p?.instalmentId === "string" && p.instalmentId === instalmentId) return true;
+  return false;
+}
+
 function getAgentState(row: RentPaymentListRow, pendingApprovals: AgentApprovalRow[]) {
-  const approval = pendingApprovals.find((a) => a.target_id === row.id);
+  const approval = pendingApprovals.find((a) => pendingApprovalMatchesInstalment(a, row.id));
   if (approval)
     return { label: "DRAFT READY", tone: "emerald" as const, approvalId: approval.id, approval };
   if (row.status === "paid") return { label: "SETTLED", tone: "zinc" as const };
@@ -392,10 +400,10 @@ export function RentTrackerRegistry({
             body: "Cash by paid date",
           },
           {
-            label: "Outstanding (Mo)",
+            label: "Still Due",
             value: gbp.format(stats.outstandingThisMonth),
             tone: stats.outstandingThisMonth > 0 ? ("amber" as const) : undefined,
-            body: "Unpaid · due this month",
+            body: "Unpaid · due & overdue",
           },
           {
             label: "Arrears",
@@ -601,28 +609,7 @@ export function RentTrackerRegistry({
                 </div>
               </section>
 
-              {getAgentState(selectedRow, pendingApprovals).label === "DRAFT READY" ? (
-                <section>
-                  <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">
-                    Rent chase draft
-                  </h3>
-                  <div className="border border-emerald-900/30 bg-emerald-900/10 p-4 font-mono text-[11px]">
-                    <div className="mb-3 border-b border-emerald-900/20 pb-3">
-                      <span className="mr-2 text-[9px] uppercase text-emerald-500/60">Subject:</span>
-                      <span className="text-emerald-100">
-                        {(getAgentState(selectedRow, pendingApprovals).approval?.payload?.emailSubject as
-                          | string
-                          | undefined) ?? "—"}
-                      </span>
-                    </div>
-                    <div className="whitespace-pre-wrap leading-relaxed text-emerald-100/70">
-                      {(getAgentState(selectedRow, pendingApprovals).approval?.payload?.emailBody as
-                        | string
-                        | undefined) ?? "No message body drafted."}
-                    </div>
-                  </div>
-                </section>
-              ) : null}
+
 
               <section>
                 <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">History</h3>
@@ -662,7 +649,7 @@ export function RentTrackerRegistry({
                   className="w-full border border-transparent bg-green-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-white hover:bg-green-700 dark:border-[#9ad7c3]/20 dark:bg-[#152420] dark:text-[#9ad7c3] dark:hover:bg-[#1a2e29]"
                 >
                   <Link
-                    href={`/dashboard/approvals?id=${getAgentState(selectedRow, pendingApprovals).approvalId}`}
+                    href={`/dashboard/approvals/${getAgentState(selectedRow, pendingApprovals).approvalId}/email`}
                   >
                     Review &amp; approve chase
                   </Link>

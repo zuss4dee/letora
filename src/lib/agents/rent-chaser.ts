@@ -347,6 +347,23 @@ export async function runRentChaserAgent(userId: string, options?: RunRentChaser
       continue;
     }
 
+    const { data: existingPendingRentChase } = await supabase
+      .from("agent_approvals")
+      .select("id")
+      .eq("user_id", resolvedUserId)
+      .eq("action_type", "send_rent_chase_email")
+      .eq("target_id", row.id)
+      .eq("status", "pending")
+      .maybeSingle();
+
+    if (existingPendingRentChase?.id) {
+      debugRentChaser("skip_existing_pending_rent_chase_approval", {
+        rentPaymentId: row.id,
+        approvalId: existingPendingRentChase.id,
+      });
+      continue;
+    }
+
     /** One LLM call per row — OTA billing is consolidated into a single `rent_chase_row` audit step (not 3). */
     const draft = await generateEmailDraft(
       model,

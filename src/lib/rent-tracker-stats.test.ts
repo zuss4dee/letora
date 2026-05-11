@@ -68,6 +68,16 @@ describe("computeRentTrackerStats", () => {
     expect(s.nextUnpaidPipeline30d).toBe(400);
   });
 
+  it("includes prior-month unpaid instalments in Still Due (carried arrears)", () => {
+    const payments = [
+      pay({ id: "arr", amount: 450, due_date: "2026-02-01", status: "pending" }),
+      pay({ id: "cur", amount: 600, due_date: "2026-03-28", status: "pending" }),
+    ];
+    const s = computeRentTrackerStats(payments, anchor, []);
+    expect(s.outstandingThisMonth).toBe(1050);
+    expect(s.expectedThisMonth).toBe(600);
+  });
+
   it("clears Outstanding for current-month instalments when paid", () => {
     const payments = [
       pay({

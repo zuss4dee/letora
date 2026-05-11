@@ -290,7 +290,7 @@ async function main() {
 
   console.log("\n--- Interpretation ---");
   console.log(
-    "- Outstanding (Mo) ONLY includes UNPAID rows whose due_date falls in the CURRENT calendar month.",
+    "- Rent Tracker “Still Due” (`outstandingThisMonth`): UNPAID rows with due_date on or before end of current month (includes carried arrears). Command Center `rentDueThisMonth` stays current calendar month only.",
   );
   console.log(
     "- Total Arrears includes ALL overdue/past-due pending rows (same rule as overdue queue filter), regardless of due month.",

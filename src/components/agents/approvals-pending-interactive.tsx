@@ -197,22 +197,6 @@ export function ApprovalsPendingInteractive({
             </div>
 
             <div className="min-h-0 flex-1 space-y-8 overflow-y-auto p-6">
-              {/* Draft Preview / Payload Details */}
-              {!!(selectedApproval.payload.emailBody || selectedApproval.payload.emailSubject) && (
-                <section>
-                  <h3 className="mb-4 text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Communication Draft</h3>
-                  <div className="border border-zinc-200/90 bg-white p-4 font-mono text-[11px] dark:border-[#232323] dark:bg-[#0B0B0B]">
-                    <div className="mb-3 border-b border-zinc-200/90 pb-3 dark:border-[#232323]">
-                      <span className="text-zinc-600 dark:text-zinc-600 uppercase mr-2">Subject:</span>
-                      <span className="text-zinc-800 dark:text-zinc-300">{(selectedApproval.payload.emailSubject as string) ?? "—"}</span>
-                    </div>
-                    <div className="whitespace-pre-wrap leading-relaxed text-zinc-600 dark:text-zinc-400">
-                      {(selectedApproval.payload.emailBody as string) ?? "No message body drafted."}
-                    </div>
-                  </div>
-                </section>
-              )}
-
               {/* Maintenance Context */}
               {selectedApproval.action_type === "approve_maintenance_dispatch" && (
                 <section>
@@ -267,22 +251,17 @@ export function ApprovalsPendingInteractive({
             {/* Decision Actions */}
             <div className="shrink-0 border-t border-zinc-200/90 bg-zinc-50 p-6 dark:border-[#232323] dark:bg-[#0B0B0B]">
               <div className="grid grid-cols-1 gap-2">
-                {selectedApproval.action_type === "send_rent_chase_email" ? (
-                  <Button
-                    type="button"
-                    disabled={busyId === selectedApproval.id}
-                    variant="outline"
-                    className="border border-emerald-200 bg-emerald-50 py-5 text-[10px] font-bold uppercase tracking-[0.1em] text-emerald-800 hover:bg-emerald-100 dark:border-[#9ad7c3]/20 dark:bg-[#152420] dark:text-[#9ad7c3] dark:hover:bg-[#1a2e29]"
-                    asChild
-                  >
-                    <Link href={`/dashboard/approvals/${selectedApproval.id}/email`}>Review & edit email</Link>
-                  </Button>
-                ) : null}
                 <Button
                   type="button"
                   disabled={busyId === selectedApproval.id}
                   className="border border-transparent bg-green-600 py-6 text-[11px] font-bold uppercase tracking-[0.1em] text-white hover:bg-green-700 dark:border-[#9ad7c3]/20 dark:bg-[#152420] dark:text-[#9ad7c3] dark:hover:bg-[#1a2e29]"
-                  onClick={() => void runApprove(selectedApproval.id)}
+                  onClick={() => {
+                    if (selectedApproval.action_type === "send_rent_chase_email") {
+                      router.push(`/dashboard/approvals/${selectedApproval.id}/email`);
+                      return;
+                    }
+                    void runApprove(selectedApproval.id);
+                  }}
                 >
                   {busyId === selectedApproval.id ? "Processing..." : "Approve & Execute Action"}
                 </Button>

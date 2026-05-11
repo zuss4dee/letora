@@ -173,7 +173,16 @@ export async function getPendingApprovalsForRentChase(): Promise<AgentApprovalRo
     return [];
   }
 
-  return (data ?? []) as AgentApprovalRow[];
+  const rows = (data ?? []) as AgentApprovalRow[];
+
+  // Deduplicate: keep only the newest approval per target_id (rows already newest-first).
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    const key = row.target_id ?? row.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
 export async function createAgentApproval(

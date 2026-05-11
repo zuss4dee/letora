@@ -331,11 +331,20 @@ async function RentTrackerAsyncSection({
   if (dbgRentTracker) {
     console.info("[rent-tracker] server fetch start");
   }
-  const [payments, tenancies, pendingApprovals] = await Promise.all([
+  const [payments, tenancies, rawApprovals] = await Promise.all([
     getRentPayments(),
     getTenancies(userId),
     getPendingApprovalsForRentChase(),
   ]);
+
+  const seenApprovalTargets = new Set<string>();
+  const pendingApprovals = rawApprovals.filter((a) => {
+    const key = a.target_id ?? a.id;
+    if (seenApprovalTargets.has(key)) return false;
+    seenApprovalTargets.add(key);
+    return true;
+  });
+
   if (dbgRentTracker) {
     console.info("[rent-tracker] server fetch end", {
       payments: payments.length,

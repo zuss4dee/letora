@@ -80,7 +80,7 @@ export async function insertPendingAgentApproval(
       .eq("status", "pending")
       .eq("action_type", input.actionType)
       .eq("target_id", targetId)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: false })
       .limit(1);
 
     if (findErr) {

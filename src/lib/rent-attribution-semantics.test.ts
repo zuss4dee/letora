@@ -4,11 +4,11 @@
  * | Concern | Command Center (dashboard KPI strip) | Rent Tracker (registry summary) |
  * |---------|--------------------------------------|----------------------------------|
  * | Scheduled in current month (`due_date` ∈ month), after **active rent roll** overlay when roll &gt; 0 | `computeRentFinancialMonthKpis` → `rentScheduledThisMonth`; pass `activeMonthlyRentRoll` from `getMonthlyRentFromActiveTenancies` | Matches `computeRentTrackerStats`: if active rent roll sum &gt; 0, **expected** shows roll; else instalment sum in month. |
- * | Unpaid in current month (`due_date` ∈ month, status not paid) | `rentDueThisMonth` | `outstandingThisMonth` — **same arithmetic** when both use `resolvePaymentAmount` / same status rules. |
+ * | Unpaid in current month (`due_date` ∈ month, status not paid) | `rentDueThisMonth` | Rent Tracker **`outstandingThisMonth` (“Still Due”)** sums unpaid with `due_date` ≤ end of current month (includes carried arrears); Command Center **`rentDueThisMonth`** stays calendar-current-month only. |
  * | Cash this month | `rentCollectedThisMonth`: paid + `paid_date` in month OR paid + no `paid_date` + due in month | `receivedThisMonth` — **matching branches** in `computeRentTrackerStats`. |
  * | Cash last month | `rentCollectedLastMonth` (same legacy rule on **last** window) | *(not surfaced on tracker summary — Command Center only).* |
  * | Next calendar month contract | `rentExpectedNextMonth`: all instalments due in **next calendar month** (any status) | **`nextUnpaidPipeline30d` is different**: unpaid only, `due_date` ∈ (today, today+30d] string window — sliding horizon, not “next month bucket”. Tests assert both deliberately. |
- * | Cross-month arrears | **Not** in financial strip — arrears GBP on dashboard uses `getDashboardStats` (`isPaymentOverdue`) | `arrearsAmount` + `overdueCount` count every overdue instalment regardless of calendar month of `due_date`. |
+ * | Cross-month arrears | **Not** in financial strip — arrears GBP on dashboard uses `getDashboardStats` (`isPaymentOverdue`) | `arrearsAmount` + `overdueCount` count every overdue instalment regardless of calendar month of `due_date`. **`outstandingThisMonth` also rolls prior months into “Still Due” through current month end.** |
  */
 
 import { describe, expect, it } from "vitest";
@@ -67,7 +67,6 @@ function expectOverlappingStripeMatches(
   });
   const tr = computeRentTrackerStats(payments, anchor, tenancies);
   expect(tr.receivedThisMonth).toBe(cc.rentCollectedThisMonth);
-  expect(tr.outstandingThisMonth).toBe(cc.rentDueThisMonth);
   expect(tr.expectedThisMonth).toBe(cc.rentScheduledThisMonth);
 }
 
@@ -172,7 +171,7 @@ describe("rent attribution semantics (Command Center monthly strip vs Rent Track
     expect(trFar.nextUnpaidPipeline30d).toBe(0); // 2026-05-15 + 30d = 2026-06-14 < July 8
   });
 
-  it("case 6: multiple missed months — arrears aggregates all overdue unpaid; current-month due strip stays month-scoped", () => {
+  it("case 6: multiple missed months — arrears aggregates all overdue unpaid; Still Due includes carried arrears through month end", () => {
     const anchor = "2026-05-22";
     const payments = [
       pay({ id: "m1", due_date: "2026-03-01", amount: 500, status: "pending" }),
@@ -181,7 +180,7 @@ describe("rent attribution semantics (Command Center monthly strip vs Rent Track
     const tr = computeRentTrackerStats(payments, anchor, NO_RENT_ROLL);
     expect(tr.arrearsAmount).toBe(1200);
     expect(tr.overdueCount).toBe(2);
-    expect(tr.outstandingThisMonth).toBe(0);
+    expect(tr.outstandingThisMonth).toBe(1200);
 
     const cc = computeRentFinancialMonthKpis(toFinanceInputs(payments), anchor);
     expect(cc.rentDueThisMonth).toBe(0);
@@ -223,7 +222,8 @@ describe("rent attribution semantics (Command Center monthly strip vs Rent Track
     expect(cc.rentScheduledThisMonth).toBe(1200);
     expect(tr.expectedThisMonth).toBe(1200);
     expect(tr.receivedThisMonth).toBe(cc.rentCollectedThisMonth);
-    expect(tr.outstandingThisMonth).toBe(cc.rentDueThisMonth);
+    expect(tr.outstandingThisMonth).toBe(950);
+    expect(cc.rentDueThisMonth).toBe(950);
   });
 
   it("legacy paid with no paid_date: receipt counts in due month", () => {

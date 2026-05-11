@@ -15,7 +15,10 @@ export type RentTrackerSummaryStats = {
   expectedThisMonth: number;
   /** Cash recognised this calendar month (`paid_date` in month when present; legacy: paid + no date → attributed by due month). */
   receivedThisMonth: number;
-  /** Still unpaid instalments with `due_date` in the current calendar month (not arrears-only). */
+  /**
+   * Unpaid instalments with `due_date` on or before the end of the current calendar month —
+   * includes current-month dues and prior-month arrears carried forward.
+   */
   outstandingThisMonth: number;
   overdueCount: number;
   /** Sum of amounts for overdue rows (past-due, unpaid per `isPaymentOverdue`). */
@@ -72,9 +75,14 @@ export function computeRentTrackerStats(
     const due = p.due_date;
 
     const dueThisMonth = due != null && isoDateBetweenInclusive(due, curStart, curEnd);
+    const dueOnOrBeforeMonthEnd = due != null && due.length >= 10 && due.slice(0, 10) <= curEnd;
+
     if (dueThisMonth) {
       scheduledDueThisMonth += amount;
-      if (!isPaidRentStatus(p.status)) outstandingThisMonth += amount;
+    }
+
+    if (dueOnOrBeforeMonthEnd && !isPaidRentStatus(p.status)) {
+      outstandingThisMonth += amount;
     }
 
     if (isPaidRentStatus(p.status)) {
