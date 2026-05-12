@@ -11,7 +11,7 @@ export function CommandCenterAttentionSkeleton() {
         <span className="size-1.5 bg-background dark:bg-[#ffb4ab]" />
         <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white">What Needs Attention Now</h2>
       </div>
-      <div className="animate-pulse border border-zinc-200 bg-white p-6 text-xs text-zinc-500 dark:border-[#2a2a2a] dark:bg-[#161616]">
+      <div className="animate-pulse border border-zinc-200 bg-white p-6 text-xs text-zinc-500 dark:border-[#2a2a2a] dark:bg-zinc-900">
         Loading…
       </div>
     </div>
@@ -27,7 +27,7 @@ export async function CommandCenterAttention({ userId }: { userId: string }) {
         <span className="size-1.5 shrink-0 bg-background dark:bg-[#ffb4ab]" />
         What Needs Attention Now
       </h2>
-      <div className="divide-y divide-zinc-200 border border-zinc-200 bg-white dark:divide-[#282828] dark:border-[#2a2a2a] dark:bg-[#161616]">
+      <div className="divide-y divide-zinc-200 border border-zinc-200 bg-white dark:divide-[#282828] dark:border-[#2a2a2a] dark:bg-zinc-900">
         {rows.length === 0 ? (
           <div className="p-4 text-center text-[11px] text-zinc-500">No urgent items — you&apos;re clear.</div>
         ) : (

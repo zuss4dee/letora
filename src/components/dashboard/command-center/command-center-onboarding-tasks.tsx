@@ -8,7 +8,7 @@ export function CommandCenterOnboardingTasksSkeleton() {
         <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Active Tasks</h2>
       </div>
       <div className="animate-pulse">
-        <div className="h-28 border border-zinc-200 bg-white dark:border-[#2a2a2a] dark:bg-[#161616]" />
+        <div className="h-28 border border-zinc-200 bg-white dark:border-[#2a2a2a] dark:bg-zinc-900" />
       </div>
     </div>
   );
@@ -37,7 +37,7 @@ export async function CommandCenterOnboardingTasks({ userId }: { userId: string 
         <span className="size-1.5 shrink-0 bg-zinc-500" />
         Active Tasks
       </h2>
-      <div className="border border-zinc-200 bg-white p-4 dark:border-[#2a2a2a] dark:bg-[#161616]">
+      <div className="border border-zinc-200 bg-white p-4 dark:border-[#2a2a2a] dark:bg-zinc-900">
         <p className="mb-3 text-[10px] font-bold uppercase text-zinc-500">Onboarding Funnel</p>
         <div className="space-y-3">
           {rows.map((b) => (

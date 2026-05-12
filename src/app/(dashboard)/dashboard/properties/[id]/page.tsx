@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Bath, BedDouble } from "lucide-react";
 
 import { BatchReviewReturnBanner } from "@/components/dashboard/batch-review-return-banner";
+import { LoadingWithTimeoutFallback } from "@/components/ui/loading-with-timeout-fallback";
 import { EditPropertyDialog } from "@/components/properties/edit-property-dialog";
 import { getPropertyById, getTenanciesForProperty, type PropertyRow } from "@/lib/actions/properties";
 import { parseSafeBatchReviewReturnFromSearchParams } from "@/lib/navigation/batch-review-return";
@@ -99,7 +100,7 @@ function toPropertyFormInput(p: PropertyRow): AddPropertyInput {
 function PropertyDetailSkeleton() {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex flex-col gap-4 border-b border-zinc-200/70 bg-zinc-100 px-4 py-5 dark:border-zinc-800 dark:bg-[#161616] md:flex-row md:items-start md:justify-between md:px-6">
+      <div className="flex flex-col gap-4 border-b border-zinc-200/70 bg-zinc-100 px-4 py-5 dark:border-zinc-800 dark:bg-zinc-900 md:flex-row md:items-start md:justify-between md:px-6">
         <div className="max-w-2xl flex-1 space-y-3">
           <div className="h-3 w-28 animate-pulse rounded-[2px] bg-zinc-200/90 dark:bg-zinc-800/80" />
           <div className="h-2.5 w-20 animate-pulse rounded-[2px] bg-zinc-200/90 dark:bg-zinc-800/80" />
@@ -109,7 +110,7 @@ function PropertyDetailSkeleton() {
         <div className="h-8 w-28 shrink-0 animate-pulse rounded-[2px] bg-zinc-200/90 dark:bg-zinc-800/80 md:mt-2" />
       </div>
       <div className="flex flex-1 flex-col gap-px bg-zinc-200/70 dark:bg-zinc-800">
-        <div className="bg-background dark:bg-[#f8f8f7] p-4 dark:bg-[#1A1A1A] md:p-6">
+        <div className="bg-background p-4 dark:bg-zinc-900 md:p-6">
           <div className="mb-4 flex justify-between gap-3">
             <div className="h-3 w-24 animate-pulse rounded-[2px] bg-zinc-200/90 dark:bg-zinc-800/80" />
             <div className="h-5 w-20 animate-pulse rounded-[2px] bg-zinc-200/90 dark:bg-zinc-800/80" />
@@ -120,7 +121,7 @@ function PropertyDetailSkeleton() {
             <div className="h-4 w-24 animate-pulse rounded-[2px] bg-zinc-200/80 dark:bg-zinc-800/60" />
           </div>
         </div>
-        <div className="min-h-[200px] flex-1 bg-background dark:bg-[#f8f8f7] dark:bg-[#1A1A1A]">
+        <div className="min-h-[200px] flex-1 bg-background dark:bg-zinc-900">
           <div className="space-y-2 p-4 md:p-6">
             <div className="h-3 w-24 animate-pulse rounded-[2px] bg-zinc-200/90 dark:bg-zinc-800/80" />
             {Array.from({ length: 5 }).map((_, i) => (
@@ -162,7 +163,7 @@ async function PropertyDetailContent({ params }: { params: Promise<{ id: string 
         aria-hidden
       />
       <div className="relative flex min-h-0 flex-1 flex-col">
-        <header className="flex flex-col gap-4 border-b border-zinc-200/70 bg-zinc-100 px-4 py-5 dark:border-zinc-800 dark:bg-[#161616] md:flex-row md:items-start md:justify-between md:px-6">
+        <header className="flex flex-col gap-4 border-b border-zinc-200/70 bg-zinc-100 px-4 py-5 dark:border-zinc-800 dark:bg-zinc-900 md:flex-row md:items-start md:justify-between md:px-6">
           <div className="max-w-3xl space-y-3">
             <Link
               href={`/dashboard/properties?propertyId=${encodeURIComponent(property.id)}`}
@@ -187,7 +188,7 @@ async function PropertyDetailContent({ params }: { params: Promise<{ id: string 
         </header>
 
         <div className="flex min-h-0 flex-1 flex-col gap-px bg-zinc-200/70 dark:bg-zinc-800">
-          <section className="bg-background dark:bg-[#f8f8f7] dark:bg-[#1A1A1A]">
+          <section className="bg-background dark:bg-zinc-900">
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-200/70 px-4 py-3 dark:border-zinc-800 md:px-6">
               <h2 className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                 Details
@@ -231,7 +232,7 @@ async function PropertyDetailContent({ params }: { params: Promise<{ id: string 
             </div>
           </section>
 
-          <section className="flex min-h-0 flex-1 flex-col bg-background dark:bg-[#f8f8f7] dark:bg-[#1A1A1A]">
+          <section className="flex min-h-0 flex-1 flex-col bg-background dark:bg-zinc-900">
             <div className="border-b border-zinc-200/70 px-4 py-3 dark:border-zinc-800 md:px-6">
               <h2 className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                 Tenancies
@@ -313,10 +314,10 @@ export default async function PropertyDetailPage({
   const batchReviewReturnHref = parseSafeBatchReviewReturnFromSearchParams(sp);
 
   return (
-    <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-background dark:bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
+    <div className="@container/main relative flex min-h-[calc(100vh-2.5rem)] flex-1 flex-col bg-background text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100">
       {batchReviewReturnHref ? <BatchReviewReturnBanner href={batchReviewReturnHref} /> : null}
       <section className="flex min-h-0 flex-1 flex-col overflow-hidden border-y border-zinc-200/70 bg-white dark:border-zinc-800 dark:bg-zinc-900">
-        <Suspense fallback={<PropertyDetailSkeleton />}>
+        <Suspense fallback={<LoadingWithTimeoutFallback skeleton={<PropertyDetailSkeleton />} />}>
           <PropertyDetailContent params={params} />
         </Suspense>
       </section>

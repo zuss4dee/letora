@@ -103,7 +103,7 @@ function TenanciesPageFallback() {
   return (
     <div className="flex min-h-0 flex-1 bg-zinc-100 dark:bg-[#0e0e0e]">
       <div className="flex min-w-0 flex-1 flex-col border-r border-zinc-200/80 dark:border-[#232323]">
-        <div className="h-11 border-b border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#111111]" />
+        <div className="h-11 border-b border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-zinc-900" />
         <div className="min-h-0 flex-1 p-3">
           <div className="space-y-2">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -112,7 +112,7 @@ function TenanciesPageFallback() {
           </div>
         </div>
       </div>
-      <aside className="hidden w-80 border-l border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-[#111111] lg:block">
+      <aside className="hidden w-80 border-l border-zinc-200/80 bg-white dark:border-[#232323] dark:bg-zinc-900 lg:block">
         <div className="h-24 border-b border-zinc-200/80 dark:border-[#232323]" />
         <div className="space-y-3 p-4">
           {Array.from({ length: 6 }).map((_, i) => (

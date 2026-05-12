@@ -472,7 +472,7 @@ function MessageBubble({
       {/* Avatar */}
       <div className={cn(
         "size-8 shrink-0 rounded-sm overflow-hidden flex items-center justify-center",
-        isUser ? "bg-zinc-200 dark:bg-zinc-800" : "bg-white text-[#0B0B0B]"
+        isUser ? "bg-zinc-200 dark:bg-zinc-800" : "bg-white text-[#0B0B0B] dark:bg-zinc-900 dark:text-zinc-100"
       )}>
         {isUser ? (
           <img
@@ -496,7 +496,7 @@ function MessageBubble({
         <div className={cn(
           "max-w-2xl border transition-opacity",
           isUser
-            ? "border-zinc-200 bg-white p-4 text-[13px] text-zinc-900 dark:border-[#282828] dark:bg-[#161616] dark:text-zinc-100"
+            ? "border-zinc-200 bg-white p-4 text-[13px] text-zinc-900 dark:border-[#282828] dark:bg-zinc-900 dark:text-zinc-100"
             : "border-transparent text-[13px] text-zinc-800 dark:text-zinc-300",
         )}>
           {role === "assistant" ? (
@@ -918,7 +918,7 @@ export function AssistantChat({
   return (
     <div className="absolute inset-0 flex overflow-hidden">
       {/* ── Center: Workspace ── */}
-      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-[#0B0B0B]">
+      <main className="relative flex min-h-0 min-w-0 flex-1 flex-col bg-white dark:bg-zinc-900">
         <div 
           ref={scrollRef}
           className="flex-1 overflow-y-auto p-4 pb-6 custom-scrollbar sm:p-6"
@@ -962,7 +962,7 @@ export function AssistantChat({
                 ))}
                 {showAssistantStreamSection && (
                   <div className="flex items-start gap-4">
-                    <div className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-white text-[#0B0B0B]">
+                    <div className="flex size-8 shrink-0 items-center justify-center rounded-sm bg-white text-[#0B0B0B] dark:bg-zinc-900 dark:text-zinc-100">
                       <Sparkles className="size-4" fill="currentColor" />
                     </div>
                     <div className="flex-1 pt-1">
@@ -992,7 +992,7 @@ export function AssistantChat({
         </div>
 
         {/* ── Bottom Input ── */}
-        <div className="shrink-0 border-t border-zinc-200 bg-white p-4 pb-6 dark:border-[#2a2a2a] dark:bg-[#0B0B0B] sm:p-6">
+        <div className="shrink-0 border-t border-zinc-200 bg-white p-4 pb-6 dark:border-[#2a2a2a] dark:bg-zinc-900 sm:p-6">
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -1000,7 +1000,7 @@ export function AssistantChat({
             }}
             className="mx-auto w-full max-w-4xl"
           >
-            <div className="flex items-center border border-zinc-200 bg-white p-1.5 shadow-2xl dark:border-[#333333] dark:bg-[#1a1a1a]">
+            <div className="flex items-center border border-zinc-200 bg-white p-1.5 shadow-2xl dark:border-[#333333] dark:bg-zinc-900">
               <input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}

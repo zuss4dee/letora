@@ -37,7 +37,7 @@ function KpiMoneyTile({ label, tooltip, value, valueClassName, href, tileAriaLab
   return (
     <div
       className={cn(
-        "relative flex min-h-[100px] flex-col bg-white p-4 transition-colors hover:bg-zinc-50 focus-within:bg-zinc-50 dark:bg-[#161616] dark:hover:bg-background dark:bg-[#1c1c1c] dark:focus-within:bg-background dark:bg-[#1c1c1c]",
+        "relative flex min-h-[100px] flex-col bg-white p-4 transition-colors hover:bg-zinc-50 focus-within:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-background dark:bg-[#1c1c1c] dark:focus-within:bg-background dark:bg-[#1c1c1c]",
         cellClassName,
       )}
     >
@@ -78,7 +78,7 @@ function KpiMaintenanceTile({ kpis, cellClassName }: MaintTileProps) {
   return (
     <div
       className={cn(
-        "relative flex min-h-[100px] flex-col bg-white p-4 transition-colors hover:bg-zinc-50 focus-within:bg-zinc-50 dark:bg-[#161616] dark:hover:bg-background dark:bg-[#1c1c1c] dark:focus-within:bg-background dark:bg-[#1c1c1c]",
+        "relative flex min-h-[100px] flex-col bg-white p-4 transition-colors hover:bg-zinc-50 focus-within:bg-zinc-50 dark:bg-zinc-900 dark:hover:bg-background dark:bg-[#1c1c1c] dark:focus-within:bg-background dark:bg-[#1c1c1c]",
         cellClassName,
       )}
     >

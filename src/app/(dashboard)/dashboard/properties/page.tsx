@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 
 import { ImportBatchScopeChip } from "@/components/import/import-batch-scope-chip";
 import { ManagedPropertiesRegistry } from "@/components/properties/managed-properties-registry";
+import { LoadingWithTimeoutFallback } from "@/components/ui/loading-with-timeout-fallback";
 import { loadImportBatchIdFilterSets } from "@/lib/import-batch-filter-loader";
 import { scopedPortfolioRows } from "@/lib/import-batch-list-scope";
 import { importBatchShortLabel, parseImportBatchParam } from "@/lib/import-batch-query";
@@ -90,8 +91,14 @@ export default async function PropertiesPage({
   const importBatchId = parseImportBatchParam(sp);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-background dark:bg-[#f8f8f7] text-zinc-950 dark:bg-[#0B0B0B] dark:text-zinc-100">
-      <Suspense fallback={<div className="p-6 text-sm text-zinc-500 dark:text-zinc-400">Loading properties…</div>}>
+    <div className="flex min-h-0 flex-1 flex-col bg-background text-zinc-950 dark:bg-zinc-950 dark:text-zinc-100">
+      <Suspense
+        fallback={
+          <LoadingWithTimeoutFallback
+            skeleton={<div className="p-6 text-sm text-zinc-500 dark:text-zinc-400">Loading properties…</div>}
+          />
+        }
+      >
         <PropertiesPortfolioContent
           userId={user.id}
           initialSelectedPropertyId={initialSelectedPropertyId}

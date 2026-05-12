@@ -102,7 +102,7 @@ async function TenantDetailContent({ params }: { params: Promise<{ id: string }>
   return (
     <div className="flex flex-1 flex-col bg-zinc-100 dark:bg-[#0B0B0B]">
       {/* CASE HEADER */}
-      <header className="flex shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white px-6 py-5 dark:border-[#232323] dark:bg-[#0e0e0e]">
+      <header className="flex shrink-0 items-center justify-between border-b border-zinc-200/80 bg-white px-6 py-5 dark:border-[#232323] dark:bg-zinc-900">
         <div className="flex items-center gap-5">
           <Link
             href="/dashboard/tenants"

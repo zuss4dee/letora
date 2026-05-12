@@ -14,7 +14,7 @@ const SESSION_SHOW_KEY = "letora:postSetupChecklistShow";
 const ROWS: ReadonlyArray<{ label: string; href: string }> = [
   { label: "Confirm your chase email template", href: "/dashboard/settings?tab=email" },
   { label: "Review agent settings", href: "/dashboard/settings?tab=ai" },
-  { label: "Check your first AI draft in Approvals", href: "/dashboard/agents/approvals" },
+  { label: "Check your first AI draft in Approvals", href: "/dashboard/approvals" },
   { label: "Set up rent tracker for your first property", href: "/dashboard/rent-tracker" },
 ];
 

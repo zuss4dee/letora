@@ -22,7 +22,7 @@ export function CommandCenterAiComposer() {
   }, [busy, router, text]);
 
   return (
-    <div className="w-full border-t border-zinc-200 bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-white/90 dark:border-zinc-800 dark:bg-[#1a1a1a] dark:supports-[backdrop-filter]:bg-background dark:bg-[#1a1a1a]/90 md:pb-5 md:pt-4">
+    <div className="w-full border-t border-zinc-200 bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur-md supports-[backdrop-filter]:bg-white/90 dark:border-zinc-800 dark:bg-zinc-900 dark:supports-[backdrop-filter]:bg-zinc-900/90 md:pb-5 md:pt-4">
       <div className="mx-auto w-full max-w-4xl px-4 md:px-6">
         <form
           onSubmit={(e) => {
@@ -31,7 +31,7 @@ export function CommandCenterAiComposer() {
           }}
           className="mx-auto w-full"
         >
-          <div className="flex items-center border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-[#333333] dark:bg-[#1a1a1a]">
+          <div className="flex items-center border border-zinc-200 bg-white p-1.5 shadow-lg dark:border-[#333333] dark:bg-zinc-900">
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}

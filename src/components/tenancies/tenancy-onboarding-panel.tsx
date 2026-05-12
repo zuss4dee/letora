@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 
 import {
   completeManualOnboardingTask,
@@ -165,6 +165,16 @@ export function TenancyOnboardingPanel({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [taskLoadingId, setTaskLoadingId] = useState<string | null>(null);
+  const [startStuck, setStartStuck] = useState(false);
+
+  useEffect(() => {
+    if (!pending) {
+      setStartStuck(false);
+      return;
+    }
+    const t = window.setTimeout(() => setStartStuck(true), 10_000);
+    return () => window.clearTimeout(t);
+  }, [pending]);
 
   async function startOnboarding() {
     startTransition(async () => {
@@ -230,6 +240,19 @@ export function TenancyOnboardingPanel({
         {onboardingStatusBadge(onboardingStatus)}
       </CardHeader>
       <CardContent className={`${TENANCY_CARD_CONTENT} space-y-6`}>
+        {pending && startStuck ? (
+          <div
+            className="flex flex-col gap-3 rounded-[2px] border border-zinc-200 bg-white p-4 dark:border-zinc-700 dark:bg-zinc-900"
+            role="alert"
+          >
+            <p className="font-[family-name:var(--font-inter)] text-sm text-zinc-800 dark:text-zinc-200">
+              Something went wrong. Try refreshing.
+            </p>
+            <Button type="button" variant="outline" className="w-fit" onClick={() => window.location.reload()}>
+              Refresh
+            </Button>
+          </div>
+        ) : null}
         {onboardingStatus === "not_started" ? (
           <div className="flex flex-col gap-4 rounded-[2px] border border-zinc-200/80 bg-zinc-100/40 p-5 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800 dark:bg-zinc-900/25">
             <p className="max-w-xl font-[family-name:var(--font-inter)] text-[12px] font-light leading-relaxed text-zinc-600 dark:text-zinc-400">
@@ -244,7 +267,7 @@ export function TenancyOnboardingPanel({
         {onboardingStatus !== "not_started" && tasks.length > 0 ? (
           <div className="overflow-hidden rounded-[2px] border border-zinc-200/70 dark:border-zinc-800">
             <Table>
-              <TableHeader className="sticky top-0 z-10 bg-zinc-100 dark:bg-[#131313] [&_tr]:border-0">
+              <TableHeader className="sticky top-0 z-10 bg-zinc-100 dark:bg-zinc-900 [&_tr]:border-0">
                 <TableRow className="border-0 border-b border-zinc-200/70 hover:bg-transparent dark:border-zinc-800">
                   <TableHead className="w-12 text-center font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                     Done
@@ -267,7 +290,7 @@ export function TenancyOnboardingPanel({
                 {tasks.map((task) => (
                   <TableRow
                     key={task.id}
-                    className="border-0 border-b border-zinc-200/60 last:border-0 hover:bg-zinc-100/80 dark:border-zinc-800 dark:hover:bg-zinc-200 dark:bg-zinc-800/35"
+                    className="border-0 border-b border-zinc-200/60 last:border-0 hover:bg-zinc-100/80 dark:border-zinc-800 dark:hover:bg-zinc-800/30"
                   >
                     <TableCell className="text-center align-middle">
                       <Checkbox

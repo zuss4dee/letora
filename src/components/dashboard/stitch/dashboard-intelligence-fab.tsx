@@ -11,7 +11,7 @@ export function DashboardIntelligenceFab({ className }: { className?: string }) 
     <Link
       href="/dashboard"
       className={cn(
-        "fixed bottom-8 right-8 z-40 flex size-12 items-center justify-center rounded-full bg-white text-[#1a1c1c] shadow-2xl transition-transform active:scale-95",
+        "fixed bottom-8 right-8 z-40 flex size-12 items-center justify-center rounded-full bg-white text-[#1a1c1c] shadow-2xl transition-transform active:scale-95 dark:bg-zinc-900 dark:text-zinc-100",
         className,
       )}
       aria-label="Open Intelligence"

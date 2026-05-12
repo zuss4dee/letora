@@ -136,7 +136,7 @@ export function ProfileSettings({ initialValues, authEmail, onDirtyChange }: Pro
           </p>
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-[#2a2a2a] dark:bg-[#161616] dark:shadow-none">
+        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-[#2a2a2a] dark:bg-zinc-900 dark:shadow-none">
           <div className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="profile-avatar" className={FIELD_LABEL}>
@@ -232,7 +232,7 @@ export function ProfileSettings({ initialValues, authEmail, onDirtyChange }: Pro
       </form>
 
       <form onSubmit={passwordForm.handleSubmit(onPasswordSubmit)} className="space-y-4">
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-[#2a2a2a] dark:bg-[#161616] dark:shadow-none">
+        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-[#2a2a2a] dark:bg-zinc-900 dark:shadow-none">
           <div className="mb-4">
             <h3 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">Change password</h3>
             <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">

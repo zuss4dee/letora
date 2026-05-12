@@ -86,7 +86,7 @@ export default async function TenancyDetailPage({
             aria-hidden
           />
           <div className="relative flex min-h-0 flex-1 flex-col">
-            <header className="flex flex-col gap-4 border-b border-zinc-200/70 bg-zinc-100 px-4 py-5 dark:border-zinc-800 dark:bg-[#161616] md:flex-row md:items-start md:justify-between md:px-6">
+            <header className="flex flex-col gap-4 border-b border-zinc-200/70 bg-zinc-100 px-4 py-5 dark:border-zinc-800 dark:bg-zinc-900 md:flex-row md:items-start md:justify-between md:px-6">
               <div className="max-w-3xl space-y-3">
                 <Link
                   href="/dashboard/tenancies"
@@ -129,7 +129,7 @@ export default async function TenancyDetailPage({
             </header>
 
             <div className="flex min-h-0 flex-1 flex-col gap-px bg-zinc-200/70 dark:bg-zinc-800">
-              <section className="bg-background dark:bg-[#f8f8f7] dark:bg-[#1A1A1A]">
+              <section className="bg-background dark:bg-zinc-900">
                 <div className="border-b border-zinc-200/70 px-4 py-3 dark:border-zinc-800 md:px-6">
                   <h2 className="font-[family-name:var(--font-inter)] text-[10px] font-bold uppercase tracking-[0.1em] text-zinc-500">
                     Dates &amp; financials

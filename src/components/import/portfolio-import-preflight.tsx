@@ -232,9 +232,11 @@ export function PortfolioImportPreflight(props: PortfolioImportPreflightProps) {
 
   return (
     <section className="border-b border-zinc-200 dark:border-[#282828]">
-      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-200 dark:border-[#282828] bg-zinc-100 dark:bg-[#1A1A1A] px-4 py-3">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-zinc-200 dark:border-[#282828] bg-zinc-100 px-4 py-3 dark:bg-zinc-900">
         <div className="flex items-center gap-3">
-          <span className="bg-white px-1.5 py-0.5 font-mono text-[10px] font-black text-[#161616]">02</span>
+          <span className="bg-white px-1.5 py-0.5 font-mono text-[10px] font-black text-[#161616] dark:bg-zinc-900 dark:text-zinc-100">
+            02
+          </span>
           <div>
             <h2 className="text-[11px] font-bold uppercase tracking-widest text-zinc-900 dark:text-white">Preflight import</h2>
             <p className="mt-0.5 max-w-xl text-[10px] leading-relaxed text-zinc-600 dark:text-[#888888]">
@@ -282,7 +284,7 @@ export function PortfolioImportPreflight(props: PortfolioImportPreflightProps) {
           { k: "warn", label: "Warnings", value: cardSummary.warnings, tone: "warn" as const },
           { k: "dup", label: "Possible duplicates", value: cardSummary.duplicates, tone: "muted" as const },
         ].map((c) => (
-          <div key={c.k} className="bg-white px-4 py-3 dark:bg-[#131313]">
+          <div key={c.k} className="bg-white px-4 py-3 dark:bg-zinc-900">
             <p className="font-mono text-[8px] font-bold uppercase tracking-widest text-zinc-500 dark:text-[#555555]">{c.label}</p>
             <p
               className={cn(
@@ -316,7 +318,7 @@ export function PortfolioImportPreflight(props: PortfolioImportPreflightProps) {
       ) : null}
 
       {isRepreparing ? (
-        <div className="flex items-center gap-2 border-b border-zinc-200 bg-zinc-100 px-4 py-2 dark:border-[#333333] dark:bg-[#0B0B0B]">
+        <div className="flex items-center gap-2 border-b border-zinc-200 bg-zinc-100 px-4 py-2 dark:border-[#333333] dark:bg-zinc-900">
           <Loader2 className="size-3.5 animate-spin text-[#f8cf83]" aria-hidden />
           <p className="font-mono text-[9px] uppercase tracking-widest text-zinc-600 dark:text-[#888888]">
             Re-checking edited rows against your portfolio rules…
@@ -339,7 +341,7 @@ export function PortfolioImportPreflight(props: PortfolioImportPreflightProps) {
               checked={importOnlyClean}
               disabled={isImportPending}
               onChange={(e) => onImportOnlyCleanChange(e.target.checked)}
-              className="mt-0.5 size-3.5 shrink-0 rounded border border-zinc-300 bg-white accent-zinc-900 dark:border-[#555555] dark:bg-[#0B0B0B] dark:accent-white"
+              className="mt-0.5 size-3.5 shrink-0 rounded border border-zinc-300 bg-white accent-zinc-900 dark:border-[#555555] dark:bg-zinc-900 dark:accent-white"
             />
             <span className="font-mono text-[9px] uppercase tracking-widest leading-relaxed text-zinc-600 dark:text-[#aaaaaa]">
               Import ready rows only — skip any row that still has warnings (yellow notes) in addition to errors and hard skips.
@@ -391,7 +393,7 @@ export function PortfolioImportPreflight(props: PortfolioImportPreflightProps) {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[980px] border-collapse text-left">
                 <thead>
-                  <tr className="border-b border-zinc-200 bg-zinc-100 text-[9px] uppercase tracking-widest text-zinc-500 dark:border-[#282828] dark:bg-[#0B0B0B] dark:text-[#555555]">
+                  <tr className="border-b border-zinc-200 bg-zinc-100 text-[9px] uppercase tracking-widest text-zinc-500 dark:border-[#282828] dark:bg-zinc-900 dark:text-[#555555]">
                     {["#", "Exclude", "Kind", "Property", "Tenant", "Rent", "Start", "End", "State"].map((h) => (
                       <th key={h} className="px-3 py-2 font-medium">
                         {h}
@@ -412,7 +414,7 @@ export function PortfolioImportPreflight(props: PortfolioImportPreflightProps) {
                           disabled={isImportPending}
                           onChange={() => toggleExcluded(row.rowIndex)}
                           aria-label={`Exclude row ${row.rowIndex + 1}`}
-                          className="size-3.5 rounded border border-zinc-300 bg-white accent-zinc-900 dark:border-[#555555] dark:accent-white"
+                          className="size-3.5 rounded border border-zinc-300 bg-white accent-zinc-900 dark:border-[#555555] dark:bg-zinc-900 dark:accent-white"
                         />
                       </td>
                       <td className="px-3 py-2 font-mono text-[10px] uppercase text-[#888888]">{row.raw.rowKind}</td>
@@ -457,7 +459,7 @@ export function PortfolioImportPreflight(props: PortfolioImportPreflightProps) {
               checked={confirmCommit}
               disabled={isImportPending}
               onChange={(e) => onConfirmCommitChange(e.target.checked)}
-              className="mt-0.5 size-3.5 shrink-0 rounded border border-zinc-300 bg-white accent-zinc-900 dark:border-[#555555] dark:bg-[#0B0B0B] dark:accent-white"
+              className="mt-0.5 size-3.5 shrink-0 rounded border border-zinc-300 bg-white accent-zinc-900 dark:border-[#555555] dark:bg-zinc-900 dark:accent-white"
             />
             <span className="font-mono text-[9px] uppercase tracking-widest leading-relaxed text-zinc-600 dark:text-[#aaaaaa]">
               I confirm — write or match properties, tenants, and tenancies for the selected ready rows. Excluded rows,
@@ -475,7 +477,7 @@ export function PortfolioImportPreflight(props: PortfolioImportPreflightProps) {
               type="button"
               disabled={isImportPending || rows.length === 0}
               onClick={onSaveLater}
-              className="border border-zinc-200 bg-white px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-600 transition-colors hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-40 dark:border-[#333333] dark:bg-[#0B0B0B] dark:text-[#bbbbbb] dark:hover:border-white dark:hover:text-white"
+              className="border border-zinc-200 bg-white px-4 py-2 font-mono text-[10px] font-bold uppercase tracking-widest text-zinc-600 transition-colors hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-40 dark:border-[#333333] dark:bg-zinc-900 dark:text-[#bbbbbb] dark:hover:border-white dark:hover:text-white"
             >
               Save and finish later
             </button>
@@ -626,7 +628,7 @@ function PreflightRowPanel({
               type="button"
               disabled={busy}
               onClick={() => setDetailExpanded(true)}
-              className="inline-flex items-center gap-1 border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-700 transition-colors hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-40 dark:border-[#333333] dark:bg-[#0B0B0B] dark:text-[#cfcfcf] dark:hover:border-border dark:border-[#555555] dark:hover:text-white"
+              className="inline-flex items-center gap-1 border border-zinc-200 bg-white px-2.5 py-1.5 font-mono text-[9px] font-bold uppercase tracking-widest text-zinc-700 transition-colors hover:border-zinc-400 hover:text-zinc-900 disabled:opacity-40 dark:border-[#333333] dark:bg-zinc-900 dark:text-[#cfcfcf] dark:hover:border-border dark:border-[#555555] dark:hover:text-white"
               aria-expanded={false}
             >
               Edit row
@@ -638,7 +640,7 @@ function PreflightRowPanel({
                 checked={excluded}
                 disabled={disabled}
                 onChange={onToggleExclude}
-                className="size-3.5 rounded border border-zinc-300 bg-white accent-zinc-900 dark:border-[#555555] dark:accent-white"
+                className="size-3.5 rounded border border-zinc-300 bg-white accent-zinc-900 dark:border-[#555555] dark:bg-zinc-900 dark:accent-white"
               />
               <span className="font-mono text-[9px] uppercase tracking-widest text-[#777777]">Exclude</span>
             </label>
@@ -652,7 +654,7 @@ function PreflightRowPanel({
     <div
       id={`preflight-row-editor-${row.rowIndex}`}
       className={cn(
-        "scroll-mt-6 bg-white px-4 py-4 dark:bg-[#131313]",
+        "scroll-mt-6 bg-white px-4 py-4 dark:bg-zinc-900",
         excluded && "opacity-50",
         hasBlocking && !excluded && "ring-1 ring-[#7f2927]/35",
       )}
@@ -682,7 +684,7 @@ function PreflightRowPanel({
               checked={excluded}
               disabled={disabled}
               onChange={onToggleExclude}
-              className="size-3.5 rounded border border-zinc-300 bg-white accent-zinc-900 dark:border-[#555555] dark:accent-white"
+              className="size-3.5 rounded border border-zinc-300 bg-white accent-zinc-900 dark:border-[#555555] dark:bg-zinc-900 dark:accent-white"
             />
             <span className="font-mono text-[9px] uppercase tracking-widest text-[#888888]">Exclude from import</span>
           </label>
@@ -757,7 +759,7 @@ function PreflightRowPanel({
             value={r.propertyDisplayName ?? ""}
             disabled={busy}
             onChange={(e) => handlePatch({ propertyDisplayName: e.target.value || null })}
-            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-[#0B0B0B] dark:text-white dark:focus:border-white"
+            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-zinc-900 dark:text-white dark:focus:border-white"
           />
         </div>
         <div className="space-y-1.5 md:col-span-2">
@@ -767,7 +769,7 @@ function PreflightRowPanel({
             value={r.propertyAddress}
             disabled={busy}
             onChange={(e) => handlePatch({ propertyAddress: e.target.value })}
-            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-[#0B0B0B] dark:text-white dark:focus:border-white"
+            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-zinc-900 dark:text-white dark:focus:border-white"
           />
         </div>
         <div className="space-y-1.5">
@@ -777,7 +779,7 @@ function PreflightRowPanel({
             value={r.postcode ?? ""}
             disabled={busy}
             onChange={(e) => handlePatch({ postcode: e.target.value || null })}
-            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-[#0B0B0B] dark:text-white dark:focus:border-white"
+            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-zinc-900 dark:text-white dark:focus:border-white"
           />
         </div>
         <div className="space-y-1.5">
@@ -787,7 +789,7 @@ function PreflightRowPanel({
             value={r.city ?? ""}
             disabled={busy}
             onChange={(e) => handlePatch({ city: e.target.value || null })}
-            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-[#0B0B0B] dark:text-white dark:focus:border-white"
+            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-zinc-900 dark:text-white dark:focus:border-white"
           />
         </div>
         <div className="space-y-1.5">
@@ -796,7 +798,7 @@ function PreflightRowPanel({
             value={r.rowKind}
             disabled={busy}
             onChange={(e) => handlePatch({ rowKind: e.target.value as RowKindOpt })}
-            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[10px] uppercase tracking-wide text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-[#0B0B0B] dark:text-white dark:focus:border-white"
+            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[10px] uppercase tracking-wide text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-zinc-900 dark:text-white dark:focus:border-white"
           >
             <option value="occupied">Occupied (live tenancy)</option>
             <option value="onboarding">Onboarding (pre move-in)</option>
@@ -809,7 +811,7 @@ function PreflightRowPanel({
             value={r.tenancyStatusDb}
             disabled={busy || r.rowKind === "vacant"}
             onChange={(e) => handlePatch({ tenancyStatusDb: e.target.value as DbStatusOpt })}
-            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[10px] uppercase tracking-wide text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-[#0B0B0B] dark:text-white dark:focus:border-white"
+            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[10px] uppercase tracking-wide text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-zinc-900 dark:text-white dark:focus:border-white"
           >
             <option value="active">Active</option>
             <option value="pending">Pending</option>
@@ -823,7 +825,7 @@ function PreflightRowPanel({
             value={r.tenantFullName}
             disabled={busy || r.rowKind === "vacant"}
             onChange={(e) => handlePatch({ tenantFullName: e.target.value })}
-            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-[#0B0B0B] dark:text-white dark:focus:border-white"
+            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-zinc-900 dark:text-white dark:focus:border-white"
           />
         </div>
         <div className="space-y-1.5">
@@ -833,7 +835,7 @@ function PreflightRowPanel({
             value={r.tenantEmail}
             disabled={busy || r.rowKind === "vacant"}
             onChange={(e) => handlePatch({ tenantEmail: e.target.value })}
-            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-[#0B0B0B] dark:text-white dark:focus:border-white"
+            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-zinc-900 dark:text-white dark:focus:border-white"
           />
         </div>
         <div className="space-y-1.5">
@@ -843,7 +845,7 @@ function PreflightRowPanel({
             value={r.tenantPhone ?? ""}
             disabled={busy || r.rowKind === "vacant"}
             onChange={(e) => handlePatch({ tenantPhone: e.target.value || null })}
-            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-[#0B0B0B] dark:text-white dark:focus:border-white"
+            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-zinc-900 dark:text-white dark:focus:border-white"
           />
         </div>
         <div className="space-y-1.5">
@@ -862,7 +864,7 @@ function PreflightRowPanel({
               const n = Number.parseFloat(t.replace(/,/g, ""));
               if (Number.isFinite(n)) handlePatch({ monthlyRent: n });
             }}
-            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-[#0B0B0B] dark:text-white dark:focus:border-white"
+            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-zinc-900 dark:text-white dark:focus:border-white"
           />
         </div>
         <div className="space-y-1.5">
@@ -873,7 +875,7 @@ function PreflightRowPanel({
             value={r.startDate}
             disabled={busy || r.rowKind === "vacant"}
             onChange={(e) => handlePatch({ startDate: e.target.value })}
-            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-[#0B0B0B] dark:text-white dark:focus:border-white"
+            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-zinc-900 dark:text-white dark:focus:border-white"
           />
         </div>
         <div className="space-y-1.5">
@@ -884,7 +886,7 @@ function PreflightRowPanel({
             value={r.endDate ?? ""}
             disabled={busy || r.rowKind === "vacant"}
             onChange={(e) => handlePatch({ endDate: e.target.value || null })}
-            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-[#0B0B0B] dark:text-white dark:focus:border-white"
+            className="w-full border border-zinc-200 dark:border-[#282828] bg-white px-2 py-1.5 font-mono text-[11px] text-zinc-900 focus:border-zinc-900 focus:outline-none dark:bg-zinc-900 dark:text-white dark:focus:border-white"
           />
         </div>
       </div>

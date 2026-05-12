@@ -554,7 +554,7 @@ export function EmailsSentRegistry({
             <EmailDraftViewButton
               subject={selected.subject}
               body={selected.body}
-              buttonClassName="inline-flex w-full items-center justify-center gap-2 bg-white py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-opacity hover:opacity-90"
+              buttonClassName="inline-flex w-full items-center justify-center gap-2 bg-white py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest text-[#161616] transition-opacity hover:opacity-90 dark:bg-zinc-900 dark:text-zinc-100"
             />
             <button
               type="button"

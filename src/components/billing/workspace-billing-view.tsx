@@ -31,7 +31,6 @@ export function WorkspaceBillingView({ settings }: Props) {
   const polarBillingLinked = Boolean(
     settings?.polarCustomerId?.trim() || settings?.polarSubscriptionId?.trim(),
   );
-  const stripeLinked = Boolean(settings?.stripeCustomerId?.trim());
 
   const subFields = {
     subscriptionPlan: settings?.subscriptionPlan,
@@ -131,9 +130,8 @@ export function WorkspaceBillingView({ settings }: Props) {
       <section className="rounded-xl border border-dashed border-zinc-200 bg-zinc-50/80 p-6 dark:border-zinc-700 dark:bg-zinc-900/40">
         <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-100">Invoices &amp; payments</h2>
         <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-          Receipts and billing history appear in your{" "}
-          {polarBillingLinked ? "Polar" : stripeLinked ? "Stripe customer" : "billing"} portal. Use Manage Subscription
-          above to open it.
+          Receipts and billing history appear in your Polar customer portal. Use Manage Subscription above to open
+          it.
         </p>
       </section>
     </div>

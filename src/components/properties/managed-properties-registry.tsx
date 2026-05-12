@@ -35,7 +35,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import type { PropertyPortfolioRow } from "@/lib/actions/properties";
 import { cn } from "@/lib/utils";
 
@@ -277,7 +276,7 @@ export function ManagedPropertiesRegistry({
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 w-full border border-zinc-200/90 bg-white pl-8 pr-3 text-[11px] text-zinc-900 placeholder-zinc-400 transition-colors focus:border-zinc-400 focus:outline-none dark:border-[#232323] dark:bg-[#080808] dark:text-zinc-300 dark:placeholder-zinc-600 dark:focus:border-zinc-700"
+              className="h-8 w-full border border-zinc-200/90 bg-white pl-8 pr-3 text-[11px] text-zinc-900 placeholder-zinc-400 transition-colors focus:border-zinc-400 focus:outline-none dark:border-[#232323] dark:bg-zinc-900 dark:text-zinc-300 dark:placeholder-zinc-600 dark:focus:border-zinc-700"
               placeholder="Search address, postcode..."
             />
           </div>
@@ -424,7 +423,7 @@ export function ManagedPropertiesRegistry({
 
           {inspectorOpen && selected ? (
             <aside className="hidden h-full min-h-0 w-96 shrink-0 flex-col border-l border-zinc-200/80 bg-zinc-50 dark:border-[#232323] dark:bg-[#0B0B0B] xl:flex">
-              <div className="shrink-0 border-b border-zinc-200/80 bg-white p-6 dark:border-[#232323] dark:bg-[#0e0e0e]">
+              <div className="shrink-0 border-b border-zinc-200/80 bg-white p-6 dark:border-[#232323] dark:bg-zinc-900">
                 <div className="mb-4 flex items-center justify-between">
                   <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Asset Profile</span>
                   <button
@@ -440,7 +439,7 @@ export function ManagedPropertiesRegistry({
 
               <div className="min-h-0 flex-1 overflow-y-auto">
                 <div className="grid grid-cols-2 gap-px border-b border-zinc-200/80 bg-zinc-200/80 dark:border-[#232323] dark:bg-[#232323]">
-                  <div className="bg-white p-4 dark:bg-[#0B0B0B]">
+                  <div className="bg-white p-4 dark:bg-zinc-900">
                     <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-zinc-500">Occupancy</p>
                     <p className={cn(
                       "text-xl font-bold tabular-nums",
@@ -450,7 +449,7 @@ export function ManagedPropertiesRegistry({
                       {selected.occupancyPct}%
                     </p>
                   </div>
-                  <div className="bg-white p-4 text-right dark:bg-[#0B0B0B]">
+                  <div className="bg-white p-4 text-right dark:bg-zinc-900">
                     <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-zinc-500">Arrears Risk</p>
                     <p className={cn(
                       "text-xl font-bold tabular-nums",
@@ -459,7 +458,7 @@ export function ManagedPropertiesRegistry({
                       {formatCurrencyGBP(selected.rentOverdueGbp)}
                     </p>
                   </div>
-                  <div className="bg-white p-4 dark:bg-[#0B0B0B]">
+                  <div className="bg-white p-4 dark:bg-zinc-900">
                     <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-zinc-500">Maintenance</p>
                     <p className={cn(
                       "text-xl font-bold tabular-nums",
@@ -468,7 +467,7 @@ export function ManagedPropertiesRegistry({
                       {selected.openMaintenanceCount} <span className="text-[10px] text-zinc-600">OPEN</span>
                     </p>
                   </div>
-                  <div className="bg-white p-4 text-right dark:bg-[#0B0B0B]">
+                  <div className="bg-white p-4 text-right dark:bg-zinc-900">
                     <p className="mb-1 text-[9px] font-bold uppercase tracking-widest text-zinc-500">Units</p>
                     <p className="text-xl font-bold tabular-nums text-zinc-900 dark:text-white">
                       {selected.activeTenancyCount} <span className="text-[10px] text-zinc-600">/ {selected.lettableUnitCount}</span>
@@ -542,7 +541,7 @@ export function ManagedPropertiesRegistry({
                 </div>
               </div>
 
-              <div className="mt-auto border-t border-zinc-200/80 bg-white p-4 space-y-2 dark:border-[#232323] dark:bg-[#0e0e0e]">
+              <div className="mt-auto border-t border-zinc-200/80 bg-white p-4 space-y-2 dark:border-[#232323] dark:bg-zinc-900">
                 {[
                   { label: "Asset Deep-Dive", href: `/dashboard/properties/${selected.id}`, icon: ArrowRight },
                   { label: "Compliance Registry", href: `/dashboard/compliance?propertyId=${selected.id}`, icon: Shield },

@@ -31,7 +31,7 @@ function JewelryButton({
     <Link
       href={href}
       className={cn(
-        "inline-flex items-center justify-center rounded-md bg-white font-semibold text-black shadow-[0_0_40px_-10px_rgba(255,255,255,0.2)] transition-all hover:bg-zinc-100 hover:shadow-[0_0_56px_-8px_rgba(255,255,255,0.3)] active:scale-[0.98]",
+        "inline-flex items-center justify-center rounded-md bg-white font-semibold text-black shadow-[0_0_40px_-10px_rgba(255,255,255,0.2)] transition-all hover:bg-zinc-100 hover:shadow-[0_0_56px_-8px_rgba(255,255,255,0.3)] active:scale-[0.98] dark:bg-zinc-900 dark:text-zinc-50 dark:shadow-none dark:hover:bg-zinc-800 dark:hover:text-white",
         size === "lg" ? "px-10 py-5 text-lg" : "px-6 py-2.5 text-sm",
         className,
       )}

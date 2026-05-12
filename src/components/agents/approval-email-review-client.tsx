@@ -130,7 +130,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
           <Label className="text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-700 dark:text-zinc-400">
             To
           </Label>
-          <p className="rounded-md border border-zinc-300 bg-white px-3 py-2.5 font-mono text-[13px] text-zinc-900 dark:border-[#333] dark:bg-[#111] dark:text-zinc-100">
+          <p className="rounded-md border border-zinc-300 bg-white px-3 py-2.5 font-mono text-[13px] text-zinc-900 dark:border-[#333] dark:bg-zinc-900 dark:text-zinc-100">
             {ctx.tenantEmail}
           </p>
         </div>
@@ -146,7 +146,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
             id="email-subject"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
-            className="border border-zinc-300 bg-white text-[15px] text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900 dark:border-[#333] dark:bg-[#111] dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus-visible:ring-white"
+            className="border border-zinc-300 bg-white text-[15px] text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900 dark:border-[#333] dark:bg-zinc-900 dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus-visible:ring-white"
           />
         </div>
 
@@ -163,7 +163,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
             onChange={(e) => setBody(e.target.value)}
             spellCheck
             className={cn(
-              "min-h-[320px] w-full flex-1 resize-y rounded-md border border-zinc-300 bg-white px-3 py-3 text-[15px] leading-[1.7] text-zinc-900 shadow-none outline-none dark:border-[#333] dark:bg-[#111] dark:text-zinc-100",
+              "min-h-[320px] w-full flex-1 resize-y rounded-md border border-zinc-300 bg-white px-3 py-3 text-[15px] leading-[1.7] text-zinc-900 shadow-none outline-none dark:border-[#333] dark:bg-zinc-900 dark:text-zinc-100",
               "font-mono placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-900 dark:placeholder:text-zinc-500 dark:focus-visible:ring-white",
             )}
           />
@@ -171,7 +171,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
         </div>
       </section>
 
-      <aside className="flex flex-col gap-8 border-zinc-200 bg-zinc-50 px-6 py-8 dark:border-[#2a2a2a] dark:bg-[#111] lg:border-l">
+      <aside className="flex flex-col gap-8 border-zinc-200 bg-zinc-50 px-6 py-8 dark:border-[#2a2a2a] dark:bg-zinc-900 lg:border-l">
         <div className="space-y-4">
           <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-zinc-500 dark:text-zinc-500">
             Tenant summary
@@ -210,7 +210,7 @@ export function ApprovalEmailReviewClient({ ctx }: { ctx: ApprovalEmailReviewCon
           </dl>
         </div>
 
-        <details className="group rounded-md border border-zinc-200 bg-white dark:border-[#2a2a2a] dark:bg-[#111]">
+        <details className="group rounded-md border border-zinc-200 bg-white dark:border-[#2a2a2a] dark:bg-zinc-900">
           <summary className="cursor-pointer list-none px-4 py-3 text-[10px] font-bold uppercase tracking-[0.12em] text-zinc-500 marker:content-none [&::-webkit-details-marker]:hidden">
             <span className="flex items-center justify-between gap-2">
               Original AI draft

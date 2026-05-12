@@ -5,14 +5,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 /**
- * Opens Polar or Stripe billing portal (`POST /api/polar/create-portal` or `POST /api/stripe/create-portal`).
+ * Opens the billing customer portal (Polar when `provider` is `"polar"`).
  */
 export function ManageBillingButton({
   provider = "polar",
   label,
 }: {
   provider?: "stripe" | "polar";
-  /** Defaults: “Manage Subscription” (Polar) or “Manage Subscription” (Stripe). */
+  /** Defaults to “Manage Subscription”. */
   label?: string;
 }) {
   const [pending, setPending] = useState(false);

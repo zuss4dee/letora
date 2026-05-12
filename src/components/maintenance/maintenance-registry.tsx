@@ -206,7 +206,7 @@ export function MaintenanceRegistry({
               <button
                 type="button"
                 disabled={tenancies.length === 0}
-                className="inline-flex items-center gap-3 bg-white px-8 py-2.5 font-[family-name:var(--font-inter)] text-[0.625rem] font-bold uppercase tracking-[0.15em] text-black transition-colors hover:bg-zinc-200 disabled:opacity-40"
+                className="inline-flex items-center gap-3 bg-white px-8 py-2.5 font-[family-name:var(--font-inter)] text-[0.625rem] font-bold uppercase tracking-[0.15em] text-black transition-colors hover:bg-zinc-200 disabled:opacity-40 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
               >
                 <Plus className="size-4" strokeWidth={2} aria-hidden />
                 Raise Request

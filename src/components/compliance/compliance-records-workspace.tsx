@@ -201,7 +201,7 @@ export function ComplianceRecordsWorkspace({
           <button
             type="button"
             onClick={openUploadFromHeader}
-            className="inline-flex items-center gap-2 bg-white px-4 py-2 text-xs font-bold uppercase tracking-widest text-zinc-950 transition-colors hover:bg-zinc-200"
+            className="inline-flex items-center gap-2 bg-white px-4 py-2 text-xs font-bold uppercase tracking-widest text-zinc-950 transition-colors hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
           >
             <Upload className="h-3.5 w-3.5" />
             Upload Certificate
@@ -331,7 +331,7 @@ export function ComplianceRecordsWorkspace({
             </Button>
             <Button
               type="button"
-              className="bg-white text-zinc-950 hover:bg-zinc-200"
+              className="bg-white text-zinc-950 hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800"
               disabled={uploading || !uploadDraft.propertyId}
               onClick={() => fileRef.current?.click()}
             >

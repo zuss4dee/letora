@@ -83,7 +83,7 @@ export function AppearanceSettings({ initialValue, onDirtyChange }: Props) {
         </p>
       </div>
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-[#2a2a2a] dark:bg-[#161616] dark:shadow-none">
+      <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm dark:border-[#2a2a2a] dark:bg-zinc-900 dark:shadow-none">
         <div className="grid gap-4 md:grid-cols-3">
           {OPTIONS.map((option) => {
             const Icon = option.icon;

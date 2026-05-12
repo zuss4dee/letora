@@ -127,7 +127,7 @@ export function AddPropertyDialog({
       {!isControlled ? (
         <DialogTrigger asChild>
           {trigger ?? (
-            <Button className="bg-white text-black hover:bg-zinc-200 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200">
+            <Button className="bg-white text-black hover:bg-zinc-200 dark:bg-zinc-900 dark:text-zinc-100 dark:hover:bg-zinc-800">
               Add property
             </Button>
           )}

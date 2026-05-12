@@ -755,7 +755,7 @@ export function PortfolioImportBatchReconciliation({
             </h2>
             <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-stretch">
               <Link
-                href="/dashboard?postSetup=1"
+                href="/dashboard"
                 className="inline-flex flex-1 items-center justify-center rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-3 text-center text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:hover:bg-zinc-700"
               >
                 Go to Dashboard
@@ -767,7 +767,7 @@ export function PortfolioImportBatchReconciliation({
                 View Rent Tracker
               </Link>
               <Link
-                href="/dashboard/agents/approvals"
+                href="/dashboard/approvals"
                 className="inline-flex flex-1 items-center justify-center rounded-lg border border-zinc-300 bg-zinc-50 px-4 py-3 text-center text-sm font-semibold text-zinc-900 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:hover:bg-zinc-700"
               >
                 Review AI Drafts
