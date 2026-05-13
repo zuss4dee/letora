@@ -136,7 +136,7 @@ export function ApprovalsPendingInteractive({
                 <div className="col-span-12 flex items-center gap-3 pr-2 md:col-span-5 md:pr-4">
                   <div className={cn(
                     "size-1.5 shrink-0 rounded-full",
-                    isStale ? "bg-rose-400" : isSelected ? "bg-zinc-100 dark:bg-zinc-900 dark:bg-white" : "bg-zinc-400 dark:bg-zinc-700"
+                    isStale ? "bg-rose-400" : isSelected ? "bg-zinc-700 dark:bg-zinc-200" : "bg-zinc-400 dark:bg-zinc-700"
                   )} />
                   <div className="min-w-0">
                     <p className="truncate text-[12px] font-semibold text-zinc-900 dark:text-white">
