@@ -287,7 +287,7 @@ export default async function RentTrackerPage({
   return (
     <>
       <DashboardPollRefresh />
-      <div className="@container/main flex min-h-0 flex-1 flex-col bg-background dark:bg-[#f8f8f7] font-['Inter',system-ui,sans-serif] text-zinc-950 dark:bg-[#0B0B0B] dark:text-[#e5e2e1]">
+      <div className="@container/main flex min-h-0 flex-1 flex-col bg-background font-['Inter',system-ui,sans-serif] text-zinc-950 dark:bg-zinc-950 dark:text-[#e5e2e1]">
         <Suspense fallback={<RentTrackerLoadingShell todayIso={todayIso} />}>
           <RentTrackerAsyncSection
             userId={userId}
@@ -454,7 +454,7 @@ function RentTrackerLoadingShell({ todayIso }: { todayIso: string }) {
         ))}
       </div>
 
-      <div className="flex-1 bg-background dark:bg-[#f8f8f7] p-4 dark:bg-[#0B0B0B] md:p-6">
+      <div className="flex-1 bg-background p-4 dark:bg-zinc-950 md:p-6">
         <div className="mb-4 h-10 animate-pulse rounded-sm border border-zinc-200 bg-white dark:border-[#333333] dark:bg-[#161616]" />
         <div className="overflow-hidden border border-zinc-200 bg-white dark:border-[#333333] dark:bg-[#161616]">
           {Array.from({ length: 7 }).map((_, index) => (
