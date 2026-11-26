@@ -7,7 +7,7 @@ export const maxDuration = 120;
  * Sends idempotent email reminders for agent approvals pending past the stale threshold
  * ({@link APPROVAL_PENDING_STALE_MS} in queue-stats). Audited in `agent_approvals.evidence._letora_stale_reminder`.
  *
- * **Production schedule:** Vercel Cron hits `/api/cron/stale-approval-reminders` (see `vercel.json`).
+ * **Schedule:** none. `/api/cron/stale-approval-reminders` is no longer listed in `vercel.json`.
  * This route stays available for manual runs, Supabase Edge, or other callers with the same auth.
  *
  * Auth: `Authorization: Bearer ${CRON_SECRET}` (same pattern as `/api/cron/rent-chase`).

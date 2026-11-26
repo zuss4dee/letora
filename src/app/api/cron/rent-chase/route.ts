@@ -7,8 +7,9 @@ export const maxDuration = 300;
 /**
  * Scheduled rent chaser drafts (Approvals queue: `send_rent_chase_email`).
  *
- * **Production schedule:** `vercel.json` → `crons` (daily 07:00 UTC by default).
- * **Auth:** `Authorization: Bearer ${CRON_SECRET}` — Vercel Cron sends this when `CRON_SECRET` is set in project env.
+ * **Schedule:** not registered in `vercel.json`. Vercel Cron does not call this route.
+ * Restore by adding a `crons` entry for this path (previously daily 07:00 UTC, `0 7 * * *`).
+ * **Auth:** `Authorization: Bearer ${CRON_SECRET}` — required for any caller, including a future Vercel Cron entry.
  * **Env:** `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_AI_API_KEY` (agent throws if missing while chasing).
  *
  * Iterates every `user_settings` row and runs {@link runRentChaserAgent} with the service-role client

@@ -74,16 +74,17 @@ RLS: users manage rows where `user_id = auth.uid()`.
 
 ## Cron
 
-**Vercel (`vercel.json`):**
+**Vercel (`vercel.json`):** no `crons` entries. Daily rent-chase drafts and stale-approval reminder emails are not scheduled. The route handlers remain and still require `Authorization: Bearer <CRON_SECRET>`.
 
-| Path | Default schedule (UTC) | Purpose |
-|------|------------------------|---------|
-| `/api/cron/rent-chase` | `0 7 * * *` (daily 07:00) | Runs **`runRentChaserAgent`** for every `user_settings` user (service role). Drafts → **`agent_approvals`** (`send_rent_chase_email`) when chaseable arrears exist. |
-| `/api/cron/stale-approval-reminders` | `0 8 * * *` (daily 08:00) | Operator reminders for stale pending approvals. |
+| Path | Schedule | Purpose |
+|------|----------|---------|
+| `/api/cron/rent-chase` | unscheduled (was `0 7 * * *`, daily 07:00 UTC) | Runs **`runRentChaserAgent`** for every `user_settings` user (service role). Drafts → **`agent_approvals`** (`send_rent_chase_email`) when chaseable arrears exist. |
+| `/api/cron/stale-approval-reminders` | unscheduled (was `0 8 * * *`, daily 08:00 UTC) | Operator reminders for stale pending approvals. |
+| `/api/internal/stale-approval-reminders` | never scheduled | Same reminder job, for a manual bearer-token call. |
 
-Vercel Cron sends **`Authorization: Bearer <CRON_SECRET>`** when **`CRON_SECRET`** is set on the Vercel project.
+To schedule either cron route again, add it back under `crons` in `vercel.json` and deploy to production. Vercel Cron sends **`Authorization: Bearer <CRON_SECRET>`** when **`CRON_SECRET`** is set on the Vercel project.
 
-**Required env for rent-chase cron:** `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_AI_API_KEY`. Missing `GOOGLE_AI_API_KEY` causes **`runRentChaserAgent`** to throw for that user (see function runtime check).
+**Required env if rent-chase is invoked:** `CRON_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_AI_API_KEY`. Missing `GOOGLE_AI_API_KEY` causes **`runRentChaserAgent`** to throw for that user (see function runtime check).
 
 Manual test:
 

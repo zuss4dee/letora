@@ -4,12 +4,14 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
 /**
- * Vercel Cron: idempotent operator email reminders for approvals pending past the stale threshold
+ * Idempotent operator email reminders for approvals pending past the stale threshold
  * (see {@link APPROVAL_PENDING_STALE_MS} in queue-stats / `processStaleApprovalReminders`).
  *
- * **Schedule:** `vercel.json` → `crons` (default: daily 08:00 UTC). Safe to run often; cooldowns live in evidence.
+ * **Schedule:** not registered in `vercel.json`. Vercel Cron does not call this route.
+ * Restore by adding a `crons` entry for this path (previously daily 08:00 UTC, `0 8 * * *`).
+ * Safe to run often; cooldowns live in evidence.
  *
- * **Auth:** `Authorization: Bearer ${CRON_SECRET}` — Vercel injects this header on cron invocations when `CRON_SECRET` is set.
+ * **Auth:** `Authorization: Bearer ${CRON_SECRET}` — required for any caller, including a future Vercel Cron entry.
  *
  * **Env:** `CRON_SECRET`, `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL` (optional, for links in email).
  *
